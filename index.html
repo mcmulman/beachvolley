@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beach-Volleyball Turniervorlagen</title>
+  <style>
+    :root {
+      --blue-dark:  #1a3a5c;
+      --blue:       #1f6fa8;
+      --blue-light: #e8f3fb;
+      --sand:       #f5efe3;
+      --sand-dark:  #e0d4be;
+      --green:      #0a7d2c;
+      --green-light:#e7f6ec;
+      --text:       #1a1a2e;
+      --muted:      #5a6375;
+      --border:     #ccd8e8;
+      --white:      #fff;
+      --radius:     14px;
+      --shadow:     0 6px 24px rgba(31,111,168,.14);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--sand);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
+      color: var(--white);
+      padding: 36px 24px 32px;
+      text-align: center;
+    }
+
+    header .logo {
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #b8d4ee;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* ── Filter bar ── */
+    .filterbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      padding: 12px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filterbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      justify-content: center;
+      padding: 14px 20px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .filter-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+    .filter-label {
+      font-size: 11px;
+      color: #999;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-right: 2px;
+    }
+    .filter-btn {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      color: var(--muted);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .18s;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: var(--blue-dark);
+      border-color: var(--blue-dark);
+      color: var(--white);
+    }
+
+    /* ── Grid ── */
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 28px 0 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .18s, box-shadow .18s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(31,111,168,.2);
+    }
+
+    .card-header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--sand-dark);
+      background: var(--blue-light);
+    }
+
+    .card-header .format-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: #d0e8f7;
+      border-radius: 6px;
+      padding: 2px 8px;
+      margin-bottom: 6px;
+    }
+
+    .card-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue-dark);
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+
+    .card-header .sub {
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .card-body {
+      padding: 16px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Stats chips */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--sand);
+      border: 1px solid var(--sand-dark);
+      border-radius: 20px;
+      padding: 3px 9px;
+    }
+
+    .stat .icon { font-size: 13px; }
+
+    /* Feature list */
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .feat {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--green);
+      background: var(--green-light);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+
+    /* CTA */
+    .card-footer {
+      padding: 14px 20px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 20px;
+      font-size: 13.5px;
+      font-weight: 700;
+      background: var(--blue-dark);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .18s;
+      white-space: nowrap;
+    }
+
+    .btn-open:hover { background: var(--blue); }
+
+    /* Info box */
+    .info-box {
+      background: var(--blue-light);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .info-box h3 {
+      font-size: 14px;
+      color: var(--blue-dark);
+      margin-bottom: 6px;
+    }
+
+    .info-box ul {
+      padding-left: 18px;
+    }
+
+    .info-box li { margin: 2px 0; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11.5px;
+      color: var(--muted);
+      border-top: 1px solid var(--sand-dark);
+    }
+
+    /* Hidden cards */
+    .card[hidden] { display: none; }
+
+    .session-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .session-card:hover { border-color: var(--blue-dark); }
+    .session-info { flex: 1; min-width: 0; }
+    .session-title { font-weight: 700; font-size: 14px; color: var(--blue-dark); }
+    .session-teams { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-date { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .session-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-resume { padding: 6px 16px; font-size: 13px; font-weight: 600; background: var(--blue-dark); color: #fff; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
+    .btn-resume:hover { background: #163a5c; }
+    .btn-delete { padding: 6px 10px; font-size: 13px; background: none; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; color: #999; }
+    .btn-delete:hover { border-color: #e74c3c; color: #e74c3c; }
+    #sessions-list-wrap { position: relative; }
+
+    @media (max-width: 480px) {
+      header h1 { font-size: 20px; }
+      .card-footer { flex-direction: column; align-items: stretch; }
+      .btn-open { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏐</div>
+  <h1>Beach-Volleyball Turniervorlagen</h1>
+  <p>Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
+</header>
+
+<div class="filterbar">
+  <button class="filter-btn active" onclick="filter('all', this)">Alle</button>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Teams:</span>
+  <button class="filter-btn" onclick="filter('6', this)">6</button>
+  <button class="filter-btn" onclick="filter('8', this)">8</button>
+  <button class="filter-btn" onclick="filter('10', this)">10</button>
+  <button class="filter-btn" onclick="filter('12', this)">12</button>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Format:</span>
+  <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
+  <button class="filter-btn" onclick="filter('group', this)">Gruppen</button>
+  <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
+  <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
+</div>
+
+<main>
+
+  <!-- ── Gespeicherte Turniere ── -->
+  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleSessions()" id="sessions-label">
+    <span>Gespeicherte Turniere <span id="sessions-count" style="font-weight:400;color:#aaa;font-size:12px"></span></span>
+    <span style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:11px;font-weight:400;color:#bbb">Nur verfügbar wenn über Webserver geöffnet</span>
+      <span id="sessions-toggle-icon" style="font-size:13px;color:#999;transition:transform .2s">▾</span>
+    </span>
+  </div>
+  <div id="saved-sessions" style="margin-bottom:40px">
+    <div id="no-sessions" style="color:#999;font-size:13px;padding:12px 0">Keine gespeicherten Turniere gefunden.</div>
+    <div id="sessions-list-wrap"></div>
+    <div id="sessions-more" style="display:none;margin-top:4px">
+      <button onclick="expandSessions(event)" style="display:flex;align-items:center;gap:6px;background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--blue-dark);font-size:13px;cursor:pointer;padding:7px 14px;font-weight:600;width:100%;justify-content:center">
+        <span id="sessions-more-label"></span> <span style="font-size:16px">⌄</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Format-Überblick -->
+  <div class="section-label">Turnierformat</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px">
+    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
+      <h3>🔁 Jeder gegen Jeden</h3>
+      Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für ≤8 Teams. Niemand scheidet aus.
+      <a href="docs/format-jeder-gegen-jeden.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+    </div>
+    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
+      <h3>🏆 Gruppen + Überkreuz-Finalrunde</h3>
+      Gruppenphase sortiert die Teams, die Finalrunde kreuzt Gruppe A und B. Faire Paarungen, kein Ausscheiden – alle Plätze werden ermittelt.
+      <a href="docs/format-gruppen-platzierungsrunde.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+    </div>
+    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
+      <h3>🇨🇭 Schweizer System</h3>
+      Dynamisch ohne festen Spielplan: nach jeder Runde spielen Gleichrangige gegeneinander. Optimal für viele Teams auf wenigen Feldern.
+      <a href="docs/format-schweizer-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+    </div>
+    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
+      <h3>🥊 KO-System</h3>
+      Direktes Ausscheidungsturnier mit Trostrunde: Verlierer spielen weiter um die unteren Plätze. Ideal als Playoff-Phase nach einer Gruppenphase.
+      <a href="docs/format-ko-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+    </div>
+  </div>
+
+  <div class="section-label">Turnierbögen</div>
+  <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em">
+    Alle Bögen: Teamnamen · Feldnamen · Zeiten konfigurierbar · Freilos/Ausfall · Druckvorlage A4 quer · Ergebnisse im Browser gespeichert
+  </p>
+  <div class="grid">
+
+    <!-- ── Card 1 ── -->
+    <div class="card" data-tags="8 rr">
+      <div class="card-header">
+        <span class="format-tag">Jeder gegen Jeden</span>
+        <h2>8 Teams · 4 Felder</h2>
+        <div class="sub">niemand scheidet aus · 7 Spiele/Team</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Laufende Tabelle</span>
+          <span class="feat">✓ Spielmodus auto (15/21)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_Alle_gegen_Alle.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+    <div class="card" data-tags="8 ko">
+      <div class="card-header">
+        <span class="format-tag">KO-System · Playoff</span>
+        <h2>8 Teams · 4 Felder</h2>
+        <div class="sub">ideal als Playoff nach Gruppenturnier</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 3 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~2–3 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Visualisiertes Bracket</span>
+          <span class="feat">✓ Plätze 1–8 ausgespielt</span>
+          <span class="feat">✓ Setzung + Freilos</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_KO_System.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: 8T Gruppen + KO ── -->
+    <div class="card" data-tags="8 ko group">
+      <div class="card-header">
+        <span class="format-tag">Gruppen + KO-System</span>
+        <h2>8 Teams · 4 Felder</h2>
+        <div class="sub">Ganztages-Turnier · 5 Spiele/Team</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 5 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~5 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Gruppenphase + KO-Bracket</span>
+          <span class="feat">✓ Auto-Setzung aus Gruppen</span>
+          <span class="feat">✓ Plätze 1–8 ausgespielt</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_Gruppen_KO_System.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <div class="card" data-tags="6 group">
+      <div class="card-header">
+        <span class="format-tag">Gruppen + Finalrunde</span>
+        <h2>6 Teams · 3 Felder</h2>
+        <div class="sub">Plätze 1–6 ausgespielt</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 6 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 3 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 3–4 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Auto-Setzung Finale</span>
+          <span class="feat">✓ Gruppenauslosung</span>
+          <span class="feat">✓ Laufende Gruppentabellen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_6_Teams_Gruppen_Platzierungsrunde.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card 3 ── -->
+    <div class="card" data-tags="8 group">
+      <div class="card-header">
+        <span class="format-tag">Gruppen + Finalrunde</span>
+        <h2>8 Teams · 4 Felder</h2>
+        <div class="sub">Plätze 1–8 ausgespielt</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 5 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Auto-Setzung Finale</span>
+          <span class="feat">✓ Gruppenauslosung</span>
+          <span class="feat">✓ Laufende Gruppentabellen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_Gruppen_Platzierungsrunde.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card 4 ── -->
+    <div class="card" data-tags="12 group">
+      <div class="card-header">
+        <span class="format-tag">Gruppen + Finalrunde</span>
+        <h2>12 Teams · 6 Felder</h2>
+        <div class="sub">Plätze 1–12 ausgespielt</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 12 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 6 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Auto-Setzung Finale</span>
+          <span class="feat">✓ Gruppenauslosung</span>
+          <span class="feat">✓ Laufende Gruppentabellen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_12_Teams_6_Felder_Gruppen_Platzierungsrunde.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card 4 ── -->
+    <div class="card" data-tags="12 swiss">
+      <div class="card-header">
+        <span class="format-tag">Schweizer System</span>
+        <h2>12 Teams · 6 Felder</h2>
+        <div class="sub">dynamische Paarungen · 7 Runden</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 12 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 6 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Dynamische Paarungen</span>
+          <span class="feat">✓ Startrunden-Auslosung</span>
+          <span class="feat">✓ Live-Tabelle</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_12_Teams_Schweizer_System.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: 6T Alle gegen Alle ── -->
+    <div class="card" data-tags="6 rr">
+      <div class="card-header">
+        <span class="format-tag">Jeder gegen Jeden</span>
+        <h2>6 Teams · 3 Felder</h2>
+        <div class="sub">niemand scheidet aus · 5 Spiele/Team</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 6 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 3 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 5 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Laufende Tabelle</span>
+          <span class="feat">✓ Spielmodus auto (15/21)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_6_Teams_3_Felder_Alle_gegen_Alle.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: 10T Gruppen ── -->
+    <div class="card" data-tags="10 group">
+      <div class="card-header">
+        <span class="format-tag">Gruppen + Finalrunde</span>
+        <h2>10 Teams · 5 Felder</h2>
+        <div class="sub">Plätze 1–10 ausgespielt</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 10 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 5 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Auto-Setzung Finale</span>
+          <span class="feat">✓ Gruppenauslosung</span>
+          <span class="feat">✓ Laufende Gruppentabellen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_10_Teams_Gruppen_Platzierungsrunde.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Universal Schweizer System ── -->
+    <div class="card" data-tags="6 8 10 12 swiss">
+      <div class="card-header">
+        <span class="format-tag">Schweizer System</span>
+        <h2>6–12 Teams · universell</h2>
+        <div class="sub">konfigurierbar · dynamische Paarungen</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 6–12 Teams</span>
+          <span class="stat"><span class="icon">🎯</span> 5–7 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Dynamische Paarungen</span>
+          <span class="feat">✓ Teamanzahl wählbar (6–12)</span>
+          <span class="feat">✓ Live-Tabelle</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Schweizer_System.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /.grid -->
+
+
+</main>
+
+<footer>
+  Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser
+</footer>
+
+<script>
+  function filter(tag, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.card').forEach(card => {
+      if (tag === 'all') {
+        card.hidden = false;
+      } else {
+        const tags = (card.dataset.tags || '').split(' ');
+        card.hidden = !tags.includes(tag);
+      }
+    });
+  }
+
+  const SESSIONS_PREVIEW = 1;
+  let sessionsExpanded = false;
+  let sessionsCollapsed = false;
+
+  function toggleSessions() {
+    const container = document.getElementById('saved-sessions');
+    const icon = document.getElementById('sessions-toggle-icon');
+    sessionsCollapsed = !sessionsCollapsed;
+    container.style.display = sessionsCollapsed ? 'none' : '';
+    icon.style.transform = sessionsCollapsed ? 'rotate(-90deg)' : '';
+  }
+
+  function expandSessions(e) {
+    e.stopPropagation();
+    sessionsExpanded = true;
+    const wrap = document.getElementById('sessions-list-wrap');
+    wrap.classList.remove('has-more');
+    document.querySelectorAll('.session-card.session-hidden').forEach(c => c.style.display = '');
+    document.getElementById('sessions-more').style.display = 'none';
+  }
+
+  function loadSessions() {
+    try {
+      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      const container = document.getElementById('saved-sessions');
+      const noSessions = document.getElementById('no-sessions');
+      const wrap = document.getElementById('sessions-list-wrap');
+      wrap.innerHTML = '';
+      if (!registry.length) { noSessions.style.display = ''; return; }
+      noSessions.style.display = 'none';
+      registry.sort((a, b) => b.savedAt - a.savedAt);
+      const countEl = document.getElementById('sessions-count');
+      if (countEl) countEl.textContent = registry.length > 1 ? '(' + registry.length + ')' : '';
+      registry.forEach((s, idx) => {
+        const date = new Date(s.savedAt).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        const card = document.createElement('div');
+        card.className = 'session-card' + (idx >= SESSIONS_PREVIEW ? ' session-hidden' : '');
+        if (idx >= SESSIONS_PREVIEW) card.style.display = 'none';
+
+        const info = document.createElement('div');
+        info.className = 'session-info';
+        const title = document.createElement('div');
+        title.className = 'session-title';
+        title.textContent = s.title || 'Gespeichertes Turnier';
+        const teams = document.createElement('div');
+        teams.className = 'session-teams';
+        teams.textContent = Array.isArray(s.teams) ? s.teams.join(' · ') : '';
+        const meta = document.createElement('div');
+        meta.className = 'session-date';
+        meta.textContent = 'Zuletzt gespeichert: ' + date;
+        const actions = document.createElement('div');
+        actions.className = 'session-actions';
+        const resume = document.createElement('a');
+        resume.className = 'btn-resume';
+        resume.href = s.file;
+        resume.target = '_blank';
+        resume.textContent = 'Weiter ▶';
+        const del = document.createElement('button');
+        del.className = 'btn-delete';
+        del.type = 'button';
+        del.title = 'Löschen';
+        del.textContent = '✕';
+        del.onclick = function() { deleteSession(s.key, del); };
+
+        info.appendChild(title);
+        info.appendChild(teams);
+        info.appendChild(meta);
+        actions.appendChild(resume);
+        actions.appendChild(del);
+        card.appendChild(info);
+        card.appendChild(actions);
+        wrap.appendChild(card);
+      });
+      if (registry.length > SESSIONS_PREVIEW) {
+        const more = document.getElementById('sessions-more');
+        more.style.display = '';
+        const n = registry.length - SESSIONS_PREVIEW;
+        document.getElementById('sessions-more-label').textContent = n + ' weitere gespeicherte Turnier' + (n === 1 ? '' : 'e') + ' anzeigen';
+      }
+    } catch(e) {}
+  }
+
+  function deleteSession(key, btn) {
+    if (!confirm('Gespeichertes Turnier löschen?')) return;
+    try {
+      let registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      registry = registry.filter(s => s.key !== key);
+      localStorage.setItem('beachl_sessions', JSON.stringify(registry));
+      Object.keys(localStorage).filter(k => k.startsWith(key + '_')).forEach(k => localStorage.removeItem(k));
+      btn.closest('.session-card').remove();
+      const countEl = document.getElementById('sessions-count');
+      if (countEl) countEl.textContent = registry.length > 1 ? '(' + registry.length + ')' : '';
+      if (!registry.length) { document.getElementById('no-sessions').style.display = ''; document.getElementById('sessions-more').style.display = 'none'; }
+    } catch(e) {}
+  }
+
+  loadSessions();
+</script>
+
+</body>
+</html>

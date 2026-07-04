@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turnierbogen – 8 Teams · Gruppen + KO-System</title>
+  <style>
+    :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; --gold:#fff7e0; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; padding:0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color:#111; font-size:13px; line-height:1.3;
+      padding:10mm;
+    }
+    h1 { font-size:19px; margin:0 0 3px; }
+    h2 { font-size:16px; margin:0 0 6px; }
+    .sub { color:#555; font-size:12px; margin:0 0 12px; }
+    .row { display:flex; gap:8mm; align-items:flex-start; }
+    .grow { flex:1; }
+    .topgrid { display:grid; grid-template-columns: 44% 56%; gap:8mm; align-items:start; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { border:1px solid var(--line); padding:4px 6px; text-align:center; vertical-align:middle; }
+    th { background:var(--bg); font-size:12px; }
+    caption { text-align:left; font-weight:bold; font-size:14px; margin:14px 0 5px; }
+
+    .teams td { text-align:left; }
+    .teams .num { width:64px; font-weight:bold; background:var(--bg); text-align:center; }
+    .teams .name { height:28px; }
+    .grp-box td { text-align:left; }
+    .grp-box .gh { width:80px; font-weight:bold; background:var(--bg); }
+
+    .legend { font-size:12px; color:#333; margin-top:10px; }
+    .legend b { color:#111; }
+    .guide { border:1.5px solid var(--line); border-radius:5px; padding:7px 14px; margin:0 0 12px; background:#eef4fb; }
+    .guide h2 { font-size:14px; margin:0 0 6px; }
+    .guide ol { margin:0; padding-left:20px; }
+    .guide li { margin:2px 0; }
+    .guide .hi { font-weight:bold; }
+    .page-break { page-break-before:always; }
+
+    .namectl { margin:0 0 12px; }
+    .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:5px; font-weight:bold; }
+    .nbtn:hover { background:#163a5c; }
+    .nhint { font-size:11.5px; color:#555; margin-left:10px; }
+    .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
+    .namepanel .ngrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px 14px; }
+    .namepanel label { display:flex; flex-direction:column; font-size:11px; color:#1f4e79; font-weight:bold; gap:3px; }
+    .namepanel input { padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
+    .nactions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .nactions .nbtn { background:#fff; color:#1f4e79; }
+    .nactions .nbtn:hover { background:#e7eef7; }
+    .digitalbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .digitalbar .nbtn { background:#0a7d2c; border-color:#0a7d2c; }
+    .digitalbar .nbtn:hover { background:#086323; }
+    input[type=checkbox].ab-check { margin-right:4px; }
+    .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+    .abt { color:#c00; font-size:0.8em; font-weight:600; }
+    .gold { background:var(--gold); }
+    .softbox { background:#fafafa; }
+
+    .sched td { padding:6px; }
+    .sched .rnd { width:120px; font-weight:bold; background:var(--bg); font-size:13px; }
+    .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
+    .sched .rnd .rmode { display:block; font-size:9.8px; font-weight:normal; color:#444; margin-top:2px; line-height:1.2; }
+    .pair { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
+    .pair .t { display:inline-block; min-width:76px; font-weight:bold; font-size:13px; }
+    .vs { color:var(--soft); font-weight:bold; font-size:15px; }
+    .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
+    input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
+                  font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
+                  -webkit-appearance:none; appearance:none; }
+    input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
+    input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
+    input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
+    input.score:disabled { background:#f7f7f7; color:#999; }
+    .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
+    .byeauto { background:#fff3d6 !important; color:#7a5a00 !important; }
+
+    .track th, .track td { padding:3px 4px; }
+    .track .tname { width:96px; text-align:left; font-weight:bold; font-size:12px; }
+    .track .lbl { width:96px; text-align:left; font-size:10px; background:#fafafa; }
+    .track .rcell { height:24px; }
+    .track .pos { width:34px; font-weight:bold; }
+    .track .grp { border-top:2px solid var(--line); }
+
+    .panel { border:1.5px solid var(--line); border-radius:6px; padding:8px 10px; background:#fff; }
+    .panel h2 { font-size:14px; margin:0 0 6px; }
+    .panel .subline { font-size:11.5px; color:#555; margin-bottom:8px; }
+    .bracket-wrap { display:grid; grid-template-columns:1.5fr 1fr; gap:8mm; }
+    .bracket-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; align-items:start; }
+    .bcol { display:flex; flex-direction:column; gap:12px; }
+    .btitle { font-size:12px; font-weight:bold; color:#1f4e79; text-align:center; padding-bottom:2px; }
+    .bmatch { border:1px solid var(--line); border-radius:6px; padding:6px; background:#fff; }
+    .bmatch.final { background:var(--gold); }
+    .bmatch .bhead { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:10.5px; color:#1f4e79; font-weight:bold; margin-bottom:5px; }
+    .bmatch .route { font-size:10px; color:#555; margin-top:5px; text-align:center; }
+    .teamslot { border:1px solid #cfd7e2; border-radius:4px; padding:5px 6px; min-height:42px; background:#fafcff; }
+    .teamslot + .teamslot { margin-top:5px; }
+    .teamslot.win { background:#d6f5d6; border-color:#2e8b2e; }
+    .teamslot.loss { background:#f8f8f8; color:#666; }
+    .slot-label { display:block; font-size:10px; font-weight:bold; color:#1f4e79; }
+    .slot-name { display:block; font-size:12.5px; margin-top:2px; }
+    .slot-name.placeholder { color:#666; font-style:italic; }
+    .slot-name.empty { color:#999; }
+
+    .matchname { text-align:left; }
+    .modecol { font-size:11px; color:#444; white-space:nowrap; }
+    .scorewrap { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; }
+    .setpair { display:inline-flex; align-items:center; gap:3px; }
+    .setlbl { font-size:10px; color:#666; min-width:18px; text-align:right; }
+    .winner-cell { text-align:left; font-weight:bold; min-width:130px; }
+    .winner-cell.auto { background:#e7f6ec; color:#0a3d20; }
+    .winner-cell.byeauto { background:#fff3d6; color:#7a5a00; }
+    .ko-seed td { text-align:left; }
+    .ko-seed .ks { width:66px; font-weight:bold; background:var(--bg); text-align:center; }
+
+    .stand td { height:34px; }
+    .stand .rk { width:58px; background:var(--bg); font-weight:bold; }
+    .stand .nm { text-align:left; }
+    .printbtn { margin-top:14px; padding:7px 16px; font-size:14px; cursor:pointer; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm 12mm; }
+      body {
+        padding:0;
+        font-size:9pt;
+        line-height:1.16;
+        overflow:visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .noprint { display:none !important; }
+    #session-title-display { display: block !important; }
+      h1 { font-size:14.5pt; margin:0 0 1.4mm; }
+      h2 { font-size:10.5pt; margin:0 0 1mm; }
+      .sub { margin:0 0 2mm; font-size:8.5pt; }
+      caption { margin:1.8mm 0 0.9mm; font-size:8.8pt; }
+      table {
+        width:100% !important;
+        font-size:8pt;
+        overflow:visible !important;
+        page-break-inside:avoid;
+        break-inside:avoid;
+      }
+      th, td { padding:1mm 1.4mm; }
+      .guide, .panel, .topgrid, .bracket-wrap, .sched, .stand, .track, .legend {
+        page-break-inside:avoid;
+        break-inside:avoid;
+      }
+      .guide { margin:0 0 2.5mm; padding:2.4mm 3.6mm; }
+      .guide h2 { font-size:9.8pt; margin:0 0 0.8mm; }
+      .guide li { margin:0.35mm 0; }
+      .page-break {
+        display:block;
+        break-before:page;
+        page-break-before:always;
+      }
+      .topgrid { gap:4mm; grid-template-columns:41% 59%; }
+      .bracket-wrap { gap:4mm; }
+      .bracket-grid { gap:2.2mm; }
+      .bcol { gap:2.2mm; }
+      .panel { padding:2.4mm 3mm; }
+      .panel .subline { font-size:7.4pt; margin-bottom:1.3mm; }
+      .btitle { font-size:7.6pt; }
+      .bmatch {
+        padding:2mm;
+        page-break-inside:avoid;
+        break-inside:avoid;
+      }
+      .bmatch .bhead { font-size:7.2pt; margin-bottom:1mm; }
+      .bmatch .route, .route { font-size:6.8pt; margin-top:1mm; }
+      .teamslot { min-height:8mm; padding:1.5mm 1.8mm; }
+      .slot-label { font-size:6.4pt; }
+      .slot-name { font-size:8pt; }
+      .sched td { padding:0.9mm 1.2mm; }
+      .sched .rnd { width:24mm; font-size:8pt; }
+      .sched .rnd .rtime { font-size:7pt; margin-top:0.35mm; }
+      .sched .rnd .rmode { font-size:6.4pt; line-height:1.05; margin-top:0.25mm; }
+      .pair .t { min-width:0; font-size:8pt; }
+      .vs { font-size:8pt; }
+      .scorewrap { gap:1.5mm; }
+      .setpair { gap:0.8mm; }
+      .setlbl { font-size:6.8pt; min-width:10pt; }
+      input.score {
+        border:none;
+        background:transparent;
+        box-shadow:none;
+        width:1.65em;
+        height:auto;
+        min-height:0;
+        padding:0;
+        margin:0;
+        font-size:8pt;
+        font-weight:700;
+        color:#000;
+        text-align:center;
+      }
+      input.score:focus { outline:none; }
+      input[type=text]:not(.score) { display:none; }
+    }
+
+    /* Screen polish overrides */
+    @media screen {
+      body {
+        padding: 12mm 14mm;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        color: #1a1a2e;
+        line-height: 1.4;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1f4e79;
+        margin: 0 0 4px;
+        letter-spacing: -0.3px;
+      }
+      .sub {
+        color: #5a6375;
+        font-size: 12.5px;
+        margin: 0 0 14px;
+      }
+      body > .noprint:first-of-type {
+        display: flex !important;
+        align-items: center;
+        gap: 12px !important;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      body > .noprint:first-of-type a {
+        font-size: 13px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .guide {
+        border: none;
+        border-left: 4px solid #1f4e79;
+        border-radius: 0 6px 6px 0;
+        padding: 10px 16px;
+        background: #f0f5fc;
+        margin: 0 0 14px;
+      }
+      .guide h2 {
+        font-size: 13px;
+        color: #1f4e79;
+        font-weight: 700;
+        margin: 0 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .guide li {
+        margin: 3px 0;
+        font-size: 12.5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      th {
+        background: #1f4e79;
+        color: #fff;
+        font-size: 12px;
+        padding: 5px 8px;
+        border: 1px solid #163a5c;
+      }
+      td {
+        border: 1px solid #d4dde8;
+        padding: 5px 7px;
+      }
+      caption {
+        font-size: 14px;
+        font-weight: 800;
+        color: #1f4e79;
+        margin: 16px 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .nbtn {
+        border-radius: 6px;
+        padding: 7px 15px;
+        font-size: 13px;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .nbtn:active { transform: scale(0.97); }
+      .namepanel {
+        border-radius: 8px;
+        border: 1.5px solid #cdd8e6;
+        background: #f7fafd;
+      }
+      input.score {
+        border: 1.5px solid #b0bec5;
+        border-radius: 4px;
+        background: #fafcff;
+      }
+      input.score:focus {
+        outline: 2px solid #1f4e79;
+        background: #fffce0;
+      }
+      input.score.win {
+        background: #d4f5d4 !important;
+        border-color: #2e7d2e;
+      }
+      input.score.invalid {
+        background: #fde0e0 !important;
+        border-color: #c62828;
+      }
+      .stand .pl,
+      .stand .rk { background: #e8edf5; color: #1a1a2e; }
+      .track .tnum,
+      .track .lbl { background: #f0f5fb; color: #1a1a2e; }
+      .track .sum { background: #e8edf5; color: #1a1a2e; }
+      .sched .rnd {
+        background: #1f4e79;
+        color: #fff;
+        font-weight: 700;
+      }
+      .sched .rnd .rtime,
+      .sched .rtime { color: #b8d4ee; }
+      .sched .rnd .rmode,
+      .sched .rmode { color: #a0b8cc; }
+      .digitalbar,
+      .digbar,
+      .topbar { gap: 12px; }
+    }
+
+
+    /* Print polish overrides */
+    @media print {
+      body {
+        padding: 0;
+        font-size: 8.5pt;
+        line-height: 1.15;
+      }
+      h1 {
+        font-size: 14pt;
+        color: #000;
+      }
+      caption {
+        font-size: 8.5pt;
+        color: #000;
+        margin: 1.5mm 0 1mm;
+      }
+      th {
+        background: #e8edf5 !important;
+        color: #000 !important;
+      }
+      .sched .rnd {
+        background: #e8edf5 !important;
+        color: #000 !important;
+      }
+      .sched .rnd .rtime,
+      .sched .rtime { color: #000 !important; }
+      .sched .rnd .rmode,
+      .sched .rmode { color: #333 !important; }
+      .guide {
+        border: none;
+        border-left: 3px solid #1f4e79;
+        background: #f5f8fc !important;
+      }
+    }
+
+</style>
+</head>
+<body>
+
+<div class="noprint" style="margin:0 0 8px"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-ko-system.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
+
+<div class="guide">
+  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <ol>
+    <li><span class="hi">Teamnamen</span> eintragen und Gruppen auslosen (oder manuell zuweisen).</li>
+    <li><span class="hi">Gruppenphase (Runden 1-2):</span> 2 Spiele pro Team, je Gruppe 2 Runden à 2 Matches.</li>
+    <li><span class="hi">Auswertung:</span> Sieg = 1 Pkt. Tabelle nach Siegen → BD → Punkte sortieren.</li>
+    <li><span class="hi">KO-Bracket (Runden 3-5):</span> Setzung aus Gruppenranking. Jeder spielt 3 weitere Matches.</li>
+    <li><span class="hi">Finale:</span> Platz 1 &amp; 2 (Best-of-3), Platz 3 (Best-of-3), Platz 5 &amp; Platz 7 (1 Satz).</li>
+  </ol>
+</div>
+
+<h1>Turnierbogen – 8 Teams · Gruppen + KO-System</h1>
+<p class="sub tt">4 Felder · 10:00–15:00 · Gruppenphase + Playoffs · 5 Spiele/Team · alle Plätze 1–8 ausgespielt</p>
+<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+
+<div class="noprint namectl">
+  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+  <div id="namepanel" class="namepanel" hidden>
+    <div class="ngrid"></div>
+    <div class="nactions">
+      <button type="button" class="nbtn" onclick="drawGroups()">🎲 Gruppen auslosen</button>
+      <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
+    </div>
+  </div>
+  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+  <div id="fieldpanel" class="namepanel" hidden>
+    <div class="ngrid" style="grid-template-columns:repeat(4,1fr)">
+      <label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label>
+      <label>Feld 2<input type="text" id="fni_1" placeholder="Feld 2" oninput="onFieldInput(1)"></label>
+      <label>Feld 3<input type="text" id="fni_2" placeholder="Feld 3" oninput="onFieldInput(2)"></label>
+      <label>Feld 4<input type="text" id="fni_3" placeholder="Feld 4" oninput="onFieldInput(3)"></label>
+    </div>
+    <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
+  </div>
+</div>
+
+<div class="noprint digitalbar">
+  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label>
+  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="15:00" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label>
+  <span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:170px"></span>
+  <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+  </span>
+</div>
+
+<div class="topgrid">
+  <div>
+    <table class="teams">
+      <caption>Teams</caption>
+      <tr><td class="num">Team 1</td><td class="name" data-team-name="1">&nbsp;</td><td class="num">Team 5</td><td class="name" data-team-name="5">&nbsp;</td></tr>
+      <tr><td class="num">Team 2</td><td class="name" data-team-name="2">&nbsp;</td><td class="num">Team 6</td><td class="name" data-team-name="6">&nbsp;</td></tr>
+      <tr><td class="num">Team 3</td><td class="name" data-team-name="3">&nbsp;</td><td class="num">Team 7</td><td class="name" data-team-name="7">&nbsp;</td></tr>
+      <tr><td class="num">Team 4</td><td class="name" data-team-name="4">&nbsp;</td><td class="num">Team 8</td><td class="name" data-team-name="8">&nbsp;</td></tr>
+    </table>
+
+    <table class="grp-box">
+      <caption>Aktuelle Gruppen</caption>
+      <tr><td class="gh">Gruppe A</td><td><span data-team="1">Team 1</span> · <span data-team="2">Team 2</span> · <span data-team="3">Team 3</span> · <span data-team="4">Team 4</span></td></tr>
+      <tr><td class="gh">Gruppe B</td><td><span data-team="5">Team 5</span> · <span data-team="6">Team 6</span> · <span data-team="7">Team 7</span> · <span data-team="8">Team 8</span></td></tr>
+    </table>
+
+    <div class="legend">
+      <b>Gruppenlogik:</b> Gruppe A = Teams 1–4 · Gruppe B = Teams 5–8.<br>
+      Gespielt werden nur 2 von 3 möglichen Runden; die fehlenden Paarungen werden <b>nicht</b> gespielt.<br>
+      Tie-Breaker nach 2 Runden: <b>Siege → Ball-Differenz → Punkte → Original-Seed</b>.<br>
+      Fehlt ein Team, bekommt der Gegner ein <b>Freilos</b> (= 1 Sieg).
+    </div>
+  </div>
+
+  <div>
+    <table>
+      <caption>Zeitplan</caption>
+      <tr><th>Zeit</th><th>Abschnitt</th><th>Modus</th></tr>
+      <tr><td class="tt">10:00–10:30</td><td>Runde 1 · Gruppenphase</td><td>1 Satz bis 21</td></tr>
+      <tr><td class="tt">10:50–11:20</td><td>Runde 2 · Gruppenphase</td><td>1 Satz bis 21</td></tr>
+      <tr><td class="tt">11:40–12:10</td><td>Runde 3 · Viertelfinale</td><td>1 Satz bis 21</td></tr>
+      <tr><td class="tt">12:30–13:00</td><td>Runde 4 · Halbfinale + Pl. 5–8</td><td>1 Satz bis 21</td></tr>
+      <tr><td class="tt">13:30–14:30</td><td>Runde 5 · Finale + Pl. 3 / 5 / 7</td><td>Finale &amp; Pl. 3: Best-of-3 · Pl. 5 &amp; 7: 1 Satz</td></tr>
+      <tr><td class="tt">14:30–15:00</td><td>Siegerehrung / Ausklang</td><td>frei</td></tr>
+    </table>
+
+    <table class="ko-seed">
+      <caption>KO-Setzung aus der Gruppenphase</caption>
+      <tr><th class="ks">KO-S1</th><td id="koseed_1"></td><th class="ks">KO-S5</th><td id="koseed_5"></td></tr>
+      <tr><th class="ks">KO-S2</th><td id="koseed_2"></td><th class="ks">KO-S6</th><td id="koseed_6"></td></tr>
+      <tr><th class="ks">KO-S3</th><td id="koseed_3"></td><th class="ks">KO-S7</th><td id="koseed_7"></td></tr>
+      <tr><th class="ks">KO-S4</th><td id="koseed_4"></td><th class="ks">KO-S8</th><td id="koseed_8"></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Gruppenphase · Runden 1–2</h2>
+<p class="sub">Felder 1–2 = Gruppe A · Felder 3–4 = Gruppe B · jede Begegnung: 1 Satz bis 21</p>
+
+<table class="sched">
+  <caption>Gruppenphase · Spielplan &amp; Ergebnisse</caption>
+  <tr><th class="rnd">Runde</th><th data-field="0">Feld 1 (Gr. A)</th><th data-field="1">Feld 2 (Gr. A)</th><th data-field="2">Feld 3 (Gr. B)</th><th data-field="3">Feld 4 (Gr. B)</th></tr>
+  <tr>
+    <td class="rnd">Runde 1<span class="rtime tt">10:00–10:30</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td>
+    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-tm="1" data-op="2" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-tm="2" data-op="1" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span></td>
+    <td><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g1_3" data-tm="3" data-op="4" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-tm="4" data-op="3" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span></td>
+    <td><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-tm="5" data-op="6" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_6" data-tm="6" data-op="5" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span></td>
+    <td><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g1_7" data-tm="7" data-op="8" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_8" data-tm="8" data-op="7" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span></td>
+  </tr>
+  <tr>
+    <td class="rnd">Runde 2<span class="rtime tt">10:50–11:20</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td>
+    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-tm="1" data-op="3" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-tm="3" data-op="1" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span></td>
+    <td><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g2_2" data-tm="2" data-op="4" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-tm="4" data-op="2" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span></td>
+    <td><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g2_5" data-tm="5" data-op="7" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_7" data-tm="7" data-op="5" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span></td>
+    <td><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-tm="6" data-op="8" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_8" data-tm="8" data-op="6" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span></td>
+  </tr>
+</table>
+
+<div class="legend" style="margin:8px 0 4px">
+  <b>Nicht gespielte Paarungen:</b> A1–A4, A2–A3, B1–B4, B2–B3. Sie dienen nur als theoretische Restspiele und werden <b>nicht</b> nachgetragen.<br>
+  Die Gruppen werden nach jeder Eingabe automatisch sortiert; für komplette KO-Setzung müssen beide Gruppen vollständig sein.
+</div>
+
+<div class="row">
+  <div class="grow">
+    <table class="track">
+      <caption>Tabelle Gruppe A – laufender Stand (R1/R2 → A-1 … A-4)</caption>
+      <tr><th class="tname">Team</th><th class="lbl">kumuliert</th><th>R1</th><th>R2</th><th class="pos">Platz</th></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="1">Team 1</td><td class="lbl">Siege</td><td class="rcell" id="pt_1_1"></td><td id="pt_1_2"></td><td class="pos" rowspan="2" id="pz_1"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_1_1"></td><td id="bd_1_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="2">Team 2</td><td class="lbl">Siege</td><td class="rcell" id="pt_2_1"></td><td id="pt_2_2"></td><td class="pos" rowspan="2" id="pz_2"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_2_1"></td><td id="bd_2_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="3">Team 3</td><td class="lbl">Siege</td><td class="rcell" id="pt_3_1"></td><td id="pt_3_2"></td><td class="pos" rowspan="2" id="pz_3"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_3_1"></td><td id="bd_3_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="4">Team 4</td><td class="lbl">Siege</td><td class="rcell" id="pt_4_1"></td><td id="pt_4_2"></td><td class="pos" rowspan="2" id="pz_4"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_4_1"></td><td id="bd_4_2"></td></tr>
+    </table>
+  </div>
+  <div class="grow">
+    <table class="track">
+      <caption>Tabelle Gruppe B – laufender Stand (R1/R2 → B-1 … B-4)</caption>
+      <tr><th class="tname">Team</th><th class="lbl">kumuliert</th><th>R1</th><th>R2</th><th class="pos">Platz</th></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="5">Team 5</td><td class="lbl">Siege</td><td class="rcell" id="pt_5_1"></td><td id="pt_5_2"></td><td class="pos" rowspan="2" id="pz_5"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_5_1"></td><td id="bd_5_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="6">Team 6</td><td class="lbl">Siege</td><td class="rcell" id="pt_6_1"></td><td id="pt_6_2"></td><td class="pos" rowspan="2" id="pz_6"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_6_1"></td><td id="bd_6_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="7">Team 7</td><td class="lbl">Siege</td><td class="rcell" id="pt_7_1"></td><td id="pt_7_2"></td><td class="pos" rowspan="2" id="pz_7"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_7_1"></td><td id="bd_7_2"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="8">Team 8</td><td class="lbl">Siege</td><td class="rcell" id="pt_8_1"></td><td id="pt_8_2"></td><td class="pos" rowspan="2" id="pz_8"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_8_1"></td><td id="bd_8_2"></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>KO-Bracket · Runden 3–5</h2>
+<p class="sub">KO-S1 = A-1 · KO-S2 = B-1 · KO-S3 = A-2 · KO-S4 = B-2 · KO-S5 = B-3 · KO-S6 = A-3 · KO-S7 = B-4 · KO-S8 = A-4</p>
+
+<div class="panel">
+  <h2>Visualisiertes KO-Bracket</h2>
+  <div class="subline">Runde 3 = Viertelfinale · Runde 4 = Halbfinale + Platz 5–8 · Runde 5 = Finale + Plätze 3 / 5 / 7</div>
+  <div class="bracket-wrap">
+    <div>
+      <div class="bracket-grid">
+        <div class="bcol">
+          <div class="btitle">Viertelfinale</div>
+          <div class="bmatch">
+            <div class="bhead"><span>QF 1</span><span data-field="0">Feld 1</span></div>
+            <div class="teamslot" data-match-slot="qf1-a"><span class="slot-label">KO-S1</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="qf1-b"><span class="slot-label">KO-S8</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → HF 1 · Verlierer → 5–8 A</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>QF 2</span><span data-field="1">Feld 2</span></div>
+            <div class="teamslot" data-match-slot="qf2-a"><span class="slot-label">KO-S4</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="qf2-b"><span class="slot-label">KO-S5</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → HF 1 · Verlierer → 5–8 A</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>QF 3</span><span data-field="2">Feld 3</span></div>
+            <div class="teamslot" data-match-slot="qf3-a"><span class="slot-label">KO-S2</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="qf3-b"><span class="slot-label">KO-S7</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → HF 2 · Verlierer → 5–8 B</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>QF 4</span><span data-field="3">Feld 4</span></div>
+            <div class="teamslot" data-match-slot="qf4-a"><span class="slot-label">KO-S3</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="qf4-b"><span class="slot-label">KO-S6</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → HF 2 · Verlierer → 5–8 B</div>
+          </div>
+        </div>
+        <div class="bcol">
+          <div class="btitle">Runde 4</div>
+          <div class="bmatch">
+            <div class="bhead"><span>HF 1</span><span data-field="0">Feld 1</span></div>
+            <div class="teamslot" data-match-slot="hf1-a"><span class="slot-label">Sieger QF 1</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="hf1-b"><span class="slot-label">Sieger QF 2</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>HF 2</span><span data-field="1">Feld 2</span></div>
+            <div class="teamslot" data-match-slot="hf2-a"><span class="slot-label">Sieger QF 3</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="hf2-b"><span class="slot-label">Sieger QF 4</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
+          </div>
+        </div>
+        <div class="bcol">
+          <div class="btitle">Runde 5</div>
+          <div class="bmatch final">
+            <div class="bhead"><span>Finale</span><span data-field="0">Feld 1</span></div>
+            <div class="teamslot" data-match-slot="f1-a"><span class="slot-label">Sieger HF 1</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="f1-b"><span class="slot-label">Sieger HF 2</span><span class="slot-name"></span></div>
+            <div class="route">Platz 1 &amp; 2</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>Platz 3</span><span data-field="1">Feld 2</span></div>
+            <div class="teamslot" data-match-slot="f3-a"><span class="slot-label">Verlierer HF 1</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="f3-b"><span class="slot-label">Verlierer HF 2</span><span class="slot-name"></span></div>
+            <div class="route">Platz 3 &amp; 4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="bracket-grid" style="grid-template-columns:repeat(2, minmax(0,1fr))">
+        <div class="bcol">
+          <div class="btitle">Platz 5–8</div>
+          <div class="bmatch">
+            <div class="bhead"><span>5–8 A</span><span data-field="2">Feld 3</span></div>
+            <div class="teamslot" data-match-slot="sf5a-a"><span class="slot-label">Verlierer QF 1</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="sf5a-b"><span class="slot-label">Verlierer QF 2</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>5–8 B</span><span data-field="3">Feld 4</span></div>
+            <div class="teamslot" data-match-slot="sf5b-a"><span class="slot-label">Verlierer QF 3</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="sf5b-b"><span class="slot-label">Verlierer QF 4</span><span class="slot-name"></span></div>
+            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
+          </div>
+        </div>
+        <div class="bcol">
+          <div class="btitle">Platzierung</div>
+          <div class="bmatch">
+            <div class="bhead"><span>Platz 5</span><span data-field="2">Feld 3</span></div>
+            <div class="teamslot" data-match-slot="f5-a"><span class="slot-label">Sieger 5–8 A</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="f5-b"><span class="slot-label">Sieger 5–8 B</span><span class="slot-name"></span></div>
+            <div class="route">Platz 5 &amp; 6</div>
+          </div>
+          <div class="bmatch">
+            <div class="bhead"><span>Platz 7</span><span data-field="3">Feld 4</span></div>
+            <div class="teamslot" data-match-slot="f7-a"><span class="slot-label">Verlierer 5–8 A</span><span class="slot-name"></span></div>
+            <div class="teamslot" data-match-slot="f7-b"><span class="slot-label">Verlierer 5–8 B</span><span class="slot-name"></span></div>
+            <div class="route">Platz 7 &amp; 8</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="sched">
+  <caption>Runde 3 · Viertelfinale</caption>
+  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
+  <tr data-match-row="qf1"><td class="rnd">QF 1<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="qf1-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf1_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf1_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf1-b"></td><td class="winner-cell" id="winner_qf1"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="qf2"><td class="rnd">QF 2<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="qf2-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf2_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf2_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf2-b"></td><td class="winner-cell" id="winner_qf2"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="qf3"><td class="rnd">QF 3<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="qf3-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf3_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf3_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf3-b"></td><td class="winner-cell" id="winner_qf3"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="qf4"><td class="rnd">QF 4<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="qf4-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf4_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf4_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf4-b"></td><td class="winner-cell" id="winner_qf4"></td><td class="modecol">1 Satz bis 21</td></tr>
+</table>
+
+<table class="sched">
+  <caption>Runde 4 · Halbfinale + Spiele Platz 5–8</caption>
+  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
+  <tr data-match-row="hf1"><td class="rnd">HF 1<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="hf1-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="hf1_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="hf1_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="hf1-b"></td><td class="winner-cell" id="winner_hf1"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="hf2"><td class="rnd">HF 2<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="hf2-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="hf2_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="hf2_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="hf2-b"></td><td class="winner-cell" id="winner_hf2"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="sf5a"><td class="rnd">5–8 A<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="sf5a-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="sf5a_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sf5a_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="sf5a-b"></td><td class="winner-cell" id="winner_sf5a"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="sf5b"><td class="rnd">5–8 B<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="sf5b-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="sf5b_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sf5b_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="sf5b-b"></td><td class="winner-cell" id="winner_sf5b"></td><td class="modecol">1 Satz bis 21</td></tr>
+</table>
+
+<table class="sched">
+  <caption>Runde 5 · Finale + Platz 3 / 5 / 7</caption>
+  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
+  <tr data-match-row="f1"><td class="rnd gold">Finale<span class="rtime tt">13:30–14:30</span><span class="rmode">2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="f1-a"></td><td><div class="scorewrap"><span class="setpair"><span class="setlbl">S1</span><input class="score" type="text" inputmode="numeric" id="f1_s1a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s1b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">S2</span><input class="score" type="text" inputmode="numeric" id="f1_s2a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s2b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">TB</span><input class="score" type="text" inputmode="numeric" id="f1_s3a" data-target="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s3b" data-target="15" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f1-b"></td><td class="winner-cell" id="winner_f1"></td><td class="modecol">Best of 3</td></tr>
+  <tr data-match-row="f3"><td class="rnd">Platz 3<span class="rtime tt">13:30–14:30</span><span class="rmode">2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="f3-a"></td><td><div class="scorewrap"><span class="setpair"><span class="setlbl">S1</span><input class="score" type="text" inputmode="numeric" id="f3_s1a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s1b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">S2</span><input class="score" type="text" inputmode="numeric" id="f3_s2a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s2b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">TB</span><input class="score" type="text" inputmode="numeric" id="f3_s3a" data-target="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s3b" data-target="15" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f3-b"></td><td class="winner-cell" id="winner_f3"></td><td class="modecol">Best of 3</td></tr>
+  <tr data-match-row="f5"><td class="rnd">Platz 5<span class="rtime tt">13:30–14:30</span><span class="rmode">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="f5-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="f5_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f5_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f5-b"></td><td class="winner-cell" id="winner_f5"></td><td class="modecol">1 Satz bis 21</td></tr>
+  <tr data-match-row="f7"><td class="rnd">Platz 7<span class="rtime tt">13:30–14:30</span><span class="rmode">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="f7-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="f7_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f7_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f7-b"></td><td class="winner-cell" id="winner_f7"></td><td class="modecol">1 Satz bis 21</td></tr>
+</table>
+
+<div class="row">
+  <div class="grow">
+    <table class="stand">
+      <caption>Endplatzierung</caption>
+      <tr><th class="rk">Platz</th><th>Team</th><th>kommt aus</th></tr>
+      <tr><td class="rk">1</td><td class="nm" id="place1"></td><td>Sieger Finale</td></tr>
+      <tr><td class="rk">2</td><td class="nm" id="place2"></td><td>Verlierer Finale</td></tr>
+      <tr><td class="rk">3</td><td class="nm" id="place3"></td><td>Sieger Spiel um Platz 3</td></tr>
+      <tr><td class="rk">4</td><td class="nm" id="place4"></td><td>Verlierer Spiel um Platz 3</td></tr>
+      <tr><td class="rk">5</td><td class="nm" id="place5"></td><td>Sieger Spiel um Platz 5</td></tr>
+      <tr><td class="rk">6</td><td class="nm" id="place6"></td><td>Verlierer Spiel um Platz 5</td></tr>
+      <tr><td class="rk">7</td><td class="nm" id="place7"></td><td>Sieger Spiel um Platz 7</td></tr>
+      <tr><td class="rk">8</td><td class="nm" id="place8"></td><td>Verlierer Spiel um Platz 7</td></tr>
+    </table>
+  </div>
+  <div style="flex:0 0 34%">
+    <table>
+      <caption>Satzmodus &amp; Wertung</caption>
+      <tr><th>Phase</th><th>Modus</th></tr>
+      <tr><td>Runden 1–2</td><td>1 Satz bis 21</td></tr>
+      <tr><td>Viertelfinale</td><td>1 Satz bis 21</td></tr>
+      <tr><td>Halbfinale / Platz 5–8</td><td>1 Satz bis 21</td></tr>
+      <tr><td>Finale / Platz 3</td><td>2 Gewinnsätze bis 21, Tiebreak bis 15</td></tr>
+      <tr><td>Platz 5 / Platz 7</td><td>1 Satz bis 21</td></tr>
+    </table>
+    <table style="margin-top:10px">
+      <caption>Gruppen-Tie-Breaker</caption>
+      <tr><th>Rang</th><th>Kriterium</th></tr>
+      <tr><td>1</td><td>Siege</td></tr>
+      <tr><td>2</td><td>Ball-Differenz</td></tr>
+      <tr><td>3</td><td>erzielte Punkte</td></tr>
+      <tr><td>4</td><td>Original-Seed</td></tr>
+    </table>
+  </div>
+</div>
+
+<button class="noprint printbtn" onclick="window.print()">Drucken</button>
+
+<script>
+  const NTEAMS = 8;
+  const START_KEY = 'turnier8gko_start';
+  const END_KEY = 'turnier8gko_end';
+  const STORE_KEY = 'turnier8gko_names';
+  const SCORE_KEY = 'turnier8gko_scores';
+  const FIELD_KEY = 'turnier8gko_fields';
+  const ABSENT_KEY = 'turnier8gko_absent';
+  const DEFAULT_FIELDS = ['Feld 1', 'Feld 2', 'Feld 3', 'Feld 4'];
+  const BASE_START = '10:00';
+  const BASE_END = '15:00';
+  const MODE_TABLE = [
+    { min:50, mode:'2 Gewinnsätze bis 21 · Tiebreak bis 15' },
+    { min:25, mode:'1 Satz bis 21' },
+    { min:17, mode:'1 Satz bis 15' }
+  ];
+  const GROUPS = { A:[1,2,3,4], B:[5,6,7,8] };
+  const GROUP_ROUNDS = [1, 2];
+  const KO_SEED_LABELS = {
+    1:'A-1', 2:'B-1', 3:'A-2', 4:'B-2',
+    5:'B-3', 6:'A-3', 7:'B-4', 8:'A-4'
+  };
+  const KO_MATCHES = {
+    qf1:  { id:'qf1',  label:'QF 1', round:3, field:0, format:'single', seeds:[1,8], sourceLabels:['A-1','A-4'], target:21 },
+    qf2:  { id:'qf2',  label:'QF 2', round:3, field:1, format:'single', seeds:[4,5], sourceLabels:['B-2','B-3'], target:21 },
+    qf3:  { id:'qf3',  label:'QF 3', round:3, field:2, format:'single', seeds:[2,7], sourceLabels:['B-1','B-4'], target:21 },
+    qf4:  { id:'qf4',  label:'QF 4', round:3, field:3, format:'single', seeds:[3,6], sourceLabels:['A-2','A-3'], target:21 },
+    hf1:  { id:'hf1',  label:'HF 1', round:4, field:0, format:'single', from:['qf1-w','qf2-w'], target:21 },
+    hf2:  { id:'hf2',  label:'HF 2', round:4, field:1, format:'single', from:['qf3-w','qf4-w'], target:21 },
+    sf5a: { id:'sf5a', label:'5–8 A', round:4, field:2, format:'single', from:['qf1-l','qf2-l'], target:21 },
+    sf5b: { id:'sf5b', label:'5–8 B', round:4, field:3, format:'single', from:['qf3-l','qf4-l'], target:21 },
+    f1:   { id:'f1',   label:'Finale', round:5, field:0, format:'best3', from:['hf1-w','hf2-w'] },
+    f3:   { id:'f3',   label:'Platz 3', round:5, field:1, format:'best3', from:['hf1-l','hf2-l'] },
+    f5:   { id:'f5',   label:'Platz 5', round:5, field:2, format:'single', from:['sf5a-w','sf5b-w'], target:21 },
+    f7:   { id:'f7',   label:'Platz 7', round:5, field:3, format:'single', from:['sf5a-l','sf5b-l'], target:21 }
+  };
+  const KO_ORDER = ['qf1','qf2','qf3','qf4','hf1','hf2','sf5a','sf5b','f1','f3','f5','f7'];
+  const GSTATS = {};
+  let CURRENT_KO_STATE = { ready:false, slots:{} };
+  const SESSION_KEY = 'turnier8gko';
+  const SESSION_FILE = 'Turnierbogen_8_Teams_4_Felder_Gruppen_KO_System.html';
+  const SESSION_TITLE = 'Gruppen + KO-System – 8 Teams';
+  const TITLE_KEY = SESSION_KEY + '_title';
+
+  function saveTitle() {
+    const val = (document.getElementById('session-title-input') || {}).value || '';
+    try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
+    const disp = document.getElementById('session-title-display');
+    if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+  }
+
+  function restoreTitle() {
+    try {
+      const val = localStorage.getItem(TITLE_KEY) || '';
+      const inp = document.getElementById('session-title-input');
+      if (inp) inp.value = val;
+      const disp = document.getElementById('session-title-display');
+      if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+    } catch(e) {}
+  }
+
+  function manualSave() {
+    saveTitle();
+    registerSession();
+    const btn = document.querySelector('[onclick="manualSave()"]');
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
+  }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>\"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  }
+  function loadJson(key, fallback){
+    try {
+      const val = JSON.parse(localStorage.getItem(key));
+      return val && typeof val === 'object' ? val : fallback;
+    } catch(e){
+      return fallback;
+    }
+  }
+  function saveJson(key, value){ try { localStorage.setItem(key, JSON.stringify(value)); } catch(e){} }
+  function loadNames(){ return loadJson(STORE_KEY, {}); }
+  function saveNames(obj){ saveJson(STORE_KEY, obj); }
+  function loadAbsent(){ return loadJson(ABSENT_KEY, {}); }
+  function saveAbsent(obj){ saveJson(ABSENT_KEY, obj); }
+  function registerSession(){
+    try {
+      const teams = [];
+      for(let i=1; i<=Math.min(4, NTEAMS); i++){
+        const el = document.getElementById('tn' + i);
+        teams.push(el ? (el.value.trim() || 'Team ' + i) : 'Team ' + i);
+      }
+      const hasTeams = teams.some((team, idx) => team !== 'Team ' + (idx + 1));
+      const hasScores = Array.from(document.querySelectorAll('input.score')).some(el => (el.value || '').trim() !== '');
+      const hasFlags = Array.from(document.querySelectorAll('input[type="checkbox"]')).some(el => el.checked);
+      const customTitle = localStorage.getItem(TITLE_KEY) || '';
+      if(!hasTeams && !hasScores && !hasFlags && !customTitle) return;
+      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      const idx = registry.findIndex(s => s.key === SESSION_KEY);
+      const entry = {
+        key: SESSION_KEY,
+        file: SESSION_FILE,
+        title: SESSION_TITLE + (customTitle ? ' – ' + customTitle : ''),
+        customTitle: customTitle,
+        teams: teams,
+        savedAt: Date.now()
+      };
+      if(idx >= 0) registry[idx] = entry;
+      else registry.push(entry);
+      localStorage.setItem('beachl_sessions', JSON.stringify(registry));
+    } catch(e){}
+  }
+  function loadScores(){ return loadJson(SCORE_KEY, {}); }
+  function loadFieldNames(){ return loadJson(FIELD_KEY, {}); }
+  function saveFieldNames(obj){ saveJson(FIELD_KEY, obj); }
+  function defaultName(team){ return 'Team ' + team; }
+  function isAbsent(team){ return !!loadAbsent()[team]; }
+  function absentBadge(team){ return isAbsent(team) ? ' <span class="abt">ausgefallen</span>' : ''; }
+  function teamName(team){
+    const names = loadNames();
+    const raw = names[team];
+    return raw && String(raw).trim() ? String(raw).trim() : defaultName(team);
+  }
+  function teamFullHTML(team){
+    const nm = teamName(team);
+    return escapeHtml(nm) + ' <span class="tnm">(T' + team + ')</span>' + absentBadge(team);
+  }
+  function teamResultHTML(team){
+    return teamFullHTML(team);
+  }
+  function teamLabelWithNumber(team){
+    const names = loadNames();
+    const raw = names[team];
+    const nm = raw && String(raw).trim() ? String(raw).trim() : '';
+    return 'Team ' + team + (nm ? ' <span class="tnm">(' + escapeHtml(nm) + ')</span>' : '') + absentBadge(team);
+  }
+
+  function buildPanel(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    const grid = document.querySelector('#namepanel .ngrid');
+    let html = '';
+    for(let i = 1; i <= NTEAMS; i++){
+      const value = names[i] ? String(names[i]).replace(/"/g, '&quot;') : '';
+      html += '<div><label>Team ' + i +
+        '<input type="text" id="tn' + i + '" value="' + value + '" placeholder="Name…" oninput="onNameInput(' + i + ')"></label>' +
+        '<label style="display:block;font-size:11px;color:#555;font-weight:normal;margin-top:4px">' +
+        '<input type="checkbox" class="ab-check" id="ab' + i + '" ' + (absent[i] ? 'checked' : '') + ' onchange="onAbsentInput(' + i + ')">ausgefallen / Freilos</label></div>';
+    }
+    grid.innerHTML = html;
+    applyTeamNames();
+  }
+  function toggleNames(){ const p = document.getElementById('namepanel'); p.hidden = !p.hidden; }
+  function toggleFields(){ const p = document.getElementById('fieldpanel'); p.hidden = !p.hidden; }
+  function onNameInput(team){
+    const names = loadNames();
+    names[team] = document.getElementById('tn' + team).value;
+    saveNames(names);
+    applyName(team, names[team]);
+    renderAll();
+  }
+  function onAbsentInput(team){
+    const absent = loadAbsent();
+    if(document.getElementById('ab' + team).checked) absent[team] = 1;
+    else delete absent[team];
+    saveAbsent(absent);
+    applyTeamNames();
+    renderAll();
+  }
+  function clearNames(){
+    if(!confirm('Alle Teamnamen und Ausfall-Markierungen wirklich löschen?')) return;
+    saveNames({});
+    try { localStorage.removeItem(ABSENT_KEY); } catch(e){}
+    for(let i = 1; i <= NTEAMS; i++){
+      const inp = document.getElementById('tn' + i);
+      const chk = document.getElementById('ab' + i);
+      if(inp) inp.value = '';
+      if(chk) chk.checked = false;
+    }
+    applyTeamNames();
+    renderAll();
+  }
+  function drawGroups(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    const vals = [];
+    for(let i = 1; i <= NTEAMS; i++) vals.push({ name:(names[i] || '').trim(), absent:!!absent[i] });
+    if(vals.filter(v => v.name).length < 2){
+      alert('Bitte zuerst mindestens 2 Teamnamen eintragen, dann die Gruppen auslosen.');
+      return;
+    }
+    if(!confirm('Gruppen neu auslosen? Eine bestehende Zuordnung wird überschrieben.')) return;
+    for(let i = vals.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [vals[i], vals[j]] = [vals[j], vals[i]];
+    }
+    const out = {}, outAbsent = {};
+    for(let i = 1; i <= NTEAMS; i++){
+      out[i] = vals[i - 1].name;
+      if(vals[i - 1].absent) outAbsent[i] = 1;
+      const inp = document.getElementById('tn' + i);
+      const chk = document.getElementById('ab' + i);
+      if(inp) inp.value = vals[i - 1].name;
+      if(chk) chk.checked = !!vals[i - 1].absent;
+    }
+    saveNames(out);
+    saveAbsent(outAbsent);
+    applyTeamNames();
+    renderAll();
+  }
+  function applyName(team, value){
+    const v = (value || '').trim();
+    document.querySelectorAll('[data-team="' + team + '"]').forEach(el => {
+      const fallback = el.getAttribute('data-fb') || ('Team ' + team);
+      el.innerHTML = fallback + (v ? ' <span class="tnm">(' + escapeHtml(v) + ')</span>' : '') + absentBadge(team);
+    });
+    document.querySelectorAll('[data-team-name="' + team + '"]').forEach(el => {
+      el.innerHTML = (v ? escapeHtml(v) : '&nbsp;') + absentBadge(team);
+    });
+  }
+  function applyTeamNames(){
+    const names = loadNames();
+    for(let i = 1; i <= NTEAMS; i++) applyName(i, names[i] || '');
+    registerSession();
+  }
+
+  function parseNum(v){
+    const s = String(v == null ? '' : v).trim();
+    if(s === '') return null;
+    const n = parseInt(s, 10);
+    return isNaN(n) ? null : n;
+  }
+  function num(el){ return el ? parseNum(el.value) : null; }
+  function formatDiff(n){ return (n > 0 ? '+' : '') + n; }
+  function setCell(id, value){
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(value === '' || value == null){
+      el.textContent = '';
+      el.classList.remove('auto');
+    } else {
+      el.textContent = value;
+      el.classList.add('auto');
+    }
+  }
+  function validSingle(a, b, target){
+    return a != null && b != null && a !== b && Math.max(a, b) >= target && Math.abs(a - b) >= 2;
+  }
+  function groupInput(round, team){ return document.getElementById('g' + round + '_' + team); }
+  function groupValue(round, team){ return num(groupInput(round, team)); }
+  function evaluateGroupEntry(round, team, opp){
+    const teamAbsent = isAbsent(team), oppAbsent = isAbsent(opp);
+    if(teamAbsent && oppAbsent) return { resolved:true, cmp:0, w:0, bd:0, sc:0, pl:1 };
+    if(teamAbsent && !oppAbsent) return { resolved:true, cmp:-1, w:0, bd:0, sc:0, pl:1 };
+    if(!teamAbsent && oppAbsent) return { resolved:true, cmp:1, w:1, bd:0, sc:0, pl:1 };
+    const own = groupValue(round, team), other = groupValue(round, opp);
+    if(!validSingle(own, other, 21)) return { resolved:false, cmp:0, w:0, bd:0, sc:0, pl:0 };
+    return { resolved:true, cmp:own > other ? 1 : -1, w:own > other ? 1 : 0, bd:own - other, sc:own, pl:1 };
+  }
+  function computeGroups(){
+    const seedLists = { A:null, B:null };
+    Object.keys(GROUPS).forEach(groupName => {
+      const teams = GROUPS[groupName];
+      const st = {}, cum = {};
+      teams.forEach(team => { st[team] = { w:0, bd:0, sc:0, pl:0 }; cum[team] = { pts:0, bd:0 }; });
+      GROUP_ROUNDS.forEach(round => {
+        teams.forEach(team => {
+          const inp = groupInput(round, team);
+          if(!inp) return;
+          const opp = parseInt(inp.getAttribute('data-op') || '0', 10);
+          const res = evaluateGroupEntry(round, team, opp);
+          const ptId = 'pt_' + team + '_' + round;
+          const bdId = 'bd_' + team + '_' + round;
+          if(res.resolved){
+            st[team].w += res.w;
+            st[team].bd += res.bd;
+            st[team].sc += res.sc;
+            st[team].pl += res.pl;
+            cum[team].pts += res.w;
+            cum[team].bd += res.bd;
+            setCell(ptId, cum[team].pts);
+            setCell(bdId, formatDiff(cum[team].bd));
+          } else {
+            setCell(ptId, '');
+            setCell(bdId, '');
+          }
+        });
+      });
+      const ranked = teams.slice().sort((a, b) => {
+        if(st[b].w !== st[a].w) return st[b].w - st[a].w;
+        if(st[b].bd !== st[a].bd) return st[b].bd - st[a].bd;
+        if(st[b].sc !== st[a].sc) return st[b].sc - st[a].sc;
+        return a - b;
+      });
+      const complete = teams.every(team => st[team].pl === 2);
+      teams.forEach(team => { GSTATS[team] = { games:st[team].pl, w:st[team].w, bd:st[team].bd, sc:st[team].sc, complete }; });
+      ranked.forEach((team, idx) => setCell('pz_' + team, complete ? (idx + 1) + '.' : ''));
+      seedLists[groupName] = complete ? ranked : null;
+    });
+    return seedLists;
+  }
+  function computeKoSeeds(groupSeeds){
+    const ready = !!(groupSeeds.A && groupSeeds.B);
+    const slots = {};
+    const a = groupSeeds.A || [];
+    const b = groupSeeds.B || [];
+    slots[1] = ready ? (a[0] || 0) : 0;
+    slots[2] = ready ? (b[0] || 0) : 0;
+    slots[3] = ready ? (a[1] || 0) : 0;
+    slots[4] = ready ? (b[1] || 0) : 0;
+    slots[5] = ready ? (b[2] || 0) : 0;
+    slots[6] = ready ? (a[2] || 0) : 0;
+    slots[7] = ready ? (b[3] || 0) : 0;
+    slots[8] = ready ? (a[3] || 0) : 0;
+    return { ready, slots };
+  }
+  function renderKoSeedList(){
+    for(let seed = 1; seed <= 8; seed++){
+      const cell = document.getElementById('koseed_' + seed);
+      if(!cell) continue;
+      const team = CURRENT_KO_STATE.slots[seed] || 0;
+      cell.innerHTML = team ? ('<b>' + KO_SEED_LABELS[seed] + '</b> · ' + teamResultHTML(team)) : ('<span class="slot-name placeholder">[' + KO_SEED_LABELS[seed] + ']</span>');
+    }
+  }
+
+  function restoreScores(){
+    const scores = loadScores();
+    document.querySelectorAll('input.score').forEach(inp => {
+      if(inp.id && scores[inp.id] != null) inp.value = scores[inp.id];
+    });
+  }
+  function onScore(){
+    const scores = {};
+    document.querySelectorAll('input.score').forEach(inp => { if(inp.id) scores[inp.id] = inp.value; });
+    saveJson(SCORE_KEY, scores);
+    renderAll();
+  }
+  function clearScores(){
+    if(!confirm('Alle Ergebnisse wirklich löschen?')) return;
+    try { localStorage.removeItem(SCORE_KEY); } catch(e){}
+    document.querySelectorAll('input.score').forEach(inp => { inp.value = ''; });
+    renderAll();
+  }
+
+  function getMatchTeams(id){
+    const cfg = KO_MATCHES[id];
+    if(cfg.seeds) return cfg.seeds.map(seed => CURRENT_KO_STATE.slots[seed] || 0);
+    return cfg.from.map(resolveSource);
+  }
+  function resolveSource(code){
+    const m = /^(.*)-(w|l)$/.exec(code || '');
+    if(!m) return 0;
+    const res = getWinnerInfo(m[1]);
+    return m[2] === 'w' ? res.winner : res.loser;
+  }
+  function getWinnerInfo(id){
+    const cfg = KO_MATCHES[id];
+    const teams = getMatchTeams(id);
+    const aTeam = teams[0] || 0;
+    const bTeam = teams[1] || 0;
+    const absentA = aTeam && isAbsent(aTeam);
+    const absentB = bTeam && isAbsent(bTeam);
+    if(aTeam && !bTeam) return { winner:aTeam, loser:0, auto:'bye' };
+    if(!aTeam && bTeam) return { winner:bTeam, loser:0, auto:'bye' };
+    if(!aTeam && !bTeam) return { winner:0, loser:0, auto:'' };
+    if(absentA && !absentB) return { winner:bTeam, loser:aTeam, auto:'bye' };
+    if(!absentA && absentB) return { winner:aTeam, loser:bTeam, auto:'bye' };
+    if(absentA && absentB) return { winner:0, loser:0, auto:'double-bye' };
+
+    if(cfg.format === 'single'){
+      const a = num(document.getElementById(id + '_a'));
+      const b = num(document.getElementById(id + '_b'));
+      if(validSingle(a, b, cfg.target || 21)) return a > b ? { winner:aTeam, loser:bTeam, auto:'' } : { winner:bTeam, loser:aTeam, auto:'' };
+      return { winner:0, loser:0, auto:'' };
+    }
+
+    let winA = 0, winB = 0;
+    for(let set = 1; set <= 3; set++){
+      const a = num(document.getElementById(id + '_s' + set + 'a'));
+      const b = num(document.getElementById(id + '_s' + set + 'b'));
+      if(a == null && b == null) continue;
+      const target = set === 3 ? 15 : 21;
+      if(!validSingle(a, b, target)) return { winner:0, loser:0, auto:'' };
+      if(a > b) winA++; else winB++;
+      if(winA === 2) return { winner:aTeam, loser:bTeam, auto:'' };
+      if(winB === 2) return { winner:bTeam, loser:aTeam, auto:'' };
+    }
+    return { winner:0, loser:0, auto:'' };
+  }
+  function setSlotContent(el, team, placeholder){
+    const nameEl = el.querySelector('.slot-name');
+    if(!nameEl) return;
+    if(team){
+      nameEl.innerHTML = teamResultHTML(team);
+      nameEl.classList.remove('placeholder', 'empty');
+    } else if(placeholder){
+      nameEl.textContent = '[' + placeholder + ']';
+      nameEl.classList.add('placeholder');
+      nameEl.classList.remove('empty');
+    } else {
+      nameEl.innerHTML = '&nbsp;';
+      nameEl.classList.add('empty');
+      nameEl.classList.remove('placeholder');
+    }
+  }
+  function renderBracketSlots(){
+    const mapping = {
+      'qf1-a':[CURRENT_KO_STATE.slots[1] || 0, 'A-1'], 'qf1-b':[CURRENT_KO_STATE.slots[8] || 0, 'A-4'],
+      'qf2-a':[CURRENT_KO_STATE.slots[4] || 0, 'B-2'], 'qf2-b':[CURRENT_KO_STATE.slots[5] || 0, 'B-3'],
+      'qf3-a':[CURRENT_KO_STATE.slots[2] || 0, 'B-1'], 'qf3-b':[CURRENT_KO_STATE.slots[7] || 0, 'B-4'],
+      'qf4-a':[CURRENT_KO_STATE.slots[3] || 0, 'A-2'], 'qf4-b':[CURRENT_KO_STATE.slots[6] || 0, 'A-3'],
+      'hf1-a':[resolveSource('qf1-w'), 'Sieger QF 1'], 'hf1-b':[resolveSource('qf2-w'), 'Sieger QF 2'],
+      'hf2-a':[resolveSource('qf3-w'), 'Sieger QF 3'], 'hf2-b':[resolveSource('qf4-w'), 'Sieger QF 4'],
+      'sf5a-a':[resolveSource('qf1-l'), 'Verlierer QF 1'], 'sf5a-b':[resolveSource('qf2-l'), 'Verlierer QF 2'],
+      'sf5b-a':[resolveSource('qf3-l'), 'Verlierer QF 3'], 'sf5b-b':[resolveSource('qf4-l'), 'Verlierer QF 4'],
+      'f1-a':[resolveSource('hf1-w'), 'Sieger HF 1'], 'f1-b':[resolveSource('hf2-w'), 'Sieger HF 2'],
+      'f3-a':[resolveSource('hf1-l'), 'Verlierer HF 1'], 'f3-b':[resolveSource('hf2-l'), 'Verlierer HF 2'],
+      'f5-a':[resolveSource('sf5a-w'), 'Sieger 5–8 A'], 'f5-b':[resolveSource('sf5b-w'), 'Sieger 5–8 B'],
+      'f7-a':[resolveSource('sf5a-l'), 'Verlierer 5–8 A'], 'f7-b':[resolveSource('sf5b-l'), 'Verlierer 5–8 B']
+    };
+    Object.keys(mapping).forEach(key => {
+      const el = document.querySelector('[data-match-slot="' + key + '"]');
+      if(el) setSlotContent(el, mapping[key][0], mapping[key][1]);
+    });
+    KO_ORDER.forEach(id => {
+      const info = getWinnerInfo(id);
+      const teams = getMatchTeams(id);
+      ['a','b'].forEach((side, idx) => {
+        const el = document.querySelector('[data-match-slot="' + id + '-' + side + '"]');
+        if(!el) return;
+        el.classList.remove('win', 'loss');
+        if(info.winner && teams[idx] === info.winner) el.classList.add('win');
+        if(info.loser && teams[idx] === info.loser) el.classList.add('loss');
+      });
+    });
+  }
+  function renderTableMatches(){
+    KO_ORDER.forEach(id => {
+      const teams = getMatchTeams(id);
+      const info = getWinnerInfo(id);
+      const row = document.querySelector('[data-match-row="' + id + '"]');
+      document.querySelectorAll('[data-match-team="' + id + '-a"]').forEach(el => {
+        el.innerHTML = teams[0] ? teamResultHTML(teams[0]) : '<span class="slot-name placeholder">[offen]</span>';
+      });
+      document.querySelectorAll('[data-match-team="' + id + '-b"]').forEach(el => {
+        el.innerHTML = teams[1] ? teamResultHTML(teams[1]) : '<span class="slot-name placeholder">[offen]</span>';
+      });
+      const winnerCell = document.getElementById('winner_' + id);
+      const inputs = row ? Array.from(row.querySelectorAll('input.score')) : [];
+      const autoBye = info.auto === 'bye';
+      const doubleBye = info.auto === 'double-bye';
+      inputs.forEach(inp => { inp.disabled = autoBye || doubleBye || (!teams[0] && !teams[1]); });
+      if(!winnerCell) return;
+      winnerCell.classList.remove('auto', 'byeauto');
+      if(info.winner && autoBye){
+        winnerCell.innerHTML = 'Freilos: ' + teamResultHTML(info.winner);
+        winnerCell.classList.add('byeauto');
+      } else if(info.winner){
+        winnerCell.innerHTML = teamResultHTML(info.winner);
+        winnerCell.classList.add('auto');
+      } else if(doubleBye){
+        winnerCell.innerHTML = '<span class="abt">beide Teams ausgefallen</span>';
+        winnerCell.classList.add('byeauto');
+      } else {
+        winnerCell.innerHTML = '';
+      }
+    });
+  }
+  function renderPlacements(){
+    const places = [
+      getWinnerInfo('f1').winner, getWinnerInfo('f1').loser,
+      getWinnerInfo('f3').winner, getWinnerInfo('f3').loser,
+      getWinnerInfo('f5').winner, getWinnerInfo('f5').loser,
+      getWinnerInfo('f7').winner, getWinnerInfo('f7').loser
+    ];
+    places.forEach((team, idx) => {
+      const cell = document.getElementById('place' + (idx + 1));
+      if(!cell) return;
+      cell.innerHTML = team ? teamResultHTML(team) : '';
+      cell.classList.toggle('softbox', !!team);
+    });
+  }
+
+  function groupMatchHasAbsent(inp){
+    const team = parseInt(inp.getAttribute('data-tm') || '0', 10);
+    const opp = parseInt(inp.getAttribute('data-op') || '0', 10);
+    return !!team && !!opp && (isAbsent(team) || isAbsent(opp));
+  }
+  function markScores(){
+    document.querySelectorAll('input.score').forEach(inp => inp.classList.remove('win', 'invalid'));
+    document.querySelectorAll('input.score[data-op]').forEach(inp => {
+      if(groupMatchHasAbsent(inp)) return;
+      const m = inp.id.match(/^g(\d+)_(\d+)$/);
+      if(!m) return;
+      const other = document.getElementById('g' + m[1] + '_' + inp.getAttribute('data-op'));
+      const a = num(inp), b = num(other);
+      if(a == null && b == null) return;
+      if(!validSingle(a, b, 21)){
+        if(a != null || b != null) inp.classList.add('invalid');
+      } else if(a > b) {
+        inp.classList.add('win');
+      }
+    });
+    KO_ORDER.forEach(id => {
+      const cfg = KO_MATCHES[id];
+      const teams = getMatchTeams(id);
+      if((teams[0] && isAbsent(teams[0])) || (teams[1] && isAbsent(teams[1])) || (!teams[0] && !teams[1])) return;
+      if(cfg.format === 'single'){
+        const a = document.getElementById(id + '_a');
+        const b = document.getElementById(id + '_b');
+        const av = num(a), bv = num(b);
+        if(av == null && bv == null) return;
+        if(!validSingle(av, bv, cfg.target || 21)){
+          if(av != null || bv != null){ a.classList.add('invalid'); b.classList.add('invalid'); }
+        } else if(av > bv){
+          a.classList.add('win');
+        } else {
+          b.classList.add('win');
+        }
+      } else {
+        for(let set = 1; set <= 3; set++){
+          const a = document.getElementById(id + '_s' + set + 'a');
+          const b = document.getElementById(id + '_s' + set + 'b');
+          const av = num(a), bv = num(b);
+          if(av == null && bv == null) continue;
+          const target = set === 3 ? 15 : 21;
+          if(!validSingle(av, bv, target)){
+            if(av != null || bv != null){ a.classList.add('invalid'); b.classList.add('invalid'); }
+          } else if(av > bv){
+            a.classList.add('win');
+          } else {
+            b.classList.add('win');
+          }
+        }
+      }
+    });
+  }
+
+  function toMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec((t || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
+  function fmtMin(t){ t = ((t % 1440) + 1440) % 1440; const H = Math.floor(t / 60), M = t % 60; return (H < 10 ? '0' : '') + H + ':' + (M < 10 ? '0' : '') + M; }
+  function pickMode(mins){
+    let mode = '⚠ zu kurz';
+    for(const entry of MODE_TABLE){ if(mins >= entry.min){ mode = entry.mode; break; } }
+    return mode;
+  }
+  function parseRangeDuration(text){
+    const ts = String(text || '').match(/(\d{1,2}:\d{2})/g);
+    if(!ts || ts.length < 2) return null;
+    return toMin(ts[1]) - toMin(ts[0]);
+  }
+  function applyTimes(){
+    const sEl = document.getElementById('startTime');
+    const eEl = document.getElementById('endTime');
+    const startMin = toMin(sEl ? sEl.value : BASE_START) || toMin(BASE_START);
+    const endMin = toMin(eEl ? eEl.value : BASE_END) || toMin(BASE_END);
+    const baseS = toMin(BASE_START), baseE = toMin(BASE_END);
+    const origDur = baseE - baseS;
+    const newDur = Math.max(180, endMin - startMin);
+    document.querySelectorAll('.tt').forEach(el => {
+      if(el.dataset.orig == null) el.dataset.orig = el.innerHTML;
+      el.innerHTML = el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g, (mm, h, mn) => fmtMin(startMin + Math.round((+h * 60 + +mn - baseS) * newDur / origDur)));
+    });
+    document.querySelectorAll('.rmode[data-mode="single"]').forEach(el => {
+      const row = el.closest('td');
+      const rtime = row ? row.querySelector('.rtime') : null;
+      const mins = parseRangeDuration(rtime ? rtime.textContent : '');
+      if(mins != null) el.textContent = pickMode(mins);
+    });
+    const shortMins = parseRangeDuration(document.querySelector('td.rnd .rtime') ? document.querySelector('td.rnd .rtime').textContent : '');
+    const finalsTime = document.querySelector('[data-match-row="f1"] .rtime');
+    const finalMins = parseRangeDuration(finalsTime ? finalsTime.textContent : '');
+    const info = document.getElementById('roundDurInfo');
+    if(info){
+      info.textContent = 'R1–4 ≈ ' + (shortMins != null ? shortMins : '–') + ' Min. · R5 ≈ ' + (finalMins != null ? finalMins : '–') + ' Min.';
+      info.style.color = shortMins >= 25 && finalMins >= 50 ? '#2a7a2a' : shortMins >= 17 ? '#c67c00' : '#c00';
+    }
+  }
+  function onStartTime(){ try { localStorage.setItem(START_KEY, document.getElementById('startTime').value); } catch(e){} applyTimes(); }
+  function onEndTime(){ try { localStorage.setItem(END_KEY, document.getElementById('endTime').value); } catch(e){} applyTimes(); }
+  function loadTimes(){
+    try {
+      const s = localStorage.getItem(START_KEY), e = localStorage.getItem(END_KEY);
+      if(s){ const i = document.getElementById('startTime'); if(i) i.value = s; }
+      if(e){ const i = document.getElementById('endTime'); if(i) i.value = e; }
+    } catch(e){}
+    applyTimes();
+  }
+
+  function applyFieldName(idx, custom){
+    const orig = DEFAULT_FIELDS[idx];
+    document.querySelectorAll('[data-field="' + idx + '"]').forEach(el => {
+      if(el.dataset.origText == null) el.dataset.origText = el.textContent;
+      const suffix = el.dataset.origText.slice(orig.length);
+      el.textContent = (custom && custom.trim() ? custom.trim() : orig) + suffix;
+    });
+  }
+  function applyAllFieldNames(){
+    const names = loadFieldNames();
+    DEFAULT_FIELDS.forEach((orig, idx) => {
+      const inp = document.getElementById('fni_' + idx);
+      if(inp && names[idx]) inp.value = names[idx];
+      applyFieldName(idx, names[idx] || '');
+    });
+  }
+  function onFieldInput(idx){
+    const names = loadFieldNames();
+    names[idx] = document.getElementById('fni_' + idx).value;
+    saveFieldNames(names);
+    applyFieldName(idx, names[idx]);
+  }
+  function clearFields(){
+    if(!confirm('Alle Feldnamen zurücksetzen?')) return;
+    try { localStorage.removeItem(FIELD_KEY); } catch(e){}
+    DEFAULT_FIELDS.forEach((_, idx) => {
+      const inp = document.getElementById('fni_' + idx);
+      if(inp) inp.value = '';
+      applyFieldName(idx, '');
+    });
+  }
+
+  function resetTournament(){
+    if(!confirm('Neues Turnier starten? Alle Teamnamen, Ausfall-Markierungen und Ergebnisse werden gelöscht.')) return;
+    try { localStorage.removeItem(SCORE_KEY); } catch(e){}
+    try { localStorage.removeItem(ABSENT_KEY); } catch(e){}
+    try { localStorage.removeItem(STORE_KEY); } catch(e){}
+    buildPanel();
+    document.querySelectorAll('input.score').forEach(inp => { inp.value = ''; });
+    applyTeamNames();
+    renderAll();
+  }
+
+  function renderAll(){
+    applyTeamNames();
+    const groupSeeds = computeGroups();
+    CURRENT_KO_STATE = computeKoSeeds(groupSeeds);
+    renderKoSeedList();
+    renderBracketSlots();
+    renderTableMatches();
+    renderPlacements();
+    markScores();
+  }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter') return;
+    const el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    e.preventDefault();
+    const list = Array.prototype.slice.call(document.querySelectorAll('input.score:not(:disabled)'));
+    const idx = list.indexOf(el);
+    if(idx >= 0 && idx < list.length - 1){
+      const next = list[idx + 1];
+      next.focus();
+      if(next.select) next.select();
+    }
+  });
+
+  buildPanel();
+  restoreTitle();
+  restoreScores();
+  loadTimes();
+  applyAllFieldNames();
+  renderAll();
+</script>
+</body>
+</html>
