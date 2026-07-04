@@ -391,10 +391,10 @@
     const END_KEY = 'sw_univ_end';
     const BASE_START = 600;
     const BASE_END = 840;
-    const TEAM_OPTIONS = [6, 8, 10, 12];
-    const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7};
+    const TEAM_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+    const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7, 14:7, 16:7, 18:7, 20:7, 22:7, 24:7};
     const MODE_TABLE = [{min:43, mode:'1 Satz bis 21'}, {min:17, mode:'1 Satz bis 15'}];
-    const DEFAULT_FIELD_POOL = ['Feld 5', 'Feld 6', 'Feld 7', 'Feld 10', 'Feld 8', 'Feld 9'];
+    const DEFAULT_FIELD_POOL = ['Feld 5', 'Feld 6', 'Feld 7', 'Feld 10', 'Feld 8', 'Feld 9', 'Feld 11', 'Feld 12', 'Feld 1', 'Feld 2', 'Feld 3', 'Feld 4'];
     const DEFAULT_ROUND1_12 = [[2,12],[5,7],[1,3],[9,8],[6,11],[10,4]];
 
     let NTEAMS = 12;
@@ -617,7 +617,7 @@
         + '    <label>⏱ Start<input type="time" id="startTime" value="' + escapeHtml(loadStartTime()) + '" onchange="onStartTime()"></label>'
         + '    <label>🏁 Ende<input type="time" id="endTime" value="' + escapeHtml(loadEndTime()) + '" onchange="onEndTime()"></label>'
         + '  </div>'
-        + '  <div class="cfgmeta">NFIELDS = NTEAMS / 2 → aktuell: ' + NFIELDS + ' Felder. Standardwerte: 6T→5R, 8T→7R, 10T→7R, 12T→7R. <span id="roundDurInfo"></span></div>'
+        + '  <div class="cfgmeta">Felder = Teams ÷ 2 → aktuell: ' + NFIELDS + ' Felder. Standardwerte: 6T→5R, 8–24T→7R. <span id="roundDurInfo"></span></div>'
         + '</div>'
         + '<div class="noprint topbar">'
         + '  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>'

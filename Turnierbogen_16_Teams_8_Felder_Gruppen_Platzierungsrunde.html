@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnierbogen – 16 Teams, Gruppen + Überkreuz-Platzierungsrunde</title>
+<style>
+  :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; --gold:#fff7e0; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body { font-family: Arial, Helvetica, sans-serif; color:#111; font-size:12px; line-height:1.25; padding:10mm; }
+  h1 { font-size:18px; margin:0 0 3px; }
+  .sub { color:#555; font-size:11px; margin:0 0 10px; }
+  .row { display:flex; gap:6mm; align-items:flex-start; }
+  .grow { flex:1; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { border:1px solid var(--line); padding:3px 4px; text-align:center; }
+  th { background:var(--bg); font-size:11px; }
+  caption { text-align:left; font-weight:bold; font-size:13px; margin:12px 0 4px; }
+  .teams td { text-align:left; }
+  .teams .num { width:52px; font-weight:bold; background:var(--bg); text-align:center; }
+  .teams .name { height:24px; }
+  .grp-box td { text-align:left; }
+  .grp-box .gh { width:72px; font-weight:bold; background:var(--bg); }
+  .sched td { padding:6px 3px; }
+  .sched .rnd { width:86px; font-weight:bold; background:var(--bg); font-size:12px; }
+  .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
+  .sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#333; line-height:1.15; margin-top:1px; }
+  .pair { display:flex; align-items:center; justify-content:center; gap:3px; white-space:nowrap; }
+  .pair .t { display:inline-block; min-width:42px; font-weight:bold; font-size:12px; }
+  .score { border:1px solid var(--soft); border-radius:3px; width:32px; height:28px; display:inline-block; }
+  input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
+                font-size:13px; color:#0a2e52; vertical-align:middle; background:#fff;
+                -webkit-appearance:none; appearance:none; }
+  input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
+  input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
+  input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
+  .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
+  .sth { font-size:0.72em; line-height:1.08; white-space:nowrap; }
+  .sths { font-weight:normal; font-size:0.92em; color:#555; }
+  td.st { font-size:0.64em; white-space:nowrap; text-align:left; color:#222; line-height:1.12; padding:1px 5px; }
+  td.st .ph { display:inline-block; min-width:1.1em; font-weight:bold; color:#1f4e79; }
+  td.st .ph.sg { color:#0a3d20; }
+  .seedlbl { display:block; }
+  .rname { display:block; font-size:10px; font-weight:bold; color:#0a7d2c; margin-top:1px; }
+  .rname:empty { display:none; }
+  .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+  .abt { color: #c00; font-size: 0.8em; font-weight: 600; }
+  input[type=checkbox].ab-check { margin-right: 4px; }
+  .vs { color:var(--soft); font-weight:bold; font-size:14px; }
+  .cap { font-size:9px; color:#777; margin-top:2px; }
+  .gold { background:var(--gold); }
+  .stand td { height:28px; }
+  .stand .rk { width:52px; background:var(--bg); font-weight:bold; }
+  .stand .nm { text-align:left; }
+  .track th, .track td { padding:2px 3px; }
+  .track .tname { width:60px; text-align:left; font-weight:bold; font-size:10px; }
+  .track .lbl { width:74px; text-align:left; font-size:9px; background:#fafafa; }
+  .track .rcell { height:20px; }
+  .track .pos { width:28px; font-weight:bold; }
+  .track .grp { border-top:2px solid var(--line); }
+  .track .ex { background:#eef6ff; color:#15467a; font-style:italic; }
+  .track .ex .tname, .track .ex .lbl { background:#dceaf7; font-style:normal; }
+  .ghead { margin-bottom:5px; text-align:center; }
+  .code { display:inline-block; font-weight:bold; font-size:13px; background:#1f4e79; color:#fff;
+          border-radius:4px; padding:2px 9px; letter-spacing:.4px; }
+  .code.win { background:#b8860b; }
+  .route { display:block; font-size:10.5px; font-weight:bold; color:#1f4e79; margin-top:4px; }
+  .route2 { display:inline-block; font-size:11px; font-weight:bold; color:#111; margin-left:6px; }
+  .gocode { display:inline-block; font-weight:bold; font-size:13px; border:2px solid #1f4e79;
+            color:#1f4e79; background:#eaf1f8; border-radius:4px; padding:0 6px; }
+  .src { display:block; font-size:9.5px; color:#555; font-weight:normal; margin-bottom:1px; }
+  .legend { font-size:11px; color:#333; margin-top:8px; }
+  .legend b { color:#111; }
+  .page-break { page-break-before: always; }
+  .guide { border:1.5px solid var(--line); border-radius:5px; padding:6px 12px; margin:0 0 9px; background:#eef4fb; }
+  .guide h2 { font-size:13px; margin:0 0 3px; }
+  .guide ol { margin:0; padding-left:18px; }
+  .guide li { margin:1px 0; }
+  .guide .hi { font-weight:bold; }
+  .namectl { margin:0 0 12px; }
+  .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79;
+          background:#1f4e79; color:#fff; border-radius:5px; font-weight:bold; }
+  .nbtn:hover { background:#163a5c; }
+  .nhint { font-size:11.5px; color:#555; margin-left:10px; }
+  .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
+  .namepanel .ngrid { display:grid; grid-template-columns:repeat(8, 1fr); gap:8px 12px; }
+  .namepanel label { display:flex; flex-direction:column; font-size:11px; color:#1f4e79; font-weight:bold; gap:3px; }
+  .namepanel input[type=text] { padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
+  .nactions { margin-top:10px; }
+  .nactions .nbtn { background:#fff; color:#1f4e79; }
+  .nactions .nbtn:hover { background:#e7eef7; }
+  .digitalbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px;
+                background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .digitalbar .nbtn { background:#0a7d2c; border-color:#0a7d2c; }
+  .digitalbar .nbtn:hover { background:#086323; }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm 12mm; }
+    body { padding:0; font-size:9pt; line-height:1.16; overflow:visible !important;
+           -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .noprint { display:none !important; }
+    #session-title-display { display: block !important; }
+    h1 { font-size:14pt; margin:0 0 1.4mm; }
+    h2 { font-size:11pt; margin:0 0 1mm; }
+    .sub { margin:0 0 2mm; font-size:8.5pt; }
+    caption { margin:1.8mm 0 0.9mm; font-size:8.8pt; }
+    table { width:100% !important; font-size:7.5pt; overflow:visible !important;
+            page-break-inside:avoid; break-inside:avoid; }
+    th, td { padding:0.7mm 1.1mm; }
+    .guide, .row, .teams, .grp-box, .sched, .track, .stand, .legend {
+      page-break-inside:avoid; break-inside:avoid; }
+    .guide { margin:0 0 2mm; padding:2mm 3mm; }
+    .guide h2 { font-size:9pt; margin:0 0 0.6mm; }
+    .guide li { margin:0.3mm 0; }
+    .page-break { display:block; break-before:page; page-break-before:always; }
+    .sched td { padding:0.75mm 1mm; }
+    .sched .rnd { width:22mm; font-size:7.5pt; }
+    .sched .rnd .rtime { font-size:6.5pt; margin-top:0.3mm; }
+    .sched .rnd .rmode { font-size:6pt; line-height:1.05; margin-top:0.2mm; }
+    .pair { gap:1mm; }
+    .pair .t { min-width:0; font-size:7.5pt; }
+    .vs { font-size:7.5pt; }
+    .track th, .track td { padding:0.6mm 0.8mm; }
+    .track .rcell, .stand td { height:auto; }
+    .track .tname { font-size:7.5pt; }
+    .track .lbl { font-size:7pt; }
+    td.st { font-size:7pt; }
+    .legend { margin-top:2mm; font-size:7.5pt; }
+    input.score {
+      border:none; background:transparent; box-shadow:none;
+      width:1.5em; height:auto; min-height:0; padding:0; margin:0;
+      font-size:7.5pt; font-weight:700; color:#000; text-align:center;
+    }
+    input.score:focus { outline:none; }
+    input[type=text]:not(.score) { display:none; }
+  }
+
+  @media screen {
+    body { padding: 12mm 14mm; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color: #1a1a2e; line-height: 1.4; }
+    h1 { font-size: 20px; font-weight: 800; color: #1f4e79; margin: 0 0 4px; letter-spacing: -0.3px; }
+    .sub { color: #5a6375; font-size: 12.5px; margin: 0 0 14px; }
+    body > .noprint:first-of-type { display: flex !important; align-items: center; gap: 12px !important; flex-wrap: wrap; font-size: 13px; }
+    body > .noprint:first-of-type a { font-size: 13px !important; display: inline-flex; align-items: center; gap: 6px; }
+    .guide { border: none; border-left: 4px solid #1f4e79; border-radius: 0 6px 6px 0; padding: 10px 16px; background: #f0f5fc; margin: 0 0 14px; }
+    .guide h2 { font-size: 13px; color: #1f4e79; font-weight: 700; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .guide li { margin: 3px 0; font-size: 12.5px; }
+    table { border-collapse: collapse; width: 100%; border-radius: 6px; overflow: hidden; }
+    th { background: #1f4e79; color: #fff; font-size: 12px; padding: 5px 8px; border: 1px solid #163a5c; }
+    td { border: 1px solid #d4dde8; padding: 5px 7px; }
+    caption { font-size: 14px; font-weight: 800; color: #1f4e79; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .nbtn { border-radius: 6px; padding: 7px 15px; font-size: 13px; transition: background 0.15s, transform 0.1s; }
+    .nbtn:active { transform: scale(0.97); }
+    .namepanel { border-radius: 8px; border: 1.5px solid #cdd8e6; background: #f7fafd; }
+    input.score { border: 1.5px solid #b0bec5; border-radius: 4px; background: #fafcff; }
+    input.score:focus { outline: 2px solid #1f4e79; background: #fffce0; }
+    input.score.win { background: #d4f5d4 !important; border-color: #2e7d2e; }
+    input.score.invalid { background: #fde0e0 !important; border-color: #c62828; }
+    .stand .pl, .stand .rk { background: #e8edf5; color: #1a1a2e; }
+    .track .tnum, .track .lbl { background: #f0f5fb; color: #1a1a2e; }
+    .track .sum { background: #e8edf5; color: #1a1a2e; }
+    .sched .rnd { background: #1f4e79; color: #fff; font-weight: 700; }
+    .sched .rnd .rtime, .sched .rtime { color: #b8d4ee; }
+    .sched .rnd .rmode, .sched .rmode { color: #a0b8cc; }
+    .digitalbar, .digbar, .topbar { gap: 12px; }
+  }
+
+  @media print {
+    body { padding: 0; font-size: 8pt; line-height: 1.12; }
+    h1 { font-size: 13pt; color: #000; }
+    caption { font-size: 8pt; color: #000; margin: 1.2mm 0 0.8mm; }
+    th { background: #e8edf5 !important; color: #000 !important; }
+    .sched .rnd { background: #e8edf5 !important; color: #000 !important; }
+    .sched .rnd .rtime, .sched .rtime { color: #000 !important; }
+    .sched .rnd .rmode, .sched .rmode { color: #333 !important; }
+    .guide { border: none; border-left: 3px solid #1f4e79; background: #f5f8fc !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noprint" style="margin:0 0 8px"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-gruppen-platzierungsrunde.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
+
+<!-- ===== SEITE 1 – GRUPPENPHASE ===== -->
+<div class="guide">
+  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <ol>
+    <li><span class="hi">Gruppenphase:</span> 2 Gruppen (A/B) à 8 Teams, jeder gegen jeden – 7 Spiele pro Team. Pro Spiel 1 Satz bis 21 (2 Punkte Vorsprung).</li>
+    <li><span class="hi">Auswerten:</span> Sieg = 1 Punkt; pro Runde den <b>kumulierten</b> Stand (Punkte &amp; Ball-Differenz) eintragen → R7 = Gruppen-Endstand, daraus A-1…A-8 und B-1…B-8 sortieren.</li>
+    <li><span class="hi">Finalrunde über Kreuz:</span> in 4er-Blöcken – A-1/B-2 &amp; B-1/A-2 (Platz 1–4), A-3/B-4 &amp; B-3/A-4 (Platz 5–8), A-5/B-6 &amp; B-5/A-6 (Platz 9–12), A-7/B-8 &amp; B-7/A-8 (Platz 13–16). Kein Team scheidet aus.</li>
+    <li><span class="hi">Endstand:</span> Sieger spielen um den höheren, Verlierer um den nächsttieferen Platz → Plätze 1–16.</li>
+  </ol>
+</div>
+
+<h1>Turnierbogen – 16 Teams · Gruppen + Überkreuz-Platzierungsrunde</h1>
+<p class="sub tt">8 Felder · 10:00–14:10 · klassische Struktur ohne KO · niemand scheidet aus · 9 Spiele/Team · alle Plätze 1–16 ausgespielt</p>
+<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+
+<div class="noprint namectl">
+  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+  <div id="namepanel" class="namepanel" hidden>
+    <div class="ngrid"><label>Team 1 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn1" placeholder="Teamname" oninput="onName(1)"><input type="checkbox" id="ab1" class="ab-check" onchange="onAbsent(1)"> Fehlt</label><label>Team 2 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn2" placeholder="Teamname" oninput="onName(2)"><input type="checkbox" id="ab2" class="ab-check" onchange="onAbsent(2)"> Fehlt</label><label>Team 3 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn3" placeholder="Teamname" oninput="onName(3)"><input type="checkbox" id="ab3" class="ab-check" onchange="onAbsent(3)"> Fehlt</label><label>Team 4 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn4" placeholder="Teamname" oninput="onName(4)"><input type="checkbox" id="ab4" class="ab-check" onchange="onAbsent(4)"> Fehlt</label><label>Team 5 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn5" placeholder="Teamname" oninput="onName(5)"><input type="checkbox" id="ab5" class="ab-check" onchange="onAbsent(5)"> Fehlt</label><label>Team 6 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn6" placeholder="Teamname" oninput="onName(6)"><input type="checkbox" id="ab6" class="ab-check" onchange="onAbsent(6)"> Fehlt</label><label>Team 7 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn7" placeholder="Teamname" oninput="onName(7)"><input type="checkbox" id="ab7" class="ab-check" onchange="onAbsent(7)"> Fehlt</label><label>Team 8 <span style="color:#888;font-size:10px">Gr.A</span><input type="text" id="tn8" placeholder="Teamname" oninput="onName(8)"><input type="checkbox" id="ab8" class="ab-check" onchange="onAbsent(8)"> Fehlt</label><label>Team 9 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn9" placeholder="Teamname" oninput="onName(9)"><input type="checkbox" id="ab9" class="ab-check" onchange="onAbsent(9)"> Fehlt</label><label>Team 10 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn10" placeholder="Teamname" oninput="onName(10)"><input type="checkbox" id="ab10" class="ab-check" onchange="onAbsent(10)"> Fehlt</label><label>Team 11 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn11" placeholder="Teamname" oninput="onName(11)"><input type="checkbox" id="ab11" class="ab-check" onchange="onAbsent(11)"> Fehlt</label><label>Team 12 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn12" placeholder="Teamname" oninput="onName(12)"><input type="checkbox" id="ab12" class="ab-check" onchange="onAbsent(12)"> Fehlt</label><label>Team 13 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn13" placeholder="Teamname" oninput="onName(13)"><input type="checkbox" id="ab13" class="ab-check" onchange="onAbsent(13)"> Fehlt</label><label>Team 14 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn14" placeholder="Teamname" oninput="onName(14)"><input type="checkbox" id="ab14" class="ab-check" onchange="onAbsent(14)"> Fehlt</label><label>Team 15 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn15" placeholder="Teamname" oninput="onName(15)"><input type="checkbox" id="ab15" class="ab-check" onchange="onAbsent(15)"> Fehlt</label><label>Team 16 <span style="color:#888;font-size:10px">Gr.B</span><input type="text" id="tn16" placeholder="Teamname" oninput="onName(16)"><input type="checkbox" id="ab16" class="ab-check" onchange="onAbsent(16)"> Fehlt</label></div>
+    <div class="nactions">
+      <button type="button" class="nbtn" onclick="drawGroups()">🎲 Gruppen auslosen</button>
+      <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
+    </div>
+  </div>
+  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+  <div id="fieldpanel" class="namepanel" hidden>
+    <div class="ngrid" style="grid-template-columns:repeat(8,1fr)"><label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label><label>Feld 2<input type="text" id="fni_1" placeholder="Feld 2" oninput="onFieldInput(1)"></label><label>Feld 3<input type="text" id="fni_2" placeholder="Feld 3" oninput="onFieldInput(2)"></label><label>Feld 4<input type="text" id="fni_3" placeholder="Feld 4" oninput="onFieldInput(3)"></label><label>Feld 5<input type="text" id="fni_4" placeholder="Feld 5" oninput="onFieldInput(4)"></label><label>Feld 6<input type="text" id="fni_5" placeholder="Feld 6" oninput="onFieldInput(5)"></label><label>Feld 7<input type="text" id="fni_6" placeholder="Feld 7" oninput="onFieldInput(6)"></label><label>Feld 8<input type="text" id="fni_7" placeholder="Feld 8" oninput="onFieldInput(7)"></label></div>
+    <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
+  </div>
+</div>
+
+<div class="noprint digitalbar">
+  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label>
+  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="14:10" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label>
+  <span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:80px"></span>
+  <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+  </span>
+</div>
+
+<table class="teams">
+  <caption>Teams</caption>
+  <tr><td class="num">Team 1</td><td class="name" data-team-name="1"></td><td class="num">Team 5</td><td class="name" data-team-name="5"></td><td class="num">Team 9</td><td class="name" data-team-name="9"></td><td class="num">Team 13</td><td class="name" data-team-name="13"></td></tr>
+  <tr><td class="num">Team 2</td><td class="name" data-team-name="2"></td><td class="num">Team 6</td><td class="name" data-team-name="6"></td><td class="num">Team 10</td><td class="name" data-team-name="10"></td><td class="num">Team 14</td><td class="name" data-team-name="14"></td></tr>
+  <tr><td class="num">Team 3</td><td class="name" data-team-name="3"></td><td class="num">Team 7</td><td class="name" data-team-name="7"></td><td class="num">Team 11</td><td class="name" data-team-name="11"></td><td class="num">Team 15</td><td class="name" data-team-name="15"></td></tr>
+  <tr><td class="num">Team 4</td><td class="name" data-team-name="4"></td><td class="num">Team 8</td><td class="name" data-team-name="8"></td><td class="num">Team 12</td><td class="name" data-team-name="12"></td><td class="num">Team 16</td><td class="name" data-team-name="16"></td></tr>
+</table>
+
+<div class="row">
+  <div class="grow">
+    <table class="plan">
+      <caption>Zeitplan</caption>
+      <tr><th>Zeit</th><th>Abschnitt</th></tr>
+      <tr><td class="tt">09:40–10:00</td><td>Warm-up &amp; Begrüßung</td></tr>
+      <tr><td class="tt">10:00–10:25</td><td>Gruppenphase – Runde 1</td></tr>
+      <tr><td class="tt">10:25–10:50</td><td>Gruppenphase – Runde 2</td></tr>
+      <tr><td class="tt">10:50–11:15</td><td>Gruppenphase – Runde 3</td></tr>
+      <tr><td class="tt">11:15–11:40</td><td>Gruppenphase – Runde 4</td></tr>
+      <tr><td class="tt">11:40–12:05</td><td>Gruppenphase – Runde 5</td></tr>
+      <tr><td class="tt">12:05–12:30</td><td>Gruppenphase – Runde 6</td></tr>
+      <tr><td class="tt">12:30–12:55</td><td>Gruppenphase – Runde 7</td></tr>
+      <tr><td class="tt">12:55–13:10</td><td>Gruppentabellen auswerten &amp; Finalfelder einteilen</td></tr>
+      <tr><td class="tt">13:10–13:40</td><td>Finalrunde 1 – Kreuzspiele (8 Felder)</td></tr>
+      <tr><td class="tt">13:40–14:10</td><td>Finalrunde 2 – Platzierungsspiele (8 Felder)</td></tr>
+      <tr><td class="tt">14:10–14:30</td><td>Siegerehrung</td></tr>
+    </table>
+  </div>
+  <div style="flex:0 0 40%">
+    <table class="grp-box">
+      <caption>Gruppen</caption>
+      <tr><td class="gh">Gruppe A</td><td><span data-team="1" data-fb="Team 1">Team 1</span> · <span data-team="2" data-fb="Team 2">2</span> · <span data-team="3" data-fb="Team 3">3</span> · <span data-team="4" data-fb="Team 4">4</span> · <span data-team="5" data-fb="Team 5">5</span> · <span data-team="6" data-fb="Team 6">6</span> · <span data-team="7" data-fb="Team 7">7</span> · <span data-team="8" data-fb="Team 8">8</span></td></tr>
+      <tr><td class="gh">Gruppe B</td><td><span data-team="9" data-fb="Team 9">Team 9</span> · <span data-team="10" data-fb="Team 10">10</span> · <span data-team="11" data-fb="Team 11">11</span> · <span data-team="12" data-fb="Team 12">12</span> · <span data-team="13" data-fb="Team 13">13</span> · <span data-team="14" data-fb="Team 14">14</span> · <span data-team="15" data-fb="Team 15">15</span> · <span data-team="16" data-fb="Team 16">16</span></td></tr>
+    </table>
+    <div class="legend">
+      Felder 1–4 = Gruppe A · Felder 5–8 = Gruppe B.<br>
+      Jede Gruppe spielt jeder gegen jeden (7 Spiele/Team).<br>
+      Danach sortieren → A-1…A-8 und B-1…B-8.<br>
+      Fehlt ein Team, bekommt der Gegner ein <b>Freilos</b> (1 Sieg, 0 Ball-Differenz).
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<table class="sched">
+  <caption>Gruppenphase · Spielplan &amp; Ergebnisse <span style="font-weight:normal;font-size:11px">— alle Spiele: 1 Satz bis 21 (2 Pkt. Vorsprung)</span></caption>
+  <tr><th class="rnd">Runde</th><th data-field="0">Feld 1 (A)</th><th data-field="1">Feld 2 (A)</th><th data-field="2">Feld 3 (A)</th><th data-field="3">Feld 4 (A)</th><th data-field="4">Feld 5 (B)</th><th data-field="5">Feld 6 (B)</th><th data-field="6">Feld 7 (B)</th><th data-field="7">Feld 8 (B)</th></tr>
+  <tr><td class="rnd">Runde 1<span class="rtime tt">10:00–10:25</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g1_8" data-tm="8" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-tm="1" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="1" data-fb="Team 1">Team 1</span></span></td><td><span class="pair"><span class="t" data-team="2" data-fb="Team 2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-tm="2" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_7" data-tm="7" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="7" data-fb="Team 7">Team 7</span></span></td><td><span class="pair"><span class="t" data-team="3" data-fb="Team 3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g1_3" data-tm="3" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_6" data-tm="6" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="6" data-fb="Team 6">Team 6</span></span></td><td><span class="pair"><span class="t" data-team="4" data-fb="Team 4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-tm="4" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-tm="5" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="5" data-fb="Team 5">Team 5</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g1_16" data-tm="16" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_9" data-tm="9" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="9" data-fb="Team 9">Team 9</span></span></td><td><span class="pair"><span class="t" data-team="10" data-fb="Team 10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g1_10" data-tm="10" data-op="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_15" data-tm="15" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="15" data-fb="Team 15">Team 15</span></span></td><td><span class="pair"><span class="t" data-team="11" data-fb="Team 11">Team 11</span><input class="score" type="text" inputmode="numeric" id="g1_11" data-tm="11" data-op="14" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_14" data-tm="14" data-op="11" oninput="onScore()" autocomplete="off"><span class="t" data-team="14" data-fb="Team 14">Team 14</span></span></td><td><span class="pair"><span class="t" data-team="12" data-fb="Team 12">Team 12</span><input class="score" type="text" inputmode="numeric" id="g1_12" data-tm="12" data-op="13" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_13" data-tm="13" data-op="12" oninput="onScore()" autocomplete="off"><span class="t" data-team="13" data-fb="Team 13">Team 13</span></span></td></tr>
+  <tr><td class="rnd">Runde 2<span class="rtime tt">10:25–10:50</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g2_8" data-tm="8" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_2" data-tm="2" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="2" data-fb="Team 2">Team 2</span></span></td><td><span class="pair"><span class="t" data-team="3" data-fb="Team 3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-tm="3" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-tm="1" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="1" data-fb="Team 1">Team 1</span></span></td><td><span class="pair"><span class="t" data-team="4" data-fb="Team 4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-tm="4" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_7" data-tm="7" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="7" data-fb="Team 7">Team 7</span></span></td><td><span class="pair"><span class="t" data-team="5" data-fb="Team 5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g2_5" data-tm="5" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-tm="6" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="6" data-fb="Team 6">Team 6</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g2_16" data-tm="16" data-op="10" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_10" data-tm="10" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="10" data-fb="Team 10">Team 10</span></span></td><td><span class="pair"><span class="t" data-team="11" data-fb="Team 11">Team 11</span><input class="score" type="text" inputmode="numeric" id="g2_11" data-tm="11" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_9" data-tm="9" data-op="11" oninput="onScore()" autocomplete="off"><span class="t" data-team="9" data-fb="Team 9">Team 9</span></span></td><td><span class="pair"><span class="t" data-team="12" data-fb="Team 12">Team 12</span><input class="score" type="text" inputmode="numeric" id="g2_12" data-tm="12" data-op="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_15" data-tm="15" data-op="12" oninput="onScore()" autocomplete="off"><span class="t" data-team="15" data-fb="Team 15">Team 15</span></span></td><td><span class="pair"><span class="t" data-team="13" data-fb="Team 13">Team 13</span><input class="score" type="text" inputmode="numeric" id="g2_13" data-tm="13" data-op="14" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_14" data-tm="14" data-op="13" oninput="onScore()" autocomplete="off"><span class="t" data-team="14" data-fb="Team 14">Team 14</span></span></td></tr>
+  <tr><td class="rnd">Runde 3<span class="rtime tt">10:50–11:15</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g3_8" data-tm="8" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_3" data-tm="3" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="3" data-fb="Team 3">Team 3</span></span></td><td><span class="pair"><span class="t" data-team="4" data-fb="Team 4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g3_4" data-tm="4" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_2" data-tm="2" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="2" data-fb="Team 2">Team 2</span></span></td><td><span class="pair"><span class="t" data-team="5" data-fb="Team 5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g3_5" data-tm="5" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_1" data-tm="1" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="1" data-fb="Team 1">Team 1</span></span></td><td><span class="pair"><span class="t" data-team="6" data-fb="Team 6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g3_6" data-tm="6" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_7" data-tm="7" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="7" data-fb="Team 7">Team 7</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g3_16" data-tm="16" data-op="11" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_11" data-tm="11" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="11" data-fb="Team 11">Team 11</span></span></td><td><span class="pair"><span class="t" data-team="12" data-fb="Team 12">Team 12</span><input class="score" type="text" inputmode="numeric" id="g3_12" data-tm="12" data-op="10" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_10" data-tm="10" data-op="12" oninput="onScore()" autocomplete="off"><span class="t" data-team="10" data-fb="Team 10">Team 10</span></span></td><td><span class="pair"><span class="t" data-team="13" data-fb="Team 13">Team 13</span><input class="score" type="text" inputmode="numeric" id="g3_13" data-tm="13" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_9" data-tm="9" data-op="13" oninput="onScore()" autocomplete="off"><span class="t" data-team="9" data-fb="Team 9">Team 9</span></span></td><td><span class="pair"><span class="t" data-team="14" data-fb="Team 14">Team 14</span><input class="score" type="text" inputmode="numeric" id="g3_14" data-tm="14" data-op="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_15" data-tm="15" data-op="14" oninput="onScore()" autocomplete="off"><span class="t" data-team="15" data-fb="Team 15">Team 15</span></span></td></tr>
+  <tr><td class="rnd">Runde 4<span class="rtime tt">11:15–11:40</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g4_8" data-tm="8" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_4" data-tm="4" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="4" data-fb="Team 4">Team 4</span></span></td><td><span class="pair"><span class="t" data-team="5" data-fb="Team 5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g4_5" data-tm="5" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_3" data-tm="3" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="3" data-fb="Team 3">Team 3</span></span></td><td><span class="pair"><span class="t" data-team="6" data-fb="Team 6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g4_6" data-tm="6" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_2" data-tm="2" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="2" data-fb="Team 2">Team 2</span></span></td><td><span class="pair"><span class="t" data-team="7" data-fb="Team 7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g4_7" data-tm="7" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_1" data-tm="1" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="1" data-fb="Team 1">Team 1</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g4_16" data-tm="16" data-op="12" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_12" data-tm="12" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="12" data-fb="Team 12">Team 12</span></span></td><td><span class="pair"><span class="t" data-team="13" data-fb="Team 13">Team 13</span><input class="score" type="text" inputmode="numeric" id="g4_13" data-tm="13" data-op="11" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_11" data-tm="11" data-op="13" oninput="onScore()" autocomplete="off"><span class="t" data-team="11" data-fb="Team 11">Team 11</span></span></td><td><span class="pair"><span class="t" data-team="14" data-fb="Team 14">Team 14</span><input class="score" type="text" inputmode="numeric" id="g4_14" data-tm="14" data-op="10" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_10" data-tm="10" data-op="14" oninput="onScore()" autocomplete="off"><span class="t" data-team="10" data-fb="Team 10">Team 10</span></span></td><td><span class="pair"><span class="t" data-team="15" data-fb="Team 15">Team 15</span><input class="score" type="text" inputmode="numeric" id="g4_15" data-tm="15" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_9" data-tm="9" data-op="15" oninput="onScore()" autocomplete="off"><span class="t" data-team="9" data-fb="Team 9">Team 9</span></span></td></tr>
+  <tr><td class="rnd">Runde 5<span class="rtime tt">11:40–12:05</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g5_8" data-tm="8" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_5" data-tm="5" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="5" data-fb="Team 5">Team 5</span></span></td><td><span class="pair"><span class="t" data-team="6" data-fb="Team 6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g5_6" data-tm="6" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_4" data-tm="4" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="4" data-fb="Team 4">Team 4</span></span></td><td><span class="pair"><span class="t" data-team="7" data-fb="Team 7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g5_7" data-tm="7" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_3" data-tm="3" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="3" data-fb="Team 3">Team 3</span></span></td><td><span class="pair"><span class="t" data-team="1" data-fb="Team 1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g5_1" data-tm="1" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_2" data-tm="2" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="2" data-fb="Team 2">Team 2</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g5_16" data-tm="16" data-op="13" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_13" data-tm="13" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="13" data-fb="Team 13">Team 13</span></span></td><td><span class="pair"><span class="t" data-team="14" data-fb="Team 14">Team 14</span><input class="score" type="text" inputmode="numeric" id="g5_14" data-tm="14" data-op="12" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_12" data-tm="12" data-op="14" oninput="onScore()" autocomplete="off"><span class="t" data-team="12" data-fb="Team 12">Team 12</span></span></td><td><span class="pair"><span class="t" data-team="15" data-fb="Team 15">Team 15</span><input class="score" type="text" inputmode="numeric" id="g5_15" data-tm="15" data-op="11" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_11" data-tm="11" data-op="15" oninput="onScore()" autocomplete="off"><span class="t" data-team="11" data-fb="Team 11">Team 11</span></span></td><td><span class="pair"><span class="t" data-team="9" data-fb="Team 9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g5_9" data-tm="9" data-op="10" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_10" data-tm="10" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="10" data-fb="Team 10">Team 10</span></span></td></tr>
+  <tr><td class="rnd">Runde 6<span class="rtime tt">12:05–12:30</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g6_8" data-tm="8" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_6" data-tm="6" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="6" data-fb="Team 6">Team 6</span></span></td><td><span class="pair"><span class="t" data-team="7" data-fb="Team 7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g6_7" data-tm="7" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_5" data-tm="5" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="5" data-fb="Team 5">Team 5</span></span></td><td><span class="pair"><span class="t" data-team="1" data-fb="Team 1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g6_1" data-tm="1" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_4" data-tm="4" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="4" data-fb="Team 4">Team 4</span></span></td><td><span class="pair"><span class="t" data-team="2" data-fb="Team 2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g6_2" data-tm="2" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_3" data-tm="3" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="3" data-fb="Team 3">Team 3</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g6_16" data-tm="16" data-op="14" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_14" data-tm="14" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="14" data-fb="Team 14">Team 14</span></span></td><td><span class="pair"><span class="t" data-team="15" data-fb="Team 15">Team 15</span><input class="score" type="text" inputmode="numeric" id="g6_15" data-tm="15" data-op="13" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_13" data-tm="13" data-op="15" oninput="onScore()" autocomplete="off"><span class="t" data-team="13" data-fb="Team 13">Team 13</span></span></td><td><span class="pair"><span class="t" data-team="9" data-fb="Team 9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g6_9" data-tm="9" data-op="12" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_12" data-tm="12" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="12" data-fb="Team 12">Team 12</span></span></td><td><span class="pair"><span class="t" data-team="10" data-fb="Team 10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g6_10" data-tm="10" data-op="11" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_11" data-tm="11" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="11" data-fb="Team 11">Team 11</span></span></td></tr>
+  <tr><td class="rnd">Runde 7<span class="rtime tt">12:30–12:55</span><span class="rmode"></span></td><td><span class="pair"><span class="t" data-team="8" data-fb="Team 8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g7_8" data-tm="8" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_7" data-tm="7" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="7" data-fb="Team 7">Team 7</span></span></td><td><span class="pair"><span class="t" data-team="1" data-fb="Team 1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g7_1" data-tm="1" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_6" data-tm="6" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="6" data-fb="Team 6">Team 6</span></span></td><td><span class="pair"><span class="t" data-team="2" data-fb="Team 2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g7_2" data-tm="2" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_5" data-tm="5" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="5" data-fb="Team 5">Team 5</span></span></td><td><span class="pair"><span class="t" data-team="3" data-fb="Team 3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g7_3" data-tm="3" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_4" data-tm="4" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="4" data-fb="Team 4">Team 4</span></span></td><td><span class="pair"><span class="t" data-team="16" data-fb="Team 16">Team 16</span><input class="score" type="text" inputmode="numeric" id="g7_16" data-tm="16" data-op="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_15" data-tm="15" data-op="16" oninput="onScore()" autocomplete="off"><span class="t" data-team="15" data-fb="Team 15">Team 15</span></span></td><td><span class="pair"><span class="t" data-team="9" data-fb="Team 9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g7_9" data-tm="9" data-op="14" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_14" data-tm="14" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="14" data-fb="Team 14">Team 14</span></span></td><td><span class="pair"><span class="t" data-team="10" data-fb="Team 10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g7_10" data-tm="10" data-op="13" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_13" data-tm="13" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="13" data-fb="Team 13">Team 13</span></span></td><td><span class="pair"><span class="t" data-team="11" data-fb="Team 11">Team 11</span><input class="score" type="text" inputmode="numeric" id="g7_11" data-tm="11" data-op="12" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_12" data-tm="12" data-op="11" oninput="onScore()" autocomplete="off"><span class="t" data-team="12" data-fb="Team 12">Team 12</span></span></td></tr>
+</table>
+
+<div class="legend" style="margin:6px 0 3px"><b>Spielstart:</b> pünktlich beginnen · Aufschlag &amp; Seite auslosen · Seitenwechsel alle 7 Pkt. (Tiebreak alle 5) · Satz bis 21 (2 Pkt. Vorsprung) · Ergebnis sofort eintragen. &nbsp;|&nbsp; <b>Laufender Stand:</b> pro Runde den <b>neuen Gesamtstand</b> eintragen (bisher + Ergebnis) → Spalte <b>R7</b> = Endstand. <span style="color:#15467a">Blaue Musterzeile</span> = Beispiel.</div>
+
+<div class="row">
+  <div class="grow">
+    <table class="track">
+      <caption>Tabelle Gruppe A – laufender Stand (sortieren → A-1 … A-8)</caption>
+      <tr><th class="tname">Team</th><th class="lbl">kumuliert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th>R6</th><th>R7</th><th class="pos">Platz</th></tr>
+      <tr class="grp ex"><td class="tname" rowspan="2">Muster-Team</td><td class="lbl">Punkte (1 je Sieg)</td><td>1</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td class="pos" rowspan="2">3.</td></tr>
+      <tr class="ex"><td class="lbl">Ball-Differenz</td><td>+6</td><td>+2</td><td>+9</td><td>+7</td><td>+14</td><td>+12</td><td>+15</td><td>+18</td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="1" data-fb="Team 1">Team 1</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_1_1"></td><td id="pt_1_2"></td><td id="pt_1_3"></td><td id="pt_1_4"></td><td id="pt_1_5"></td><td id="pt_1_6"></td><td id="pt_1_7"></td><td class="pos" rowspan="2" id="pz_1"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_1_1"></td><td id="bd_1_2"></td><td id="bd_1_3"></td><td id="bd_1_4"></td><td id="bd_1_5"></td><td id="bd_1_6"></td><td id="bd_1_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="2" data-fb="Team 2">Team 2</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_2_1"></td><td id="pt_2_2"></td><td id="pt_2_3"></td><td id="pt_2_4"></td><td id="pt_2_5"></td><td id="pt_2_6"></td><td id="pt_2_7"></td><td class="pos" rowspan="2" id="pz_2"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_2_1"></td><td id="bd_2_2"></td><td id="bd_2_3"></td><td id="bd_2_4"></td><td id="bd_2_5"></td><td id="bd_2_6"></td><td id="bd_2_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="3" data-fb="Team 3">Team 3</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_3_1"></td><td id="pt_3_2"></td><td id="pt_3_3"></td><td id="pt_3_4"></td><td id="pt_3_5"></td><td id="pt_3_6"></td><td id="pt_3_7"></td><td class="pos" rowspan="2" id="pz_3"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_3_1"></td><td id="bd_3_2"></td><td id="bd_3_3"></td><td id="bd_3_4"></td><td id="bd_3_5"></td><td id="bd_3_6"></td><td id="bd_3_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="4" data-fb="Team 4">Team 4</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_4_1"></td><td id="pt_4_2"></td><td id="pt_4_3"></td><td id="pt_4_4"></td><td id="pt_4_5"></td><td id="pt_4_6"></td><td id="pt_4_7"></td><td class="pos" rowspan="2" id="pz_4"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_4_1"></td><td id="bd_4_2"></td><td id="bd_4_3"></td><td id="bd_4_4"></td><td id="bd_4_5"></td><td id="bd_4_6"></td><td id="bd_4_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="5" data-fb="Team 5">Team 5</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_5_1"></td><td id="pt_5_2"></td><td id="pt_5_3"></td><td id="pt_5_4"></td><td id="pt_5_5"></td><td id="pt_5_6"></td><td id="pt_5_7"></td><td class="pos" rowspan="2" id="pz_5"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_5_1"></td><td id="bd_5_2"></td><td id="bd_5_3"></td><td id="bd_5_4"></td><td id="bd_5_5"></td><td id="bd_5_6"></td><td id="bd_5_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="6" data-fb="Team 6">Team 6</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_6_1"></td><td id="pt_6_2"></td><td id="pt_6_3"></td><td id="pt_6_4"></td><td id="pt_6_5"></td><td id="pt_6_6"></td><td id="pt_6_7"></td><td class="pos" rowspan="2" id="pz_6"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_6_1"></td><td id="bd_6_2"></td><td id="bd_6_3"></td><td id="bd_6_4"></td><td id="bd_6_5"></td><td id="bd_6_6"></td><td id="bd_6_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="7" data-fb="Team 7">Team 7</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_7_1"></td><td id="pt_7_2"></td><td id="pt_7_3"></td><td id="pt_7_4"></td><td id="pt_7_5"></td><td id="pt_7_6"></td><td id="pt_7_7"></td><td class="pos" rowspan="2" id="pz_7"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_7_1"></td><td id="bd_7_2"></td><td id="bd_7_3"></td><td id="bd_7_4"></td><td id="bd_7_5"></td><td id="bd_7_6"></td><td id="bd_7_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="8" data-fb="Team 8">Team 8</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_8_1"></td><td id="pt_8_2"></td><td id="pt_8_3"></td><td id="pt_8_4"></td><td id="pt_8_5"></td><td id="pt_8_6"></td><td id="pt_8_7"></td><td class="pos" rowspan="2" id="pz_8"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_8_1"></td><td id="bd_8_2"></td><td id="bd_8_3"></td><td id="bd_8_4"></td><td id="bd_8_5"></td><td id="bd_8_6"></td><td id="bd_8_7"></td></tr>
+    </table>
+  </div>
+  <div class="grow">
+    <table class="track">
+      <caption>Tabelle Gruppe B – laufender Stand (sortieren → B-1 … B-8)</caption>
+      <tr><th class="tname">Team</th><th class="lbl">kumuliert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th>R6</th><th>R7</th><th class="pos">Platz</th></tr>
+      <tr class="grp ex"><td class="tname" rowspan="2">Muster-Team</td><td class="lbl">Punkte (1 je Sieg)</td><td>1</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td class="pos" rowspan="2">3.</td></tr>
+      <tr class="ex"><td class="lbl">Ball-Differenz</td><td>+6</td><td>+2</td><td>+9</td><td>+7</td><td>+14</td><td>+12</td><td>+15</td><td>+18</td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="9" data-fb="Team 9">Team 9</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_9_1"></td><td id="pt_9_2"></td><td id="pt_9_3"></td><td id="pt_9_4"></td><td id="pt_9_5"></td><td id="pt_9_6"></td><td id="pt_9_7"></td><td class="pos" rowspan="2" id="pz_9"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_9_1"></td><td id="bd_9_2"></td><td id="bd_9_3"></td><td id="bd_9_4"></td><td id="bd_9_5"></td><td id="bd_9_6"></td><td id="bd_9_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="10" data-fb="Team 10">Team 10</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_10_1"></td><td id="pt_10_2"></td><td id="pt_10_3"></td><td id="pt_10_4"></td><td id="pt_10_5"></td><td id="pt_10_6"></td><td id="pt_10_7"></td><td class="pos" rowspan="2" id="pz_10"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_10_1"></td><td id="bd_10_2"></td><td id="bd_10_3"></td><td id="bd_10_4"></td><td id="bd_10_5"></td><td id="bd_10_6"></td><td id="bd_10_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="11" data-fb="Team 11">Team 11</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_11_1"></td><td id="pt_11_2"></td><td id="pt_11_3"></td><td id="pt_11_4"></td><td id="pt_11_5"></td><td id="pt_11_6"></td><td id="pt_11_7"></td><td class="pos" rowspan="2" id="pz_11"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_11_1"></td><td id="bd_11_2"></td><td id="bd_11_3"></td><td id="bd_11_4"></td><td id="bd_11_5"></td><td id="bd_11_6"></td><td id="bd_11_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="12" data-fb="Team 12">Team 12</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_12_1"></td><td id="pt_12_2"></td><td id="pt_12_3"></td><td id="pt_12_4"></td><td id="pt_12_5"></td><td id="pt_12_6"></td><td id="pt_12_7"></td><td class="pos" rowspan="2" id="pz_12"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_12_1"></td><td id="bd_12_2"></td><td id="bd_12_3"></td><td id="bd_12_4"></td><td id="bd_12_5"></td><td id="bd_12_6"></td><td id="bd_12_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="13" data-fb="Team 13">Team 13</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_13_1"></td><td id="pt_13_2"></td><td id="pt_13_3"></td><td id="pt_13_4"></td><td id="pt_13_5"></td><td id="pt_13_6"></td><td id="pt_13_7"></td><td class="pos" rowspan="2" id="pz_13"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_13_1"></td><td id="bd_13_2"></td><td id="bd_13_3"></td><td id="bd_13_4"></td><td id="bd_13_5"></td><td id="bd_13_6"></td><td id="bd_13_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="14" data-fb="Team 14">Team 14</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_14_1"></td><td id="pt_14_2"></td><td id="pt_14_3"></td><td id="pt_14_4"></td><td id="pt_14_5"></td><td id="pt_14_6"></td><td id="pt_14_7"></td><td class="pos" rowspan="2" id="pz_14"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_14_1"></td><td id="bd_14_2"></td><td id="bd_14_3"></td><td id="bd_14_4"></td><td id="bd_14_5"></td><td id="bd_14_6"></td><td id="bd_14_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="15" data-fb="Team 15">Team 15</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_15_1"></td><td id="pt_15_2"></td><td id="pt_15_3"></td><td id="pt_15_4"></td><td id="pt_15_5"></td><td id="pt_15_6"></td><td id="pt_15_7"></td><td class="pos" rowspan="2" id="pz_15"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_15_1"></td><td id="bd_15_2"></td><td id="bd_15_3"></td><td id="bd_15_4"></td><td id="bd_15_5"></td><td id="bd_15_6"></td><td id="bd_15_7"></td></tr>
+      <tr class="grp"><td class="tname" rowspan="2" data-team="16" data-fb="Team 16">Team 16</td><td class="lbl">Punkte (1 je Sieg)</td><td class="rcell" id="pt_16_1"></td><td id="pt_16_2"></td><td id="pt_16_3"></td><td id="pt_16_4"></td><td id="pt_16_5"></td><td id="pt_16_6"></td><td id="pt_16_7"></td><td class="pos" rowspan="2" id="pz_16"></td></tr>
+      <tr><td class="lbl">Ball-Differenz</td><td id="bd_16_1"></td><td id="bd_16_2"></td><td id="bd_16_3"></td><td id="bd_16_4"></td><td id="bd_16_5"></td><td id="bd_16_6"></td><td id="bd_16_7"></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEITE 2 – FINALRUNDE ===== -->
+<div class="page-break"></div>
+
+<h1>Finalrunde über Kreuz &amp; Endstand</h1>
+<p class="sub tt">Klassische Über-Kreuz-Setzung – ohne Ausscheiden. Sieger spielen um den höheren, Verlierer um den nächsttieferen Platz.</p>
+
+<div class="legend" style="margin-bottom:6px">
+  <b>A-1</b> = Platz 1 der Gruppe A, <b>B-2</b> = Platz 2 der Gruppe B usw. (von Seite 1 übertragen).
+  Blöcke: K1 → Platz 1–4 · K2 → Platz 5–8 · K3 → Platz 9–12 · K4 → Platz 13–16.<br>
+  <b>So liest du Finalrunde 2:</b> Der farbige Code (<span class="code" style="font-size:11px;padding:1px 6px">K1a</span> usw.)
+  jedes Finalrunde-1-Spiels taucht in Finalrunde 2 wieder als <span class="gocode" style="font-size:11px">K1a</span> auf –
+  dort den <b>Sieger</b> bzw. <b>Verlierer</b> des gleichnamigen Codes eintragen.
+</div>
+
+<table class="sched">
+  <caption>Finalrunde 1 · Über-Kreuz-Paarungen (8 Spiele parallel)</caption>
+  <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th><th data-field="4">Feld 5</th><th data-field="5">Feld 6</th><th data-field="6">Feld 7</th><th data-field="7">Feld 8</th></tr>
+  <tr>
+    <td class="rnd">Finalrunde 1<span class="rtime tt">13:10–13:40</span><span class="rmode">1 Satz · bis 21</span></td>
+    <td><div class="ghead"><span class="code">K1a</span></div><span class="pair"><span class="t" data-seed="A1"><span class="seedlbl">A-1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K1a_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K1a_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B2"><span class="seedlbl">B-2</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;1 · Verl. → um Pl.&nbsp;3</div></td>
+    <td><div class="ghead"><span class="code">K1b</span></div><span class="pair"><span class="t" data-seed="B1"><span class="seedlbl">B-1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K1b_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K1b_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="A2"><span class="seedlbl">A-2</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;1 · Verl. → um Pl.&nbsp;3</div></td>
+    <td><div class="ghead"><span class="code">K2a</span></div><span class="pair"><span class="t" data-seed="A3"><span class="seedlbl">A-3</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K2a_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K2a_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B4"><span class="seedlbl">B-4</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;5 · Verl. → um Pl.&nbsp;7</div></td>
+    <td><div class="ghead"><span class="code">K2b</span></div><span class="pair"><span class="t" data-seed="B3"><span class="seedlbl">B-3</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K2b_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K2b_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="A4"><span class="seedlbl">A-4</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;5 · Verl. → um Pl.&nbsp;7</div></td>
+    <td><div class="ghead"><span class="code">K3a</span></div><span class="pair"><span class="t" data-seed="A5"><span class="seedlbl">A-5</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K3a_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K3a_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B6"><span class="seedlbl">B-6</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;9 · Verl. → um Pl.&nbsp;11</div></td>
+    <td><div class="ghead"><span class="code">K3b</span></div><span class="pair"><span class="t" data-seed="B5"><span class="seedlbl">B-5</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K3b_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K3b_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="A6"><span class="seedlbl">A-6</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;9 · Verl. → um Pl.&nbsp;11</div></td>
+    <td><div class="ghead"><span class="code">K4a</span></div><span class="pair"><span class="t" data-seed="A7"><span class="seedlbl">A-7</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K4a_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K4a_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B8"><span class="seedlbl">B-8</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;13 · Verl. → um Pl.&nbsp;15</div></td>
+    <td><div class="ghead"><span class="code">K4b</span></div><span class="pair"><span class="t" data-seed="B7"><span class="seedlbl">B-7</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_K4b_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_K4b_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="A8"><span class="seedlbl">A-8</span><span class="rname"></span></span></span><div class="route">Sieger → um Pl.&nbsp;13 · Verl. → um Pl.&nbsp;15</div></td>
+  </tr>
+</table>
+
+<table class="sched">
+  <caption>Finalrunde 2 · Platzierungsspiele (Sieger höher, Verlierer tiefer)</caption>
+  <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th><th data-field="4">Feld 5</th><th data-field="5">Feld 6</th><th data-field="6">Feld 7</th><th data-field="7">Feld 8</th></tr>
+  <tr>
+    <td class="rnd">Finalrunde 2<span class="rtime tt">13:40–14:10</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze<br>übrige: 1 Satz bis 21</span></td>
+    <td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair"><span class="t" data-slot="winK1a"><span class="src">Sieger</span><span class="gocode">K1a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK1b"><span class="src">Sieger</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair"><span class="t" data-slot="losK1a"><span class="src">Verl.</span><span class="gocode">K1a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK1b"><span class="src">Verl.</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 5</span><span class="route2">→ Platz 5/6</span></div><span class="pair"><span class="t" data-slot="winK2a"><span class="src">Sieger</span><span class="gocode">K2a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P5_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P5_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK2b"><span class="src">Sieger</span><span class="gocode">K2b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 7</span><span class="route2">→ Platz 7/8</span></div><span class="pair"><span class="t" data-slot="losK2a"><span class="src">Verl.</span><span class="gocode">K2a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P7_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P7_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK2b"><span class="src">Verl.</span><span class="gocode">K2b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 9</span><span class="route2">→ Platz 9/10</span></div><span class="pair"><span class="t" data-slot="winK3a"><span class="src">Sieger</span><span class="gocode">K3a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P9_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P9_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK3b"><span class="src">Sieger</span><span class="gocode">K3b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 11</span><span class="route2">→ Platz 11/12</span></div><span class="pair"><span class="t" data-slot="losK3a"><span class="src">Verl.</span><span class="gocode">K3a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P11_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P11_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK3b"><span class="src">Verl.</span><span class="gocode">K3b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 13</span><span class="route2">→ Platz 13/14</span></div><span class="pair"><span class="t" data-slot="winK4a"><span class="src">Sieger</span><span class="gocode">K4a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P13_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P13_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK4b"><span class="src">Sieger</span><span class="gocode">K4b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 15</span><span class="route2">→ Platz 15/16</span></div><span class="pair"><span class="t" data-slot="losK4a"><span class="src">Verl.</span><span class="gocode">K4a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P15_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P15_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK4b"><span class="src">Verl.</span><span class="gocode">K4b</span><span class="rname"></span></span></span></td>
+  </tr>
+</table>
+
+<div class="row">
+  <div class="grow">
+    <table class="stand">
+      <caption>Endplatzierung</caption>
+      <tr><th class="rk">Platz</th><th>Team</th><th class="sth">Bilanz <span class="sths">Siege/Spiele · ± · Bälle</span><br><span class="sths">G Gruppe · H Haupt · Σ Ges.</span></th><th>kommt aus</th></tr>
+      <tr><td class="rk">1</td><td class="nm" id="place1"></td><td class="st" id="stat1"></td><td>Sieger Platz 1/2</td></tr>
+      <tr><td class="rk">2</td><td class="nm" id="place2"></td><td class="st" id="stat2"></td><td>Verlierer Platz 1/2</td></tr>
+      <tr><td class="rk">3</td><td class="nm" id="place3"></td><td class="st" id="stat3"></td><td>Sieger Platz 3/4</td></tr>
+      <tr><td class="rk">4</td><td class="nm" id="place4"></td><td class="st" id="stat4"></td><td>Verlierer Platz 3/4</td></tr>
+      <tr><td class="rk">5</td><td class="nm" id="place5"></td><td class="st" id="stat5"></td><td>Sieger Platz 5/6</td></tr>
+      <tr><td class="rk">6</td><td class="nm" id="place6"></td><td class="st" id="stat6"></td><td>Verlierer Platz 5/6</td></tr>
+      <tr><td class="rk">7</td><td class="nm" id="place7"></td><td class="st" id="stat7"></td><td>Sieger Platz 7/8</td></tr>
+      <tr><td class="rk">8</td><td class="nm" id="place8"></td><td class="st" id="stat8"></td><td>Verlierer Platz 7/8</td></tr>
+      <tr><td class="rk">9</td><td class="nm" id="place9"></td><td class="st" id="stat9"></td><td>Sieger Platz 9/10</td></tr>
+      <tr><td class="rk">10</td><td class="nm" id="place10"></td><td class="st" id="stat10"></td><td>Verlierer Platz 9/10</td></tr>
+      <tr><td class="rk">11</td><td class="nm" id="place11"></td><td class="st" id="stat11"></td><td>Sieger Platz 11/12</td></tr>
+      <tr><td class="rk">12</td><td class="nm" id="place12"></td><td class="st" id="stat12"></td><td>Verlierer Platz 11/12</td></tr>
+      <tr><td class="rk">13</td><td class="nm" id="place13"></td><td class="st" id="stat13"></td><td>Sieger Platz 13/14</td></tr>
+      <tr><td class="rk">14</td><td class="nm" id="place14"></td><td class="st" id="stat14"></td><td>Verlierer Platz 13/14</td></tr>
+      <tr><td class="rk">15</td><td class="nm" id="place15"></td><td class="st" id="stat15"></td><td>Sieger Platz 15/16</td></tr>
+      <tr><td class="rk">16</td><td class="nm" id="place16"></td><td class="st" id="stat16"></td><td>Verlierer Platz 15/16</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="legend noprint">
+  <b>Legende:</b> <span class="auto" style="padding:1px 4px">Grün</span> = automatisch berechnet · <span style="background:#d4f5d4;padding:1px 4px">Grünes Eingabefeld</span> = Sieger · <span style="background:#fde0e0;padding:1px 4px">Rotes Feld</span> = ungültiges Ergebnis (gleich oder &lt;2 Pkt. Abstand)
+</div>
+<div class="noprint" style="margin-top:16px;display:flex;gap:12px;align-items:center">
+  <button class="nbtn" onclick="window.print()" style="background:#1f4e79;border-color:#1f4e79">🖨 Drucken / PDF</button>
+</div>
+
+<script>
+  /* === KONSTANTEN === */
+  const SESSION_KEY  = 'turnier16g';
+  const SESSION_FILE = 'Turnierbogen_16_Teams_8_Felder_Gruppen_Platzierungsrunde.html';
+  const SESSION_TITLE_KEY = 'title_16g';
+  const SCORE_KEY  = 'turnier16g_scores';
+  const NAMES_KEY  = 'turnier16g_names';
+  const ABSENT_KEY = 'turnier16g_absent';
+  const NTEAMS = 16;
+  const GROUPS = { A:[1,2,3,4,5,6,7,8], B:[9,10,11,12,13,14,15,16] };
+  const ROUNDS = [1,2,3,4,5,6,7];
+  let GSTATS = {};
+
+  /* === Session-Registrierung === */
+  function registerSession(){
+    try {
+      const title = localStorage.getItem(SESSION_TITLE_KEY) || '';
+      const reg = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      const idx = reg.findIndex(s => s.key === SESSION_KEY);
+      const entry = { key: SESSION_KEY, file: SESSION_FILE, title, ts: Date.now() };
+      if(idx >= 0) reg[idx] = entry; else reg.unshift(entry);
+      if(reg.length > 30) reg.splice(30);
+      localStorage.setItem('beachl_sessions', JSON.stringify(reg));
+    } catch(e) {}
+  }
+  function manualSave(){
+    const inp = document.getElementById('session-title-input');
+    const title = (inp ? inp.value : '').trim();
+    if(!title){ alert('Bitte zuerst einen Turniertitel eingeben.'); return; }
+    try { localStorage.setItem(SESSION_TITLE_KEY, title); } catch(e){}
+    const disp = document.getElementById('session-title-display');
+    if(disp){ disp.textContent = title; disp.style.display = 'block'; }
+    registerSession();
+    alert('Turnier „' + title + '" gespeichert.');
+  }
+  function restoreTitle(){
+    try {
+      const t = localStorage.getItem(SESSION_TITLE_KEY);
+      if(t){
+        const inp = document.getElementById('session-title-input');
+        if(inp) inp.value = t;
+        const disp = document.getElementById('session-title-display');
+        if(disp){ disp.textContent = t; disp.style.display = 'block'; }
+      }
+    } catch(e) {}
+  }
+
+  /* === HTML-Hilfsfunktionen === */
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function teamFullHTML(t){
+    const n = loadNames()[t];
+    return n ? '<span class="tnm">' + escapeHtml(n) + '</span>' : '<span style="color:#888">Team ' + t + '</span>';
+  }
+  function teamResultHTML(t){
+    const n = loadNames()[t];
+    return n ? escapeHtml(n) : 'Team ' + t;
+  }
+
+  /* === Teamnamen === */
+  function loadNames(){ try{ return JSON.parse(localStorage.getItem(NAMES_KEY)) || {}; }catch(e){ return {}; } }
+  function saveNames(n){ try{ localStorage.setItem(NAMES_KEY, JSON.stringify(n)); }catch(e){} }
+  function onName(t){
+    const inp = document.getElementById('tn'+t);
+    const n = loadNames();
+    n[t] = inp ? inp.value : '';
+    saveNames(n);
+    applyTeamNames();
+    computeAll();
+    registerSession();
+  }
+  function clearNames(){
+    if(!confirm('Alle Teamnamen löschen?')) return;
+    saveNames({});
+    for(let i=1;i<=NTEAMS;i++){ const el=document.getElementById('tn'+i); if(el) el.value=''; }
+    applyTeamNames(); computeAll();
+  }
+  function applyTeamNames(){
+    const n = loadNames();
+    document.querySelectorAll('[data-team-name]').forEach(el => {
+      const t = parseInt(el.getAttribute('data-team-name'), 10);
+      el.textContent = (n[t] || '').trim() || '';
+    });
+    document.querySelectorAll('[data-team]').forEach(el => {
+      const t = parseInt(el.getAttribute('data-team'), 10);
+      const fb = el.getAttribute('data-fb') || ('Team ' + t);
+      el.textContent = (n[t] || '').trim() || fb;
+    });
+    document.querySelectorAll('[data-team-name]').forEach(el => {
+      const t = parseInt(el.getAttribute('data-team-name'), 10);
+      el.textContent = (n[t] || '').trim() || '';
+    });
+  }
+  function toggleNames(){
+    const p = document.getElementById('namepanel'); p.hidden = !p.hidden;
+  }
+  function buildPanel(){
+    const n = loadNames();
+    const ab = loadAbsent();
+    for(let i=1;i<=NTEAMS;i++){
+      const inp=document.getElementById('tn'+i);
+      const chk=document.getElementById('ab'+i);
+      if(inp && n[i]) inp.value=n[i];
+      if(chk) chk.checked=!!ab[i];
+    }
+  }
+
+  /* === Abwesend === */
+  function loadAbsent(){ try{ return JSON.parse(localStorage.getItem(ABSENT_KEY)) || {}; }catch(e){ return {}; } }
+  function saveAbsent(a){ try{ localStorage.setItem(ABSENT_KEY, JSON.stringify(a)); }catch(e){} }
+  function onAbsent(t){ const a=loadAbsent(); a[t]=document.getElementById('ab'+t).checked?1:0; saveAbsent(a); computeAll(); }
+  function isAbsent(t){ const a=loadAbsent(); return !!a[t]; }
+  function restoreAbsent(){ const a=loadAbsent(); for(let i=1;i<=NTEAMS;i++){ const chk=document.getElementById('ab'+i); if(chk) chk.checked=!!a[i]; } }
+
+  /* === Gruppen auslosen === */
+  function drawGroups(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    const vals = [];
+    for(let i=1; i<=NTEAMS; i++) vals.push({ name:(names[i] || '').trim(), absent:!!absent[i] });
+    if(vals.filter(v => v.name).length < 2){ alert('Bitte zuerst mindestens 2 Teamnamen eintragen, dann die Gruppen auslosen.'); return; }
+    if(!confirm('Gruppen neu auslosen? Eine bestehende Zuordnung wird überschrieben.')) return;
+    for(let i = vals.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [vals[i], vals[j]] = [vals[j], vals[i]];
+    }
+    const out = {}, outAbsent = {};
+    for(let i=1; i<=NTEAMS; i++){
+      out[i] = vals[i-1].name;
+      if(vals[i-1].absent) outAbsent[i] = 1;
+      const inp = document.getElementById('tn'+i);
+      const chk = document.getElementById('ab'+i);
+      if(inp) inp.value = vals[i-1].name;
+      if(chk) chk.checked = !!vals[i-1].absent;
+    }
+    saveNames(out); saveAbsent(outAbsent);
+    applyTeamNames(); computeAll();
+  }
+
+  /* === Ergebnisse === */
+  function loadScores(){ try{ return JSON.parse(localStorage.getItem(SCORE_KEY)) || {}; }catch(e){ return {}; } }
+  function onScore(){
+    const sc = {};
+    document.querySelectorAll('input.score').forEach(inp => { if(inp.id) sc[inp.id] = inp.value; });
+    try{ localStorage.setItem(SCORE_KEY, JSON.stringify(sc)); }catch(e){}
+    computeAll();
+  }
+  function restoreScores(){
+    const sc = loadScores();
+    document.querySelectorAll('input.score').forEach(inp => {
+      if(inp.id && sc[inp.id] != null) inp.value = sc[inp.id];
+    });
+  }
+  function clearScores(){
+    if(!confirm('Alle Ergebnisse wirklich löschen?')) return;
+    try{ localStorage.removeItem(SCORE_KEY); }catch(e){}
+    document.querySelectorAll('input.score').forEach(inp => inp.value = '');
+    computeAll();
+  }
+
+  /* === Hilfsfunktionen === */
+  function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
+  function gv(r, t){ return num(document.getElementById('g'+r+'_'+t)); }
+  function fmt(n){ return (n>0?'+':'')+n; }
+  function setCell(id, val){ const e=document.getElementById(id); if(!e) return; if(val===''||val==null){e.textContent='';e.classList.remove('auto');}else{e.textContent=val;e.classList.add('auto');} }
+  function setResolved(selector, teamNo, placeholder){
+    document.querySelectorAll(selector + ' .rname').forEach(el => {
+      el.innerHTML = teamNo ? teamFullHTML(teamNo) : (placeholder ? '<span class="abt">' + escapeHtml(placeholder) + '</span>' : '');
+    });
+  }
+  function evaluateGroupEntry(r, team, opp){
+    const teamAbsent = isAbsent(team), oppAbsent = isAbsent(opp);
+    if(teamAbsent && oppAbsent) return { resolved:true, cmp:0, w:0, bd:0, sc:0, pl:1 };
+    if(teamAbsent && !oppAbsent) return { resolved:true, cmp:-1, w:0, bd:0, sc:0, pl:1 };
+    if(!teamAbsent && oppAbsent) return { resolved:true, cmp:1, w:1, bd:0, sc:0, pl:1 };
+    const own = gv(r, team), ot = gv(r, opp);
+    if(own==null||ot==null||own===ot) return { resolved:false, cmp:0, w:0, bd:0, sc:0, pl:0 };
+    return { resolved:true, cmp:own>ot?1:-1, w:own>ot?1:0, bd:own-ot, sc:own, pl:1 };
+  }
+  function directResult(a, b){
+    for(const r of ROUNDS){
+      const inA = document.getElementById('g'+r+'_'+a);
+      if(inA && parseInt(inA.getAttribute('data-op'),10)===b){
+        return evaluateGroupEntry(r, a, b).cmp;
+      }
+    }
+    return 0;
+  }
+
+  /* === Gruppenauswertung === */
+  function computeGroups(){
+    const seeds = { A:null, B:null };
+    for(const gname of Object.keys(GROUPS)){
+      const teams = GROUPS[gname];
+      const st = {}, cum = {};
+      teams.forEach(t => { st[t] = {w:0, bd:0, sc:0, pl:0}; cum[t] = {pts:0, bd:0}; });
+      ROUNDS.forEach(r => {
+        teams.forEach(t => {
+          const inp = document.getElementById('g'+r+'_'+t);
+          if(!inp) return;
+          const opp = parseInt(inp.getAttribute('data-op'),10);
+          const res = evaluateGroupEntry(r, t, opp);
+          const ptId = 'pt_'+t+'_'+r, bdId = 'bd_'+t+'_'+r;
+          if(res.resolved){
+            st[t].w += res.w; st[t].bd += res.bd; st[t].sc += res.sc; st[t].pl += res.pl;
+            cum[t].pts += res.w; cum[t].bd += res.bd;
+            setCell(ptId, cum[t].pts); setCell(bdId, fmt(cum[t].bd));
+          } else { setCell(ptId, ''); setCell(bdId, ''); }
+        });
+      });
+      const ranked = [...teams].sort((a, b) => {
+        if(st[b].w !== st[a].w) return st[b].w - st[a].w;
+        if(st[b].bd !== st[a].bd) return st[b].bd - st[a].bd;
+        if(st[b].sc !== st[a].sc) return st[b].sc - st[a].sc;
+        const d = directResult(a, b); if(d !== 0) return -d;
+        return a - b;
+      });
+      const complete = teams.every(t => st[t].pl === 7);
+      teams.forEach(t => { GSTATS[t] = { games:st[t].pl, w:st[t].w, bd:st[t].bd, sc:st[t].sc, complete }; });
+      ranked.forEach((t, idx) => setCell('pz_'+t, complete ? (idx+1)+'.' : ''));
+      seeds[gname] = complete ? ranked : null;
+    }
+    return seeds;
+  }
+
+  /* === Finalrunde === */
+  function statTokens(games, w, bd, sc){ return w+'/'+games+' · '+fmt(bd)+' · '+sc; }
+  function renderStatCell(t, f){
+    const g = GSTATS[t];
+    if(!g || !g.complete) return '';
+    const rows = ['<span class="ph">G</span> '+statTokens(g.games,g.w,g.bd,g.sc)];
+    if(f && f.g > 0){
+      rows.push('<span class="ph">H</span> '+statTokens(f.g,f.w,f.bd,f.sc));
+      rows.push('<span class="ph sg">&Sigma;</span> '+statTokens(g.games+f.g,g.w+f.w,g.bd+f.bd,g.sc+f.sc));
+    }
+    return rows.join('<br>');
+  }
+
+  function computeFinals(seeds){
+    const rankA = seeds.A || [];
+    const rankB = seeds.B || [];
+    const availA = rankA.filter(t => !isAbsent(t));
+    const availB = rankB.filter(t => !isAbsent(t));
+    const seedsReady = !!(seeds.A && seeds.B);
+    const m = {
+      A1:availA[0]||0, A2:availA[1]||0, A3:availA[2]||0, A4:availA[3]||0,
+      A5:availA[4]||0, A6:availA[5]||0, A7:availA[6]||0, A8:availA[7]||0,
+      B1:availB[0]||0, B2:availB[1]||0, B3:availB[2]||0, B4:availB[3]||0,
+      B5:availB[4]||0, B6:availB[5]||0, B7:availB[6]||0, B8:availB[7]||0
+    };
+    Object.keys(m).forEach(code => setResolved('[data-seed="'+code+'"]', m[code], seedsReady ? 'Freilos' : ''));
+
+    const FSTATS = {};
+    function addF(team, own, opp){
+      if(!team) return;
+      const f = FSTATS[team] || (FSTATS[team] = {g:0, w:0, bd:0, sc:0});
+      f.g += 1; f.sc += own; f.bd += (own-opp); if(own>opp) f.w += 1;
+    }
+    function resolvePlay(prefix, code, home, away){
+      const h = num(document.getElementById(prefix+'_'+code+'_h'));
+      const a = num(document.getElementById(prefix+'_'+code+'_a'));
+      if(home && away && h!=null && a!=null && h!==a){
+        addF(home, h, a); addF(away, a, h);
+        return h>a ? {win:home, los:away} : {win:away, los:home};
+      }
+      if(home && !away) return {win:home, los:0};
+      if(!home && away) return {win:away, los:0};
+      return {win:0, los:0};
+    }
+
+    const r = {
+      K1a:resolvePlay('f1','K1a',m.A1,m.B2), K1b:resolvePlay('f1','K1b',m.B1,m.A2),
+      K2a:resolvePlay('f1','K2a',m.A3,m.B4), K2b:resolvePlay('f1','K2b',m.B3,m.A4),
+      K3a:resolvePlay('f1','K3a',m.A5,m.B6), K3b:resolvePlay('f1','K3b',m.B5,m.A6),
+      K4a:resolvePlay('f1','K4a',m.A7,m.B8), K4b:resolvePlay('f1','K4b',m.B7,m.A8)
+    };
+
+    setResolved('[data-slot="winK1a"]',r.K1a.win); setResolved('[data-slot="winK1b"]',r.K1b.win);
+    setResolved('[data-slot="losK1a"]',r.K1a.los); setResolved('[data-slot="losK1b"]',r.K1b.los);
+    setResolved('[data-slot="winK2a"]',r.K2a.win); setResolved('[data-slot="winK2b"]',r.K2b.win);
+    setResolved('[data-slot="losK2a"]',r.K2a.los); setResolved('[data-slot="losK2b"]',r.K2b.los);
+    setResolved('[data-slot="winK3a"]',r.K3a.win); setResolved('[data-slot="winK3b"]',r.K3b.win);
+    setResolved('[data-slot="losK3a"]',r.K3a.los); setResolved('[data-slot="losK3b"]',r.K3b.los);
+    setResolved('[data-slot="winK4a"]',r.K4a.win); setResolved('[data-slot="winK4b"]',r.K4b.win);
+    setResolved('[data-slot="losK4a"]',r.K4a.los); setResolved('[data-slot="losK4b"]',r.K4b.los);
+
+    const fin = resolvePlay('f2','FIN', r.K1a.win, r.K1b.win);
+    const p3  = resolvePlay('f2','P3',  r.K1a.los, r.K1b.los);
+    const p5  = resolvePlay('f2','P5',  r.K2a.win, r.K2b.win);
+    const p7  = resolvePlay('f2','P7',  r.K2a.los, r.K2b.los);
+    const p9  = resolvePlay('f2','P9',  r.K3a.win, r.K3b.win);
+    const p11 = resolvePlay('f2','P11', r.K3a.los, r.K3b.los);
+    const p13 = resolvePlay('f2','P13', r.K4a.win, r.K4b.win);
+    const p15 = resolvePlay('f2','P15', r.K4a.los, r.K4b.los);
+
+    const places = [
+      fin.win, fin.los, p3.win, p3.los, p5.win, p5.los,
+      p7.win, p7.los, p9.win, p9.los, p11.win, p11.los,
+      p13.win, p13.los, p15.win, p15.los
+    ];
+    places.forEach((t, i) => {
+      const cell = document.getElementById('place'+(i+1));
+      if(cell){ cell.innerHTML = t ? teamResultHTML(t) : ''; cell.classList.toggle('auto', !!t); }
+      const scell = document.getElementById('stat'+(i+1));
+      if(scell){ const html = t ? renderStatCell(t, FSTATS[t]) : ''; scell.innerHTML = html; scell.classList.toggle('auto', !!html); }
+    });
+  }
+
+  function computeAll(){
+    applyTeamNames();
+    const seeds = computeGroups();
+    computeFinals(seeds);
+    markScores();
+  }
+
+  /* === Markierungen === */
+  function groupMatchHasAbsent(inp){
+    const team = parseInt(inp.getAttribute('data-tm')||'0',10);
+    const opp = parseInt(inp.getAttribute('data-op')||'0',10);
+    return !!team && !!opp && (isAbsent(team)||isAbsent(opp));
+  }
+  function markScores(){
+    document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
+    document.querySelectorAll('input.score[data-op]').forEach(inp => {
+      if(groupMatchHasAbsent(inp)) return;
+      const m = inp.id.match(/^g(\d+)_(\d+)$/); if(!m) return;
+      const opp = document.getElementById('g'+m[1]+'_'+inp.getAttribute('data-op'));
+      const a = num(inp), b = num(opp); if(a==null||b==null) return;
+      if(a===b||Math.abs(a-b)<2) inp.classList.add('invalid');
+      else if(a>b) inp.classList.add('win');
+    });
+    document.querySelectorAll('input.score').forEach(inp => {
+      const m = inp.id.match(/^(.*)_(h|a)$/); if(!m) return;
+      const other = document.getElementById(m[1]+'_'+(m[2]==='h'?'a':'h'));
+      const a = num(inp), b = num(other); if(a==null||b==null) return;
+      if(a===b||Math.abs(a-b)<2) inp.classList.add('invalid');
+      else if(a>b) inp.classList.add('win');
+    });
+  }
+
+  /* === Neues Turnier === */
+  function resetTournament(){
+    if(!confirm('Neues Turnier starten? Alle Teamnamen, Ausfall-Markierungen und Ergebnisse werden gelöscht.')) return;
+    try{ localStorage.removeItem(SCORE_KEY); }catch(e){}
+    try{ localStorage.removeItem(ABSENT_KEY); }catch(e){}
+    saveNames({});
+    for(let i=1;i<=NTEAMS;i++){
+      const inp=document.getElementById('tn'+i); const chk=document.getElementById('ab'+i);
+      if(inp) inp.value=''; if(chk) chk.checked=false;
+    }
+    applyTeamNames();
+    document.querySelectorAll('input.score').forEach(inp => inp.value='');
+    computeAll();
+  }
+
+  /* === Enter-Taste === */
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Enter') return;
+    const el=e.target;
+    if(!el||!el.classList||!el.classList.contains('score')) return;
+    e.preventDefault();
+    const list=Array.prototype.slice.call(document.querySelectorAll('input.score'));
+    const idx=list.indexOf(el);
+    if(idx>=0 && idx<list.length-1){ const n=list[idx+1]; n.focus(); if(n.select) n.select(); }
+  });
+
+  /* === Zeit-Konfiguration === */
+  const START_KEY  = 'turnier16g_start';
+  const END_KEY    = 'turnier16g_end';
+  const BASE_START = '10:00';
+  const BASE_END   = '14:10';
+  const MODE_TABLE = [{min:50,mode:'2 Sätze bis 21'},{min:25,mode:'1 Satz bis 21'},{min:17,mode:'1 Satz bis 15'}];
+  function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m?(+m[1]*60 + +m[2]):null; }
+  function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+  function applyTimes(){
+    const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
+    const startMin=toMin(sEl?sEl.value:BASE_START)||toMin(BASE_START);
+    const endMin=toMin(eEl?eEl.value:BASE_END)||toMin(BASE_END);
+    const baseS=toMin(BASE_START), baseE=toMin(BASE_END);
+    const origDur=baseE-baseS, newDur=Math.max(30,endMin-startMin);
+    document.querySelectorAll('.tt').forEach(el=>{
+      if(el.dataset.orig==null) el.dataset.orig=el.innerHTML;
+      el.innerHTML=el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g,(mm,h,mn)=>fmtMin(startMin+Math.round((+h*60+ +mn-baseS)*newDur/origDur)));
+    });
+    const firstRtime=document.querySelector('.rtime.tt');
+    if(firstRtime){
+      const ts=firstRtime.textContent.match(/(\d{1,2}:\d{2})/g);
+      if(ts&&ts.length>=2){
+        const roundMins=Math.round(toMin(ts[1])-toMin(ts[0]));
+        let modeText='⚠ zu kurz';
+        for(const {min,mode} of MODE_TABLE){ if(roundMins>=min){ modeText=mode; break; } }
+        document.querySelectorAll('.rmode').forEach(el=>{ if(!el.innerHTML.includes('<br>')) el.textContent=modeText; });
+        const info=document.getElementById('roundDurInfo');
+        if(info){
+          info.textContent='≈ '+roundMins+' Min./Runde · '+modeText;
+          info.style.color=modeText.startsWith('\u26a0')?'#c00':roundMins>=25?'#2a7a2a':roundMins>=17?'#c67c00':'#c00';
+        }
+      }
+    }
+  }
+  function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} applyTimes(); }
+  function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){}   applyTimes(); }
+  function loadTimes(){
+    try{
+      const s=localStorage.getItem(START_KEY), e=localStorage.getItem(END_KEY);
+      if(s){const i=document.getElementById('startTime');if(i)i.value=s;}
+      if(e){const i=document.getElementById('endTime');  if(i)i.value=e;}
+    }catch(e){}
+    applyTimes();
+  }
+
+  /* === Feldnamen === */
+  const FIELD_KEY = 'turnier16g_fields';
+  const DEFAULT_FIELDS = ['Feld 1','Feld 2','Feld 3','Feld 4','Feld 5','Feld 6','Feld 7','Feld 8'];
+  function loadFieldNames(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
+  function saveFieldNames(n){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(n)); }catch(e){} }
+  function applyFieldName(idx, custom){
+    const orig = DEFAULT_FIELDS[idx];
+    document.querySelectorAll('[data-field="'+idx+'"]').forEach(el => {
+      if(el.dataset.origText == null) el.dataset.origText = el.textContent;
+      const suffix = el.dataset.origText.slice(orig.length);
+      el.textContent = (custom && custom.trim() ? custom.trim() : orig) + suffix;
+    });
+  }
+  function applyAllFieldNames(){
+    const names = loadFieldNames();
+    DEFAULT_FIELDS.forEach((orig, i) => {
+      const inp = document.getElementById('fni_'+i);
+      if(inp && names[i]) inp.value = names[i];
+      applyFieldName(i, names[i] || '');
+    });
+  }
+  function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
+  function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
+  function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
+
+  buildPanel();
+  restoreTitle();
+  restoreScores();
+  restoreAbsent();
+  loadTimes();
+  applyAllFieldNames();
+  computeAll();
+  registerSession();
+</script>
+
+</body>
+</html>

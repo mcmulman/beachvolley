@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnierbogen – 10 Teams, Jeder-gegen-jeden</title>
+<style>
+  :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    color:#111; font-size:13px; line-height:1.3;
+    padding:10mm;
+  }
+  h1 { font-size:19px; margin:0 0 3px; }
+  .sub { color:#555; font-size:12px; margin:0 0 12px; }
+  .row { display:flex; gap:8mm; align-items:flex-start; }
+  .grow { flex:1; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { border:1px solid var(--line); padding:4px 6px; text-align:center; }
+  th { background:var(--bg); font-size:12px; }
+  caption { text-align:left; font-weight:bold; font-size:14px; margin:14px 0 5px; }
+
+  .teams td { text-align:left; }
+  .teams .num { width:24px; font-weight:bold; background:var(--bg); text-align:center; }
+  .teams .name { height:26px; }
+
+  .sched td { padding:8px 6px; }
+  .sched .rnd { width:48px; font-weight:bold; background:var(--bg); font-size:16px; }
+  .sched th { font-size:14px; }
+  .pair, .bye { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; min-height:32px; }
+  .pair .t, .bye .t { display:inline-block; min-width:52px; font-weight:bold; font-size:15px; }
+  .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
+  .vs { color:var(--soft); font-weight:bold; font-size:16px; }
+  .bye-tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#fff3d6; border:1px solid #d7b96d; color:#7a5a00; font-weight:bold; }
+  .match.is-bye { background:#fffaf0; }
+
+  .stand td { height:40px; }
+  .stand .pl { width:34px; background:var(--bg); font-weight:bold; }
+  .stand .nm { text-align:left; }
+
+  .track th, .track td { padding:3px 4px; }
+  .track .tnum { width:30px; background:var(--bg); font-weight:bold; font-size:15px; }
+  .track .tname { width:110px; text-align:left; font-weight:bold; }
+  .track .lbl { width:110px; text-align:left; font-size:11px; background:#fafafa; }
+  .track .rcell { height:26px; }
+  .track .sum { background:var(--bg); font-weight:bold; width:54px; }
+  .track .pos { width:40px; font-weight:bold; }
+  .track .grp { border-top:2px solid var(--line); }
+  .track .ex { background:#eef6ff; color:#15467a; font-style:italic; }
+  .track .ex .tname, .track .ex .lbl { background:#dceaf7; font-style:normal; }
+
+  .legend { font-size:12px; color:#333; margin-top:10px; }
+  .legend b { color:#111; }
+
+  .page-break { page-break-before: always; }
+
+  .guide { border:1.5px solid var(--line); border-radius:5px; padding:7px 14px; margin:0 0 12px; background:#eef4fb; }
+  .guide h2 { font-size:14px; margin:0 0 6px; }
+  .guide ol { margin:0; padding-left:20px; }
+  .guide li { margin:2px 0; }
+  .guide .hi { font-weight:bold; }
+
+  input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
+                font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
+                border:1px solid var(--soft); border-radius:3px; width:40px; height:32px;
+                -webkit-appearance:none; appearance:none; }
+  input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
+  input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
+  input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
+  input.score:disabled { background:#f7f7f7; color:#999; }
+  .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
+  .byeauto { background:#fff3d6; color:#7a5a00; font-weight:bold; }
+  .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+  .abt { color:#c00; font-size:0.8em; font-weight:600; }
+  input[type=checkbox].ab-check { margin-right: 4px; }
+  .sched .rnd { width:96px; font-size:13px; }
+  .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
+  .sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#444; margin-top:1px; }
+  .namectl { margin:0 0 12px; }
+  .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:5px; font-weight:bold; }
+  .nbtn:hover { background:#163a5c; }
+  .nhint { font-size:11.5px; color:#555; margin-left:10px; }
+  .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
+  .namepanel .ngrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px 14px; }
+  .namepanel label { display:flex; flex-direction:column; font-size:11px; color:#1f4e79; font-weight:bold; gap:3px; }
+  .namepanel input { padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
+  .nactions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .nactions .nbtn { background:#fff; color:#1f4e79; }
+  .nactions .nbtn:hover { background:#e7eef7; }
+  .digitalbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .digitalbar .nbtn { background:#0a7d2c; border-color:#0a7d2c; }
+  .digitalbar .nbtn:hover { background:#086323; }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm 12mm; }
+    body {
+      padding:0;
+      font-size:9pt;
+      line-height:1.18;
+      overflow:visible !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .noprint { display:none !important; }
+    #session-title-display { display: block !important; }
+    h1 { font-size:15pt; margin:0 0 1.5mm; }
+    .sub { margin:0 0 2mm; font-size:8.5pt; }
+    caption { margin:2mm 0 1mm; font-size:9pt; }
+    table {
+      width:100% !important;
+      font-size:8pt;
+      overflow:visible !important;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    th, td { padding:1mm 1.6mm; }
+    .guide, .row, .teams, .sched, .track, .legend {
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .guide { margin:0 0 3mm; padding:2.6mm 4mm; }
+    .guide h2 { font-size:10pt; margin:0 0 1mm; }
+    .guide li { margin:0.4mm 0; }
+    .page-break {
+      display:block;
+      break-before:page;
+      page-break-before:always;
+    }
+    .sched td { padding:0.9mm 1.4mm; }
+    .sched .rnd { width:24mm; font-size:8.2pt; }
+    .sched .rnd .rtime { font-size:7pt; margin-top:0.4mm; }
+    .sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; }
+    .pair, .bye { gap:1.4mm; min-height:0; }
+    .pair .t, .bye .t { min-width:0; font-size:8pt; }
+    .vs { font-size:8pt; }
+    .teams .name { height:5.5mm; }
+    .track th, .track td { padding:0.8mm 1mm; }
+    .track .rcell, .track td { height:auto; }
+    .track tr, .sched tr {
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    input.score {
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      width:1.7em;
+      height:auto;
+      min-height:0;
+      padding:0;
+      margin:0;
+      font-size:8.3pt;
+      font-weight:700;
+      color:#000;
+      text-align:center;
+    }
+    input.score:focus { outline:none; }
+    input[type=text]:not(.score) { display:none; }
+  }
+
+  /* Screen polish */
+  @media screen {
+    body {
+      padding: 12mm 14mm;
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+      color: #1a1a2e;
+      line-height: 1.4;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1f4e79;
+      margin: 0 0 4px;
+      letter-spacing: -0.3px;
+    }
+    .sub {
+      color: #5a6375;
+      font-size: 12.5px;
+      margin: 0 0 14px;
+    }
+    .guide {
+      border: none;
+      border-left: 4px solid #1f4e79;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 16px;
+      background: #f0f5fc;
+      margin: 0 0 14px;
+    }
+    .guide h2 {
+      font-size: 13px;
+      color: #1f4e79;
+      font-weight: 700;
+      margin: 0 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .guide li { margin: 3px 0; font-size: 12.5px; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    th {
+      background: #1f4e79;
+      color: #fff;
+      font-size: 12px;
+      padding: 5px 8px;
+      border: 1px solid #163a5c;
+    }
+    td { border: 1px solid #d4dde8; padding: 5px 7px; }
+    caption {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1f4e79;
+      margin: 16px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .nbtn {
+      border-radius: 6px;
+      padding: 7px 15px;
+      font-size: 13px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .nbtn:active { transform: scale(0.97); }
+    .namepanel {
+      border-radius: 8px;
+      border: 1.5px solid #cdd8e6;
+      background: #f7fafd;
+    }
+    input.score {
+      border: 1.5px solid #b0bec5;
+      border-radius: 4px;
+      background: #fafcff;
+    }
+    input.score:focus { outline: 2px solid #1f4e79; background: #fffce0; }
+    input.score.win { background: #d4f5d4 !important; border-color: #2e7d2e; }
+    input.score.invalid { background: #fde0e0 !important; border-color: #c62828; }
+    .stand .pl,
+    .stand .rk { background: #e8edf5; color: #1a1a2e; }
+    .track .tname,
+    .track .lbl { background: #f0f5fb; color: #1a1a2e; }
+    .track .sum { background: #e8edf5; color: #1a1a2e; }
+    .sched .rnd {
+      background: #1f4e79;
+      color: #fff;
+      font-weight: 700;
+    }
+    .sched .rnd .rtime,
+    .sched .rtime { color: #b8d4ee; }
+    .sched .rnd .rmode,
+    .sched .rmode { color: #a0b8cc; }
+    .digitalbar, .digbar, .topbar { gap: 12px; }
+  }
+
+  /* Print polish */
+  @media print {
+    body { padding: 0; font-size: 8.5pt; line-height: 1.15; }
+    h1 { font-size: 14pt; color: #000; }
+    caption { font-size: 8.5pt; color: #000; margin: 1.5mm 0 1mm; }
+    th { background: #e8edf5 !important; color: #000 !important; }
+    .sched .rnd { background: #e8edf5 !important; color: #000 !important; }
+    .sched .rnd .rtime, .sched .rtime { color: #000 !important; }
+    .sched .rnd .rmode, .sched .rmode { color: #333 !important; }
+    .guide { border: none; border-left: 3px solid #1f4e79; background: #f5f8fc !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noprint" style="margin:0 0 8px"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-jeder-gegen-jeden.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
+
+<div class="guide">
+  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <ol>
+    <li><span class="hi">Modus:</span> Jeder gegen jeden – jedes Team spielt 9 Spiele, niemand scheidet aus.</li>
+    <li><span class="hi">Pro Spiel:</span> 1 Satz bis 21 Punkte, Sieg nur mit 2 Punkten Vorsprung (z.&nbsp;B. 22:20). Bei knapper Zeit bis 15.</li>
+    <li><span class="hi">Ablauf je Runde:</span> Paarungen lt. Tabelle aufrufen, alle 5 Felder spielen gleichzeitig, dann Ergebnis in die Kästchen eintragen.</li>
+    <li><span class="hi">Wertung:</span> Sieg = 1 Punkt, Niederlage = 0. Fehlt ein Team, bekommt der Gegner ein Freilos (1 Punkt, ohne Differenz).</li>
+    <li><span class="hi">Auswertung (Seite 2):</span> Punkte und Ball-Differenz pro Runde fortlaufend addieren; R9 ergibt den Endstand und die Platzierung.</li>
+  </ol>
+</div>
+
+<h1>Turnierbogen – 10 Teams · Jeder-gegen-jeden</h1>
+<p class="sub tt">5 Felder &middot; 10:00&#8211;14:30 &middot; 9 Runden &middot; je <span class="rmode">1 Satz bis 21</span> (2 Pkt. Vorsprung) &middot; Sieg = 1 Pkt.</p>
+<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+
+<div class="noprint namectl">
+  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+  <div id="namepanel" class="namepanel" hidden>
+    <div class="ngrid"></div>
+    <div class="nactions">
+      <button type="button" class="nbtn" onclick="shuffleNames()">🎲 Teams mischen</button>
+      <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
+    </div>
+  </div>
+  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+  <div id="fieldpanel" class="namepanel" hidden>
+    <div class="ngrid" style="grid-template-columns:repeat(5,1fr)"><label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label><label>Feld 2<input type="text" id="fni_1" placeholder="Feld 2" oninput="onFieldInput(1)"></label><label>Feld 3<input type="text" id="fni_2" placeholder="Feld 3" oninput="onFieldInput(2)"></label><label>Feld 4<input type="text" id="fni_3" placeholder="Feld 4" oninput="onFieldInput(3)"></label><label>Feld 5<input type="text" id="fni_4" placeholder="Feld 5" oninput="onFieldInput(4)"></label></div>
+    <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
+  </div>
+</div>
+
+<div class="noprint digitalbar">
+  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label><label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="14:30" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label><span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:80px"></span><button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+  </span>
+</div>
+
+<div class="row">
+  <!-- Teams -->
+  <div style="flex:0 0 46%">
+    <table class="teams">
+      <caption>Teams (Namen eintragen)</caption>
+      <tr><td class="num">1</td><td class="name" data-team-name="1"></td><td class="num">6</td><td class="name" data-team-name="6"></td></tr>
+      <tr><td class="num">2</td><td class="name" data-team-name="2"></td><td class="num">7</td><td class="name" data-team-name="7"></td></tr>
+      <tr><td class="num">3</td><td class="name" data-team-name="3"></td><td class="num">8</td><td class="name" data-team-name="8"></td></tr>
+      <tr><td class="num">4</td><td class="name" data-team-name="4"></td><td class="num">9</td><td class="name" data-team-name="9"></td></tr>
+      <tr><td class="num">5</td><td class="name" data-team-name="5"></td><td class="num">10</td><td class="name" data-team-name="10"></td></tr>
+          </table>
+  </div>
+  <!-- Zeitplan -->
+  <div class="grow">
+    <table>
+      <caption>Zeitplan</caption>
+      <tr><th>Zeit</th><th>Runde</th><th>Zeit</th><th>Runde</th></tr>
+      <tr><td class="tt">10:00</td><td>R1</td><td class="tt">12:30</td><td>R6</td></tr>
+      <tr><td class="tt">10:30</td><td>R2</td><td class="tt">13:00</td><td>R7</td></tr>
+      <tr><td class="tt">11:00</td><td>R3</td><td class="tt">13:30</td><td>R8</td></tr>
+      <tr><td class="tt">11:30</td><td>R4</td><td class="tt">14:00</td><td>R9</td></tr>
+      <tr><td class="tt">12:00</td><td>R5</td><td class="tt">14:30</td><td>Auswertung</td></tr>
+      </table>
+  </div>
+</div>
+
+<table class="sched">
+  <caption>Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</caption>
+  <tr><th class="rnd">R</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th><th data-field="4">Feld 5</th></tr>
+  <tr><td class="rnd">1<span class="rtime tt">10:00–10:30</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="1" data-slot="0" data-a="10" data-b="1"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g1_10" data-rr-round="1" data-tm="10" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-rr-round="1" data-tm="1" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="1">Team 1</span></span><span class="bye" hidden></span></td><td class="match" data-round="1" data-slot="1" data-a="2" data-b="9"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-rr-round="1" data-tm="2" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_9" data-rr-round="1" data-tm="9" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="9">Team 9</span></span><span class="bye" hidden></span></td><td class="match" data-round="1" data-slot="2" data-a="3" data-b="8"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g1_3" data-rr-round="1" data-tm="3" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_8" data-rr-round="1" data-tm="8" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td><td class="match" data-round="1" data-slot="3" data-a="4" data-b="7"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-rr-round="1" data-tm="4" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_7" data-rr-round="1" data-tm="7" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td><td class="match" data-round="1" data-slot="4" data-a="5" data-b="6"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-rr-round="1" data-tm="5" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_6" data-rr-round="1" data-tm="6" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">2<span class="rtime tt">10:30–11:00</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="2" data-slot="0" data-a="10" data-b="2"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g2_10" data-rr-round="2" data-tm="10" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_2" data-rr-round="2" data-tm="2" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td><td class="match" data-round="2" data-slot="1" data-a="3" data-b="1"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-rr-round="2" data-tm="3" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-rr-round="2" data-tm="1" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="1">Team 1</span></span><span class="bye" hidden></span></td><td class="match" data-round="2" data-slot="2" data-a="4" data-b="9"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-rr-round="2" data-tm="4" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_9" data-rr-round="2" data-tm="9" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="9">Team 9</span></span><span class="bye" hidden></span></td><td class="match" data-round="2" data-slot="3" data-a="5" data-b="8"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g2_5" data-rr-round="2" data-tm="5" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_8" data-rr-round="2" data-tm="8" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td><td class="match" data-round="2" data-slot="4" data-a="6" data-b="7"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-rr-round="2" data-tm="6" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_7" data-rr-round="2" data-tm="7" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">3<span class="rtime tt">11:00–11:30</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="3" data-slot="0" data-a="10" data-b="3"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g3_10" data-rr-round="3" data-tm="10" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_3" data-rr-round="3" data-tm="3" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td><td class="match" data-round="3" data-slot="1" data-a="4" data-b="2"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g3_4" data-rr-round="3" data-tm="4" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_2" data-rr-round="3" data-tm="2" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td><td class="match" data-round="3" data-slot="2" data-a="5" data-b="1"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g3_5" data-rr-round="3" data-tm="5" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_1" data-rr-round="3" data-tm="1" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="1">Team 1</span></span><span class="bye" hidden></span></td><td class="match" data-round="3" data-slot="3" data-a="6" data-b="9"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g3_6" data-rr-round="3" data-tm="6" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_9" data-rr-round="3" data-tm="9" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="9">Team 9</span></span><span class="bye" hidden></span></td><td class="match" data-round="3" data-slot="4" data-a="7" data-b="8"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g3_7" data-rr-round="3" data-tm="7" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_8" data-rr-round="3" data-tm="8" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">4<span class="rtime tt">11:30–12:00</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="4" data-slot="0" data-a="10" data-b="4"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g4_10" data-rr-round="4" data-tm="10" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_4" data-rr-round="4" data-tm="4" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td><td class="match" data-round="4" data-slot="1" data-a="5" data-b="3"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g4_5" data-rr-round="4" data-tm="5" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_3" data-rr-round="4" data-tm="3" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td><td class="match" data-round="4" data-slot="2" data-a="6" data-b="2"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g4_6" data-rr-round="4" data-tm="6" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_2" data-rr-round="4" data-tm="2" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td><td class="match" data-round="4" data-slot="3" data-a="7" data-b="1"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g4_7" data-rr-round="4" data-tm="7" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_1" data-rr-round="4" data-tm="1" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="1">Team 1</span></span><span class="bye" hidden></span></td><td class="match" data-round="4" data-slot="4" data-a="8" data-b="9"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g4_8" data-rr-round="4" data-tm="8" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_9" data-rr-round="4" data-tm="9" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="9">Team 9</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">5<span class="rtime tt">12:00–12:30</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="5" data-slot="0" data-a="10" data-b="5"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g5_10" data-rr-round="5" data-tm="10" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_5" data-rr-round="5" data-tm="5" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td><td class="match" data-round="5" data-slot="1" data-a="6" data-b="4"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g5_6" data-rr-round="5" data-tm="6" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_4" data-rr-round="5" data-tm="4" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td><td class="match" data-round="5" data-slot="2" data-a="7" data-b="3"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g5_7" data-rr-round="5" data-tm="7" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_3" data-rr-round="5" data-tm="3" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td><td class="match" data-round="5" data-slot="3" data-a="8" data-b="2"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g5_8" data-rr-round="5" data-tm="8" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_2" data-rr-round="5" data-tm="2" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td><td class="match" data-round="5" data-slot="4" data-a="9" data-b="1"><span class="pair"><span class="t" data-team="9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g5_9" data-rr-round="5" data-tm="9" data-op="1" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_1" data-rr-round="5" data-tm="1" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="1">Team 1</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">6<span class="rtime tt">12:30–13:00</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="6" data-slot="0" data-a="10" data-b="6"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g6_10" data-rr-round="6" data-tm="10" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_6" data-rr-round="6" data-tm="6" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td><td class="match" data-round="6" data-slot="1" data-a="7" data-b="5"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g6_7" data-rr-round="6" data-tm="7" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_5" data-rr-round="6" data-tm="5" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td><td class="match" data-round="6" data-slot="2" data-a="8" data-b="4"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g6_8" data-rr-round="6" data-tm="8" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_4" data-rr-round="6" data-tm="4" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td><td class="match" data-round="6" data-slot="3" data-a="9" data-b="3"><span class="pair"><span class="t" data-team="9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g6_9" data-rr-round="6" data-tm="9" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_3" data-rr-round="6" data-tm="3" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td><td class="match" data-round="6" data-slot="4" data-a="1" data-b="2"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g6_1" data-rr-round="6" data-tm="1" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_2" data-rr-round="6" data-tm="2" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">7<span class="rtime tt">13:00–13:30</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="7" data-slot="0" data-a="10" data-b="7"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g7_10" data-rr-round="7" data-tm="10" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_7" data-rr-round="7" data-tm="7" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td><td class="match" data-round="7" data-slot="1" data-a="8" data-b="6"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g7_8" data-rr-round="7" data-tm="8" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_6" data-rr-round="7" data-tm="6" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td><td class="match" data-round="7" data-slot="2" data-a="9" data-b="5"><span class="pair"><span class="t" data-team="9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g7_9" data-rr-round="7" data-tm="9" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_5" data-rr-round="7" data-tm="5" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td><td class="match" data-round="7" data-slot="3" data-a="1" data-b="4"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g7_1" data-rr-round="7" data-tm="1" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_4" data-rr-round="7" data-tm="4" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td><td class="match" data-round="7" data-slot="4" data-a="2" data-b="3"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g7_2" data-rr-round="7" data-tm="2" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_3" data-rr-round="7" data-tm="3" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">8<span class="rtime tt">13:30–14:00</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="8" data-slot="0" data-a="10" data-b="8"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g8_10" data-rr-round="8" data-tm="10" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g8_8" data-rr-round="8" data-tm="8" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td><td class="match" data-round="8" data-slot="1" data-a="9" data-b="7"><span class="pair"><span class="t" data-team="9">Team 9</span><input class="score" type="text" inputmode="numeric" id="g8_9" data-rr-round="8" data-tm="9" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g8_7" data-rr-round="8" data-tm="7" data-op="9" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td><td class="match" data-round="8" data-slot="2" data-a="1" data-b="6"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g8_1" data-rr-round="8" data-tm="1" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g8_6" data-rr-round="8" data-tm="6" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td><td class="match" data-round="8" data-slot="3" data-a="2" data-b="5"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g8_2" data-rr-round="8" data-tm="2" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g8_5" data-rr-round="8" data-tm="5" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td><td class="match" data-round="8" data-slot="4" data-a="3" data-b="4"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g8_3" data-rr-round="8" data-tm="3" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g8_4" data-rr-round="8" data-tm="4" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td></tr>
+  <tr><td class="rnd">9<span class="rtime tt">14:00–14:30</span><span class="rmode">1 Satz bis 21</span></td><td class="match" data-round="9" data-slot="0" data-a="10" data-b="9"><span class="pair"><span class="t" data-team="10">Team 10</span><input class="score" type="text" inputmode="numeric" id="g9_10" data-rr-round="9" data-tm="10" data-op="9" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g9_9" data-rr-round="9" data-tm="9" data-op="10" oninput="onScore()" autocomplete="off"><span class="t" data-team="9">Team 9</span></span><span class="bye" hidden></span></td><td class="match" data-round="9" data-slot="1" data-a="1" data-b="8"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g9_1" data-rr-round="9" data-tm="1" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g9_8" data-rr-round="9" data-tm="8" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td><td class="match" data-round="9" data-slot="2" data-a="2" data-b="7"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g9_2" data-rr-round="9" data-tm="2" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g9_7" data-rr-round="9" data-tm="7" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td><td class="match" data-round="9" data-slot="3" data-a="3" data-b="6"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g9_3" data-rr-round="9" data-tm="3" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g9_6" data-rr-round="9" data-tm="6" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td><td class="match" data-round="9" data-slot="4" data-a="4" data-b="5"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g9_4" data-rr-round="9" data-tm="4" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g9_5" data-rr-round="9" data-tm="5" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td></tr>
+  </table>
+
+<div class="page-break"></div>
+
+<h1>Laufende Tabelle &amp; Endstand</h1>
+<p class="sub tt">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die Spalte <b>R9</b> ist damit automatisch der Endstand → daraus den Platz vergeben.</p>
+
+<table class="track">
+  <tr><th class="tname">Team</th><th class="lbl">kumuliert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th>R6</th><th>R7</th><th>R8</th><th>R9</th><th class="pos">Platz</th></tr>
+  <!-- Beispiel -->
+  <tr class="grp ex">
+    <td class="tname" rowspan="2">Muster-Team</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td><td>5</td><td>6</td>
+    <td class="pos" rowspan="2">3.</td>
+  </tr>
+  <tr class="ex"><td class="lbl">Ball-Differenz</td><td>+5</td><td>+8</td><td>+6</td><td>+10</td><td>+9</td><td>+15</td><td>+18</td><td>+14</td><td>+21</td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="1">Team 1</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_1_1"></td><td id="pt_1_2"></td><td id="pt_1_3"></td><td id="pt_1_4"></td><td id="pt_1_5"></td><td id="pt_1_6"></td><td id="pt_1_7"></td><td id="pt_1_8"></td><td id="pt_1_9"></td>
+    <td class="pos" rowspan="2" id="pz_1"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_1_1"></td><td id="bd_1_2"></td><td id="bd_1_3"></td><td id="bd_1_4"></td><td id="bd_1_5"></td><td id="bd_1_6"></td><td id="bd_1_7"></td><td id="bd_1_8"></td><td id="bd_1_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="2">Team 2</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_2_1"></td><td id="pt_2_2"></td><td id="pt_2_3"></td><td id="pt_2_4"></td><td id="pt_2_5"></td><td id="pt_2_6"></td><td id="pt_2_7"></td><td id="pt_2_8"></td><td id="pt_2_9"></td>
+    <td class="pos" rowspan="2" id="pz_2"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_2_1"></td><td id="bd_2_2"></td><td id="bd_2_3"></td><td id="bd_2_4"></td><td id="bd_2_5"></td><td id="bd_2_6"></td><td id="bd_2_7"></td><td id="bd_2_8"></td><td id="bd_2_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="3">Team 3</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_3_1"></td><td id="pt_3_2"></td><td id="pt_3_3"></td><td id="pt_3_4"></td><td id="pt_3_5"></td><td id="pt_3_6"></td><td id="pt_3_7"></td><td id="pt_3_8"></td><td id="pt_3_9"></td>
+    <td class="pos" rowspan="2" id="pz_3"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_3_1"></td><td id="bd_3_2"></td><td id="bd_3_3"></td><td id="bd_3_4"></td><td id="bd_3_5"></td><td id="bd_3_6"></td><td id="bd_3_7"></td><td id="bd_3_8"></td><td id="bd_3_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="4">Team 4</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_4_1"></td><td id="pt_4_2"></td><td id="pt_4_3"></td><td id="pt_4_4"></td><td id="pt_4_5"></td><td id="pt_4_6"></td><td id="pt_4_7"></td><td id="pt_4_8"></td><td id="pt_4_9"></td>
+    <td class="pos" rowspan="2" id="pz_4"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_4_1"></td><td id="bd_4_2"></td><td id="bd_4_3"></td><td id="bd_4_4"></td><td id="bd_4_5"></td><td id="bd_4_6"></td><td id="bd_4_7"></td><td id="bd_4_8"></td><td id="bd_4_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="5">Team 5</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_5_1"></td><td id="pt_5_2"></td><td id="pt_5_3"></td><td id="pt_5_4"></td><td id="pt_5_5"></td><td id="pt_5_6"></td><td id="pt_5_7"></td><td id="pt_5_8"></td><td id="pt_5_9"></td>
+    <td class="pos" rowspan="2" id="pz_5"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_5_1"></td><td id="bd_5_2"></td><td id="bd_5_3"></td><td id="bd_5_4"></td><td id="bd_5_5"></td><td id="bd_5_6"></td><td id="bd_5_7"></td><td id="bd_5_8"></td><td id="bd_5_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="6">Team 6</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_6_1"></td><td id="pt_6_2"></td><td id="pt_6_3"></td><td id="pt_6_4"></td><td id="pt_6_5"></td><td id="pt_6_6"></td><td id="pt_6_7"></td><td id="pt_6_8"></td><td id="pt_6_9"></td>
+    <td class="pos" rowspan="2" id="pz_6"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_6_1"></td><td id="bd_6_2"></td><td id="bd_6_3"></td><td id="bd_6_4"></td><td id="bd_6_5"></td><td id="bd_6_6"></td><td id="bd_6_7"></td><td id="bd_6_8"></td><td id="bd_6_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="7">Team 7</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_7_1"></td><td id="pt_7_2"></td><td id="pt_7_3"></td><td id="pt_7_4"></td><td id="pt_7_5"></td><td id="pt_7_6"></td><td id="pt_7_7"></td><td id="pt_7_8"></td><td id="pt_7_9"></td>
+    <td class="pos" rowspan="2" id="pz_7"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_7_1"></td><td id="bd_7_2"></td><td id="bd_7_3"></td><td id="bd_7_4"></td><td id="bd_7_5"></td><td id="bd_7_6"></td><td id="bd_7_7"></td><td id="bd_7_8"></td><td id="bd_7_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="8">Team 8</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_8_1"></td><td id="pt_8_2"></td><td id="pt_8_3"></td><td id="pt_8_4"></td><td id="pt_8_5"></td><td id="pt_8_6"></td><td id="pt_8_7"></td><td id="pt_8_8"></td><td id="pt_8_9"></td>
+    <td class="pos" rowspan="2" id="pz_8"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_8_1"></td><td id="bd_8_2"></td><td id="bd_8_3"></td><td id="bd_8_4"></td><td id="bd_8_5"></td><td id="bd_8_6"></td><td id="bd_8_7"></td><td id="bd_8_8"></td><td id="bd_8_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="9">Team 9</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_9_1"></td><td id="pt_9_2"></td><td id="pt_9_3"></td><td id="pt_9_4"></td><td id="pt_9_5"></td><td id="pt_9_6"></td><td id="pt_9_7"></td><td id="pt_9_8"></td><td id="pt_9_9"></td>
+    <td class="pos" rowspan="2" id="pz_9"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_9_1"></td><td id="bd_9_2"></td><td id="bd_9_3"></td><td id="bd_9_4"></td><td id="bd_9_5"></td><td id="bd_9_6"></td><td id="bd_9_7"></td><td id="bd_9_8"></td><td id="bd_9_9"></td></tr>
+  <tr class="grp">
+    <td class="tname" rowspan="2" data-team="10">Team 10</td>
+    <td class="lbl">Punkte (1 je Sieg)</td>
+    <td class="rcell" id="pt_10_1"></td><td id="pt_10_2"></td><td id="pt_10_3"></td><td id="pt_10_4"></td><td id="pt_10_5"></td><td id="pt_10_6"></td><td id="pt_10_7"></td><td id="pt_10_8"></td><td id="pt_10_9"></td>
+    <td class="pos" rowspan="2" id="pz_10"></td>
+  </tr>
+  <tr><td class="lbl">Ball-Differenz</td><td id="bd_10_1"></td><td id="bd_10_2"></td><td id="bd_10_3"></td><td id="bd_10_4"></td><td id="bd_10_5"></td><td id="bd_10_6"></td><td id="bd_10_7"></td><td id="bd_10_8"></td><td id="bd_10_9"></td></tr>
+</table>
+
+<div class="row">
+  <div style="flex:0 0 46%">
+    <table>
+      <caption>Wertung pro Spiel</caption>
+      <tr><th>Ergebnis</th><th>Wertung</th></tr>
+      <tr><td>Sieg</td><td>1 Punkt</td></tr>
+      <tr><td>Niederlage</td><td>0 Punkte</td></tr>
+      <tr><td>Freilos</td><td>1 Punkt, ohne Differenz</td></tr>
+    </table>
+  </div>
+  <div class="grow">
+    <table>
+      <caption>Tie-Breaker bei Gleichstand</caption>
+      <tr><th>Rang</th><th>Kriterium</th></tr>
+      <tr><td>1</td><td>Punkte</td></tr>
+      <tr><td>2</td><td>Ball-Differenz</td></tr>
+      <tr><td>3</td><td>erzielte Ballpunkte</td></tr>
+      <tr><td>4</td><td>direkter Vergleich</td></tr>
+      <tr><td>5</td><td>Losentscheid</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="legend"><b>Modus:</b> Jeder gegen jeden &middot; jedes Team 9 Spiele &middot; keine KO-Runde &middot; pro Spiel 1 Satz bis 21 Punkte mit 2 Punkten Vorsprung.</div>
+
+<button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>
+
+<script>
+  const NTEAMS = 10;
+  const STORE_KEY = 'turnier10rr_teamnames';
+  const SCORE_KEY = 'turnier10rr_scores';
+  const ABSENT_KEY = 'turnier10rr_absent';
+  const TEAMS  = [1,2,3,4,5,6,7,8,9,10];
+  const ROUNDS = [1,2,3,4,5,6,7,8,9];
+  const SESSION_KEY = 'turnier10rr';
+  const SESSION_FILE = 'Turnierbogen_10_Teams_5_Felder_Alle_gegen_Alle.html';
+  const SESSION_TITLE = 'Jeder gegen Jeden – 10 Teams';
+  const TITLE_KEY = SESSION_KEY + '_title';
+
+  /* ---------- Teamnamen ---------- */
+  function loadNames(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; } }
+  function saveNames(o){ try { localStorage.setItem(STORE_KEY, JSON.stringify(o)); } catch(e){} }
+  function loadAbsent(){ try{ return JSON.parse(localStorage.getItem(ABSENT_KEY))||{}; }catch(e){ return {}; } }
+  function saveAbsent(o){ try{ localStorage.setItem(ABSENT_KEY, JSON.stringify(o)); }catch(e){} }
+  function registerSession(){
+    try {
+      const teams = [];
+      for(let i=1; i<=Math.min(4, NTEAMS); i++){
+        const el = document.getElementById('tn' + i);
+        teams.push(el ? (el.value.trim() || 'Team ' + i) : 'Team ' + i);
+      }
+      const hasTeams = teams.some((team, idx) => team !== 'Team ' + (idx + 1));
+      const hasScores = Array.from(document.querySelectorAll('input.score')).some(el => (el.value || '').trim() !== '');
+      const hasFlags = Array.from(document.querySelectorAll('input[type="checkbox"]')).some(el => el.checked);
+      const customTitle = localStorage.getItem(TITLE_KEY) || '';
+      if(!hasTeams && !hasScores && !hasFlags && !customTitle) return;
+      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      const idx = registry.findIndex(s => s.key === SESSION_KEY);
+      const entry = {
+        key: SESSION_KEY,
+        file: SESSION_FILE,
+        title: SESSION_TITLE + (customTitle ? ' – ' + customTitle : ''),
+        customTitle: customTitle,
+        teams: teams,
+        savedAt: Date.now()
+      };
+      if(idx >= 0) registry[idx] = entry;
+      else registry.push(entry);
+      localStorage.setItem('beachl_sessions', JSON.stringify(registry));
+    } catch(e){}
+  }
+  function saveTitle() {
+    const val = (document.getElementById('session-title-input') || {}).value || '';
+    try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
+    const disp = document.getElementById('session-title-display');
+    if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+  }
+  function restoreTitle() {
+    try {
+      const val = localStorage.getItem(TITLE_KEY) || '';
+      const inp = document.getElementById('session-title-input');
+      if (inp) inp.value = val;
+      const disp = document.getElementById('session-title-display');
+      if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+    } catch(e) {}
+  }
+  function manualSave() {
+    saveTitle();
+    registerSession();
+    const btn = document.querySelector('[onclick="manualSave()"]');
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function teamListHtml(i, names, absent){
+    const v = ((names && names[i]) || '').trim();
+    const out = v ? escapeHtml(v) : '';
+    return out + (absent ? (out ? ' ' : '') + '<span class="abt">ausgefallen</span>' : '');
+  }
+  function applyName(i, val){
+    const absent = !!loadAbsent()[i];
+    const names = loadNames();
+    const merged = Object.assign({}, names, { [i]: val });
+    const v = (val||'').trim();
+    document.querySelectorAll('[data-team="'+i+'"]').forEach(el => {
+      const base = el.getAttribute('data-fb') || ('Team '+i);
+      el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+    });
+    document.querySelectorAll('[data-team-name="'+i+'"]').forEach(el => {
+      el.innerHTML = teamListHtml(i, merged, absent);
+    });
+  }
+  function applyTeamNames(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    for(let i=1;i<=NTEAMS;i++) applyName(i, names[i]||'');
+    registerSession();
+  }
+  function buildPanel(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    const grid = document.querySelector('#namepanel .ngrid');
+    let html='';
+    for(let i=1;i<=NTEAMS;i++){
+      const v = names[i] ? String(names[i]).replace(/"/g,'&quot;') : '';
+      html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" oninput="onNameInput('+i+')"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> ausgefallen</span></label>';
+    }
+    grid.innerHTML = html;
+    applyTeamNames();
+  }
+  function restoreAbsent(){
+    const absent = loadAbsent();
+    Object.keys(absent).forEach(i => {
+      const cb = document.getElementById('ab'+i);
+      if(cb) cb.checked = true;
+    });
+  }
+  function onNameInput(i){ const val=document.getElementById('tn'+i).value; const n=loadNames(); n[i]=val; saveNames(n); applyName(i,val); computeAll(); }
+  function onAbsentInput(i){
+    const checked = document.getElementById('ab'+i).checked;
+    const absent = loadAbsent();
+    if(checked) absent[i]=1; else delete absent[i];
+    saveAbsent(absent);
+    applyTeamNames();
+    computeAll();
+  }
+  function toggleNames(){ const p=document.getElementById('namepanel'); p.hidden=!p.hidden; }
+  function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames({}); for(let i=1;i<=NTEAMS;i++){ const inp=document.getElementById('tn'+i); if(inp) inp.value=''; applyName(i,''); } computeAll(); }
+  function shuffleNames(){
+    const names=loadNames(); const vals=[];
+    for(let i=1;i<=NTEAMS;i++) vals.push((names[i]||'').trim());
+    if(vals.filter(v=>v).length < 2){ alert('Bitte zuerst mindestens 2 Teamnamen eintragen, dann mischen.'); return; }
+    if(!confirm('Teams neu mischen? Die bestehende Reihenfolge wird überschrieben.')) return;
+    for(let i=vals.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [vals[i],vals[j]]=[vals[j],vals[i]]; }
+    const out={};
+    for(let i=1;i<=NTEAMS;i++){ out[i]=vals[i-1]; const inp=document.getElementById('tn'+i); if(inp) inp.value=vals[i-1]; }
+    saveNames(out);
+    for(let i=1;i<=NTEAMS;i++) applyName(i, out[i]||'');
+  }
+
+  /* ---------- Ergebnisse ---------- */
+  function loadScores(){ try { return JSON.parse(localStorage.getItem(SCORE_KEY)) || {}; } catch(e){ return {}; } }
+  function onScore(){ const sc={}; document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id) sc[inp.id]=inp.value; }); try{ localStorage.setItem(SCORE_KEY, JSON.stringify(sc)); }catch(e){} computeAll(); }
+  function restoreScores(){ const sc=loadScores(); document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id && sc[inp.id]!=null) inp.value=sc[inp.id]; }); }
+  function clearScores(){ if(!confirm('Alle Ergebnisse wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
+
+  /* ---------- Helfer ---------- */
+  function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
+  function gv(r,t){ return num(document.getElementById('g'+r+'_'+t)); }
+  function fmt(n){ return (n>0?'+':'')+n; }
+  function setCell(id,val,cls){
+    const e=document.getElementById(id);
+    if(!e) return;
+    e.classList.remove('auto','byeauto');
+    if(val===''||val==null){ e.textContent=''; return; }
+    e.textContent=val;
+    e.classList.add(cls || 'auto');
+  }
+  function directResult(a,b){
+    const absent = loadAbsent();
+    if(absent[a] || absent[b]) return 0;
+    for(const r of ROUNDS){
+      const inA=document.getElementById('g'+r+'_'+a);
+      if(inA && parseInt(inA.getAttribute('data-op'),10)===b){
+        const sa=gv(r,a), sb=gv(r,b);
+        if(sa!=null && sb!=null) return sa>sb?1:(sa<sb?-1:0);
+        return 0;
+      }
+    }
+    return 0;
+  }
+  function teamNameHtml(i, names, absent){
+    const v = ((names && names[i]) || '').trim();
+    return 'Team ' + i + (v ? ' <span class="tnm">(' + escapeHtml(v) + ')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+  }
+  function setByeView(td, html){
+    td.classList.add('is-bye');
+    const pair = td.querySelector('.pair');
+    const bye = td.querySelector('.bye');
+    if(pair) pair.hidden = true;
+    if(bye){ bye.hidden = false; bye.innerHTML = html; }
+    td.querySelectorAll('input.score').forEach(inp => inp.disabled = true);
+  }
+  function clearByeView(td){
+    td.classList.remove('is-bye');
+    const pair = td.querySelector('.pair');
+    const bye = td.querySelector('.bye');
+    if(pair) pair.hidden = false;
+    if(bye){ bye.hidden = true; bye.innerHTML = ''; }
+    td.querySelectorAll('input.score').forEach(inp => inp.disabled = false);
+  }
+  function refreshScheduleView(){
+    const names = loadNames();
+    const absent = loadAbsent();
+    document.querySelectorAll('td.match').forEach(td => {
+      const a = parseInt(td.getAttribute('data-a'),10);
+      const b = parseInt(td.getAttribute('data-b'),10);
+      const absentA = !!absent[a], absentB = !!absent[b];
+      if(absentA && absentB){
+        setByeView(td, '<span class="bye-tag">beide Teams ausgefallen</span>');
+      } else if(absentA){
+        setByeView(td, '<span class="bye-tag">Freilos</span><span class="t">' + teamNameHtml(b, names, false) + '</span>');
+      } else if(absentB){
+        setByeView(td, '<span class="t">' + teamNameHtml(a, names, false) + '</span><span class="bye-tag">Freilos</span>');
+      } else {
+        clearByeView(td);
+      }
+    });
+  }
+
+  /* ---------- Auswertung Round-Robin ---------- */
+  function computeAll(){
+    applyTeamNames();
+    refreshScheduleView();
+    const absent = loadAbsent();
+    const st={}, cum={};
+    TEAMS.forEach(t=>{ st[t]={w:0,bd:0,sc:0}; cum[t]={pts:0,bd:0}; });
+    ROUNDS.forEach(r=>{
+      document.querySelectorAll('td.match[data-round="'+r+'"]').forEach(td => {
+        const a = parseInt(td.getAttribute('data-a'),10);
+        const b = parseInt(td.getAttribute('data-b'),10);
+        const ptA='pt_'+a+'_'+r, bdA='bd_'+a+'_'+r;
+        const ptB='pt_'+b+'_'+r, bdB='bd_'+b+'_'+r;
+        const absentA = !!absent[a], absentB = !!absent[b];
+        if(absentA || absentB){
+          if(absentA && absentB){
+            setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
+            setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
+          } else if(absentA){
+            st[b].w += 1; cum[b].pts += 1;
+            setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
+            setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+          } else {
+            st[a].w += 1; cum[a].pts += 1;
+            setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
+            setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
+          }
+          return;
+        }
+        const sa = gv(r,a), sb = gv(r,b);
+        if(sa!=null && sb!=null){
+          if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
+          else if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
+          st[a].bd += (sa-sb); st[b].bd += (sb-sa);
+          cum[a].bd += (sa-sb); cum[b].bd += (sb-sa);
+          st[a].sc += sa; st[b].sc += sb;
+          setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
+          setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+        } else {
+          setCell(ptA,''); setCell(bdA,'');
+          setCell(ptB,''); setCell(bdB,'');
+        }
+      });
+    });
+    const complete = ROUNDS.every(r => Array.from(document.querySelectorAll('td.match[data-round="'+r+'"]')).every(td => {
+      const a = parseInt(td.getAttribute('data-a'),10);
+      const b = parseInt(td.getAttribute('data-b'),10);
+      if(absent[a] || absent[b]) return true;
+      return gv(r,a) != null && gv(r,b) != null;
+    }));
+    const ranked=[...TEAMS].sort((a,b)=>{
+      if(st[b].w  !== st[a].w ) return st[b].w  - st[a].w;
+      if(st[b].bd !== st[a].bd) return st[b].bd - st[a].bd;
+      if(st[b].sc !== st[a].sc) return st[b].sc - st[a].sc;
+      const d=directResult(a,b); if(d!==0) return -d;
+      return a-b;
+    });
+    ranked.forEach((t,idx)=> setCell('pz_'+t, complete ? (idx+1)+'.' : ''));
+    markScores();
+  }
+
+  /* ---------- Sieger-/Fehler-Markierung ---------- */
+  function markScores(){
+    document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
+    document.querySelectorAll('input.score[data-op]').forEach(inp => {
+      if(inp.disabled) return;
+      const m = inp.id.match(/^g(\d+)_(\d+)$/); if(!m) return;
+      const opp = document.getElementById('g'+m[1]+'_'+inp.getAttribute('data-op'));
+      if(!opp || opp.disabled) return;
+      const a = num(inp), b = num(opp); if(a==null || b==null) return;
+      if(Math.abs(a-b) < 2) inp.classList.add('invalid');
+      else if(a > b) inp.classList.add('win');
+    });
+  }
+
+  /* ---------- Neues Turnier ---------- */
+  function resetTournament(){
+    if(!confirm('Neues Turnier starten? Alle Teamnamen, Ausfälle UND Ergebnisse werden gelöscht.')) return;
+    try{ localStorage.removeItem(SCORE_KEY); }catch(e){}
+    try{ localStorage.removeItem(ABSENT_KEY); }catch(e){}
+    saveNames({});
+    for(let i=1;i<=NTEAMS;i++){ const inp=document.getElementById('tn'+i); if(inp) inp.value=''; applyName(i,''); }
+    document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false);
+    document.querySelectorAll('input.score').forEach(inp=>inp.value='');
+    computeAll();
+  }
+
+  /* ---------- Tastatur: Enter springt zum nächsten Feld ---------- */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter') return;
+    const el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    e.preventDefault();
+    const list = Array.prototype.slice.call(document.querySelectorAll('input.score:not(:disabled)'));
+    const idx = list.indexOf(el);
+    if(idx >= 0 && idx < list.length - 1){ const n = list[idx+1]; n.focus(); if(n.select) n.select(); }
+  });
+
+  /* ---------- Start- und Endzeit konfigurierbar ---------- */
+  const START_KEY  = 'turnier10rr_start';
+  const END_KEY    = 'turnier10rr_end';
+  const BASE_START = '10:00';
+  const BASE_END   = '14:30';
+  const NROUNDS    = 9;
+  const MODE_TABLE = [{min:50,mode:'2 Sätze bis 21'},{min:25,mode:'1 Satz bis 21'},{min:17,mode:'1 Satz bis 15'}];
+  function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
+  function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+  function applyTimes(){
+    const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
+    const startMin=toMin(sEl?sEl.value:BASE_START)||toMin(BASE_START);
+    const endMin=toMin(eEl?eEl.value:BASE_END)||toMin(BASE_END);
+    const baseS=toMin(BASE_START), baseE=toMin(BASE_END);
+    const origDur=baseE-baseS, newDur=Math.max(30,endMin-startMin);
+    document.querySelectorAll('.tt').forEach(el=>{
+      if(el.dataset.orig==null) el.dataset.orig=el.innerHTML;
+      el.innerHTML=el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g,(mm,h,mn)=>fmtMin(startMin+Math.round((+h*60+ +mn-baseS)*newDur/origDur)));
+    });
+    const minPerRound=Math.round(newDur/NROUNDS);
+    let modeText='⚠ zu kurz';
+    for(const {min,mode} of MODE_TABLE){ if(minPerRound>=min){ modeText=mode; break; } }
+    document.querySelectorAll('.rmode').forEach(el=>el.textContent=modeText);
+    const info=document.getElementById('roundDurInfo');
+    if(info){
+      info.textContent='≈ '+minPerRound+' Min./Runde · '+modeText;
+      info.style.color=modeText.startsWith('\u26a0')?'#c00':minPerRound>=28?'#2a7a2a':minPerRound>=20?'#c67c00':'#c00';
+    }
+  }
+  function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} applyTimes(); }
+  function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){} applyTimes(); }
+  function loadTimes(){
+    try{
+      const s=localStorage.getItem(START_KEY), e=localStorage.getItem(END_KEY);
+      if(s){const i=document.getElementById('startTime');if(i)i.value=s;}
+      if(e){const i=document.getElementById('endTime');  if(i)i.value=e;}
+    }catch(e){}
+    applyTimes();
+  }
+
+  /* ---- Feldnamen konfigurierbar ---- */
+  const FIELD_KEY = 'turnier10rr_fields';
+  const DEFAULT_FIELDS = ['Feld 1','Feld 2','Feld 3','Feld 4','Feld 5'];
+  function loadFieldNames(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
+  function saveFieldNames(n){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(n)); }catch(e){} }
+  function applyFieldName(idx, custom){
+    const orig = DEFAULT_FIELDS[idx];
+    document.querySelectorAll('[data-field="'+idx+'"]').forEach(el => {
+      if(el.dataset.origText == null) el.dataset.origText = el.textContent;
+      const suffix = el.dataset.origText.slice(orig.length);
+      el.textContent = (custom && custom.trim() ? custom.trim() : orig) + suffix;
+    });
+  }
+  function applyAllFieldNames(){
+    const names = loadFieldNames();
+    DEFAULT_FIELDS.forEach((orig, i) => {
+      const inp = document.getElementById('fni_'+i);
+      if(inp && names[i]) inp.value = names[i];
+      applyFieldName(i, names[i] || '');
+    });
+  }
+  function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
+  function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
+  function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
+
+  buildPanel();
+  restoreTitle();
+  restoreScores();
+  restoreAbsent();
+  loadTimes();
+  applyAllFieldNames();
+  computeAll();
+</script>
+
+</body>
+</html>
