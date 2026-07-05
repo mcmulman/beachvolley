@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Beach-Volleyball Turniervorlagen">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f6fa8"/>
+      <stop offset="1" stop-color="#1a3a5c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path d="M0 372 Q128 336 256 372 T512 372 V512 H0 Z" fill="#f5efe3"/>
+  <path d="M0 372 Q128 336 256 372 T512 372" fill="none" stroke="#e0d4be" stroke-width="8"/>
+  <g transform="translate(256 214)">
+    <circle r="120" fill="#ffffff" stroke="#1a3a5c" stroke-width="10"/>
+    <g fill="none" stroke="#1f6fa8" stroke-width="12" stroke-linecap="round">
+      <path d="M-120 0 A120 120 0 0 1 120 0" opacity="0"/>
+      <path d="M-6 -119 C-70 -40 -70 60 -30 118"/>
+      <path d="M119 -8 C30 -30 -60 20 -100 78"/>
+      <path d="M-104 -60 C-10 -80 90 -50 116 30"/>
+    </g>
+  </g>
+</svg>

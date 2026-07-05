@@ -1,0 +1,19 @@
+{
+  "name": "Beach-Volleyball Turniervorlagen",
+  "short_name": "BeachL Turniere",
+  "description": "Interaktive Turnierbögen für Beach-Volleyball – offline nutzbar. Jeder-gegen-Jeden, Gruppen/Platzierungsrunde, KO- und Schweizer System.",
+  "lang": "de",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "icons": [
+    { "src": "icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

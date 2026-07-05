@@ -4,6 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Beach-Volleyball Turniervorlagen</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     :root {
       --blue-dark:  #1a3a5c;
@@ -320,6 +329,7 @@
       .card-footer { flex-direction: column; align-items: stretch; }
       .btn-open { justify-content: center; }
     }
+    @media print { .noprint { display: none !important; } }
   </style>
 </head>
 <body>
@@ -328,6 +338,10 @@
   <div class="logo">🏐</div>
   <h1>Beach-Volleyball Turniervorlagen</h1>
   <p>Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
+  <div id="pwa-bar" style="margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap">
+    <span id="offline-status" class="noprint" style="display:none;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(4px)"></span>
+    <button id="install-btn" class="noprint" style="display:none;font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);color:#fff;cursor:pointer">⬇︎ App installieren</button>
+  </div>
 </header>
 
 <div class="filterbar">
@@ -861,6 +875,61 @@
   }
 
   loadSessions();
+</script>
+
+<script>
+/* ── PWA / Offline-Modus ── */
+(function () {
+  var statusEl = document.getElementById('offline-status');
+  function setStatus(txt, ok) {
+    if (!statusEl) return;
+    statusEl.textContent = txt;
+    statusEl.style.display = '';
+    statusEl.style.background = ok ? 'rgba(46,160,67,.85)' : 'rgba(255,255,255,.15)';
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        function ready() { setStatus('✓ Offline verfügbar', true); }
+        if (navigator.serviceWorker.controller) ready();
+        else navigator.serviceWorker.addEventListener('controllerchange', ready);
+        reg.addEventListener('updatefound', function () {
+          var nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', function () {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              setStatus('↻ Update verfügbar – Seite neu laden', false);
+            }
+          });
+        });
+      }).catch(function () {
+        setStatus('Offline-Modus nicht verfügbar', false);
+      });
+    });
+  }
+
+  /* Installations-Button (Chrome/Edge/Android) */
+  var deferredPrompt = null;
+  var installBtn = document.getElementById('install-btn');
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = '';
+  });
+  if (installBtn) {
+    installBtn.addEventListener('click', function () {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(function () {
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    });
+  }
+  window.addEventListener('appinstalled', function () {
+    if (installBtn) installBtn.style.display = 'none';
+  });
+})();
 </script>
 
 </body>
