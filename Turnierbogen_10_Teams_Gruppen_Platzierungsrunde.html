@@ -47,6 +47,7 @@
   .rname { display:block; font-size:10px; font-weight:bold; color:#0a7d2c; margin-top:1px; min-height:0; }
   .rname:empty { display:none; }
   .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+  .abt { color:#c00; font-size:0.8em; font-weight:600; }
   .vs { color:var(--soft); font-weight:bold; font-size:14px; }
   .cap { font-size:9px; color:#666; min-height:11px; margin-top:2px; }
   .gold { background:var(--gold); }
@@ -1017,6 +1018,26 @@
         scell.classList.toggle('auto', !!html);
       }
     });
+    placeAbsentTeamsLast(places);
+  }
+  function placeAbsentTeamsLast(places){
+    const placed = new Set(places.filter(Boolean));
+    const absentLeft = [];
+    for(let t = 1; t <= NTEAMS; t++) if(isMissing(t) && !placed.has(t)) absentLeft.push(t);
+    let ai = 0;
+    for(let i = places.length - 1; i >= 0 && ai < absentLeft.length; i--){
+      if(places[i]) continue;
+      const tt = absentLeft[ai++];
+      const c = document.getElementById('place' + (i + 1));
+      if(c){
+        let html = teamResultHTML(tt).replace(/\s*<span class="miss">· fehlt<\/span>/, '');
+        if(!/ausgefallen/i.test(html)) html += ' <span class="abt">ausgefallen</span>';
+        c.innerHTML = html;
+        c.classList.add('auto');
+      }
+      const s = document.getElementById('stat' + (i + 1));
+      if(s){ s.innerHTML = ''; s.classList.remove('auto'); }
+    }
   }
 
   function computeAll(){

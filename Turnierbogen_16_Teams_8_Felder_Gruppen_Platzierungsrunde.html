@@ -726,6 +726,26 @@
       const scell = document.getElementById('stat'+(i+1));
       if(scell){ const html = t ? renderStatCell(t, FSTATS[t]) : ''; scell.innerHTML = html; scell.classList.toggle('auto', !!html); }
     });
+    placeAbsentTeamsLast(places);
+  }
+  function placeAbsentTeamsLast(places){
+    const placed = new Set(places.filter(Boolean));
+    const absentLeft = [];
+    for(let t = 1; t <= NTEAMS; t++) if(isAbsent(t) && !placed.has(t)) absentLeft.push(t);
+    let ai = 0;
+    for(let i = places.length - 1; i >= 0 && ai < absentLeft.length; i--){
+      if(places[i]) continue;
+      const tt = absentLeft[ai++];
+      const c = document.getElementById('place' + (i + 1));
+      if(c){
+        let html = teamResultHTML(tt).replace(/\s*<span class="miss">· fehlt<\/span>/, '');
+        if(!/ausgefallen/i.test(html)) html += ' <span class="abt">ausgefallen</span>';
+        c.innerHTML = html;
+        c.classList.add('auto');
+      }
+      const s = document.getElementById('stat' + (i + 1));
+      if(s){ s.innerHTML = ''; s.classList.remove('auto'); }
+    }
   }
 
   function computeAll(){
