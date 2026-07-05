@@ -483,7 +483,7 @@
     <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
   </span>
     </div>
-    <div id="livebox" class="noprint livebox" hidden></div>
+    <div id="livebox" class="noprint livebox"></div>
 
     <div class="guide">
       <h2>Kurzanleitung – so läuft das Turnier</h2>
@@ -982,9 +982,11 @@
   function updateLive(){
     const box = document.getElementById('livebox'); if(!box) return;
     let last = 0; for(let r=1;r<=7;r++){ if(roundComplete(r)) last = r; }
-    if(last === 0){ box.innerHTML = '<em>Noch keine vollständige Runde gespielt – sobald eine Runde komplett ist, erscheinen hier Tabelle und nächste Paarungen.</em>'; return; }
-    const ord = orderUpto(last), st = statsUpto(last);
-    let h = '<h3>Tabelle nach Runde '+last+'</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th></tr>';
+    const st = statsUpto(7);
+    let playedTotal = 0; for(let t=1;t<=NTEAMS;t++) playedTotal += st[t].g;
+    if(playedTotal === 0){ box.innerHTML = '<em>Noch keine Ergebnisse erfasst – sobald das erste Spiel eingetragen ist, erscheint hier das aktuelle Ranking.</em>'; return; }
+    const ord = orderUpto(7);
+    let h = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
     const sameWert = (a,b) => st[a].s===st[b].s && st[a].bd===st[b].bd && st[a].p===st[b].p;
     const rankOf = {};
     ord.forEach((t,idx)=>{ rankOf[t] = (idx>0 && sameWert(ord[idx-1],t)) ? rankOf[ord[idx-1]] : idx+1; });
@@ -992,7 +994,7 @@
     ord.forEach((t,idx)=>{
       const tied = (idx>0 && sameWert(ord[idx-1],t)) || (idx<ord.length-1 && sameWert(ord[idx+1],t));
       if(tied) anyTie = true;
-      h += '<tr'+(tied?' class="tie-row"':'')+'><td>'+rankOf[t]+'.'+(tied?'<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>':'')+'</td><td>'+teamFull(t)+'</td><td>'+st[t].s+'</td><td>'+fmt(st[t].bd)+'</td><td>'+st[t].p+'</td></tr>';
+      h += '<tr'+(tied?' class="tie-row"':'')+'><td>'+rankOf[t]+'.'+(tied?'<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>':'')+'</td><td>'+teamFull(t)+'</td><td>'+st[t].s+'</td><td>'+fmt(st[t].bd)+'</td><td>'+st[t].p+'</td><td>'+st[t].g+'</td></tr>';
     });
     h += '</table>';
     if(anyTie) h += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';

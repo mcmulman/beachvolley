@@ -407,7 +407,7 @@
     let namesVisible = false;
     let fieldsVisible = false;
     let dropoutVisible = false;
-    let liveVisible = false;
+    let liveVisible = true;
     const SESSION_KEY = 'sw_univ';
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
     const SESSION_TITLE = 'Schweizer System (Universal)';
@@ -684,7 +684,8 @@
       }
       [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
-      namesVisible = fieldsVisible = dropoutVisible = liveVisible = false;
+      namesVisible = fieldsVisible = dropoutVisible = false;
+      liveVisible = true;
       renderApp();
     }
     function onRoundCountChange(value){
@@ -1019,10 +1020,12 @@
       const box = document.getElementById('livebox'); if(!box) return;
       let last = 0;
       for(let r=1;r<=NROUNDS;r++) if(roundComplete(r)) last = r;
-      if(last === 0){ box.innerHTML = '<em>Noch keine vollständige Runde gespielt – sobald eine Runde komplett ist, erscheinen hier Tabelle und nächste Paarungen.</em>'; return; }
-      const st = statsUpto(last);
-      const ord = displayOrderUpto(last);
-      let html = '<h3>Tabelle nach Runde ' + last + '</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th></tr>';
+      const st = statsUpto(NROUNDS);
+      let playedTotal = 0;
+      for(let t=1;t<=NTEAMS;t++) playedTotal += st[t].g;
+      if(playedTotal === 0){ box.innerHTML = '<em>Noch keine Ergebnisse erfasst – sobald das erste Spiel eingetragen ist, erscheint hier das aktuelle Ranking.</em>'; return; }
+      const ord = displayOrderUpto(NROUNDS);
+      let html = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
       const sameWert = (a, b) => st[a].s === st[b].s && st[a].bd === st[b].bd && st[a].p === st[b].p;
       const rankOf = {};
       ord.forEach((t, idx) => { rankOf[t] = (idx > 0 && sameWert(ord[idx - 1], t)) ? rankOf[ord[idx - 1]] : idx + 1; });
@@ -1031,7 +1034,7 @@
         const tied = (idx > 0 && sameWert(ord[idx - 1], t)) || (idx < ord.length - 1 && sameWert(ord[idx + 1], t));
         if(tied) anyTie = true;
         const cls = (droppedTeams().has(t) ? 'drop-row ' : '') + (tied ? 'tie-row' : '');
-        html += '<tr' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + '><td>' + rankOf[t] + '.' + (tied ? '<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>' : '') + '</td><td>' + teamFull(t, {markDropped:true}) + '</td><td>' + st[t].s + '</td><td>' + fmt(st[t].bd) + '</td><td>' + st[t].p + '</td></tr>';
+        html += '<tr' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + '><td>' + rankOf[t] + '.' + (tied ? '<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>' : '') + '</td><td>' + teamFull(t, {markDropped:true}) + '</td><td>' + st[t].s + '</td><td>' + fmt(st[t].bd) + '</td><td>' + st[t].p + '</td><td>' + st[t].g + '</td></tr>';
       });
       html += '</table>';
       if(anyTie) html += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
