@@ -18,8 +18,8 @@
       --blue-dark:  #1a3a5c;
       --blue:       #1f6fa8;
       --blue-light: #e8f3fb;
-      --sand:       #f5efe3;
-      --sand-dark:  #e0d4be;
+      --sand:       #eef2f7;
+      --sand-dark:  #d8e1ec;
       --green:      #0a7d2c;
       --green-light:#e7f6ec;
       --text:       #1a1a2e;
@@ -35,10 +35,59 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--sand);
       color: var(--text);
       min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── App-Leiste (sticky, frosted) ── */
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px max(16px, env(safe-area-inset-left)) 8px max(16px, env(safe-area-inset-left));
+      padding-top: calc(8px + env(safe-area-inset-top, 0px));
+      min-height: 56px;
+      background: rgba(255, 255, 255, .82);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      backdrop-filter: saturate(180%) blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .appbar .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--blue-dark);
+      letter-spacing: .2px;
+      text-decoration: none;
+    }
+    .appbar .brand img { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 2px 6px rgba(26,58,92,.25); }
+    .appbar .brand .brand-sub { display: block; font-size: 10.5px; font-weight: 600; color: var(--muted); letter-spacing: .3px; }
+    .appbar-spacer { flex: 1; }
+    .appbar-actions { display: flex; align-items: center; gap: 8px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 700;
+      padding: 7px 14px; border-radius: 999px;
+      border: 1.5px solid var(--border); background: var(--white); color: var(--blue-dark);
+      cursor: pointer; text-decoration: none; white-space: nowrap;
+      transition: transform .12s, background .16s, border-color .16s;
+    }
+    .pill:hover { border-color: var(--blue); }
+    .pill:active { transform: scale(.96); }
+    .pill--ok { background: var(--green); border-color: var(--green); color: #fff; }
+    .pill--primary { background: var(--blue-dark); border-color: var(--blue-dark); color: #fff; }
+    @media (max-width: 560px) {
+      .appbar .brand-title { display: none; }
+      .pill .lbl { display: none; }
+      .pill { padding: 8px; }
     }
 
     /* ── Header ── */
@@ -86,10 +135,26 @@
       flex-wrap: wrap;
       gap: 6px 8px;
       justify-content: center;
-      padding: 14px 20px;
-      background: var(--white);
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, .92);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       align-items: center;
+      position: sticky;
+      top: 56px;
+      z-index: 110;
+    }
+    @media (max-width: 640px) {
+      .filterbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .filterbar::-webkit-scrollbar { display: none; }
+      .filter-btn, .filter-label { flex-shrink: 0; }
     }
     .filter-sep {
       width: 1px;
@@ -158,6 +223,14 @@
     .card:hover {
       transform: translateY(-3px);
       box-shadow: 0 8px 28px rgba(31,111,168,.2);
+    }
+    .card:active { transform: translateY(-1px) scale(.995); }
+
+    .filter-btn { border: 1px solid var(--border); background: var(--white); }
+    .filter-btn:active { transform: scale(.95); }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
     }
 
     .card-header {
@@ -334,14 +407,22 @@
 </head>
 <body>
 
+<div class="appbar noprint">
+  <a class="brand" href="index.html" aria-label="Startseite">
+    <img src="icon.svg" alt="">
+    <span class="brand-title">Beach-Volleyball<span class="brand-sub">Turniervorlagen</span></span>
+  </a>
+  <div class="appbar-spacer"></div>
+  <div class="appbar-actions">
+    <span id="offline-status" class="pill" style="display:none"></span>
+    <button id="install-btn" class="pill pill--primary" style="display:none">⬇︎ <span class="lbl">Installieren</span></button>
+  </div>
+</div>
+
 <header>
   <div class="logo">🏐</div>
   <h1>Beach-Volleyball Turniervorlagen</h1>
   <p>Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
-  <div id="pwa-bar" style="margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap">
-    <span id="offline-status" class="noprint" style="display:none;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(4px)"></span>
-    <button id="install-btn" class="noprint" style="display:none;font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);color:#fff;cursor:pointer">⬇︎ App installieren</button>
-  </div>
 </header>
 
 <div class="filterbar">
@@ -383,7 +464,7 @@
 
   <!-- Format-Überblick -->
   <div class="section-label">Turnierformat</div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:40px">
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
       <h3>🔁 Jeder gegen Jeden</h3>
       Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für ≤8 Teams. Niemand scheidet aus.
@@ -885,7 +966,7 @@
     if (!statusEl) return;
     statusEl.textContent = txt;
     statusEl.style.display = '';
-    statusEl.style.background = ok ? 'rgba(46,160,67,.85)' : 'rgba(255,255,255,.15)';
+    statusEl.classList.toggle('pill--ok', !!ok);
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

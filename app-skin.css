@@ -1,0 +1,503 @@
+/* app-skin.css – App-like Bildschirm-Oberfläche für die Turnierbögen.
+   ALLE Regeln sind auf @media screen beschränkt → keine Auswirkung auf die Druckausgabe. */
+@media screen {
+
+  :root {
+    --app-blue-dark: #1a3a5c;
+    --app-blue: #1f6fa8;
+    --app-accent: #2ea043;
+    --app-green: #0a7d2c;
+    --app-bar-h: 54px;
+    /* Vereinheitlichte, moderne Bildschirm-Palette (Print bleibt unberührt) */
+    --app-ink: #1f2a37;
+    --app-muted: #5a6375;
+    --app-line-soft: #dbe4ee;
+    --app-tint: #eef3f9;
+    --app-tint-head: #e3edf6;
+    --app-radius: 12px;
+    --app-shadow: 0 1px 2px rgba(16,42,74,.05), 0 6px 20px rgba(16,42,74,.07);
+    /* Einheitliche Karten-/Bogenbreite am Bildschirm (Desktop). Alle Bögen
+       präsentieren sich dadurch gleich breit; der Inhalt füllt die Karte.
+       Der Druck ist unberührt (gesamte Datei ist @media screen). */
+    --sheet-w: 1760px;
+  }
+
+  /* ── Gemeinsame Variablen der Bögen für den Bildschirm weicher/moderner
+     einstellen. 11 der 13 Bögen nutzen --line/--soft/--bg; damit werden
+     Rahmen, Struktur-Zellen und Score-Ränder konsistent zart – im Druck
+     gelten weiter die Originalwerte (#333/#aaa/#f0f0f0). */
+  :root {
+    --line: #d7e0ea;
+    --soft: #b9c6d6;
+    --bg: var(--app-tint);
+  }
+
+  /* Modernere, app-typische Schrift nur am Bildschirm (Druck nutzt weiter seine Vorgaben). */
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Zentrierte „Karten"-Fläche für den Bogen ──
+     Nur auf großen Screens (≥1360px). Darunter bleibt das originale, voll
+     responsive Layout der Bögen unverändert (wichtig für Mobil/Tablet). */
+  @media (min-width: 1360px) {
+    html { background: #eef2f7; }
+    body {
+      box-sizing: border-box;
+      width: min(var(--sheet-w), calc(100vw - 40px));
+      max-width: 100%;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      background: #fff;
+      box-shadow: 0 10px 44px rgba(26, 58, 92, .13);
+      padding-left: clamp(20px, 2.2vw, 40px) !important;
+      padding-right: clamp(20px, 2.2vw, 40px) !important;
+      padding-bottom: 48px !important;
+      min-height: 100vh;
+    }
+    /* App-Leiste randlos an die Kartenkanten ziehen */
+    .app-bar {
+      margin-left: calc(-1 * clamp(20px, 2.2vw, 40px));
+      margin-right: calc(-1 * clamp(20px, 2.2vw, 40px));
+    }
+    /* Schweizer-Bögen: innere .page-Fläche die einheitliche Kartenbreite füllen
+       lassen, damit sie nicht schmaler als die übrigen Bögen wirken. */
+    .page {
+      max-width: none !important;
+      width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+  }
+
+  /* ── Breite Datentabellen auf schmalen Screens horizontal scrollen ──
+     Unterhalb bzw. knapp oberhalb der Karten-Breite (≤1560px) werden die
+     breiten Spiel-/Wertungstabellen zu eigenen Scroll-Containern. Dadurch
+     bleiben App-Leiste, Texte und Bedien-Elemente immer auf Viewport-Breite
+     und die Seite läuft nie horizontal aus – nur die wenigen sehr breiten
+     Tabellen (12/16 Teams) scrollen bei schmaleren Desktops innerhalb ihrer
+     Karte. Rein bildschirmbezogen – der Druck bleibt unberührt. */
+  @media (max-width: 1560px) {
+    table.sched,
+    table.track {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+    }
+    /* Dezente Kanten-Schatten als Scroll-Hinweis. */
+    table.sched, table.track {
+      background:
+        linear-gradient(90deg, #fff 30%, rgba(255,255,255,0)) left / 24px 100% no-repeat,
+        linear-gradient(90deg, rgba(255,255,255,0), #fff 70%) right / 24px 100% no-repeat,
+        radial-gradient(farthest-side at 0 50%, rgba(26,58,92,.16), transparent) left / 12px 100% no-repeat,
+        radial-gradient(farthest-side at 100% 50%, rgba(26,58,92,.16), transparent) right / 12px 100% no-repeat;
+      background-attachment: local, local, scroll, scroll;
+    }
+  }
+
+  /* Die ursprüngliche „← Zur Übersicht"-Zeile wird durch die App-Leiste ersetzt. */
+  body > .noprint.legacy-nav { display: none !important; }
+
+  /* ── Flex-Spalten auf schmalen Screens stapeln ──
+     Zeilen wie „Teams + Zeitplan" (.row) haben feste Spaltenbreiten, die auf
+     dem Handy breiter als der Viewport werden. Unterhalb der Karten-Breite
+     dürfen die Spalten schrumpfen; auf sehr schmalen Screens stapeln sie sich
+     untereinander. Nur Bildschirm – der Druck nutzt weiterhin sein Layout. */
+  @media (max-width: 1359px) {
+    .row { flex-wrap: wrap; }
+    .row > * { min-width: 0; }
+  }
+  @media (max-width: 700px) {
+    .row > * { flex: 1 1 100% !important; }
+    /* Mehrspaltige Runden-Raster (Schweizer System) auf dem Handy einspaltig. */
+    .round-grid { grid-template-columns: minmax(0, 1fr) !important; }
+    /* Zweispaltige Kopf-/Bracket-Raster (KO-Bögen) auf dem Handy stapeln. */
+    .topgrid, .bracket-wrap { grid-template-columns: minmax(0, 1fr) !important; }
+  }
+
+  /* ── Sticky App-Leiste ── */
+  .app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    min-height: var(--app-bar-h);
+    background: linear-gradient(135deg, var(--app-blue-dark) 0%, var(--app-blue) 100%);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(26, 58, 92, .28);
+    margin-bottom: 14px;
+  }
+
+  .app-bar__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 8px 14px 8px 11px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 999px;
+    transition: background .16s, transform .12s;
+  }
+  .app-bar__back:hover { background: rgba(255, 255, 255, .24); }
+  .app-bar__back:active { transform: scale(.96); }
+  .app-bar__back .chev { font-size: 17px; line-height: 1; }
+
+  .app-bar__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-bar__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .app-bar__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 10px;
+    transition: background .16s, transform .12s;
+  }
+  .app-bar__btn:hover { background: rgba(255, 255, 255, .24); }
+  .app-bar__btn:active { transform: scale(.95); }
+  .app-bar__btn .ic { font-size: 16px; line-height: 1; }
+
+  /* Auf schmalen Screens Button-Beschriftungen ausblenden (nur Icon). */
+  @media (max-width: 560px) {
+    .app-bar__back { padding: 8px 12px; }
+    .app-bar__back .lbl { display: none; }
+    .app-bar__btn .lbl { display: none; }
+    .app-bar__btn { padding: 0; }
+    .app-bar__title { font-size: 14px; }
+  }
+
+  /* Sichtbarer Fokus für Tastatur-/Screenreader-Bedienung. */
+  .app-bar a:focus-visible,
+  .app-bar button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     VEREINHEITLICHTE, MODERNE BILDSCHIRM-OBERFLÄCHE FÜR ALLE BÖGEN
+     Nur @media screen → keinerlei Auswirkung auf die Druckausgabe.
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /* Sanfter Hintergrund + Lesetypografie. */
+  html { background: #eef2f7; }
+  body {
+    color: var(--app-ink);
+    line-height: 1.45;
+  }
+
+  /* Überschriften konsistent. */
+  h1 {
+    color: var(--app-blue-dark);
+    font-weight: 800;
+    letter-spacing: -.2px;
+  }
+  .sub, .cfgmeta, .nhint, .round-subline { color: var(--app-muted); }
+
+  /* ── Tabellen: klare, leichte Rasterlinien + zarter Header ── */
+  th, td { border-color: var(--app-line-soft); }
+  th {
+    background: var(--app-tint-head);
+    color: var(--app-blue-dark);
+    font-weight: 700;
+  }
+  /* Abschnitts-Überschriften (Tabellen-Captions) als einheitliche, moderne
+     Section-Header: linksbündig, klarer Akzentbalken, ruhiger Abstand.
+     Gilt für alle Bögen; der Druck nutzt weiter seine eigenen Caption-Stile. */
+  caption {
+    color: var(--app-blue-dark);
+    font-weight: 800;
+    text-align: left;
+    letter-spacing: .3px;
+    padding: 2px 0 6px 11px;
+    border-left: 3px solid var(--app-blue);
+    line-height: 1.25;
+  }
+  /* Spielplan-R-Spalte: Uhrzeit + Modus lesbar halten. Die Bögen setzen für den
+     ursprünglich dunklen Zellhintergrund helle Textfarben; app-skin färbt die
+     Zelle hell (Tint), daher hier passende dunkle, kontraststarke Farben,
+     einheitlich mit den übrigen Tabellen. */
+  .sched .rnd .rtime, .sched .rtime { color: var(--app-blue) !important; }
+  .sched .rnd .rmode, .sched .rmode { color: var(--app-muted) !important; }
+  /* Abschnitts-Überschriften (Section-<h2>): gleiche Akzent-Optik wie Captions,
+     damit Bracket-/Gruppen-/Panel-Titel einheitlich wirken. Ausgenommen sind die
+     Kurzanleitung (.guide h2) und die Runden-Divider (.tt), die eigene Rollen haben. */
+  body > h2:not(.tt):not(.guide),
+  .panel > h2:not(.tt) {
+    color: var(--app-blue-dark);
+    font-weight: 800;
+    letter-spacing: -.1px;
+    line-height: 1.25;
+    padding-left: 12px;
+    border-left: 4px solid var(--app-blue);
+  }
+  /* Struktur-/Index-Zellen (Runde, Team-Nr., Summe, Platz …) einheitlich. */
+  .track .tnum, .track .sum, .sched .rnd, .teams .num,
+  .stand .pl, .central-table .rk, .grp-box .tnum {
+    background: var(--app-tint);
+    color: var(--app-blue-dark);
+  }
+
+  /* ── Flächen / Panels: einheitliche Karten-Optik ── */
+  .guide, .namepanel, .digitalbar, .digbar, .livebox, .panel,
+  .panel-checks, .team-legend, .legend, .page-note, .bye-note, .tie-note,
+  .dropped-note, .freilos-note, .mnote {
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-shadow);
+  }
+
+  /* Kurzanleitung (blau akzentuiert). */
+  .guide {
+    border: 1px solid #d5e6f6;
+    border-left: 4px solid var(--app-blue);
+    background: linear-gradient(180deg, #f4f9fe, #eef5fc);
+    padding: 12px 16px 12px 18px;
+    margin: 0 0 16px;
+  }
+  .guide h2 {
+    color: var(--app-blue-dark);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-size: 12.5px;
+  }
+
+  /* Namens-/Konfig-Panel (neutral). */
+  .namepanel, .panel, .panel-checks {
+    border: 1px solid var(--app-line-soft);
+    background: #f7f9fc;
+    padding: 14px 16px;
+  }
+  .namepanel input, .cfggrid input, input[type="text"], input[type="time"] {
+    border: 1px solid #c4d0e0;
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-family: inherit;
+    transition: border-color .16s, box-shadow .16s;
+  }
+  .namepanel input:focus, .cfggrid input:focus,
+  input[type="text"]:focus, input[type="time"]:focus {
+    outline: none;
+    border-color: var(--app-blue);
+    box-shadow: 0 0 0 3px rgba(31,111,168,.18);
+  }
+
+  /* Werkzeugleiste „Digitale Eingabe / Speichern" – neutrale, klare Fläche,
+     damit die farbigen Aktionen (Speichern = grün, Löschen = rot) hervorstechen. */
+  .digitalbar, .digbar {
+    border: 1px solid var(--app-line-soft);
+    background: #fff;
+    padding: 10px 12px;
+    border-radius: var(--app-radius);
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  /* Live-Ranking-Box (Schweizer, nur Bildschirm). */
+  .livebox {
+    border: 1px solid #cfe0f1;
+    background: #f4f9fe;
+    padding: 12px 16px;
+  }
+
+  /* Hinweis-/Legenden-Boxen dezent. */
+  .legend, .team-legend {
+    border: 1px solid var(--app-line-soft);
+    background: #f7f9fc;
+    padding: 8px 12px;
+    color: var(--app-muted);
+  }
+  .page-note, .mnote {
+    border: 1px solid #d5e6f6;
+    background: #f2f8fd;
+    padding: 8px 12px;
+  }
+  .bye-note, .freilos-note { border: 1px solid #e6d3a2; background: #fdf6e3; padding: 8px 12px; }
+  .tie-note { border: 1px solid #e7d68a; background: #fff8dd; padding: 8px 12px; }
+  .dropped-note { border: 1px solid #e6b8b8; background: #fdeeee; padding: 8px 12px; }
+
+  /* ── Score-Eingaben modern ── */
+  input.score {
+    border: 1px solid #c4d0e0;
+    border-radius: 8px;
+    transition: border-color .14s, box-shadow .14s, background .14s;
+  }
+  input.score:focus {
+    outline: none;
+    border-color: var(--app-blue);
+    box-shadow: 0 0 0 3px rgba(31,111,168,.20);
+    background: #fffdf3;
+  }
+  .score { border-radius: 8px; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     EINHEITLICHES BUTTON-SYSTEM & WERKZEUGLEISTEN (nur Bildschirm)
+     Semantik rein über die vorhandenen onclick-Handler → keine HTML-Änderung,
+     wirkt in allen 13 Bögen gleich. Farb-Logik:
+       • Blau tonal   = normale Aktion            (Standard)
+       • Blau gefüllt = Haupt-Einstieg            (Namen eintragen, Auslosen)
+       • Grün gefüllt = Speichern                 (manualSave)
+       • Rot tonal    = destruktiv                (reset…, clear…)
+       • Weiß/ghost   = sekundär in Panels        (.nactions)
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* Basis – ruhiger, moderner „tonal"-Button mit gutem Touch-Ziel. */
+  .nbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.1;
+    color: var(--app-blue-dark);
+    background: #e8f1fb;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background .15s, border-color .15s, transform .1s, box-shadow .15s;
+  }
+  .nbtn:hover { background: #d8e8f8; }
+  .nbtn:active { transform: translateY(1px); }
+  .nbtn:focus-visible { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+
+  /* Kontext-Normalisierung: alte grüne/kontextabhängige Basis überschreiben. */
+  .digitalbar .nbtn, .digbar .nbtn, .namectl .nbtn {
+    background: #e8f1fb;
+    color: var(--app-blue-dark);
+    border-color: transparent;
+  }
+  .digitalbar .nbtn:hover, .digbar .nbtn:hover, .namectl .nbtn:hover { background: #d8e8f8; }
+
+  /* Sekundär (in Panels): dezent weiß mit Rahmen. */
+  .nactions .nbtn {
+    background: #fff;
+    color: var(--app-blue-dark);
+    border-color: var(--app-line-soft);
+  }
+  .nactions .nbtn:hover { background: #f0f5fb; border-color: var(--app-blue); }
+
+  /* Haupt-Einstieg – gefüllt blau, prominent. */
+  .nbtn[onclick*="toggleNames"],
+  .nbtn[onclick*="drawGroups"],
+  .nbtn[onclick*="drawStart"] {
+    background: var(--app-blue-dark);
+    color: #fff;
+    border-color: var(--app-blue-dark);
+    box-shadow: 0 2px 8px rgba(26,58,92,.22);
+  }
+  .nbtn[onclick*="toggleNames"]:hover,
+  .nbtn[onclick*="drawGroups"]:hover,
+  .nbtn[onclick*="drawStart"]:hover {
+    background: var(--app-blue);
+    border-color: var(--app-blue);
+  }
+
+  /* Speichern – gefüllt grün (Erfolg). !important schlägt Inline-Style. */
+  .nbtn[onclick*="manualSave"] {
+    background: var(--app-green) !important;
+    color: #fff !important;
+    border-color: var(--app-green) !important;
+    box-shadow: 0 2px 8px rgba(10,125,44,.28);
+  }
+  .nbtn[onclick*="manualSave"]:hover { background: #086323 !important; border-color: #086323 !important; }
+
+  /* Destruktiv – klar als Warnung markiert (tonal rot). */
+  .nbtn[onclick*="reset"],
+  .nbtn[onclick*="clear"] {
+    background: #fdecec !important;
+    color: #c02626 !important;
+    border-color: #f3c9c9 !important;
+    box-shadow: none;
+  }
+  .nbtn[onclick*="reset"]:hover,
+  .nbtn[onclick*="clear"]:hover {
+    background: #f8d7d7 !important;
+    border-color: #e2a3a3 !important;
+  }
+
+  /* Lone „Drucken"-Button unten (Fallback zur App-Leiste) – ruhiger Ghost. */
+  button.noprint[onclick*="print"] {
+    min-height: 40px;
+    border: 1px solid var(--app-line-soft) !important;
+    border-radius: 10px !important;
+    background: #fff;
+    color: var(--app-blue-dark);
+    font-weight: 650;
+    cursor: pointer;
+  }
+  button.noprint[onclick*="print"]:hover { background: #f0f5fb; border-color: var(--app-blue) !important; }
+
+  /* ── Werkzeugleisten-Layout: übersichtlich & modern ── */
+  .namectl { margin: 0 0 14px; }
+  /* Einstiegs-Buttons nebeneinander mit Luft; die Panels bleiben blockweise
+     darunter (nicht als Flex-Kinder, sonst zerfließt das Layout). */
+  .namectl > .nbtn { margin: 0 8px 8px 0; vertical-align: top; }
+  /* Zeit-Einstellungen (Start/Ende) als zusammengehörige Gruppe absetzen. */
+  .digitalbar label.nhint, .digbar label.nhint {
+    background: #f3f6fa;
+    border: 1px solid var(--app-line-soft);
+    border-radius: 999px;
+    padding: 5px 10px;
+    color: var(--app-blue-dark);
+    font-weight: 600;
+  }
+  .digitalbar #session-title-input,
+  .digitalbar input[id*="session-title"] {
+    min-height: 38px;
+    border: 1px solid #c4d0e0;
+    border-radius: 10px;
+  }
+  /* Aktions-Reihe in Panels mit etwas Luft nach oben. */
+  .nactions { gap: 8px; margin-top: 12px; }
+
+  /* Allgemeiner sichtbarer Fokus für Bedien-Elemente (außer App-Leiste). */
+  body :is(a, button, input, [tabindex]):not(.app-bar *):focus-visible {
+    outline: 2px solid var(--app-blue);
+    outline-offset: 2px;
+  }
+}

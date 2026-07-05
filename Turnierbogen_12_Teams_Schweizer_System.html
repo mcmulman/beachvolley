@@ -117,9 +117,12 @@
     input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
     input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
     input.score:disabled { background:#f7f7f7; color:#999; }
-    .livebox { margin:4px 0 6px; padding:8px 10px; border:1px solid #bfe0c8; border-radius:5px; background:#f6fbf7; font-size:11px; }
-    .livebox h3 { margin:4px 0 3px; font-size:12px; color:#0a3d20; }
-    .livebox table.livetab { border-collapse:collapse; margin-bottom:4px; }
+    .livebox { margin:4px 0 6px; padding:8px 12px 10px; border:1px solid #bfe0c8; border-radius:8px; background:#f6fbf7; font-size:11px; }
+    .livebox h3 { margin:2px 0 4px; font-size:12px; color:#0a3d20; }
+    /* Ranking und Paarungen kompakt nebeneinander; Tabellen nur so breit wie nötig. */
+    .livebox .live-cols { display:flex; flex-wrap:wrap; gap:6px 26px; align-items:flex-start; }
+    .livebox .live-col { flex:0 1 auto; }
+    .livebox table.livetab { border-collapse:collapse; margin-bottom:4px; width:auto; }
     .livebox table.livetab td, .livebox table.livetab th { border:1px solid #cdd8e6; padding:1px 6px; text-align:center; font-size:10.5px; }
     .livebox table.livetab th { background:#e7f6ec; }
     .livebox table.livetab tr.tie-row td { background:#fff4d6; }
@@ -457,6 +460,7 @@
     }
 
 </style>
+  <link rel="stylesheet" href="app-skin.css">
 </head>
 <body>
   <div class="noprint" style="margin:0 0 8px;padding:0 4mm"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-schweizer-system.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
@@ -490,7 +494,7 @@
     <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
   </span>
     </div>
-    <div id="livebox" class="noprint livebox"></div>
+    <div id="livebox" class="noprint livebox" hidden></div>
 
     <div class="guide">
       <h2>Kurzanleitung – so läuft das Turnier</h2>
@@ -993,7 +997,7 @@
     let playedTotal = 0; for(let t=1;t<=NTEAMS;t++) playedTotal += st[t].g;
     if(playedTotal === 0){ box.innerHTML = '<em>Noch keine Ergebnisse erfasst – sobald das erste Spiel eingetragen ist, erscheint hier das aktuelle Ranking.</em>'; return; }
     const ord = orderUpto(7);
-    let h = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
+    let rank = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
     const sameWert = (a,b) => st[a].s===st[b].s && st[a].bd===st[b].bd && st[a].p===st[b].p;
     const rankOf = {};
     ord.forEach((t,idx)=>{ rankOf[t] = (idx>0 && sameWert(ord[idx-1],t)) ? rankOf[ord[idx-1]] : idx+1; });
@@ -1001,17 +1005,20 @@
     ord.forEach((t,idx)=>{
       const tied = (idx>0 && sameWert(ord[idx-1],t)) || (idx<ord.length-1 && sameWert(ord[idx+1],t));
       if(tied) anyTie = true;
-      h += '<tr'+(tied?' class="tie-row"':'')+'><td>'+rankOf[t]+'.'+(tied?'<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>':'')+'</td><td>'+teamFull(t)+'</td><td>'+st[t].s+'</td><td>'+fmt(st[t].bd)+'</td><td>'+st[t].p+'</td><td>'+st[t].g+'</td></tr>';
+      rank += '<tr'+(tied?' class="tie-row"':'')+'><td>'+rankOf[t]+'.'+(tied?'<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>':'')+'</td><td>'+teamFull(t)+'</td><td>'+st[t].s+'</td><td>'+fmt(st[t].bd)+'</td><td>'+st[t].p+'</td><td>'+st[t].g+'</td></tr>';
     });
-    h += '</table>';
-    if(anyTie) h += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
+    rank += '</table>';
+    if(anyTie) rank += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
+    let pair = '';
     const nr = last + 1;
     if(nr <= 7 && MATCHES[nr]){
-      h += '<h3>Paarungen Runde '+nr+'</h3><table class="livetab">';
-      MATCHES[nr].forEach(m=>{ if(!m) return; const auto=autoResult(m); if(m.b==null) h += '<tr><td>'+m.field+'</td><td>'+teamFull(m.a, false)+'</td><td colspan="2">Freilos</td></tr>'; else if(auto && auto.bye) h += '<tr><td>'+m.field+'</td><td>'+teamFull(auto.bye, false)+'</td><td colspan="2">Freilos</td></tr>'; else if(auto && auto.bothAbsent) h += '<tr><td>'+m.field+'</td><td colspan="3"><span class="abt">beide Teams ausgefallen</span></td></tr>'; else h += '<tr><td>'+m.field+'</td><td>'+teamFull(m.a)+'</td><td>vs</td><td>'+teamFull(m.b)+'</td></tr>'; });
-      h += '</table>';
+      pair = '<h3>Paarungen Runde '+nr+'</h3><table class="livetab">';
+      MATCHES[nr].forEach(m=>{ if(!m) return; const auto=autoResult(m); if(m.b==null) pair += '<tr><td>'+m.field+'</td><td>'+teamFull(m.a, false)+'</td><td colspan="2">Freilos</td></tr>'; else if(auto && auto.bye) pair += '<tr><td>'+m.field+'</td><td>'+teamFull(auto.bye, false)+'</td><td colspan="2">Freilos</td></tr>'; else if(auto && auto.bothAbsent) pair += '<tr><td>'+m.field+'</td><td colspan="3"><span class="abt">beide Teams ausgefallen</span></td></tr>'; else pair += '<tr><td>'+m.field+'</td><td>'+teamFull(m.a)+'</td><td>vs</td><td>'+teamFull(m.b)+'</td></tr>'; });
+      pair += '</table>';
     }
-    box.innerHTML = h;
+    box.innerHTML = '<div class="live-cols"><div class="live-col">' + rank + '</div>'
+      + (pair ? '<div class="live-col">' + pair + '</div>' : '')
+      + '</div>';
   }
   function toggleLive(){ const b=document.getElementById('livebox'); if(b) b.hidden = !b.hidden; }
 
@@ -1214,5 +1221,6 @@
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="appbar.js" defer></script>
 </body>
 </html>

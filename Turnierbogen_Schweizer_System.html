@@ -66,9 +66,12 @@
     .cfggrid label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; font-weight: 700; color: #1f4e79; }
     .cfggrid input, .cfggrid select { padding: 4px 6px; font-size: 11px; border: 1px solid #aab8cc; border-radius: 3px; }
     .cfgmeta { margin-top: 6px; font-size: 10px; color: #555; }
-    .livebox { margin: 4px 0 6px; padding: 8px 10px; border: 1px solid #bfe0c8; border-radius: 5px; background: #f6fbf7; font-size: 11px; }
-    .livebox h3 { margin: 4px 0 3px; font-size: 12px; color: #0a3d20; }
-    .livebox table.livetab { border-collapse: collapse; margin-bottom: 4px; }
+    .livebox { margin: 4px 0 6px; padding: 8px 12px 10px; border: 1px solid #bfe0c8; border-radius: 8px; background: #f6fbf7; font-size: 11px; }
+    .livebox h3 { margin: 2px 0 4px; font-size: 12px; color: #0a3d20; }
+    /* Ranking und Paarungen kompakt nebeneinander; Tabellen nur so breit wie nötig. */
+    .livebox .live-cols { display: flex; flex-wrap: wrap; gap: 6px 26px; align-items: flex-start; }
+    .livebox .live-col { flex: 0 1 auto; }
+    .livebox table.livetab { border-collapse: collapse; margin-bottom: 4px; width: auto; }
     .livebox table.livetab td, .livebox table.livetab th { border: 1px solid #cdd8e6; padding: 1px 6px; text-align: center; font-size: 10.5px; }
     .livebox table.livetab th { background: #e7f6ec; }
     .livebox table.livetab tr.tie-row td { background: #fff4d6; }
@@ -385,6 +388,7 @@
     }
 
 </style>
+  <link rel="stylesheet" href="app-skin.css">
 </head>
 <body>
   <div class="noprint" style="margin:0 0 8px;padding:0 4mm"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-schweizer-system.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
@@ -414,7 +418,7 @@
     let namesVisible = false;
     let fieldsVisible = false;
     let dropoutVisible = false;
-    let liveVisible = true;
+    let liveVisible = false;
     const SESSION_KEY = 'sw_univ';
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
     const SESSION_TITLE = 'Schweizer System (Universal)';
@@ -692,7 +696,7 @@
       [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
-      liveVisible = true;
+      liveVisible = false;
       renderApp();
     }
     function onRoundCountChange(value){
@@ -1032,7 +1036,7 @@
       for(let t=1;t<=NTEAMS;t++) playedTotal += st[t].g;
       if(playedTotal === 0){ box.innerHTML = '<em>Noch keine Ergebnisse erfasst – sobald das erste Spiel eingetragen ist, erscheint hier das aktuelle Ranking.</em>'; return; }
       const ord = displayOrderUpto(NROUNDS);
-      let html = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
+      let rank = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
       const sameWert = (a, b) => st[a].s === st[b].s && st[a].bd === st[b].bd && st[a].p === st[b].p;
       const rankOf = {};
       ord.forEach((t, idx) => { rankOf[t] = (idx > 0 && sameWert(ord[idx - 1], t)) ? rankOf[ord[idx - 1]] : idx + 1; });
@@ -1041,19 +1045,22 @@
         const tied = (idx > 0 && sameWert(ord[idx - 1], t)) || (idx < ord.length - 1 && sameWert(ord[idx + 1], t));
         if(tied) anyTie = true;
         const cls = (droppedTeams().has(t) ? 'drop-row ' : '') + (tied ? 'tie-row' : '');
-        html += '<tr' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + '><td>' + rankOf[t] + '.' + (tied ? '<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>' : '') + '</td><td>' + teamFull(t, {markDropped:true}) + '</td><td>' + st[t].s + '</td><td>' + fmt(st[t].bd) + '</td><td>' + st[t].p + '</td><td>' + st[t].g + '</td></tr>';
+        rank += '<tr' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + '><td>' + rankOf[t] + '.' + (tied ? '<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>' : '') + '</td><td>' + teamFull(t, {markDropped:true}) + '</td><td>' + st[t].s + '</td><td>' + fmt(st[t].bd) + '</td><td>' + st[t].p + '</td><td>' + st[t].g + '</td></tr>';
       });
-      html += '</table>';
-      if(anyTie) html += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
+      rank += '</table>';
+      if(anyTie) rank += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
+      let pair = '';
       const nr = last + 1;
       if(nr <= NROUNDS && MATCHES[nr]){
-        html += '<h3>Paarungen Runde ' + nr + '</h3><table class="livetab">';
+        pair = '<h3>Paarungen Runde ' + nr + '</h3><table class="livetab">';
         MATCHES[nr].forEach(m => {
-          html += '<tr><td>' + escapeHtml(m.field) + '</td><td>' + teamFull(m.a, {markDropped:true}) + '</td><td>vs</td><td>' + teamFull(m.b, {markDropped:true}) + '</td></tr>';
+          pair += '<tr><td>' + escapeHtml(m.field) + '</td><td>' + teamFull(m.a, {markDropped:true}) + '</td><td>vs</td><td>' + teamFull(m.b, {markDropped:true}) + '</td></tr>';
         });
-        html += '</table>';
+        pair += '</table>';
       }
-      box.innerHTML = html;
+      box.innerHTML = '<div class="live-cols"><div class="live-col">' + rank + '</div>'
+        + (pair ? '<div class="live-col">' + pair + '</div>' : '')
+        + '</div>';
     }
     function computeAll(){
       buildMatches();
@@ -1178,5 +1185,6 @@
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="appbar.js" defer></script>
 </body>
 </html>
