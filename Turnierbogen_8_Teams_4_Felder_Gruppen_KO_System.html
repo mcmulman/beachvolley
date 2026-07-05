@@ -364,6 +364,7 @@
     }
 
 </style>
+  <style>.pos.pz-tie{ background:#fff4d6 !important; } @media print{ .pos.pz-tie{ background:#fff4d6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }</style>
 </head>
 <body>
 
@@ -989,7 +990,15 @@
       });
       const complete = teams.every(team => st[team].pl === 2);
       teams.forEach(team => { GSTATS[team] = { games:st[team].pl, w:st[team].w, bd:st[team].bd, sc:st[team].sc, complete }; });
-      ranked.forEach((team, idx) => setCell('pz_' + team, complete ? (idx + 1) + '.' : ''));
+      const _sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
+      const _rankOf={};
+      ranked.forEach((team,idx)=>{ _rankOf[team] = (idx>0 && _sameW(ranked[idx-1],team)) ? _rankOf[ranked[idx-1]] : idx+1; });
+      ranked.forEach((team,idx)=>{
+        const _tied = complete && ((idx>0 && _sameW(ranked[idx-1],team)) || (idx<ranked.length-1 && _sameW(ranked[idx+1],team)));
+        setCell('pz_'+team, complete ? (_rankOf[team]+'.'+(_tied?' =':'')) : '');
+        const _c=document.getElementById('pz_'+team);
+        if(_c){ _c.classList.toggle('pz-tie', !!_tied); if(_tied) _c.title='Gleiche Wertung – Platz geteilt'; else _c.removeAttribute('title'); }
+      });
       seedLists[groupName] = complete ? ranked : null;
     });
     return seedLists;
@@ -1356,5 +1365,101 @@
   applyAllFieldNames();
   renderAll();
 </script>
+<!-- BL_ENH_START · Bedienhilfen: offene Spiele, Ungültig-Tooltip, Speicher-Feedback, Pfeiltasten (nur Bildschirm) -->
+<script>
+(function(){
+  if(window.__BL_ENH__) return; window.__BL_ENH__ = true;
+
+  var INVALID_TITLE = 'Ungültiges Ergebnis: Zielpunktzahl nicht erreicht oder kein 2-Punkte-Vorsprung.';
+
+  // ── Styles (nur Bildschirm; Druck bleibt unverändert) ──
+  var css = ''
+    + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
+    +   'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
+    +   'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
+    + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
+    + '@media screen{'
+    +   'td.bl-open{box-shadow:inset 0 0 0 2px #f0a000;border-radius:6px}'
+    +   'td.bl-done{opacity:.62}'
+    + '}'
+    + '@media print{#bl-toast{display:none!important}'
+    +   'td.bl-open{box-shadow:none!important}td.bl-done{opacity:1!important}}';
+  var st = document.createElement('style'); st.textContent = css;
+  document.head.appendChild(st);
+
+  // ── #4 Speicher-Feedback: echtes localStorage-Speichern anzeigen ──
+  var toast = document.createElement('div'); toast.id = 'bl-toast'; toast.textContent = '✓ gespeichert';
+  var toastT = null, saveT = null, armed = false;
+  function showToast(){ if(!toast.isConnected && document.body) document.body.appendChild(toast);
+    toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function(){ toast.classList.remove('show'); }, 1400); }
+  try{
+    var SP = window.Storage && window.Storage.prototype;
+    if(SP && !SP.__bl_wrapped){ var _set = SP.setItem; SP.__bl_wrapped = true;
+      SP.setItem = function(k,v){ _set.call(this,k,v);
+        if(armed){ clearTimeout(saveT); saveT = setTimeout(showToast, 450); } };
+    }
+  }catch(e){}
+
+  function num(v){ v = (v==null?'':String(v)).trim(); if(v==='') return null; if(!/^\d{1,3}$/.test(v)) return null; return parseInt(v,10); }
+  function scorePairs(){
+    var all = Array.prototype.slice.call(document.querySelectorAll('input.score'));
+    var pairs = []; for(var i=0;i+1<all.length;i+=2){ pairs.push([all[i], all[i+1]]); }
+    return pairs;
+  }
+  function pairValid(a,b){
+    if(a.classList.contains('invalid')||b.classList.contains('invalid')) return false;
+    return num(a.value)!=null && num(b.value)!=null;
+  }
+
+  // ── #1 Ungültig-Tooltip + #3 offene/erledigte Spiele hervorheben ──
+  function update(){
+    document.querySelectorAll('input.score').forEach(function(inp){
+      if(inp.classList.contains('invalid')){ if(inp.title!==INVALID_TITLE) inp.title = INVALID_TITLE; }
+      else if(inp.title===INVALID_TITLE){ inp.removeAttribute('title'); }
+    });
+    document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
+
+    document.querySelectorAll('tr[data-match-row]').forEach(function(row){
+      var inputs = row.querySelectorAll('input.score'); if(!inputs.length) return;
+      var anyEnabled = false; inputs.forEach(function(i){ if(!i.disabled) anyEnabled = true; });
+      if(!anyEnabled) return;
+      var wcell = row.querySelector('.winner-cell');
+      var decided = wcell && wcell.textContent.trim() !== '';
+      inputs.forEach(function(i){ var td = i.closest('td'); if(td) td.classList.add(decided?'bl-done':'bl-open'); });
+    });
+    scorePairs().forEach(function(p){
+      var a = p[0], b = p[1];
+      if(a.closest('tr[data-match-row]')) return;
+      if(a.disabled || b.disabled) return;
+      var td = a.closest('td'); if(td) td.classList.add(pairValid(a,b)?'bl-done':'bl-open');
+    });
+  }
+
+  var scheduled = false;
+  function schedule(){ if(scheduled) return; scheduled = true;
+    (window.requestAnimationFrame||setTimeout)(function(){ scheduled=false; try{ update(); }catch(e){} }); }
+
+  ['computeAll','renderAll'].forEach(function(fn){
+    if(typeof window[fn]==='function'){ var orig = window[fn];
+      window[fn] = function(){ var r = orig.apply(this, arguments); schedule(); return r; }; }
+  });
+  document.addEventListener('input', function(){ armed = true; schedule(); }, true);
+
+  // ── #5 Pfeiltasten ↑/↓ zwischen Ergebnisfeldern ──
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
+    var el = e.target; if(!el || !el.classList || !el.classList.contains('score')) return;
+    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
+    var idx = list.indexOf(el); if(idx<0) return;
+    var next = idx + (e.key==='ArrowDown' ? 1 : -1);
+    if(next>=0 && next<list.length){ e.preventDefault(); list[next].focus(); if(list[next].select) list[next].select(); }
+  }, true);
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(update,80); });
+  else setTimeout(update, 80);
+  window.addEventListener('load', function(){ setTimeout(update, 120); });
+})();
+</script>
+<!-- BL_ENH_END -->
 </body>
 </html>
