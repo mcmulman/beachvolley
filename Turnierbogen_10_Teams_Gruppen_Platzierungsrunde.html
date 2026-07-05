@@ -886,7 +886,7 @@
             return;
           }
           const sa = gv(r, a), sb = gv(r, b);
-          if(sa != null && sb != null){
+          if(sa != null && sb != null && Math.max(sa,sb) >= 21 && Math.abs(sa-sb) >= 2){
             if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
             if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
             st[a].bd += (sa - sb); st[b].bd += (sb - sa); cum[a].bd += (sa - sb); cum[b].bd += (sb - sa);
@@ -950,7 +950,7 @@
     function addF(team, own, opp){
       if(!team) return;
       const f = FSTATS[team] || (FSTATS[team] = {g:0, w:0, bd:0, sc:0});
-      f.g += 1; f.sc += own; f.bd += (own - opp); if(own > opp) f.w += 1;
+      f.g += 1; f.sc += own; f.bd += (own - opp); if(Math.max(own,opp) >= 21 && Math.abs(own-opp) >= 2 && own > opp) f.w += 1;
     }
     function autoWL(home, away){
       if(home && !away) return {win:home, los:0};
@@ -966,9 +966,11 @@
       if(auto) return auto;
       const h = num(document.getElementById('f1_'+code+'_h'));
       const a = num(document.getElementById('f1_'+code+'_a'));
-      if(ht && at && h != null && a != null){ addF(ht, h, a); addF(at, a, h); }
-      if(!ht || !at || h == null || a == null || h === a) return {win:0, los:0};
-      return h > a ? {win:ht, los:at} : {win:at, los:ht};
+      if(ht && at && h != null && a != null && Math.max(h,a) >= 21 && Math.abs(h-a) >= 2){
+        addF(ht, h, a); addF(at, a, h);
+        return h > a ? {win:ht, los:at} : {win:at, los:ht};
+      }
+      return {win:0, los:0};
     }
     const r = { K1a:wl1('K1a'), K1b:wl1('K1b'), K2a:wl1('K2a'), K2b:wl1('K2b'), K3:wl1('K3') };
 
@@ -982,9 +984,11 @@
       if(auto) return auto;
       const h = num(document.getElementById('f2_'+code+'_h'));
       const a = num(document.getElementById('f2_'+code+'_a'));
-      if(home && away && h != null && a != null){ addF(home, h, a); addF(away, a, h); }
-      if(!home || !away || h == null || a == null || h === a) return {win:0, los:0};
-      return h > a ? {win:home, los:away} : {win:away, los:home};
+      if(home && away && h != null && a != null && Math.max(h,a) >= 21 && Math.abs(h-a) >= 2){
+        addF(home, h, a); addF(away, a, h);
+        return h > a ? {win:home, los:away} : {win:away, los:home};
+      }
+      return {win:0, los:0};
     }
     const fin = wl2('FIN', r.K1a.win, r.K1b.win);
     const p3  = wl2('P3',  r.K1a.los, r.K1b.los);
@@ -1021,7 +1025,7 @@
       const m = inp.id.match(/^g(\d+)_(\d+)$/); if(!m) return;
       const opp = document.getElementById('g'+m[1]+'_'+inp.getAttribute('data-op'));
       const a = num(inp), b = num(opp); if(a==null || b==null) return;
-      if(Math.abs(a-b) < 2) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
     document.querySelectorAll('input.score').forEach(inp => {
@@ -1029,7 +1033,7 @@
       const m = inp.id.match(/^(.*)_(h|a)$/); if(!m) return;
       const other = document.getElementById(m[1]+'_'+(m[2]==='h'?'a':'h'));
       const a = num(inp), b = num(other); if(a==null || b==null) return;
-      if(Math.abs(a-b) < 2) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }

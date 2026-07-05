@@ -1105,7 +1105,7 @@
         if(abA && abB) return;
         if(abA && !abB){ st[m.b].w += 1; st[m.b].games += 1; st[m.a].games += 1; return; }
         if(!abA && abB){ st[m.a].w += 1; st[m.a].games += 1; st[m.b].games += 1; return; }
-        if(sa == null || sb == null || sa === sb) return;
+        if(sa == null || sb == null || !(Math.max(sa,sb) >= 21 && Math.abs(sa-sb) >= 2)) return;
         st[m.a].games += 1; st[m.b].games += 1;
         st[m.a].bd += sa - sb; st[m.b].bd += sb - sa;
         st[m.a].sc += sa; st[m.b].sc += sb;

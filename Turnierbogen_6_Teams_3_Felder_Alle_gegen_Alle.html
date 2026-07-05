@@ -823,11 +823,14 @@
         const sa = gv(r,a), sb = gv(r,b);
         if(sa!=null && sb!=null){
           st[a].pl += 1; st[b].pl += 1;
-          if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
-          else if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
-          st[a].bd += (sa-sb); st[b].bd += (sb-sa);
-          cum[a].bd += (sa-sb); cum[b].bd += (sb-sa);
-          st[a].sc += sa; st[b].sc += sb;
+          const validScore = Math.max(sa,sb) >= 21 && Math.abs(sa-sb) >= 2;
+          if(validScore){
+            if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
+            else if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
+            st[a].bd += (sa-sb); st[b].bd += (sb-sa);
+            cum[a].bd += (sa-sb); cum[b].bd += (sb-sa);
+            st[a].sc += sa; st[b].sc += sb;
+          }
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
         } else {
@@ -862,7 +865,7 @@
       const opp = document.getElementById('g' + m[1] + '_' + inp.getAttribute('data-op'));
       if(!opp || opp.disabled) return;
       const a = num(inp), b = num(opp); if(a==null || b==null) return;
-      if(Math.abs(a-b) < 2) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }

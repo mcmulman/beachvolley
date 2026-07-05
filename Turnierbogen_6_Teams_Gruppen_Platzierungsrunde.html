@@ -785,7 +785,7 @@
     if(!homeAbsent && awayAbsent) return { resolved:true, cmp:1, auto:true, home:{w:1,bd:0,sc:0,pl:1}, away:{w:0,bd:0,sc:0,pl:1} };
     const h = num(document.getElementById('g'+round+'_'+home));
     const a = num(document.getElementById('g'+round+'_'+away));
-    if(h == null || a == null || h === a) return { resolved:false, cmp:0, auto:false };
+    if(h == null || a == null || !(Math.max(h,a) >= 21 && Math.abs(h-a) >= 2)) return { resolved:false, cmp:0, auto:false };
     return {
       resolved:true,
       cmp:h > a ? 1 : -1,
@@ -888,12 +888,12 @@
       f.g += 1;
       f.sc += own;
       f.bd += (own - opp);
-      if(own > opp) f.w += 1;
+      if(Math.max(own,opp) >= 21 && Math.abs(own-opp) >= 2 && own > opp) f.w += 1;
     }
     function resolvePlay(prefix, code, home, away){
       const h = num(document.getElementById(prefix + '_' + code + '_h'));
       const a = num(document.getElementById(prefix + '_' + code + '_a'));
-      if(home && away && h != null && a != null && h !== a){
+      if(home && away && h != null && a != null && Math.max(h,a) >= 21 && Math.abs(h-a) >= 2){
         addF(home, h, a);
         addF(away, a, h);
         return h > a ? { win:home, los:away, auto:false } : { win:away, los:home, auto:false };
@@ -949,14 +949,14 @@
       const m = inp.id.match(/^g(\d+)_(\d+)$/); if(!m) return;
       const opp = document.getElementById('g' + m[1] + '_' + inp.getAttribute('data-op'));
       const a = num(inp), b = num(opp); if(a == null || b == null) return;
-      if(a === b || Math.abs(a - b) < 2) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
     document.querySelectorAll('input.score').forEach(inp => {
       const m = inp.id.match(/^(.*)_(h|a)$/); if(!m) return;
       const other = document.getElementById(m[1] + '_' + (m[2] === 'h' ? 'a' : 'h'));
       const a = num(inp), b = num(other); if(a == null || b == null) return;
-      if(a === b || Math.abs(a - b) < 2) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
