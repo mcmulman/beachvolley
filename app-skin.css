@@ -118,6 +118,21 @@
     .round-grid { grid-template-columns: minmax(0, 1fr) !important; }
     /* Zweispaltige Kopf-/Bracket-Raster (KO-Bögen) auf dem Handy stapeln. */
     .topgrid, .bracket-wrap { grid-template-columns: minmax(0, 1fr) !important; }
+    /* Speichern-Gruppe (Titel + „Speichern") auf schmalen Screens sauber in
+       eine eigene, volle Zeile umbrechen – sonst läuft die 200px-Titelzeile
+       samt Button über die Werkzeugleiste hinaus. */
+    .digitalbar > span[style*="margin-left"],
+    .digbar > span[style*="margin-left"] {
+      margin-left: 0 !important;
+      flex: 1 1 100%;
+      justify-content: flex-start;
+    }
+    #session-title-input,
+    input[id*="session-title"] {
+      flex: 1 1 auto;
+      width: auto !important;
+      min-width: 0;
+    }
   }
 
   /* ── Sticky App-Leiste ── */
@@ -260,17 +275,32 @@
      einheitlich mit den übrigen Tabellen. */
   .sched .rnd .rtime, .sched .rtime { color: var(--app-blue) !important; }
   .sched .rnd .rmode, .sched .rmode { color: var(--app-muted) !important; }
-  /* Abschnitts-Überschriften (Section-<h2>): gleiche Akzent-Optik wie Captions,
-     damit Bracket-/Gruppen-/Panel-Titel einheitlich wirken. Ausgenommen sind die
-     Kurzanleitung (.guide h2) und die Runden-Divider (.tt), die eigene Rollen haben. */
+  /* ── Einheitliche Überschriften-Hierarchie (Bildschirm) ──
+     3 klar getrennte Stufen, damit alle Bögen gleich strukturiert wirken:
+       1) Seitentitel   = erstes <h1>            → 20px, ohne Akzent
+       2) Abschnitt      = sekundäre <h1> (z. B. „Laufende Tabelle & Endstand",
+          „Finalrunde über Kreuz", „Runden 1–4") UND Section-<h2> (KO-Bracket,
+          Gruppenphase …) → 16px, blauer Akzentbalken
+       3) Tabellen-Label = <caption>             → 14px, uppercase, Akzent
+     Ausgenommen: Kurzanleitung (.guide h2) und Runden-Divider (.tt). */
+  body > h1 ~ h1,
+  .rounds-page > h1,
   body > h2:not(.tt):not(.guide),
   .panel > h2:not(.tt) {
     color: var(--app-blue-dark);
     font-weight: 800;
+    font-size: 16px;
     letter-spacing: -.1px;
-    line-height: 1.25;
+    line-height: 1.3;
     padding-left: 12px;
     border-left: 4px solid var(--app-blue);
+  }
+  /* Body-Abschnitte brauchen Luft nach oben/unten; Panel-Header nutzen die
+     Panel-Polsterung und bleiben ohne zusätzliche Ränder. */
+  body > h1 ~ h1,
+  .rounds-page > h1,
+  body > h2:not(.tt):not(.guide) {
+    margin: 22px 0 10px;
   }
   /* Struktur-/Index-Zellen (Runde, Team-Nr., Summe, Platz …) einheitlich. */
   .track .tnum, .track .sum, .sched .rnd, .teams .num,
