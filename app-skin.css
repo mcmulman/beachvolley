@@ -37,6 +37,7 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    padding-top: 0 !important;
   }
 
   /* ── Zentrierte „Karten"-Fläche für den Bogen ──
@@ -157,21 +158,33 @@
   .app-bar__back {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
-    padding: 8px 14px 8px 11px;
+    min-height: 40px;
+    padding: 7px 15px 7px 10px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 650;
     color: #fff;
     text-decoration: none;
-    background: rgba(255, 255, 255, .14);
-    border: 1px solid rgba(255, 255, 255, .22);
+    background: rgba(255, 255, 255, .20);
+    border: 1px solid rgba(255, 255, 255, .34);
     border-radius: 999px;
-    transition: background .16s, transform .12s;
+    transition: background .16s, transform .12s, box-shadow .16s;
   }
-  .app-bar__back:hover { background: rgba(255, 255, 255, .24); }
+  .app-bar__back:hover { background: rgba(255, 255, 255, .30); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
   .app-bar__back:active { transform: scale(.96); }
-  .app-bar__back .chev { font-size: 17px; line-height: 1; }
+  .app-bar__back .chev {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 9px;
+    height: 9px;
+    font-size: 0;
+    line-height: 0;
+    border: solid currentColor;
+    border-width: 0 0 2.4px 2.4px;
+    transform: rotate(45deg);
+    margin: 0 1px 0 2px;
+  }
 
   .app-bar__title {
     flex: 1;
@@ -214,13 +227,18 @@
   .app-bar__btn:active { transform: scale(.95); }
   .app-bar__btn .ic { font-size: 16px; line-height: 1; }
 
-  /* Auf schmalen Screens Button-Beschriftungen ausblenden (nur Icon). */
+  /* Auf schmalen Screens: Nav-Label „Übersicht" bleibt sichtbar (klare
+     Orientierung); nur die Aktions-Buttons werden auf Icons reduziert. */
   @media (max-width: 560px) {
-    .app-bar__back { padding: 8px 12px; }
-    .app-bar__back .lbl { display: none; }
+    .app-bar { gap: 8px; padding-left: 10px; padding-right: 10px; }
+    .app-bar__back { padding: 7px 14px 7px 9px; }
     .app-bar__btn .lbl { display: none; }
-    .app-bar__btn { padding: 0; }
+    .app-bar__btn { padding: 0; min-width: 40px; }
     .app-bar__title { font-size: 14px; }
+  }
+  @media (max-width: 380px) {
+    .app-bar__back .lbl { display: none; }
+    .app-bar__back { padding: 0; min-width: 40px; justify-content: center; }
   }
 
   /* Sichtbarer Fokus für Tastatur-/Screenreader-Bedienung. */
@@ -346,6 +364,17 @@
     font-family: inherit;
     transition: border-color .16s, box-shadow .16s;
   }
+  /* Team-Namensfelder (in .ngrid) in allen Bögen einheitlich: gleiche Höhe,
+     Schrift und Rahmen – unabhängig von den bogen-eigenen .ngrid-Größen. */
+  .ngrid input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 36px;
+    font-size: 14px !important;
+    padding: 7px 10px !important;
+    border: 1px solid #c4d0e0 !important;
+    border-radius: 8px !important;
+  }
   .namepanel input:focus, .cfggrid input:focus,
   input[type="text"]:focus, input[type="time"]:focus {
     outline: none;
@@ -387,8 +416,17 @@
   .tie-note { border: 1px solid #e7d68a; background: #fff8dd; padding: 8px 12px; }
   .dropped-note { border: 1px solid #e6b8b8; background: #fdeeee; padding: 8px 12px; }
 
-  /* ── Score-Eingaben modern ── */
+  /* ── Score-Eingaben modern & EINHEITLICH ──
+     Alle Bögen nutzen dieselbe Ergebnisfeld-Größe (Touch-freundlich, gut lesbar).
+     Die dichteren Bögen (Gruppen 12/16T, Schweizer) hatten kleinere Felder – am
+     Bildschirm werden sie hier vereinheitlicht; sehr breite Tabellen scrollen bei
+     Bedarf innerhalb der Karte. Nur @media screen → der Druck behält seine Größen. */
   input.score {
+    box-sizing: border-box !important;
+    width: 40px !important;
+    height: 32px !important;
+    font-size: 15px !important;
+    text-align: center;
     border: 1px solid #c4d0e0;
     border-radius: 8px;
     transition: border-color .14s, box-shadow .14s, background .14s;

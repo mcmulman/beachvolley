@@ -418,7 +418,7 @@
   <b>Legende:</b> <span class="auto" style="padding:1px 4px">Grün</span> = automatisch berechnet · <span style="background:#d4f5d4;padding:1px 4px">Grünes Eingabefeld</span> = Sieger · <span style="background:#fde0e0;padding:1px 4px">Rotes Feld</span> = ungültiges Ergebnis (gleich oder &lt;2 Pkt. Abstand)
 </div>
 <div class="noprint" style="margin-top:16px;display:flex;gap:12px;align-items:center">
-  <button class="nbtn" onclick="window.print()" style="background:#1f4e79;border-color:#1f4e79">🖨 Drucken / PDF</button>
+  <button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>
 </div>
 
 <script>
@@ -440,7 +440,9 @@
       const title = localStorage.getItem(SESSION_TITLE_KEY) || '';
       const reg = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
       const idx = reg.findIndex(s => s.key === SESSION_KEY);
-      const entry = { key: SESSION_KEY, file: SESSION_FILE, title, ts: Date.now() };
+      const teams = [];
+      for(let i=1;i<=16;i++){ const el=document.getElementById('tn'+i); if(el && el.value.trim()) teams.push(el.value.trim()); }
+      const entry = { key: SESSION_KEY, file: SESSION_FILE, title, teams, savedAt: Date.now() };
       if(idx >= 0) reg[idx] = entry; else reg.unshift(entry);
       if(reg.length > 30) reg.splice(30);
       localStorage.setItem('beachl_sessions', JSON.stringify(reg));
