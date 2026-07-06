@@ -129,6 +129,8 @@
     .livebox table.livetab .tie-eq { color:#b8860b; font-weight:700; margin-left:2px; }
     .livebox .tie-note { font-size:10px; color:#7a5c00; margin:2px 0 6px; }
     .resu .vs { color:#999; font-weight:700; margin:0 1px; }
+    .resu .setgrp { white-space:nowrap; }
+    .resu .setsep { color:#bbb; font-weight:700; margin:0 2px; }
     .central-table .auto { background:#e7f6ec; }
     .round-table .auto-tm { background:#eef6ff; }
     .topbar { margin:0 0 12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
@@ -473,7 +475,7 @@
       <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
       <div class="cfgcard-grid">
         <label class="cfgfield cfgfield--wide">📝 Turniertitel<input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>
-        <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)"><option value="15">1 Satz bis 15</option><option value="21">1 Satz bis 21</option></select></label>
+        <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)"><option value="15">1 Satz bis 15</option><option value="21">1 Satz bis 21</option><option value="2x15">2 Sätze bis 15</option></select></label>
         <label class="cfgfield">⏱ Start<input type="time" id="startTime" value="10:00" onchange="onStartTime()"></label>
         <label class="cfgfield">🏁 Ende<input type="time" id="endTime" value="14:00" onchange="onEndTime()"></label>
       </div>
@@ -793,10 +795,39 @@
 
   function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
   function sval(r,i,side){ return num(document.getElementById('s'+side+'_'+r+'_'+i)); }
+  function sval2(r,i,side){ return num(document.getElementById('s2'+side+'_'+r+'_'+i)); }
   function fmt(n){ return (n>0?'+':'')+n; }
   function key(a,b){ return a<b? a+'-'+b : b+'-'+a; }
 
-  function slotComplete(r,i){ const a=sval(r,i,'A'), b=sval(r,i,'B'); return a!=null && b!=null && Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2; }
+  /* gültiger Einzelsatz: Ziel erreicht + 2 Punkte Vorsprung */
+  function setValid(a,b){ return a!=null && b!=null && Math.max(a,b) >= setTarget() && Math.abs(a-b) >= 2; }
+  /* Ergebnis eines Spiel-Slots über 1 oder 2 Sätze; null wenn unvollständig */
+  function slotResult(r,i){
+    const a1=sval(r,i,'A'), b1=sval(r,i,'B');
+    if(!isMulti()){
+      if(!setValid(a1,b1)) return null;
+      return {aBalls:a1, bBalls:b1, aSets:a1>b1?1:0, bSets:b1>a1?1:0, winner:a1>b1?'a':'b'};
+    }
+    const a2=sval2(r,i,'A'), b2=sval2(r,i,'B');
+    if(!setValid(a1,b1) || !setValid(a2,b2)) return null;
+    const aSets=(a1>b1?1:0)+(a2>b2?1:0), bSets=(b1>a1?1:0)+(b2>a2?1:0);
+    const aBalls=a1+a2, bBalls=b1+b2;
+    let winner;
+    if(aSets>bSets) winner='a';
+    else if(bSets>aSets) winner='b';
+    else if(aBalls>bBalls) winner='a';
+    else if(bBalls>aBalls) winner='b';
+    else winner=null;
+    return {aBalls, bBalls, aSets, bSets, winner};
+  }
+
+  function slotComplete(r,i){ return slotResult(r,i) != null; }
+  function winnerOf(r,i){
+    const auto = autoResult(MATCHES[r] && MATCHES[r][i]);
+    if(auto){ if(auto.bye) return auto.bye; return null; }
+    const res=slotResult(r,i); if(!res || !res.winner) return null;
+    const m=MATCHES[r][i]; return res.winner==='a'? m.a : m.b;
+  }
   function autoResult(m){
     if(!m) return null;
     const absent = loadAbsent();
@@ -828,10 +859,10 @@
           continue;
         }
         if(!slotComplete(r,i)) continue;
-        const a=m.a, b=m.b, sa=sval(r,i,'A'), sb=sval(r,i,'B');
+        const a=m.a, b=m.b, res=slotResult(r,i), sa=res.aBalls, sb=res.bBalls;
         st[a].g++; st[b].g++; st[a].p+=sa; st[b].p+=sb;
         st[a].bd+=sa-sb; st[b].bd+=sb-sa;
-        if(sa>sb) st[a].s++; else st[b].s++;
+        if(res.winner==='a') st[a].s++; else if(res.winner==='b') st[b].s++;
       }
     }
     return st;
@@ -845,9 +876,10 @@
         const m=M[i]; if(!m || m.b==null) continue;
         if((m.a===a&&m.b===b)||(m.a===b&&m.b===a)){
           if(autoResult(m) || !slotComplete(r,i)) return 0;
-          const sa=sval(r,i,'A'), sb=sval(r,i,'B');
-          const wa = m.a===a? sa: sb, wb = m.a===a? sb: sa;
-          return wa>wb?1:(wa<wb?-1:0);
+          const res=slotResult(r,i);
+          if(!res.winner) return 0;
+          const winTeam = res.winner==='a'? m.a : m.b;
+          return winTeam===a?1:-1;
         }
       }
     }
@@ -880,20 +912,59 @@
       const rem=order.slice(); const pairs=[];
       let byeTeam=null;
       if(rem.length % 2 === 1) byeTeam = rem.pop();
+      const roundsAfter = 7 - r;
+      // Lookahead: existiert nach dieser Runde noch eine vollständige
+      // wiederholungsfreie Zerlegung des Rest-Graphen für alle Folgerunden?
+      // (memoisiert + budgetiert, verhindert, dass diese Runde eine spätere
+      // Runde unlösbar macht, z.B. durch ungerade Restzyklen.)
+      const feasCache = new Map();
+      let feasBudget = 150000;
+      function feasible(extraPlayed, roundsNeeded){
+        if(roundsNeeded === 0) return true;
+        if(feasBudget <= 0) return true;
+        const cacheKey = roundsNeeded + '|' + Array.from(extraPlayed).sort().join(',');
+        if(feasCache.has(cacheKey)) return feasCache.get(cacheKey);
+        function tryOneRound(list, builtPairs){
+          if(feasBudget-- <= 0) return true;
+          if(list.length === 0){
+            const merged = new Set(extraPlayed);
+            builtPairs.forEach(k => merged.add(k));
+            return feasible(merged, roundsNeeded - 1);
+          }
+          const a = list[0];
+          for(let j = 1; j < list.length; j++){
+            const k = key(a, list[j]);
+            if(played.has(k) || extraPlayed.has(k) || builtPairs.indexOf(k) >= 0) continue;
+            const rest = list.slice(1); rest.splice(j - 1, 1);
+            if(tryOneRound(rest, builtPairs.concat(k))) return true;
+          }
+          return false;
+        }
+        const result = tryOneRound(rem.slice(), []);
+        feasCache.set(cacheKey, result);
+        return result;
+      }
       // Backtracking-Paarung: rangnahe Gegner, aber Wiederholungen garantiert
-      // vermieden, solange eine wiederholungsfreie Paarung existiert.
-      function pairBT(list){
-        if(list.length===0) return [];
+      // vermieden, solange eine wiederholungsfreie Paarung existiert, UND
+      // stellt per Lookahead sicher, dass alle Folgerunden noch planbar bleiben.
+      function pairBT(list, builtPairs){
+        if(list.length===0){
+          if(roundsAfter === 0) return [];
+          const merged = new Set(played);
+          builtPairs.forEach(k => merged.add(k));
+          return feasible(merged, roundsAfter) ? [] : null;
+        }
         const a=list[0];
         for(let j=1;j<list.length;j++){
-          if(played.has(key(a,list[j]))) continue;
+          const k = key(a, list[j]);
+          if(played.has(k) || builtPairs.indexOf(k) >= 0) continue;
           const rest=list.slice(1); rest.splice(j-1,1);
-          const sub=pairBT(rest);
+          const sub=pairBT(rest, builtPairs.concat(k));
           if(sub) return [[a,list[j]],...sub];
         }
         return null;
       }
-      const bt=pairBT(rem);
+      const bt=pairBT(rem.slice(), []);
       if(bt){ bt.forEach(p=>pairs.push(p)); }
       else {
         // Fallback (nur falls unvermeidbar): rangnah, minimiert Wiederholungen
@@ -933,19 +1004,28 @@
           const auto = autoResult(m);
           setText('rA_'+r+'_'+i, teamFull(m.a), 'auto-tm');
           setText('rB_'+r+'_'+i, m.b==null ? '<span class="abt">Freilos</span>' : teamFull(m.b), 'auto-tm');
+          const inp2A=document.getElementById('s2A_'+r+'_'+i);
+          const inp2B=document.getElementById('s2B_'+r+'_'+i);
           if(inpA) inpA.disabled = !!auto;
           if(inpB) inpB.disabled = !!auto;
+          if(inp2A) inp2A.disabled = !!auto;
+          if(inp2B) inp2B.disabled = !!auto;
           if(auto){
             if(auto.bothAbsent) setText('rw_'+r+'_'+i, '<span class="abt">beide ausgefallen</span>', 'auto-tm');
             else setText('rw_'+r+'_'+i, teamFull(auto.bye, false) + ' <span class="abt">Freilos</span>', 'auto-tm');
-          } else if(slotComplete(r,i)){
-            const sa=sval(r,i,'A'), sb=sval(r,i,'B');
-            const w = sa>sb? m.a : m.b;
-            setText('rw_'+r+'_'+i, teamFull(w), 'auto-tm');
-          } else { setText('rw_'+r+'_'+i,'','auto-tm'); }
+          } else { const res=slotResult(r,i);
+            if(res){
+              const w = res.winner==='a'? m.a : (res.winner==='b'? m.b : null);
+              setText('rw_'+r+'_'+i, w!=null? teamFull(w) : '<span class="abt">unentschieden</span>', 'auto-tm');
+            } else { setText('rw_'+r+'_'+i,'','auto-tm'); }
+          }
         } else {
           if(inpA) inpA.disabled = true;
           if(inpB) inpB.disabled = true;
+          const inp2A=document.getElementById('s2A_'+r+'_'+i);
+          const inp2B=document.getElementById('s2B_'+r+'_'+i);
+          if(inp2A) inp2A.disabled = true;
+          if(inp2B) inp2B.disabled = true;
           setText('rA_'+r+'_'+i,'','auto-tm'); setText('rB_'+r+'_'+i,'','auto-tm'); setText('rw_'+r+'_'+i,'','auto-tm');
         }
       }
@@ -970,11 +1050,19 @@
               else resHtml = '<span class="abt">ausgefallen</span><br><span>Σ '+st[t].s+'/'+fmt(st[t].bd)+'/'+st[t].p+'</span>';
               break;
             }
-            if(slotComplete(r,i)){
-              const own = m.a===t? sval(r,i,'A'): sval(r,i,'B');
-              const opp = m.a===t? sval(r,i,'B'): sval(r,i,'A');
-              const wl = own>opp? 'S':'N';
-              resHtml = own+':'+opp+' '+wl+'<br><span>Σ '+st[t].s+'/'+fmt(st[t].bd)+'/'+st[t].p+'</span>';
+            const res=slotResult(r,i);
+            if(res){
+              const own = m.a===t? res.aBalls: res.bBalls;
+              const opp = m.a===t? res.bBalls: res.aBalls;
+              const meWon = (res.winner==='a'&&m.a===t)||(res.winner==='b'&&m.b===t);
+              const wl = res.winner==null? '–' : (meWon? 'S':'N');
+              let sc;
+              if(isMulti()){
+                const oa=m.a===t? sval(r,i,'A'):sval(r,i,'B'), ob=m.a===t? sval(r,i,'B'):sval(r,i,'A');
+                const ta=m.a===t? sval2(r,i,'A'):sval2(r,i,'B'), tb=m.a===t? sval2(r,i,'B'):sval2(r,i,'A');
+                sc = oa+':'+ob+' '+ta+':'+tb;
+              } else { sc = own+':'+opp; }
+              resHtml = sc+' '+wl+'<br><span>Σ '+st[t].s+'/'+fmt(st[t].bd)+'/'+st[t].p+'</span>';
               break;
             }
           }
@@ -992,11 +1080,12 @@
     document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
     document.querySelectorAll('input.score').forEach(inp => {
       if(inp.disabled) return;
-      const m = inp.id.match(/^s(A|B)_(\d+)_(\d+)$/); if(!m) return;
-      const other = document.getElementById('s'+(m[1]==='A'?'B':'A')+'_'+m[2]+'_'+m[3]);
+      const m = inp.id.match(/^s(2)?(A|B)_(\d+)_(\d+)$/); if(!m) return;
+      const pre = 's'+(m[1]||'');
+      const other = document.getElementById(pre+(m[2]==='A'?'B':'A')+'_'+m[3]+'_'+m[4]);
       if(!other || other.disabled) return;
       const a = num(inp), b = num(other); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= setTarget() && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
@@ -1067,10 +1156,50 @@
   const NROUNDS    = ROUNDS.length;
   const POINT_KEY    = 'turnier12sw_points';
   const POINT_OPTIONS = [15, 21];
-  const MODE_MIN     = {15:17, 21:25};
+  const SET_MODES = [
+    {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
+    {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
+    {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'}
+  ];
+  const MODE_MIN     = {'15':17, '21':25, '2x15':30};
   let POINT_TARGET   = 15;
-  function loadPointTarget(){ try{ const v=parseInt(localStorage.getItem(POINT_KEY),10); if(POINT_OPTIONS.indexOf(v)>=0) POINT_TARGET=v; }catch(e){} const s=document.getElementById('pointTarget'); if(s) s.value=String(POINT_TARGET); }
-  function onPointTargetChange(v){ const n=parseInt(v,10); POINT_TARGET = POINT_OPTIONS.indexOf(n)>=0 ? n : 15; try{ localStorage.setItem(POINT_KEY, String(POINT_TARGET)); }catch(e){} applyTimes(); computeAll(); }
+  let SET_MODE       = '15';
+  function modeDef(){ return SET_MODES.find(m=>m.id===SET_MODE) || SET_MODES[0]; }
+  function setTarget(){ return modeDef().target; }
+  function setCount(){ return modeDef().sets; }
+  function isMulti(){ return setCount() > 1; }
+  function applySetMode(){
+    document.querySelectorAll('td.resu').forEach(td=>{
+      const a = td.querySelector('input[id^="sA_"]'); if(!a) return;
+      const mm = /^sA_(\d+)_(\d+)$/.exec(a.id); if(!mm) return;
+      const r=mm[1], i=mm[2];
+      const existing = document.getElementById('s2A_'+r+'_'+i);
+      if(isMulti()){
+        if(!existing){
+          const sep=document.createElement('span'); sep.className='setsep'; sep.textContent='|';
+          const grp=document.createElement('span'); grp.className='setgrp';
+          grp.innerHTML='<input class="score" type="text" inputmode="numeric" id="s2A_'+r+'_'+i+'" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s2B_'+r+'_'+i+'" oninput="onScore()" autocomplete="off">';
+          td.appendChild(sep); td.appendChild(grp);
+        }
+      } else if(existing){
+        const grp=existing.closest('.setgrp');
+        const sep=grp && grp.previousElementSibling;
+        if(grp) grp.remove();
+        if(sep && sep.classList && sep.classList.contains('setsep')) sep.remove();
+      }
+    });
+  }
+  function loadPointTarget(){
+    try{ const v=localStorage.getItem(POINT_KEY); const def=SET_MODES.find(m=>m.id===String(v)); if(def){ SET_MODE=def.id; POINT_TARGET=def.target; } }catch(e){}
+    const s=document.getElementById('pointTarget'); if(s) s.value=SET_MODE;
+    applySetMode();
+  }
+  function onPointTargetChange(v){
+    const def=SET_MODES.find(m=>m.id===String(v)) || SET_MODES[0];
+    SET_MODE=def.id; POINT_TARGET=def.target;
+    try{ localStorage.setItem(POINT_KEY, SET_MODE); }catch(e){}
+    applySetMode(); restoreScores(); applyTimes(); computeAll();
+  }
   function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
   function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
   function applyTimes(){
@@ -1084,8 +1213,8 @@
       el.innerHTML=el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g,(mm,h,mn)=>fmtMin(startMin+Math.round((+h*60+ +mn-baseS)*newDur/origDur)));
     });
     const minPerRound=Math.round(newDur/NROUNDS);
-    const modeText='1 Satz bis '+POINT_TARGET;
-    const warn = minPerRound < (MODE_MIN[POINT_TARGET] || 25);
+    const modeText=modeDef().label;
+    const warn = minPerRound < (MODE_MIN[SET_MODE] || 25);
     document.querySelectorAll('.rmode').forEach(el=>el.textContent=modeText);
     const info=document.getElementById('roundDurInfo');
     if(info){
@@ -1249,8 +1378,12 @@
   if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
   function target(){
     var s = document.getElementById('pointTarget');
-    var v = s ? parseInt(s.value, 10) : NaN;
-    return (v === 15 || v === 21) ? v : null;
+    if(!s) return null;
+    var v = s.value;
+    if(v === '15') return 15;
+    if(v === '21') return 21;
+    if(v === '2x15') return 15;
+    return null;
   }
   function partnerOf(el){
     var m;
@@ -1258,8 +1391,9 @@
       var op = el.getAttribute('data-op'); if(op == null) return null;
       return document.getElementById('g' + m[1] + '_' + op);
     }
-    if((m = /^s(A|B)_(\d+)_(\d+)$/.exec(el.id))){
-      return document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
+    if((m = /^s(2)?(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+      var pre = 's' + (m[1] || '');
+      return document.getElementById(pre + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
     }
     return null;
   }

@@ -42,6 +42,8 @@
   .pair .t, .bye .t { display:inline-block; min-width:52px; font-weight:bold; font-size:15px; }
   .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
   .vs { color:var(--soft); font-weight:bold; font-size:16px; }
+  .setsep { color:var(--soft); font-weight:bold; margin:0 4px; }
+  .setgrp { white-space:nowrap; }
   .bye-tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#fff3d6; border:1px solid #d7b96d; color:#7a5a00; font-weight:bold; }
   .match.is-bye { background:#fffaf0; }
   .sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
@@ -501,13 +503,23 @@
   const BASE_START = '10:00';
   const BASE_END   = '14:00';
 
-  const POINT_OPTIONS = [15, 21];   // wählbare Zielpunktzahl pro Satz
-  const MODE_MIN = {15:17, 21:25};  // empfohlene Minuten/Spiel je Zielpunktzahl
+  const POINT_OPTIONS = [15, 21];   // Legacy-Einzelsatz-Optionen (Rückwärtskompatibilität)
+  const SET_MODES = [
+    {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
+    {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
+    {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'}
+  ];
+  const MODE_MIN = {'15':17, '21':25, '2x15':30};  // empfohlene Minuten/Spiel je Modus
 
   /* Dynamischer Zustand (wird bei Aufbau gesetzt) */
   let NTEAMS = 8;
   let NFIELDS = 4;
-  let POINT_TARGET = 21;   // Zielpunktzahl pro Spiel (15 oder 21)
+  let POINT_TARGET = 21;   // Zielpunktzahl pro Satz (aus Modus abgeleitet)
+  let SET_MODE = '21';     // aktiver Satz-Modus ('15' | '21' | '2x15')
+  function modeDef(){ return SET_MODES.find(m=>m.id===SET_MODE) || SET_MODES[1]; }
+  function setTarget(){ return modeDef().target; }
+  function setCount(){ return modeDef().sets; }
+  function isMulti(){ return setCount() > 1; }
   let TEAMS  = [];
   let ROUNDS = [];
   let SCHEDULE = [];   // [{matches:[[a,b],...], bye:teamOrNull}, ...]
@@ -665,6 +677,28 @@
   /* ================= Auswertungs-Helfer ================= */
   function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
   function gv(r,t){ return num(document.getElementById('g'+r+'_'+t)); }
+  function gv2(r,t){ return num(document.getElementById('g2'+r+'_'+t)); }
+  function setValid(a,b){ return a!=null && b!=null && Math.max(a,b) >= setTarget() && Math.abs(a-b) >= 2; }
+  /* Ergebnis eines Matches (Runde r, Team a vs Team b) über 1 oder 2 Sätze.
+     Rückgabe: null wenn unvollständig, sonst {aBalls,bBalls,aSets,bSets,winner} (winner = a|b|null). */
+  function resultOf(r,a,b){
+    const a1=gv(r,a), b1=gv(r,b);
+    if(!isMulti()){
+      if(!setValid(a1,b1)) return null;
+      return {aBalls:a1,bBalls:b1,aSets:a1>b1?1:0,bSets:b1>a1?1:0,winner:a1>b1?'a':'b'};
+    }
+    const a2=gv2(r,a), b2=gv2(r,b);
+    if(!setValid(a1,b1) || !setValid(a2,b2)) return null;
+    const aSets=(a1>b1?1:0)+(a2>b2?1:0), bSets=(b1>a1?1:0)+(b2>a2?1:0);
+    const aBalls=a1+a2, bBalls=b1+b2;
+    let winner;
+    if(aSets>bSets) winner='a';
+    else if(bSets>aSets) winner='b';
+    else if(aBalls>bBalls) winner='a';
+    else if(bBalls>aBalls) winner='b';
+    else winner=null;
+    return {aBalls,bBalls,aSets,bSets,winner};
+  }
   function fmt(n){ return (n>0?'+':'')+n; }
   function setCell(id,val,cls){
     const e=document.getElementById(id);
@@ -680,9 +714,9 @@
     for(const r of ROUNDS){
       const inA=document.getElementById('g'+r+'_'+a);
       if(inA && parseInt(inA.getAttribute('data-op'),10)===b){
-        const sa=gv(r,a), sb=gv(r,b);
-        if(sa!=null && sb!=null) return sa>sb?1:(sa<sb?-1:0);
-        return 0;
+        const res=resultOf(r,a,b);
+        if(!res || !res.winner) return 0;
+        return res.winner==='a'?1:-1;
       }
     }
     return 0;
@@ -756,15 +790,17 @@
           return;
         }
         const sa = gv(r,a), sb = gv(r,b);
-        if(sa!=null && sb!=null){
-          const validScore = Math.max(sa,sb) >= POINT_TARGET && Math.abs(sa-sb) >= 2;
-          if(validScore){
-            if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
-            else if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
-            st[a].bd += (sa-sb); st[b].bd += (sb-sa);
-            cum[a].bd += (sa-sb); cum[b].bd += (sb-sa);
-            st[a].sc += sa; st[b].sc += sb;
-          }
+        const res = resultOf(r,a,b);
+        if(res){
+          if(res.winner==='a'){ st[a].w += 1; cum[a].pts += 1; }
+          else if(res.winner==='b'){ st[b].w += 1; cum[b].pts += 1; }
+          const da=res.aBalls-res.bBalls;
+          st[a].bd += da; st[b].bd -= da;
+          cum[a].bd += da; cum[b].bd -= da;
+          st[a].sc += res.aBalls; st[b].sc += res.bBalls;
+          setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
+          setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+        } else if(sa!=null || sb!=null || gv2(r,a)!=null || gv2(r,b)!=null){
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
         } else {
@@ -790,7 +826,7 @@
       const a = parseInt(td.getAttribute('data-a'),10);
       const b = parseInt(td.getAttribute('data-b'),10);
       if(absent[a] || absent[b]) return true;
-      return gv(r,a) != null && gv(r,b) != null;
+      return resultOf(r,a,b) != null;
     }));
     const ranked=[...TEAMS].sort((a,b)=>{
       if(st[b].w  !== st[a].w ) return st[b].w  - st[a].w;
@@ -816,11 +852,12 @@
     document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
     document.querySelectorAll('input.score[data-op]').forEach(inp => {
       if(inp.disabled) return;
-      const m = inp.id.match(/^g(\d+)_(\d+)$/); if(!m) return;
-      const opp = document.getElementById('g'+m[1]+'_'+inp.getAttribute('data-op'));
+      const m = inp.id.match(/^g(2)?(\d+)_(\d+)$/); if(!m) return;
+      const pre = 'g'+(m[1]||'');
+      const opp = document.getElementById(pre+m[2]+'_'+inp.getAttribute('data-op'));
       if(!opp || opp.disabled) return;
       const a = num(inp), b = num(opp); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= setTarget() && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
@@ -858,8 +895,8 @@
     const total = SLOTS.length || 1;
     const dur=Math.max(30, endMin-startMin);
     const per=Math.max(5, Math.floor(dur/(total+1)));   // +1 Block für Auswertung
-    const modeText = '1 Satz bis ' + POINT_TARGET;
-    const enough = per >= (MODE_MIN[POINT_TARGET] || 25);
+    const modeText = modeDef().label;
+    const enough = per >= (MODE_MIN[SET_MODE] || 25);
     /* Spielplan-Slots */
     document.querySelectorAll('.sched .rtime[data-slot]').forEach(el=>{
       const s=+el.getAttribute('data-slot');
@@ -930,12 +967,21 @@
 
   /* ================= DOM-Aufbau ================= */
   function matchCellHtml(round, a, b){
+    const multi = isMulti();
+    const s2 = multi
+      ? '<span class="setsep">|</span><span class="setgrp">'
+        + '<input class="score" type="text" inputmode="numeric" id="g2'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
+        + '<span class="vs">:</span>'
+        + '<input class="score" type="text" inputmode="numeric" id="g2'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+        + '</span>'
+      : '';
     return '<td class="match" data-round="'+round+'" data-a="'+a+'" data-b="'+b+'">'
       + '<span class="pair">'
       +   '<span class="t" data-team="'+a+'">Team '+a+'</span>'
       +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
       +   '<span class="vs">:</span>'
       +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+      +   s2
       +   '<span class="t" data-team="'+b+'">Team '+b+'</span>'
       + '</span><span class="bye" hidden></span></td>';
   }
@@ -1030,11 +1076,11 @@
     document.getElementById('h-title').textContent = 'Turnierbogen – ' + NTEAMS + ' Teams · Jeder-gegen-jeden';
     document.title = 'Turnierbogen – ' + NTEAMS + ' Teams, Jeder-gegen-jeden';
     document.getElementById('h-sub').innerHTML =
-      NFIELDS + ' Felder · ' + ROUNDS.length + ' Runden · ' + gamesPerTeam + ' Spiele/Team · je <span class="rmode">1 Satz bis ' + POINT_TARGET + '</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.';
+      NFIELDS + ' Felder · ' + ROUNDS.length + ' Runden · ' + gamesPerTeam + ' Spiele/Team · je <span class="rmode">' + modeDef().label + '</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.';
     document.getElementById('g-games').textContent =
       'jedes Team spielt ' + gamesPerTeam + ' Spiele (jeder gegen jeden)' + oddNote;
     document.getElementById('h-legend').innerHTML =
-      '<b>Modus:</b> Jeder gegen jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel 1 Satz bis 21 Punkte mit 2 Punkten Vorsprung.';
+      '<b>Modus:</b> Jeder gegen jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel ' + modeDef().label + (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung') + '.';
     const matchesPerRound = SCHEDULE.length ? SCHEDULE[0].matches.length : 0;
     const slotsPerRound = Math.max(1, Math.ceil(matchesPerRound / NFIELDS));
     setRV('rv-rounds', ROUNDS.length);
@@ -1072,26 +1118,30 @@
   function fillPointSelect(){
     const sel = document.getElementById('pointTarget');
     if(!sel) return;
-    sel.innerHTML = POINT_OPTIONS.map(p => '<option value="'+p+'"'+(p===POINT_TARGET?' selected':'')+'>1 Satz bis '+p+'</option>').join('');
+    sel.innerHTML = SET_MODES.map(m => '<option value="'+m.id+'"'+(m.id===SET_MODE?' selected':'')+'>'+m.label+'</option>').join('');
   }
   function onTeamCount(){
     NTEAMS = parseInt(document.getElementById('teamCount').value,10);
     const maxF = Math.min(MAX_FIELDS, Math.floor(NTEAMS/2));
     if(NFIELDS>maxF) NFIELDS=maxF;      // Feldzahl an neue Teamzahl anpassen
-    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:SET_MODE});
     rebuild();
   }
   function onFieldCount(){
     NFIELDS = parseInt(document.getElementById('fieldCount').value,10);
-    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:SET_MODE});
     rebuild();
   }
   function onPointTarget(){
-    POINT_TARGET = parseInt(document.getElementById('pointTarget').value,10) || 21;
-    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
-    computeTimes();
-    computeAll();
+    setSetMode(document.getElementById('pointTarget').value);
   }
+  function setSetMode(v){
+    const def = SET_MODES.find(m=>m.id===String(v)) || SET_MODES[1];
+    SET_MODE = def.id; POINT_TARGET = def.target;
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:SET_MODE});
+    rebuild();   // baut Spielplan neu (fügt/entfernt Satz-2-Inputs), Ergebnisse bleiben über IDs erhalten
+  }
+  function onPointTargetChange(v){ setSetMode(v); }
 
   /* ================= Voller Neuaufbau ================= */
   function rebuild(){
@@ -1128,7 +1178,11 @@
     const cfg = loadCfg();
     if(cfg.teams && cfg.teams>=MIN_TEAMS && cfg.teams<=MAX_TEAMS) NTEAMS = cfg.teams;
     if(cfg.fields && cfg.fields>=1) NFIELDS = cfg.fields;
-    if(cfg.points && POINT_OPTIONS.indexOf(cfg.points)>=0) POINT_TARGET = cfg.points;
+    if(cfg.points != null){
+      const def = SET_MODES.find(m=>m.id===String(cfg.points))
+                || SET_MODES.find(m=>m.target===cfg.points && m.sets===1);   // Legacy: gespeicherte Zahl (15/21)
+      if(def){ SET_MODE = def.id; POINT_TARGET = def.target; }
+    }
     loadTimes();
     restoreTitle();
     rebuild();
@@ -1229,17 +1283,22 @@
   if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
   function target(){
     var s = document.getElementById('pointTarget');
-    var v = s ? parseInt(s.value, 10) : NaN;
-    return (v === 15 || v === 21) ? v : null;
+    if(!s) return null;
+    var v = s.value;
+    if(v === '15') return 15;
+    if(v === '21') return 21;
+    if(v === '2x15') return 15;
+    return null;
   }
   function partnerOf(el){
     var m;
-    if((m = /^g(\d+)_(\d+)$/.exec(el.id))){
+    if((m = /^g(2)?(\d+)_(\d+)$/.exec(el.id))){
       var op = el.getAttribute('data-op'); if(op == null) return null;
-      return document.getElementById('g' + m[1] + '_' + op);
+      return document.getElementById('g' + (m[1] || '') + m[2] + '_' + op);
     }
-    if((m = /^s(A|B)_(\d+)_(\d+)$/.exec(el.id))){
-      return document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
+    if((m = /^s(2)?(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+      var pre = 's' + (m[1] || '');
+      return document.getElementById(pre + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
     }
     return null;
   }
