@@ -400,6 +400,71 @@
     padding: 12px 16px;
   }
 
+  /* ── Einheitliche Turnier-Konfigurationskarte (nur Bildschirm) ──
+     Fasst Titel, Uhrzeit und – falls vorhanden – Team-/Feldauswahl in EINER
+     klar strukturierten Karte zusammen. Darunter ein gut sichtbarer Ergebnis-
+     Readout (Spielzeit pro Spiel, Modus, Runden, Spiele/Team, Felder …). */
+  .cfgcard {
+    border: 1px solid var(--app-line-soft);
+    background: #fff;
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-shadow);
+    padding: 14px 16px 12px;
+    margin: 0 0 16px;
+  }
+  .cfgcard-head {
+    font-size: 12.5px; font-weight: 800; letter-spacing: .03em;
+    color: var(--app-blue-dark);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 12px;
+  }
+  .cfgcard-head::after { content: ""; flex: 1; height: 1px; background: var(--app-line-soft); }
+  .cfgcard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 14px;
+    align-items: end;
+  }
+  .cfgfield { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--app-muted); }
+  .cfgfield--wide { grid-column: 1 / -1; }
+  .cfgfield > input, .cfgfield > select {
+    font-size: 14px; font-weight: 600; color: var(--app-ink);
+    padding: 8px 10px; border: 1px solid var(--app-line-soft); border-radius: 8px; background: #fff;
+    min-height: 38px; width: 100%; box-sizing: border-box;
+  }
+  .cfgfield > select { cursor: pointer; }
+  .cfgfield > input:focus, .cfgfield > select:focus {
+    outline: none; border-color: var(--app-blue); box-shadow: 0 0 0 3px rgba(31,111,168,.18);
+  }
+
+  /* Ergebnis-Readout – groß & gut sichtbar. */
+  .cfgresult { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 2px; }
+  .cfgres-item {
+    flex: 1 1 120px; min-width: 108px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 8px;
+    background: var(--app-tint);
+    border: 1px solid var(--app-line-soft);
+    border-radius: 10px;
+  }
+  .cfgres-item.is-primary { background: linear-gradient(180deg,#eaf5ee,#e0efe7); border-color: #bfe0c8; }
+  .cfgres-item.is-warn { background: linear-gradient(180deg,#fdeeee,#fbe4e4); border-color: #e6b8b8; }
+  .cfgres-val { font-size: 20px; font-weight: 800; color: var(--app-blue-dark); line-height: 1.05; text-align: center; }
+  .cfgres-item.is-primary .cfgres-val { color: var(--app-green); }
+  .cfgres-item.is-warn .cfgres-val { color: #c0392b; }
+  .cfgres-lbl { font-size: 10.5px; font-weight: 700; color: var(--app-muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; }
+
+  .cfgcard-actions {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--app-line-soft);
+  }
+  .cfgcard-actions .spacer { margin-left: auto; }
+  .cfgcard-actions #session-title-input { min-width: 180px; }
+  @media (max-width: 560px) {
+    .cfgres-item { flex-basis: calc(50% - 5px); }
+  }
+
   /* Hinweis-/Legenden-Boxen dezent. */
   .legend, .team-legend {
     border: 1px solid var(--app-line-soft);

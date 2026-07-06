@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Turnierbogen – 8 Teams, Jeder-gegen-jeden</title>
+<title>Turnierbogen – flexibel, Jeder-gegen-jeden</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -44,6 +44,7 @@
   .vs { color:var(--soft); font-weight:bold; font-size:16px; }
   .bye-tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#fff3d6; border:1px solid #d7b96d; color:#7a5a00; font-weight:bold; }
   .match.is-bye { background:#fffaf0; }
+  .sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
 
   /* Standings */
   .stand td { height:40px; }
@@ -92,6 +93,7 @@
   .sched .rnd { width:96px; font-size:13px; }
   .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
   .sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#444; margin-top:1px; }
+  .sched .rnd .rbye { display:block; font-size:9.5px; font-weight:normal; color:#7a5a00; margin-top:2px; }
   .namectl { margin:0 0 12px; }
   .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:5px; font-weight:bold; }
   .nbtn:hover { background:#163a5c; }
@@ -106,6 +108,11 @@
   .digitalbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .digitalbar .nbtn { background:#0a7d2c; border-color:#0a7d2c; }
   .digitalbar .nbtn:hover { background:#086323; }
+  /* Setup-Leiste (Team-/Feldzahl) */
+  .setupbar { margin:0 0 12px; padding:8px 12px; border:1px solid #b9c9e0; border-radius:6px; background:#eef3fb; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .setupbar label { font-size:12.5px; color:#1f4e79; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
+  .setupbar select { padding:5px 8px; font-size:13px; border:1px solid #9db4d4; border-radius:5px; font-weight:700; color:#1f4e79; background:#fff; }
+  .setupbar .setinfo { font-size:11.5px; color:#555; font-style:italic; }
 
   @media print {
     @page { size: A4 landscape; margin: 10mm 12mm; }
@@ -146,6 +153,7 @@
     .sched .rnd { width:24mm; font-size:8.2pt; }
     .sched .rnd .rtime { font-size:7pt; margin-top:0.4mm; }
     .sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; }
+    .sched .rnd .rbye { font-size:6.8pt; line-height:1.05; margin-top:0.4mm; color:#5a4300; }
     .pair, .bye { gap:1.4mm; min-height:0; }
     .pair .t, .bye .t { min-width:0; font-size:8pt; }
     .vs { font-size:8pt; }
@@ -295,6 +303,7 @@
       .sched .rtime { color: #b8d4ee; }
       .sched .rnd .rmode,
       .sched .rmode { color: #a0b8cc; }
+      .sched .rnd .rbye { color: #ffe4a3; }
       .digitalbar,
       .digbar,
       .topbar { gap: 12px; }
@@ -348,20 +357,58 @@
 <div class="guide">
   <h2>Kurzanleitung – so läuft das Turnier</h2>
   <ol>
-    <li><span class="hi">Modus:</span> Jeder gegen jeden – jedes Team spielt 7 Spiele, niemand scheidet aus.</li>
+    <li><span class="hi">Modus:</span> Jeder gegen jeden – <span id="g-games">jedes Team spielt gegen jedes andere</span>, niemand scheidet aus.</li>
     <li><span class="hi">Pro Spiel:</span> 1 Satz bis 21 Punkte, Sieg nur mit 2 Punkten Vorsprung (z. B. 22:20). Bei knapper Zeit bis 15.</li>
-    <li><span class="hi">Ablauf je Runde:</span> Paarungen lt. Tabelle aufrufen, alle 4 Felder spielen gleichzeitig, dann Ergebnis in die Kästchen eintragen.</li>
-    <li><span class="hi">Wertung:</span> Sieg = 1 Punkt, Niederlage = 0. Fehlt ein Team, bekommt der Gegner ein Freilos (1 Punkt, ohne Differenz).</li>
-    <li><span class="hi">Auswertung (Seite 2):</span> Punkte und Ball-Differenz pro Runde fortlaufend addieren; R7 ergibt den Endstand und die Platzierung.</li>
+    <li><span class="hi">Ablauf je Runde:</span> Paarungen lt. Tabelle aufrufen, alle Felder spielen gleichzeitig, dann Ergebnis in die Kästchen eintragen.</li>
+    <li><span class="hi">Wertung:</span> Sieg = 1 Punkt, Niederlage = 0. Fehlt ein Team, bekommt der Gegner ein Freilos (1 Punkt, ohne Differenz). Bei ungerader Teamzahl hat pro Runde ein Team spielfrei.</li>
+    <li><span class="hi">Auswertung (Seite 2):</span> Punkte und Ball-Differenz pro Runde fortlaufend addieren; die letzte Runde ergibt den Endstand und die Platzierung.</li>
   </ol>
 </div>
 
-<h1>Turnierbogen – 8 Teams · Jeder-gegen-jeden</h1>
-<p class="sub tt">4 Felder · 10:00–14:00 · 7 Runden · je <span class="rmode">1 Satz bis 21</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.</p>
+<h1 id="h-title">Turnierbogen – Jeder-gegen-jeden</h1>
+<p class="sub" id="h-sub"></p>
 <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
-<div class="noprint namectl">
-  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+<div class="noprint cfgcard">
+  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-grid">
+    <label class="cfgfield cfgfield--wide">📝 Turniertitel
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…">
+    </label>
+    <label class="cfgfield">👥 Teams
+      <select id="teamCount" onchange="onTeamCount()"></select>
+    </label>
+    <label class="cfgfield">🏖️ Felder
+      <select id="fieldCount" onchange="onFieldCount()"></select>
+    </label>
+    <label class="cfgfield">🎯 Punkte/Spiel
+      <select id="pointTarget" onchange="onPointTarget()"></select>
+    </label>
+    <label class="cfgfield">⏱ Start
+      <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
+    </label>
+    <label class="cfgfield">🏁 Ende
+      <input type="time" id="endTime" value="14:00" onchange="onEndTime()">
+    </label>
+  </div>
+
+  <div class="cfgresult" id="cfgResult">
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Spiel</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Spiele/Team</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fields">–</span><span class="cfgres-lbl">Felder</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
+  </div>
+
+  <div class="cfgcard-actions">
+    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
+    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+    <span class="spacer"></span>
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+  </div>
 
   <div id="namepanel" class="namepanel" hidden>
     <div class="ngrid"></div>
@@ -370,20 +417,10 @@
       <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
     </div>
   </div>
-  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
   <div id="fieldpanel" class="namepanel" hidden>
-    <div class="ngrid" style="grid-template-columns:repeat(4,1fr)"><label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label><label>Feld 2<input type="text" id="fni_1" placeholder="Feld 2" oninput="onFieldInput(1)"></label><label>Feld 3<input type="text" id="fni_2" placeholder="Feld 3" oninput="onFieldInput(2)"></label><label>Feld 4<input type="text" id="fni_3" placeholder="Feld 4" oninput="onFieldInput(3)"></label></div>
+    <div class="ngrid"></div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
   </div>
-</div>
-
-<div class="noprint digitalbar">
-  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label><label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="14:00" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label><span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:80px"></span><button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
-  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
-    <input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
-    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
-  </span>
 </div>
 
 <div class="row">
@@ -391,202 +428,31 @@
   <div style="flex:0 0 46%">
     <table class="teams">
       <caption>Teams (Namen eintragen)</caption>
-      <tr><td class="num">1</td><td class="name" data-team-name="1"></td><td class="num">5</td><td class="name" data-team-name="5"></td></tr>
-      <tr><td class="num">2</td><td class="name" data-team-name="2"></td><td class="num">6</td><td class="name" data-team-name="6"></td></tr>
-      <tr><td class="num">3</td><td class="name" data-team-name="3"></td><td class="num">7</td><td class="name" data-team-name="7"></td></tr>
-      <tr><td class="num">4</td><td class="name" data-team-name="4"></td><td class="num">8</td><td class="name" data-team-name="8"></td></tr>
+      <tbody id="teamsBody"></tbody>
     </table>
   </div>
   <!-- Zeitplan -->
   <div class="grow">
     <table>
       <caption>Zeitplan</caption>
-      <tr><th>Zeit</th><th>Runde</th><th>Zeit</th><th>Runde</th></tr>
-      <tr><td class="tt">10:00</td><td>R1</td><td class="tt">12:00</td><td>R5</td></tr>
-      <tr><td class="tt">10:30</td><td>R2</td><td class="tt">12:30</td><td>R6</td></tr>
-      <tr><td class="tt">11:00</td><td>R3</td><td class="tt">13:00</td><td>R7</td></tr>
-      <tr><td class="tt">11:30</td><td>R4</td><td class="tt">13:30</td><td>Auswertung</td></tr>
+      <tbody id="scheduleOverview"></tbody>
     </table>
   </div>
 </div>
 
 <table class="sched">
   <caption>Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</caption>
-  <tr>
-    <th class="rnd">R</th>
-    <th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th>
-  </tr>
-  <tr>
-    <td class="rnd">1<span class="rtime tt">10:00–10:30</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="1" data-slot="0" data-a="1" data-b="8"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-rr-round="1" data-tm="1" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_8" data-rr-round="1" data-tm="8" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="1" data-slot="1" data-a="2" data-b="7"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-rr-round="1" data-tm="2" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_7" data-rr-round="1" data-tm="7" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="1" data-slot="2" data-a="3" data-b="6"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g1_3" data-rr-round="1" data-tm="3" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_6" data-rr-round="1" data-tm="6" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="1" data-slot="3" data-a="4" data-b="5"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-rr-round="1" data-tm="4" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-rr-round="1" data-tm="5" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">2<span class="rtime tt">10:30–11:00</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="2" data-slot="0" data-a="1" data-b="7"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-rr-round="2" data-tm="1" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_7" data-rr-round="2" data-tm="7" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="2" data-slot="1" data-a="8" data-b="6"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g2_8" data-rr-round="2" data-tm="8" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-rr-round="2" data-tm="6" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="2" data-slot="2" data-a="2" data-b="5"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g2_2" data-rr-round="2" data-tm="2" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_5" data-rr-round="2" data-tm="5" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="2" data-slot="3" data-a="3" data-b="4"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-rr-round="2" data-tm="3" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-rr-round="2" data-tm="4" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">3<span class="rtime tt">11:00–11:30</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="3" data-slot="0" data-a="1" data-b="6"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g3_1" data-rr-round="3" data-tm="1" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_6" data-rr-round="3" data-tm="6" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="3" data-slot="1" data-a="7" data-b="5"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g3_7" data-rr-round="3" data-tm="7" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_5" data-rr-round="3" data-tm="5" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="3" data-slot="2" data-a="8" data-b="4"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g3_8" data-rr-round="3" data-tm="8" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_4" data-rr-round="3" data-tm="4" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="3" data-slot="3" data-a="2" data-b="3"><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g3_2" data-rr-round="3" data-tm="2" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_3" data-rr-round="3" data-tm="3" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">4<span class="rtime tt">11:30–12:00</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="4" data-slot="0" data-a="1" data-b="5"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g4_1" data-rr-round="4" data-tm="1" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_5" data-rr-round="4" data-tm="5" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="4" data-slot="1" data-a="6" data-b="4"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g4_6" data-rr-round="4" data-tm="6" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_4" data-rr-round="4" data-tm="4" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="4" data-slot="2" data-a="7" data-b="3"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g4_7" data-rr-round="4" data-tm="7" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_3" data-rr-round="4" data-tm="3" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="4" data-slot="3" data-a="8" data-b="2"><span class="pair"><span class="t" data-team="8">Team 8</span><input class="score" type="text" inputmode="numeric" id="g4_8" data-rr-round="4" data-tm="8" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g4_2" data-rr-round="4" data-tm="2" data-op="8" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">5<span class="rtime tt">12:00–12:30</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="5" data-slot="0" data-a="1" data-b="4"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g5_1" data-rr-round="5" data-tm="1" data-op="4" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_4" data-rr-round="5" data-tm="4" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="5" data-slot="1" data-a="5" data-b="3"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g5_5" data-rr-round="5" data-tm="5" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_3" data-rr-round="5" data-tm="3" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="5" data-slot="2" data-a="6" data-b="2"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g5_6" data-rr-round="5" data-tm="6" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_2" data-rr-round="5" data-tm="2" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="5" data-slot="3" data-a="7" data-b="8"><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g5_7" data-rr-round="5" data-tm="7" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g5_8" data-rr-round="5" data-tm="8" data-op="7" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">6<span class="rtime tt">12:30–13:00</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="6" data-slot="0" data-a="1" data-b="3"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g6_1" data-rr-round="6" data-tm="1" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_3" data-rr-round="6" data-tm="3" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="6" data-slot="1" data-a="4" data-b="2"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g6_4" data-rr-round="6" data-tm="4" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_2" data-rr-round="6" data-tm="2" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="6" data-slot="2" data-a="5" data-b="8"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g6_5" data-rr-round="6" data-tm="5" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_8" data-rr-round="6" data-tm="8" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="6" data-slot="3" data-a="6" data-b="7"><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g6_6" data-rr-round="6" data-tm="6" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g6_7" data-rr-round="6" data-tm="7" data-op="6" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">7<span class="rtime tt">13:00–13:30</span><span class="rmode">1 Satz bis 21</span></td>
-    <td class="match" data-round="7" data-slot="0" data-a="1" data-b="2"><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g7_1" data-rr-round="7" data-tm="1" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_2" data-rr-round="7" data-tm="2" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="7" data-slot="1" data-a="3" data-b="8"><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g7_3" data-rr-round="7" data-tm="3" data-op="8" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_8" data-rr-round="7" data-tm="8" data-op="3" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="7" data-slot="2" data-a="4" data-b="7"><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g7_4" data-rr-round="7" data-tm="4" data-op="7" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_7" data-rr-round="7" data-tm="7" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span><span class="bye" hidden></span></td>
-    <td class="match" data-round="7" data-slot="3" data-a="5" data-b="6"><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g7_5" data-rr-round="7" data-tm="5" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g7_6" data-rr-round="7" data-tm="6" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span><span class="bye" hidden></span></td>
-  </tr>
+  <tbody id="schedBody"></tbody>
 </table>
 
 <div class="page-break"></div>
 
 
 <h1>Laufende Tabelle &amp; Endstand</h1>
-<p class="sub tt">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die Spalte <b>R7</b> ist damit automatisch der Endstand → daraus den Platz vergeben.</p>
+<p class="sub">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die letzte Runden-Spalte ist damit automatisch der Endstand → daraus den Platz vergeben.</p>
 
 <table class="track">
-  <tr>
-    <th class="tname">Team</th><th class="lbl">kumuliert</th>
-    <th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th>R6</th><th>R7</th>
-    <th class="pos">Platz</th>
-  </tr>
-
-  <!-- Beispiel -->
-  <tr class="grp ex">
-    <td class="tname" rowspan="2">Muster-Team</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td>1</td><td>1</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td>
-    <td class="pos" rowspan="2">3.</td>
-  </tr>
-  <tr class="ex">
-    <td class="lbl">Ball-Differenz</td>
-    <td>+5</td><td>−2</td><td>+3</td><td>+9</td><td>+7</td><td>+12</td><td>+15</td>
-  </tr>
-
-  <!-- Team 1 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="1">Team 1</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_1_1"></td><td id="pt_1_2"></td><td id="pt_1_3"></td><td id="pt_1_4"></td><td id="pt_1_5"></td><td id="pt_1_6"></td><td id="pt_1_7"></td>
-    <td class="pos" rowspan="2" id="pz_1"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_1_1"></td><td id="bd_1_2"></td><td id="bd_1_3"></td><td id="bd_1_4"></td><td id="bd_1_5"></td><td id="bd_1_6"></td><td id="bd_1_7"></td>
-  </tr>
-
-  <!-- Team 2 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="2">Team 2</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_2_1"></td><td id="pt_2_2"></td><td id="pt_2_3"></td><td id="pt_2_4"></td><td id="pt_2_5"></td><td id="pt_2_6"></td><td id="pt_2_7"></td>
-    <td class="pos" rowspan="2" id="pz_2"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_2_1"></td><td id="bd_2_2"></td><td id="bd_2_3"></td><td id="bd_2_4"></td><td id="bd_2_5"></td><td id="bd_2_6"></td><td id="bd_2_7"></td>
-  </tr>
-
-  <!-- Team 3 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="3">Team 3</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_3_1"></td><td id="pt_3_2"></td><td id="pt_3_3"></td><td id="pt_3_4"></td><td id="pt_3_5"></td><td id="pt_3_6"></td><td id="pt_3_7"></td>
-    <td class="pos" rowspan="2" id="pz_3"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_3_1"></td><td id="bd_3_2"></td><td id="bd_3_3"></td><td id="bd_3_4"></td><td id="bd_3_5"></td><td id="bd_3_6"></td><td id="bd_3_7"></td>
-  </tr>
-
-  <!-- Team 4 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="4">Team 4</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_4_1"></td><td id="pt_4_2"></td><td id="pt_4_3"></td><td id="pt_4_4"></td><td id="pt_4_5"></td><td id="pt_4_6"></td><td id="pt_4_7"></td>
-    <td class="pos" rowspan="2" id="pz_4"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_4_1"></td><td id="bd_4_2"></td><td id="bd_4_3"></td><td id="bd_4_4"></td><td id="bd_4_5"></td><td id="bd_4_6"></td><td id="bd_4_7"></td>
-  </tr>
-
-  <!-- Team 5 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="5">Team 5</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_5_1"></td><td id="pt_5_2"></td><td id="pt_5_3"></td><td id="pt_5_4"></td><td id="pt_5_5"></td><td id="pt_5_6"></td><td id="pt_5_7"></td>
-    <td class="pos" rowspan="2" id="pz_5"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_5_1"></td><td id="bd_5_2"></td><td id="bd_5_3"></td><td id="bd_5_4"></td><td id="bd_5_5"></td><td id="bd_5_6"></td><td id="bd_5_7"></td>
-  </tr>
-
-  <!-- Team 6 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="6">Team 6</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_6_1"></td><td id="pt_6_2"></td><td id="pt_6_3"></td><td id="pt_6_4"></td><td id="pt_6_5"></td><td id="pt_6_6"></td><td id="pt_6_7"></td>
-    <td class="pos" rowspan="2" id="pz_6"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_6_1"></td><td id="bd_6_2"></td><td id="bd_6_3"></td><td id="bd_6_4"></td><td id="bd_6_5"></td><td id="bd_6_6"></td><td id="bd_6_7"></td>
-  </tr>
-
-  <!-- Team 7 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="7">Team 7</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_7_1"></td><td id="pt_7_2"></td><td id="pt_7_3"></td><td id="pt_7_4"></td><td id="pt_7_5"></td><td id="pt_7_6"></td><td id="pt_7_7"></td>
-    <td class="pos" rowspan="2" id="pz_7"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_7_1"></td><td id="bd_7_2"></td><td id="bd_7_3"></td><td id="bd_7_4"></td><td id="bd_7_5"></td><td id="bd_7_6"></td><td id="bd_7_7"></td>
-  </tr>
-
-  <!-- Team 8 -->
-  <tr class="grp">
-    <td class="tname" rowspan="2" data-team="8">Team 8</td>
-    <td class="lbl">Punkte (1 je Sieg)</td>
-    <td class="rcell" id="pt_8_1"></td><td id="pt_8_2"></td><td id="pt_8_3"></td><td id="pt_8_4"></td><td id="pt_8_5"></td><td id="pt_8_6"></td><td id="pt_8_7"></td>
-    <td class="pos" rowspan="2" id="pz_8"></td>
-  </tr>
-  <tr>
-    <td class="lbl">Ball-Differenz</td>
-    <td id="bd_8_1"></td><td id="bd_8_2"></td><td id="bd_8_3"></td><td id="bd_8_4"></td><td id="bd_8_5"></td><td id="bd_8_6"></td><td id="bd_8_7"></td>
-  </tr>
+  <tbody id="trackBody"></tbody>
 </table>
 
 <div class="row">
@@ -596,7 +462,7 @@
       <tr><th>Ergebnis</th><th>Wertung</th></tr>
       <tr><td>Sieg</td><td>1 Punkt</td></tr>
       <tr><td>Niederlage</td><td>0 Punkte</td></tr>
-      <tr><td>Freilos</td><td>1 Punkt, ohne Differenz</td></tr>
+      <tr><td>Freilos / spielfrei</td><td>1 Punkt, ohne Differenz</td></tr>
     </table>
   </div>
   <div class="grow">
@@ -612,30 +478,78 @@
   </div>
 </div>
 
-<div class="legend">
-  <b>Modus:</b> Jeder gegen jeden · jedes Team 7 Spiele · keine KO-Runde ·
-  pro Spiel 1 Satz bis 21 Punkte mit 2 Punkten Vorsprung.
+<div class="legend" id="h-legend">
+  <b>Modus:</b> Jeder gegen jeden · keine KO-Runde ·
+  pro Spiel <span class="rmode">1 Satz bis 21</span> mit 2 Punkten Vorsprung.
 </div>
 
 <button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>
 
 <script>
-  const NTEAMS = 8;
-  const STORE_KEY = 'turnier8rr_teamnames';
-  const SCORE_KEY = 'turnier8rr_scores';
-  const ABSENT_KEY = 'turnier8rr_absent';
-  const TEAMS  = [1,2,3,4,5,6,7,8];
-  const ROUNDS = [1,2,3,4,5,6,7];
-  const SESSION_KEY = 'turnier8rr';
-  const SESSION_FILE = 'Turnierbogen_8_Teams_4_Felder_Alle_gegen_Alle.html';
-  const SESSION_TITLE = 'Jeder gegen Jeden – 8 Teams';
-  const TITLE_KEY = SESSION_KEY + '_title';
+  /* ================= Konfiguration ================= */
+  const MIN_TEAMS = 4, MAX_TEAMS = 20, MAX_FIELDS = 10;
+  const STORE_KEY  = 'turnierflexrr_teamnames';
+  const SCORE_KEY  = 'turnierflexrr_scores';
+  const ABSENT_KEY = 'turnierflexrr_absent';
+  const FIELD_KEY  = 'turnierflexrr_fields';
+  const CFG_KEY    = 'turnierflexrr_config';
+  const START_KEY  = 'turnierflexrr_start';
+  const END_KEY    = 'turnierflexrr_end';
+  const SESSION_KEY   = 'turnierflexrr';
+  const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
+  const TITLE_KEY  = SESSION_KEY + '_title';
+  const BASE_START = '10:00';
+  const BASE_END   = '14:00';
 
-  /* ---------- Teamnamen ---------- */
+  const POINT_OPTIONS = [15, 21];   // wählbare Zielpunktzahl pro Satz
+  const MODE_MIN = {15:17, 21:25};  // empfohlene Minuten/Spiel je Zielpunktzahl
+
+  /* Dynamischer Zustand (wird bei Aufbau gesetzt) */
+  let NTEAMS = 8;
+  let NFIELDS = 4;
+  let POINT_TARGET = 21;   // Zielpunktzahl pro Spiel (15 oder 21)
+  let TEAMS  = [];
+  let ROUNDS = [];
+  let SCHEDULE = [];   // [{matches:[[a,b],...], bye:teamOrNull}, ...]
+  let SLOTS  = [];     // ein Eintrag je Zeit-Slot (für Zeitberechnung/Anzeige)
+  let DEFAULT_FIELDS = [];
+
+  /* ================= Round-Robin (Circle-Methode) ================= */
+  function genSchedule(n){
+    const arr = [];
+    for(let i=1;i<=n;i++) arr.push(i);
+    if(n % 2 === 1) arr.push(0);           // Dummy für ungerade Zahl (0 = Freilos)
+    const m = arr.length;
+    const a = arr.slice();
+    const rr = [];
+    for(let r=0; r<m-1; r++){
+      const matches = [];
+      let bye = null;
+      for(let i=0;i<m/2;i++){
+        const x = a[i], y = a[m-1-i];
+        if(x === 0){ bye = y; continue; }
+        if(y === 0){ bye = x; continue; }
+        matches.push([x, y]);
+      }
+      rr.push({ matches, bye });
+      a.splice(1, 0, a.pop());              // Team 1 fix, Rest rotiert
+    }
+    return rr;
+  }
+
+  /* ================= Persistenz-Helfer ================= */
+  function loadCfg(){ try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch(e){ return {}; } }
+  function saveCfg(o){ try { localStorage.setItem(CFG_KEY, JSON.stringify(o)); } catch(e){} }
   function loadNames(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; } }
   function saveNames(o){ try { localStorage.setItem(STORE_KEY, JSON.stringify(o)); } catch(e){} }
   function loadAbsent(){ try{ return JSON.parse(localStorage.getItem(ABSENT_KEY))||{}; }catch(e){ return {}; } }
   function saveAbsent(o){ try{ localStorage.setItem(ABSENT_KEY, JSON.stringify(o)); }catch(e){} }
+  function loadScores(){ try { return JSON.parse(localStorage.getItem(SCORE_KEY)) || {}; } catch(e){ return {}; } }
+  function loadFieldNames(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
+  function saveFieldNames(n){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(n)); }catch(e){} }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* ================= Sessions-Registry (Startseite) ================= */
   function registerSession(){
     try {
       const teams = [];
@@ -653,7 +567,7 @@
       const entry = {
         key: SESSION_KEY,
         file: SESSION_FILE,
-        title: SESSION_TITLE + (customTitle ? ' – ' + customTitle : ''),
+        title: 'Jeder gegen Jeden – ' + NTEAMS + ' Teams (flexibel)' + (customTitle ? ' – ' + customTitle : ''),
         customTitle: customTitle,
         teams: teams,
         savedAt: Date.now()
@@ -669,7 +583,6 @@
     const disp = document.getElementById('session-title-display');
     if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
   }
-
   function restoreTitle() {
     try {
       const val = localStorage.getItem(TITLE_KEY) || '';
@@ -679,14 +592,14 @@
       if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
     } catch(e) {}
   }
-
   function manualSave() {
     saveTitle();
     registerSession();
     const btn = document.querySelector('[onclick="manualSave()"]');
     if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
   }
-  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* ================= Teamnamen ================= */
   function teamListHtml(i, names, absent){
     const v = ((names && names[i]) || '').trim();
     const out = v ? escapeHtml(v) : '';
@@ -694,24 +607,22 @@
   }
   function applyName(i, val){
     const absent = !!loadAbsent()[i];
-    const names = loadNames();
-    const merged = Object.assign({}, names, { [i]: val });
     const v = (val||'').trim();
     document.querySelectorAll('[data-team="'+i+'"]').forEach(el => {
       const base = el.getAttribute('data-fb') || ('Team '+i);
       el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
     });
+    const merged = Object.assign({}, loadNames(), { [i]: val });
     document.querySelectorAll('[data-team-name="'+i+'"]').forEach(el => {
       el.innerHTML = teamListHtml(i, merged, absent);
     });
   }
   function applyTeamNames(){
     const names = loadNames();
-    const absent = loadAbsent();
     for(let i=1;i<=NTEAMS;i++) applyName(i, names[i]||'');
     registerSession();
   }
-  function buildPanel(){
+  function buildNamePanel(){
     const names = loadNames();
     const absent = loadAbsent();
     const grid = document.querySelector('#namepanel .ngrid');
@@ -721,14 +632,6 @@
       html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" oninput="onNameInput('+i+')"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> ausgefallen</span></label>';
     }
     grid.innerHTML = html;
-    applyTeamNames();
-  }
-  function restoreAbsent(){
-    const absent = loadAbsent();
-    Object.keys(absent).forEach(i => {
-      const cb = document.getElementById('ab'+i);
-      if(cb) cb.checked = true;
-    });
   }
   function onNameInput(i){ const val=document.getElementById('tn'+i).value; const n=loadNames(); n[i]=val; saveNames(n); applyName(i,val); computeAll(); }
   function onAbsentInput(i){
@@ -751,15 +654,15 @@
     for(let i=1;i<=NTEAMS;i++){ out[i]=vals[i-1]; const inp=document.getElementById('tn'+i); if(inp) inp.value=vals[i-1]; }
     saveNames(out);
     for(let i=1;i<=NTEAMS;i++) applyName(i, out[i]||'');
+    computeAll();
   }
 
-  /* ---------- Ergebnisse ---------- */
-  function loadScores(){ try { return JSON.parse(localStorage.getItem(SCORE_KEY)) || {}; } catch(e){ return {}; } }
+  /* ================= Ergebnisse ================= */
   function onScore(){ const sc={}; document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id) sc[inp.id]=inp.value; }); try{ localStorage.setItem(SCORE_KEY, JSON.stringify(sc)); }catch(e){} computeAll(); }
   function restoreScores(){ const sc=loadScores(); document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id && sc[inp.id]!=null) inp.value=sc[inp.id]; }); }
   function clearScores(){ if(!confirm('Alle Ergebnisse wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
 
-  /* ---------- Helfer ---------- */
+  /* ================= Auswertungs-Helfer ================= */
   function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
   function gv(r,t){ return num(document.getElementById('g'+r+'_'+t)); }
   function fmt(n){ return (n>0?'+':'')+n; }
@@ -823,7 +726,7 @@
     });
   }
 
-  /* ---------- Auswertung Round-Robin ---------- */
+  /* ================= Auswertung Round-Robin ================= */
   function computeAll(){
     applyTeamNames();
     refreshScheduleView();
@@ -854,7 +757,7 @@
         }
         const sa = gv(r,a), sb = gv(r,b);
         if(sa!=null && sb!=null){
-          const validScore = Math.max(sa,sb) >= 21 && Math.abs(sa-sb) >= 2;
+          const validScore = Math.max(sa,sb) >= POINT_TARGET && Math.abs(sa-sb) >= 2;
           if(validScore){
             if(sa > sb){ st[a].w += 1; cum[a].pts += 1; }
             else if(sb > sa){ st[b].w += 1; cum[b].pts += 1; }
@@ -869,6 +772,19 @@
           setCell(ptB,''); setCell(bdB,'');
         }
       });
+      /* Freilos bei ungerader Teamzahl: 1 Punkt, ohne Differenz – chronologisch in dieser Runde */
+      const rd = SCHEDULE[r-1];
+      if(rd && rd.bye != null){
+        const t = rd.bye;
+        if(!absent[t]){
+          st[t].w += 1; cum[t].pts += 1;
+          setCell('pt_'+t+'_'+r, cum[t].pts, 'byeauto');
+          setCell('bd_'+t+'_'+r, fmt(cum[t].bd), 'byeauto');
+        } else {
+          setCell('pt_'+t+'_'+r, '-', 'byeauto');
+          setCell('bd_'+t+'_'+r, '-', 'byeauto');
+        }
+      }
     });
     const complete = ROUNDS.every(r => Array.from(document.querySelectorAll('td.match[data-round="'+r+'"]')).every(td => {
       const a = parseInt(td.getAttribute('data-a'),10);
@@ -895,7 +811,7 @@
     markScores();
   }
 
-  /* ---------- Sieger-/Fehler-Markierung ---------- */
+  /* ================= Sieger-/Fehler-Markierung ================= */
   function markScores(){
     document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
     document.querySelectorAll('input.score[data-op]').forEach(inp => {
@@ -904,12 +820,12 @@
       const opp = document.getElementById('g'+m[1]+'_'+inp.getAttribute('data-op'));
       if(!opp || opp.disabled) return;
       const a = num(inp), b = num(opp); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
 
-  /* ---------- Neues Turnier ---------- */
+  /* ================= Neues Turnier ================= */
   function resetTournament(){
     if(!confirm('Neues Turnier starten? Alle Teamnamen, Ausfälle UND Ergebnisse werden gelöscht.')) return;
     try{ localStorage.removeItem(SCORE_KEY); }catch(e){}
@@ -921,7 +837,7 @@
     computeAll();
   }
 
-  /* ---------- Tastatur: Enter springt zum nächsten Feld ---------- */
+  /* ================= Enter springt zum nächsten Feld ================= */
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Enter') return;
     const el = e.target;
@@ -932,58 +848,73 @@
     if(idx >= 0 && idx < list.length - 1){ const n = list[idx+1]; n.focus(); if(n.select) n.select(); }
   });
 
-  /* ---------- Start- und Endzeit konfigurierbar ---------- */
-  const START_KEY  = 'turnier8rr_start';
-  const END_KEY    = 'turnier8rr_end';
-  const BASE_START = '10:00';
-  const BASE_END   = '14:00';
-  const NROUNDS    = 7;
-  const MODE_TABLE = [{min:50,mode:'2 Sätze bis 21'},{min:25,mode:'1 Satz bis 21'},{min:17,mode:'1 Satz bis 15'}];
+  /* ================= Zeiten ================= */
   function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
   function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
-  function applyTimes(){
+  function computeTimes(){
     const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
     const startMin=toMin(sEl?sEl.value:BASE_START)||toMin(BASE_START);
     const endMin=toMin(eEl?eEl.value:BASE_END)||toMin(BASE_END);
-    const baseS=toMin(BASE_START), baseE=toMin(BASE_END);
-    const origDur=baseE-baseS, newDur=Math.max(30,endMin-startMin);
-    document.querySelectorAll('.tt').forEach(el=>{
-      if(el.dataset.orig==null) el.dataset.orig=el.innerHTML;
-      el.innerHTML=el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g,(mm,h,mn)=>fmtMin(startMin+Math.round((+h*60+ +mn-baseS)*newDur/origDur)));
+    const total = SLOTS.length || 1;
+    const dur=Math.max(30, endMin-startMin);
+    const per=Math.max(5, Math.floor(dur/(total+1)));   // +1 Block für Auswertung
+    const modeText = '1 Satz bis ' + POINT_TARGET;
+    const enough = per >= (MODE_MIN[POINT_TARGET] || 25);
+    /* Spielplan-Slots */
+    document.querySelectorAll('.sched .rtime[data-slot]').forEach(el=>{
+      const s=+el.getAttribute('data-slot');
+      el.textContent = fmtMin(startMin+s*per)+'–'+fmtMin(startMin+(s+1)*per);
     });
-    const minPerRound=Math.round(newDur/NROUNDS);
-    let modeText='⚠ zu kurz';
-    for(const {min,mode} of MODE_TABLE){ if(minPerRound>=min){ modeText=mode; break; } }
     document.querySelectorAll('.rmode').forEach(el=>el.textContent=modeText);
-    const info=document.getElementById('roundDurInfo');
-    if(info){
-      info.textContent='≈ '+minPerRound+' Min./Runde · '+modeText;
-      info.style.color=modeText.startsWith('\u26a0')?'#c00':minPerRound>=28?'#2a7a2a':minPerRound>=20?'#c67c00':'#c00';
-    }
+    /* Zeitplan-Übersicht */
+    document.querySelectorAll('.ztime[data-slot]').forEach(el=>{
+      const s=+el.getAttribute('data-slot');
+      el.textContent = fmtMin(startMin+s*per);
+    });
+    const evalEl=document.getElementById('zEval');
+    if(evalEl) evalEl.textContent = fmtMin(startMin+total*per);
+    /* Ergebnis-Readout */
+    const warn = !enough;
+    setRV('rv-perGame', '≈'+per+' Min');
+    setRVState('rv-perGame', warn ? 'warn' : null);
+    setRV('rv-mode', modeText);
+    const win = Math.max(0, endMin-startMin);
+    const wh=Math.floor(win/60), wm=win%60;
+    setRV('rv-duration', (wh>0?wh+' h ':'')+wm+' min');
+    /* Sub-Zeile aktualisieren */
+    const subMode=document.querySelector('#h-sub .rmode');
+    if(subMode) subMode.textContent=modeText;
   }
-  function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} applyTimes(); }
-  function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){} applyTimes(); }
+  function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} computeTimes(); }
+  function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){} computeTimes(); }
   function loadTimes(){
     try{
       const s=localStorage.getItem(START_KEY), e=localStorage.getItem(END_KEY);
       if(s){const i=document.getElementById('startTime');if(i)i.value=s;}
       if(e){const i=document.getElementById('endTime');  if(i)i.value=e;}
     }catch(e){}
-    applyTimes();
   }
 
-  /* ---- Feldnamen konfigurierbar ---- */
-  const FIELD_KEY = 'turnier8rr_fields';
-  const DEFAULT_FIELDS = ['Feld 1','Feld 2','Feld 3','Feld 4'];
-  function loadFieldNames(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
-  function saveFieldNames(n){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(n)); }catch(e){} }
+  /* ================= Feldnamen ================= */
   function applyFieldName(idx, custom){
     const orig = DEFAULT_FIELDS[idx];
+    if(orig == null) return;
     document.querySelectorAll('[data-field="'+idx+'"]').forEach(el => {
       if(el.dataset.origText == null) el.dataset.origText = el.textContent;
       const suffix = el.dataset.origText.slice(orig.length);
       el.textContent = (custom && custom.trim() ? custom.trim() : orig) + suffix;
     });
+  }
+  function buildFieldPanel(){
+    const names = loadFieldNames();
+    const grid = document.querySelector('#fieldpanel .ngrid');
+    grid.style.gridTemplateColumns = 'repeat('+Math.min(NFIELDS,6)+',1fr)';
+    let html='';
+    for(let i=0;i<NFIELDS;i++){
+      const v = names[i] ? String(names[i]).replace(/"/g,'&quot;') : '';
+      html += '<label>Feld '+(i+1)+'<input type="text" id="fni_'+i+'" value="'+v+'" placeholder="Feld '+(i+1)+'" oninput="onFieldInput('+i+')"></label>';
+    }
+    grid.innerHTML = html;
   }
   function applyAllFieldNames(){
     const names = loadFieldNames();
@@ -997,13 +928,211 @@
   function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
   function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
 
-  buildPanel();
-  restoreTitle();
-  restoreScores();
-  restoreAbsent();
-  loadTimes();
-  applyAllFieldNames();
-  computeAll();
+  /* ================= DOM-Aufbau ================= */
+  function matchCellHtml(round, a, b){
+    return '<td class="match" data-round="'+round+'" data-a="'+a+'" data-b="'+b+'">'
+      + '<span class="pair">'
+      +   '<span class="t" data-team="'+a+'">Team '+a+'</span>'
+      +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
+      +   '<span class="vs">:</span>'
+      +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+      +   '<span class="t" data-team="'+b+'">Team '+b+'</span>'
+      + '</span><span class="bye" hidden></span></td>';
+  }
+  function buildScheduleTable(){
+    SLOTS = [];
+    let html = '<tr><th class="rnd">R</th>';
+    for(let f=0; f<NFIELDS; f++) html += '<th data-field="'+f+'">Feld '+(f+1)+'</th>';
+    html += '</tr>';
+    SCHEDULE.forEach((rd, ri) => {
+      const roundNo = ri + 1;
+      const ml = rd.matches.length;
+      const slots = Math.max(1, Math.ceil(ml / NFIELDS));
+      for(let s=0; s<slots; s++){
+        const slotIndex = SLOTS.length;
+        SLOTS.push({ round: roundNo, part: s+1, of: slots });
+        let label = 'R'+roundNo + (slots>1 ? ' · '+(s+1)+'/'+slots : '');
+        let cell = '<td class="rnd">'+label
+          + '<span class="rtime tt" data-slot="'+slotIndex+'"></span>'
+          + '<span class="rmode"></span>';
+        if(rd.bye != null && s === 0){
+          cell += '<span class="rbye">spielfrei: <span data-team="'+rd.bye+'">Team '+rd.bye+'</span></span>';
+        }
+        cell += '</td>';
+        html += '<tr>' + cell;
+        for(let f=0; f<NFIELDS; f++){
+          const mi = s*NFIELDS + f;
+          if(mi < ml){ const [a,b] = rd.matches[mi]; html += matchCellHtml(roundNo, a, b); }
+          else { html += '<td class="empty"></td>'; }
+        }
+        html += '</tr>';
+      }
+    });
+    document.getElementById('schedBody').innerHTML = html;
+  }
+  function buildTeamsTable(){
+    const half = Math.ceil(NTEAMS/2);
+    let html='';
+    for(let r=0; r<half; r++){
+      const left = r+1, right = r+1+half;
+      html += '<tr><td class="num">'+left+'</td><td class="name" data-team-name="'+left+'"></td>';
+      if(right<=NTEAMS) html += '<td class="num">'+right+'</td><td class="name" data-team-name="'+right+'"></td>';
+      else html += '<td class="num" style="background:#f7f7f7"></td><td class="name"></td>';
+      html += '</tr>';
+    }
+    document.getElementById('teamsBody').innerHTML = html;
+  }
+  function buildScheduleOverview(){
+    /* zweispaltiges Layout: Zeit | Runde | Zeit | Runde */
+    const rows = [];
+    SLOTS.forEach((sl, i) => {
+      rows.push({ time:'<span class="ztime" data-slot="'+i+'"></span>',
+                  lbl:'R'+sl.round + (sl.of>1 ? '·'+sl.part+'/'+sl.of : '') });
+    });
+    rows.push({ time:'<span id="zEval"></span>', lbl:'Auswertung' });
+    const perCol = Math.ceil(rows.length/2);
+    let html = '<tr><th>Zeit</th><th>Runde</th><th>Zeit</th><th>Runde</th></tr>';
+    for(let r=0; r<perCol; r++){
+      const l = rows[r], rr = rows[r+perCol];
+      html += '<tr><td class="tt">'+(l?l.time:'')+'</td><td>'+(l?l.lbl:'')+'</td>'
+            + '<td class="tt">'+(rr?rr.time:'')+'</td><td>'+(rr?rr.lbl:'')+'</td></tr>';
+    }
+    document.getElementById('scheduleOverview').innerHTML = html;
+  }
+  function buildTrackTable(){
+    const k = ROUNDS.length;
+    let html = '<tr><th class="tname">Team</th><th class="lbl">kumuliert</th>';
+    for(let r=1;r<=k;r++) html += '<th>R'+r+'</th>';
+    html += '<th class="pos">Platz</th></tr>';
+    /* Beispiel-Zeile */
+    let ptsEx=[], bdEx=[], p=0, bd=0;
+    for(let i=0;i<k;i++){ if(i%3!==1 || i===0) p++; ptsEx.push(p); bd += (i%4===1?-3:4); bdEx.push(bd); }
+    html += '<tr class="grp ex"><td class="tname" rowspan="2">Muster-Team</td><td class="lbl">Punkte (1 je Sieg)</td>';
+    ptsEx.forEach(v=> html += '<td>'+v+'</td>');
+    html += '<td class="pos" rowspan="2">3.</td></tr>';
+    html += '<tr class="ex"><td class="lbl">Ball-Differenz</td>';
+    bdEx.forEach(v=> html += '<td>'+(v>0?'+':'')+v+'</td>');
+    html += '</tr>';
+    /* Team-Zeilen */
+    for(let t=1;t<=NTEAMS;t++){
+      html += '<tr class="grp"><td class="tname" rowspan="2" data-team="'+t+'">Team '+t+'</td><td class="lbl">Punkte (1 je Sieg)</td>';
+      for(let r=1;r<=k;r++) html += '<td'+(r===1?' class="rcell"':'')+' id="pt_'+t+'_'+r+'"></td>';
+      html += '<td class="pos" rowspan="2" id="pz_'+t+'"></td></tr>';
+      html += '<tr><td class="lbl">Ball-Differenz</td>';
+      for(let r=1;r<=k;r++) html += '<td id="bd_'+t+'_'+r+'"></td>';
+      html += '</tr>';
+    }
+    document.getElementById('trackBody').innerHTML = html;
+  }
+  function updateTexts(){
+    const gamesPerTeam = NTEAMS - 1;
+    const oddNote = (NTEAMS % 2 === 1) ? ' (pro Runde hat ein Team spielfrei)' : '';
+    document.getElementById('h-title').textContent = 'Turnierbogen – ' + NTEAMS + ' Teams · Jeder-gegen-jeden';
+    document.title = 'Turnierbogen – ' + NTEAMS + ' Teams, Jeder-gegen-jeden';
+    document.getElementById('h-sub').innerHTML =
+      NFIELDS + ' Felder · ' + ROUNDS.length + ' Runden · ' + gamesPerTeam + ' Spiele/Team · je <span class="rmode">1 Satz bis ' + POINT_TARGET + '</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.';
+    document.getElementById('g-games').textContent =
+      'jedes Team spielt ' + gamesPerTeam + ' Spiele (jeder gegen jeden)' + oddNote;
+    document.getElementById('h-legend').innerHTML =
+      '<b>Modus:</b> Jeder gegen jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel 1 Satz bis 21 Punkte mit 2 Punkten Vorsprung.';
+    const matchesPerRound = SCHEDULE.length ? SCHEDULE[0].matches.length : 0;
+    const slotsPerRound = Math.max(1, Math.ceil(matchesPerRound / NFIELDS));
+    setRV('rv-rounds', ROUNDS.length);
+    setRV('rv-perTeam', gamesPerTeam);
+    setRV('rv-fields', NFIELDS);
+    const fEl = document.getElementById('rv-fields');
+    if(fEl){
+      const lbl = fEl.parentElement.querySelector('.cfgres-lbl');
+      if(lbl) lbl.textContent = slotsPerRound>1 ? (slotsPerRound+' Zeit-Slots/R') : 'Felder (parallel)';
+    }
+  }
+  function setRV(id, val){ const el=document.getElementById(id); if(el) el.textContent = val; }
+  function setRVState(id, state){
+    const el=document.getElementById(id); if(!el) return;
+    const item=el.closest('.cfgres-item'); if(!item) return;
+    item.classList.remove('is-warn'); if(state==='warn') item.classList.add('is-warn');
+  }
+
+  /* ================= Auswahl-Steuerung ================= */
+  function fillTeamSelect(){
+    const sel = document.getElementById('teamCount');
+    let html='';
+    for(let n=MIN_TEAMS;n<=MAX_TEAMS;n++) html += '<option value="'+n+'"'+(n===NTEAMS?' selected':'')+'>'+n+' Teams</option>';
+    sel.innerHTML = html;
+  }
+  function fillFieldSelect(){
+    const sel = document.getElementById('fieldCount');
+    const maxF = Math.min(MAX_FIELDS, Math.floor(NTEAMS/2));
+    if(NFIELDS>maxF) NFIELDS=maxF;
+    if(NFIELDS<1) NFIELDS=1;
+    let html='';
+    for(let f=1;f<=maxF;f++) html += '<option value="'+f+'"'+(f===NFIELDS?' selected':'')+'>'+f+' Feld'+(f>1?'er':'')+'</option>';
+    sel.innerHTML = html;
+  }
+  function fillPointSelect(){
+    const sel = document.getElementById('pointTarget');
+    if(!sel) return;
+    sel.innerHTML = POINT_OPTIONS.map(p => '<option value="'+p+'"'+(p===POINT_TARGET?' selected':'')+'>1 Satz bis '+p+'</option>').join('');
+  }
+  function onTeamCount(){
+    NTEAMS = parseInt(document.getElementById('teamCount').value,10);
+    const maxF = Math.min(MAX_FIELDS, Math.floor(NTEAMS/2));
+    if(NFIELDS>maxF) NFIELDS=maxF;      // Feldzahl an neue Teamzahl anpassen
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
+    rebuild();
+  }
+  function onFieldCount(){
+    NFIELDS = parseInt(document.getElementById('fieldCount').value,10);
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
+    rebuild();
+  }
+  function onPointTarget(){
+    POINT_TARGET = parseInt(document.getElementById('pointTarget').value,10) || 21;
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:POINT_TARGET});
+    computeTimes();
+    computeAll();
+  }
+
+  /* ================= Voller Neuaufbau ================= */
+  function rebuild(){
+    const maxF = Math.min(MAX_FIELDS, Math.floor(NTEAMS/2));
+    if(NFIELDS>maxF) NFIELDS=maxF;
+    if(NFIELDS<1) NFIELDS=1;
+    SCHEDULE = genSchedule(NTEAMS);
+    ROUNDS = SCHEDULE.map((_,i)=>i+1);
+    TEAMS = [];
+    for(let i=1;i<=NTEAMS;i++) TEAMS.push(i);
+    DEFAULT_FIELDS = [];
+    for(let i=0;i<NFIELDS;i++) DEFAULT_FIELDS.push('Feld '+(i+1));
+
+    fillTeamSelect();
+    fillFieldSelect();
+    fillPointSelect();
+    buildTeamsTable();
+    buildScheduleTable();
+    buildScheduleOverview();
+    buildTrackTable();
+    buildNamePanel();
+    buildFieldPanel();
+    updateTexts();
+
+    restoreScores();
+    applyAllFieldNames();
+    computeTimes();
+    computeAll();
+    if(typeof window.renderAll === 'function'){} // Platzhalter für Enhancer-Hook
+  }
+
+  /* ================= Init ================= */
+  (function init(){
+    const cfg = loadCfg();
+    if(cfg.teams && cfg.teams>=MIN_TEAMS && cfg.teams<=MAX_TEAMS) NTEAMS = cfg.teams;
+    if(cfg.fields && cfg.fields>=1) NFIELDS = cfg.fields;
+    if(cfg.points && POINT_OPTIONS.indexOf(cfg.points)>=0) POINT_TARGET = cfg.points;
+    loadTimes();
+    restoreTitle();
+    rebuild();
+  })();
 </script>
 
 <!-- BL_ENH_START · Bedienhilfen: offene Spiele, Ungültig-Tooltip, Speicher-Feedback, Pfeiltasten (nur Bildschirm) -->
@@ -1028,7 +1157,7 @@
   var st = document.createElement('style'); st.textContent = css;
   document.head.appendChild(st);
 
-  // ── #4 Speicher-Feedback: echtes localStorage-Speichern anzeigen ──
+  // ── Speicher-Feedback: echtes localStorage-Speichern anzeigen ──
   var toast = document.createElement('div'); toast.id = 'bl-toast'; toast.textContent = '✓ gespeichert';
   var toastT = null, saveT = null, armed = false;
   function showToast(){ if(!toast.isConnected && document.body) document.body.appendChild(toast);
@@ -1052,7 +1181,7 @@
     return num(a.value)!=null && num(b.value)!=null;
   }
 
-  // ── #1 Ungültig-Tooltip + #3 offene/erledigte Spiele hervorheben ──
+  // ── Ungültig-Tooltip + offene/erledigte Spiele hervorheben ──
   function update(){
     document.querySelectorAll('input.score').forEach(function(inp){
       if(inp.classList.contains('invalid')){ if(inp.title!==INVALID_TITLE) inp.title = INVALID_TITLE; }
@@ -1060,17 +1189,8 @@
     });
     document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
 
-    document.querySelectorAll('tr[data-match-row]').forEach(function(row){
-      var inputs = row.querySelectorAll('input.score'); if(!inputs.length) return;
-      var anyEnabled = false; inputs.forEach(function(i){ if(!i.disabled) anyEnabled = true; });
-      if(!anyEnabled) return;
-      var wcell = row.querySelector('.winner-cell');
-      var decided = wcell && wcell.textContent.trim() !== '';
-      inputs.forEach(function(i){ var td = i.closest('td'); if(td) td.classList.add(decided?'bl-done':'bl-open'); });
-    });
     scorePairs().forEach(function(p){
       var a = p[0], b = p[1];
-      if(a.closest('tr[data-match-row]')) return;
       if(a.disabled || b.disabled) return;
       var td = a.closest('td'); if(td) td.classList.add(pairValid(a,b)?'bl-done':'bl-open');
     });
@@ -1080,13 +1200,13 @@
   function schedule(){ if(scheduled) return; scheduled = true;
     (window.requestAnimationFrame||setTimeout)(function(){ scheduled=false; try{ update(); }catch(e){} }); }
 
-  ['computeAll','renderAll'].forEach(function(fn){
+  ['computeAll','rebuild'].forEach(function(fn){
     if(typeof window[fn]==='function'){ var orig = window[fn];
       window[fn] = function(){ var r = orig.apply(this, arguments); schedule(); return r; }; }
   });
   document.addEventListener('input', function(){ armed = true; schedule(); }, true);
 
-  // ── #5 Pfeiltasten ↑/↓ zwischen Ergebnisfeldern ──
+  // ── Pfeiltasten ↑/↓ zwischen Ergebnisfeldern ──
   document.addEventListener('keydown', function(e){
     if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
     var el = e.target; if(!el || !el.classList || !el.classList.contains('score')) return;
@@ -1102,6 +1222,43 @@
 })();
 </script>
 <!-- BL_ENH_END -->
+
+<!-- BL_AUTOFILL · Gewinnerseite automatisch auf Zielpunktzahl setzen (nur Bildschirm-Eingabe) -->
+<script>
+(function(){
+  if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
+  function target(){
+    var s = document.getElementById('pointTarget');
+    var v = s ? parseInt(s.value, 10) : NaN;
+    return (v === 15 || v === 21) ? v : null;
+  }
+  function partnerOf(el){
+    var m;
+    if((m = /^g(\d+)_(\d+)$/.exec(el.id))){
+      var op = el.getAttribute('data-op'); if(op == null) return null;
+      return document.getElementById('g' + m[1] + '_' + op);
+    }
+    if((m = /^s(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+      return document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
+    }
+    return null;
+  }
+  document.addEventListener('change', function(e){
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    var t = target(); if(t == null) return;
+    var raw = String(el.value || '').trim();
+    if(!/^\d+$/.test(raw)) return;
+    var v = parseInt(raw, 10);
+    if(v < 0 || v > t - 2) return;                         // nur Verlierer-Werte (0…Ziel-2) füllen die Gegenseite
+    var p = partnerOf(el);
+    if(!p || p.disabled) return;
+    if(String(p.value || '').trim() !== '') return;        // vorhandenen Wert nie überschreiben
+    p.value = String(t);
+    p.dispatchEvent(new Event('input', {bubbles:true}));   // Speichern + Neuberechnung auslösen
+  });
+})();
+</script>
 
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}

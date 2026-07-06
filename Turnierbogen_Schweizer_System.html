@@ -405,15 +405,17 @@
     const END_KEY = 'sw_univ_end';
     const BASE_START = 600;
     const BASE_END = 840;
-    const TEAM_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-    const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7, 14:7, 16:7, 18:7, 20:7, 22:7, 24:7};
-    const MODE_TABLE = [{min:43, mode:'1 Satz bis 21'}, {min:17, mode:'1 Satz bis 15'}];
+    const TEAM_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20];
+    const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7, 14:7, 16:7, 18:7, 20:7};
+    const MODE_MIN = {15:17, 21:25};
+    const POINT_OPTIONS = [15, 21];
     const DEFAULT_FIELD_POOL = ['Feld 1', 'Feld 2', 'Feld 3', 'Feld 4', 'Feld 5', 'Feld 6', 'Feld 7', 'Feld 8', 'Feld 9', 'Feld 10', 'Feld 11', 'Feld 12'];
     const DEFAULT_ROUND1_12 = [[2,12],[5,7],[1,3],[9,8],[6,11],[10,4]];
 
     let NTEAMS = 12;
     let NROUNDS = 7;
     let NFIELDS = 6;
+    let POINT_TARGET = 15;
     let MATCHES = {};
     let namesVisible = false;
     let fieldsVisible = false;
@@ -431,14 +433,14 @@
     function toMin(text){ const m = /^(\d{1,2}):(\d{2})$/.exec(String(text || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
     function defaultRoundsForTeams(t){ return DEFAULT_ROUNDS[t] || 7; }
     function clampRounds(v){ const n = parseInt(v, 10); if(Number.isNaN(n)) return defaultRoundsForTeams(NTEAMS); return Math.max(3, Math.min(11, n)); }
-    function applyCfg(cfg){ NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = NTEAMS / 2; }
+    function applyCfg(cfg){ NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = NTEAMS / 2; if(cfg.p != null && POINT_OPTIONS.indexOf(+cfg.p) >= 0) POINT_TARGET = +cfg.p; }
     function loadCfg(){
       const cfg = loadJSON(CFG_KEY, {t:12, r:7}) || {t:12, r:7};
       const t = TEAM_OPTIONS.includes(+cfg.t) ? +cfg.t : 12;
-      applyCfg({t, r: cfg.r});
-      return {t:NTEAMS, r:NROUNDS};
+      applyCfg({t, r: cfg.r, p: cfg.p});
+      return {t:NTEAMS, r:NROUNDS, p:POINT_TARGET};
     }
-    function saveCfg(cfg){ applyCfg(cfg); saveJSON(CFG_KEY, {t:NTEAMS, r:NROUNDS}); }
+    function saveCfg(cfg){ applyCfg(cfg); saveJSON(CFG_KEY, {t:NTEAMS, r:NROUNDS, p:POINT_TARGET}); }
     function defaultNames(){ const out = {}; for(let t=1;t<=NTEAMS;t++) out[t] = ''; return out; }
     function loadNames(){ const raw = loadJSON(NAMES_KEY, {}) || {}; const out = defaultNames(); for(let t=1;t<=NTEAMS;t++) if(typeof raw[t] === 'string') out[t] = raw[t]; return out; }
     function saveNames(names){ saveJSON(NAMES_KEY, names); }
@@ -624,19 +626,34 @@
         + '<h1>Turnierbogen – ' + NTEAMS + ' Teams · Schweizer System</h1>'
         + '<p class="sub">' + NFIELDS + ' Felder · <span id="mainTimeText" class="tt"></span> · ' + NROUNDS + ' Runden · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.</p>'
         + '<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>'
-        + '<div class="noprint namepanel">'
-        + '  <div class="cfggrid">'
-        + '    <label>Teams<select id="teamCount" onchange="onTeamCountChange(this.value)">' + TEAM_OPTIONS.map(v => '<option value="' + v + '"' + (v === NTEAMS ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label>'
-        + '    <label>Runden<input id="roundCount" type="number" min="3" max="11" value="' + NROUNDS + '" onchange="onRoundCountChange(this.value)"></label>'
-        + '    <label>⏱ Start<input type="time" id="startTime" value="' + escapeHtml(loadStartTime()) + '" onchange="onStartTime()"></label>'
-        + '    <label>🏁 Ende<input type="time" id="endTime" value="' + escapeHtml(loadEndTime()) + '" onchange="onEndTime()"></label>'
+        + '<div class="noprint cfgcard">'
+        + '  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>'
+        + '  <div class="cfgcard-grid">'
+        + '    <label class="cfgfield cfgfield--wide">📝 Turniertitel<input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>'
+        + '    <label class="cfgfield">👥 Teams<select id="teamCount" onchange="onTeamCountChange(this.value)">' + TEAM_OPTIONS.map(v => '<option value="' + v + '"' + (v === NTEAMS ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label>'
+        + '    <label class="cfgfield">🔁 Runden<input id="roundCount" type="number" min="3" max="11" value="' + NROUNDS + '" onchange="onRoundCountChange(this.value)"></label>'
+        + '    <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)">' + POINT_OPTIONS.map(p => '<option value="' + p + '"' + (p === POINT_TARGET ? ' selected' : '') + '>1 Satz bis ' + p + '</option>').join('') + '</select></label>'
+        + '    <label class="cfgfield">⏱ Start<input type="time" id="startTime" value="' + escapeHtml(loadStartTime()) + '" onchange="onStartTime()"></label>'
+        + '    <label class="cfgfield">🏁 Ende<input type="time" id="endTime" value="' + escapeHtml(loadEndTime()) + '" onchange="onEndTime()"></label>'
         + '  </div>'
-        + '  <div class="cfgmeta">Felder = Teams ÷ 2 → aktuell: ' + NFIELDS + ' Felder. Standardwerte: 6T→5R, 8–24T→7R. <span id="roundDurInfo"></span></div>'
-        + '</div>'
-        + '<div class="noprint topbar">'
-        + '  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>'
-        + '  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>'
-        + '  <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>'
+        + '  <div class="cfgresult">'
+        + '    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Spiel</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val">' + NTEAMS + '</span><span class="cfgres-lbl">Teams</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val">' + NFIELDS + '</span><span class="cfgres-lbl">Felder (T÷2)</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val">' + NROUNDS + '</span><span class="cfgres-lbl">Runden</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>'
+        + '  </div>'
+        + '  <div class="cfgcard-actions">'
+        + '    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>'
+        + '    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>'
+        + '    <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>'
+        + '    <button type="button" class="nbtn" onclick="toggleLive()">📊 Tabelle &amp; Paarungen</button>'
+        + '    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>'
+        + '    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>'
+        + '    <span class="spacer"></span>'
+        + '    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>'
+        + '  </div>'
         + '</div>'
         + '<div id="namepanel" class="noprint namepanel"' + (namesVisible ? '' : ' hidden') + '>'
         + '  <div class="ngrid">' + Array.from({length:NTEAMS}, (_, i) => '<label>Team ' + (i+1) + '<input type="text" id="tn' + (i+1) + '" placeholder="Name…" oninput="onNameInput(' + (i+1) + ')"></label>').join('') + '</div>'
@@ -648,13 +665,6 @@
         + '</div>'
         + '<div id="dropoutpanel" class="noprint namepanel"' + (dropoutVisible ? '' : ' hidden') + '>'
         + '  <div class="panel-checks">' + Array.from({length:NTEAMS}, (_, i) => '<label><input type="checkbox" id="drop_' + (i+1) + '" onchange="onDropoutChange()"> <span>Team ' + (i+1) + '</span></label>').join('') + '</div>'
-        + '</div>'
-        + '<div class="noprint digbar topbar">'
-        + '  <button type="button" class="nbtn" onclick="toggleLive()">📊 Tabelle &amp; Paarungen</button>'
-        + '  <span class="nhint">Rundendauer: <strong id="roundDurInfo2"></strong></span>'
-        + '  <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>'
-        + '  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>'
-        + '  <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px"><button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button></span>'
         + '</div>'
         + '<div id="livebox" class="noprint livebox"' + (liveVisible ? '' : ' hidden') + '></div>'
         + buildGuide()
@@ -702,6 +712,11 @@
     function onRoundCountChange(value){
       const next = clampRounds(value);
       saveCfg({t:NTEAMS, r:next});
+      renderApp();
+    }
+    function onPointTargetChange(value){
+      const next = POINT_OPTIONS.indexOf(+value) >= 0 ? +value : 15;
+      saveCfg({t:NTEAMS, r:NROUNDS, p:next});
       renderApp();
     }
     function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); }
@@ -777,7 +792,7 @@
       const M = MATCHES[r]; if(!M || !M[i]) return false;
       if(isFreilos(r, i)) return true;
       const a = sval(r, i, 'A'), b = sval(r, i, 'B');
-      return a != null && b != null && Math.max(a, b) >= 15 && Math.abs(a - b) >= 2;
+      return a != null && b != null && Math.max(a, b) >= POINT_TARGET && Math.abs(a - b) >= 2;
     }
     function roundComplete(r){
       const M = MATCHES[r]; if(!M || !M.length) return false;
@@ -917,14 +932,22 @@
       const endMin = endMinRaw != null && endMinRaw > startMin ? endMinRaw : Math.max(startMin + 30, BASE_END);
       const total = Math.max(30, endMin - startMin);
       const slotMin = total / NROUNDS;
-      const mode = MODE_TABLE.find(m => slotMin >= m.min)?.mode || '⚠ zu kurz';
+      const mode = '1 Satz bis ' + POINT_TARGET;
+      const warn = slotMin < (MODE_MIN[POINT_TARGET] || 25);
       const durText = '≈ ' + Math.round(slotMin) + ' Min./Runde · ' + mode;
       document.querySelectorAll('.rmode').forEach(el => el.textContent = mode);
-      const timeColor = slotMin >= 28 ? '#2a7a2a' : slotMin >= 20 ? '#c67c00' : '#c00';
       const info1 = document.getElementById('roundDurInfo');
       const info2 = document.getElementById('roundDurInfo2');
-      if(info1){ info1.textContent = durText; info1.style.color = timeColor; }
-      if(info2){ info2.textContent = durText; info2.style.color = timeColor; }
+      if(info1){ info1.textContent = durText; }
+      if(info2){ info2.textContent = durText; }
+      const rvPer = document.getElementById('rv-perGame');
+      if(rvPer){
+        rvPer.textContent = '≈' + Math.round(slotMin) + ' Min';
+        const item = rvPer.closest('.cfgres-item'); if(item){ item.classList.toggle('is-warn', warn); }
+      }
+      const rvMode = document.getElementById('rv-mode'); if(rvMode) rvMode.textContent = mode;
+      const rvDur = document.getElementById('rv-duration');
+      if(rvDur){ const h=Math.floor(total/60), m=total%60; rvDur.textContent = (h? h+' h ':'') + m + ' min'; }
       const main = document.getElementById('mainTimeText');
       if(main) main.textContent = fromMin(startMin) + '–' + fromMin(endMin);
       document.querySelectorAll('.tt[data-round]').forEach(el => {
@@ -1024,7 +1047,7 @@
         const m = /^s(A|B)_(\d+)_(\d+)$/.exec(inp.id); if(!m) return;
         const other = document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
         const a = num(inp), b = num(other); if(a == null || b == null) return;
-        if(!(Math.max(a, b) >= 15 && Math.abs(a - b) >= 2)) inp.classList.add('invalid'); else if(a > b) inp.classList.add('win');
+        if(!(Math.max(a, b) >= POINT_TARGET && Math.abs(a - b) >= 2)) inp.classList.add('invalid'); else if(a > b) inp.classList.add('win');
       });
     }
     function updateLive(){
@@ -1181,6 +1204,43 @@
 })();
 </script>
 <!-- BL_ENH_END -->
+
+<!-- BL_AUTOFILL · Gewinnerseite automatisch auf Zielpunktzahl setzen (nur Bildschirm-Eingabe) -->
+<script>
+(function(){
+  if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
+  function target(){
+    var s = document.getElementById('pointTarget');
+    var v = s ? parseInt(s.value, 10) : NaN;
+    return (v === 15 || v === 21) ? v : null;
+  }
+  function partnerOf(el){
+    var m;
+    if((m = /^g(\d+)_(\d+)$/.exec(el.id))){
+      var op = el.getAttribute('data-op'); if(op == null) return null;
+      return document.getElementById('g' + m[1] + '_' + op);
+    }
+    if((m = /^s(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+      return document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
+    }
+    return null;
+  }
+  document.addEventListener('change', function(e){
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    var t = target(); if(t == null) return;
+    var raw = String(el.value || '').trim();
+    if(!/^\d+$/.test(raw)) return;
+    var v = parseInt(raw, 10);
+    if(v < 0 || v > t - 2) return;                         // nur Verlierer-Werte (0…Ziel-2) füllen die Gegenseite
+    var p = partnerOf(el);
+    if(!p || p.disabled) return;
+    if(String(p.value || '').trim() !== '') return;        // vorhandenen Wert nie überschreiben
+    p.value = String(t);
+    p.dispatchEvent(new Event('input', {bubbles:true}));   // Speichern + Neuberechnung auslösen
+  });
+})();
+</script>
 
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}

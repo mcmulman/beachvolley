@@ -469,10 +469,31 @@
     <p class="sub tt">6 Felder · 10:00–14:00 Uhr · 7 Runden · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.</p>
 <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
-    <div class="noprint topbar">
-      <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
-      <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
-
+    <div class="noprint cfgcard">
+      <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+      <div class="cfgcard-grid">
+        <label class="cfgfield cfgfield--wide">📝 Turniertitel<input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>
+        <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)"><option value="15">1 Satz bis 15</option><option value="21">1 Satz bis 21</option></select></label>
+        <label class="cfgfield">⏱ Start<input type="time" id="startTime" value="10:00" onchange="onStartTime()"></label>
+        <label class="cfgfield">🏁 Ende<input type="time" id="endTime" value="14:00" onchange="onEndTime()"></label>
+      </div>
+      <div class="cfgresult">
+        <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Spiel</span></div>
+        <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
+        <div class="cfgres-item"><span class="cfgres-val">12</span><span class="cfgres-lbl">Teams</span></div>
+        <div class="cfgres-item"><span class="cfgres-val">6</span><span class="cfgres-lbl">Felder</span></div>
+        <div class="cfgres-item"><span class="cfgres-val">7</span><span class="cfgres-lbl">Runden</span></div>
+        <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
+      </div>
+      <div class="cfgcard-actions">
+        <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
+        <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+        <button type="button" class="nbtn" onclick="toggleLive()">📊 Tabelle &amp; Paarungen</button>
+        <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+        <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+        <span class="spacer"></span>
+        <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+      </div>
     </div>
     <div id="namepanel" class="noprint namepanel" hidden>
       <div class="ngrid"><label>Team 1<input type="text" id="tn1" placeholder="Name…" oninput="onNameInput(1)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab1" onchange="onAbsentInput(1)"> ausgefallen</span></label><label>Team 2<input type="text" id="tn2" placeholder="Name…" oninput="onNameInput(2)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab2" onchange="onAbsentInput(2)"> ausgefallen</span></label><label>Team 3<input type="text" id="tn3" placeholder="Name…" oninput="onNameInput(3)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab3" onchange="onAbsentInput(3)"> ausgefallen</span></label><label>Team 4<input type="text" id="tn4" placeholder="Name…" oninput="onNameInput(4)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab4" onchange="onAbsentInput(4)"> ausgefallen</span></label><label>Team 5<input type="text" id="tn5" placeholder="Name…" oninput="onNameInput(5)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab5" onchange="onAbsentInput(5)"> ausgefallen</span></label><label>Team 6<input type="text" id="tn6" placeholder="Name…" oninput="onNameInput(6)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab6" onchange="onAbsentInput(6)"> ausgefallen</span></label><label>Team 7<input type="text" id="tn7" placeholder="Name…" oninput="onNameInput(7)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab7" onchange="onAbsentInput(7)"> ausgefallen</span></label><label>Team 8<input type="text" id="tn8" placeholder="Name…" oninput="onNameInput(8)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab8" onchange="onAbsentInput(8)"> ausgefallen</span></label><label>Team 9<input type="text" id="tn9" placeholder="Name…" oninput="onNameInput(9)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab9" onchange="onAbsentInput(9)"> ausgefallen</span></label><label>Team 10<input type="text" id="tn10" placeholder="Name…" oninput="onNameInput(10)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab10" onchange="onAbsentInput(10)"> ausgefallen</span></label><label>Team 11<input type="text" id="tn11" placeholder="Name…" oninput="onNameInput(11)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab11" onchange="onAbsentInput(11)"> ausgefallen</span></label><label>Team 12<input type="text" id="tn12" placeholder="Name…" oninput="onNameInput(12)"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab12" onchange="onAbsentInput(12)"> ausgefallen</span></label></div>
@@ -484,15 +505,6 @@
     <div id="fieldpanel" class="noprint namepanel" hidden>
       <div class="ngrid" style="grid-template-columns:repeat(6,1fr)"><label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label><label>Feld 2<input type="text" id="fni_1" placeholder="Feld 2" oninput="onFieldInput(1)"></label><label>Feld 3<input type="text" id="fni_2" placeholder="Feld 3" oninput="onFieldInput(2)"></label><label>Feld 4<input type="text" id="fni_3" placeholder="Feld 4" oninput="onFieldInput(3)"></label><label>Feld 5<input type="text" id="fni_4" placeholder="Feld 5" oninput="onFieldInput(4)"></label><label>Feld 6<input type="text" id="fni_5" placeholder="Feld 6" oninput="onFieldInput(5)"></label></div>
       <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
-    </div>
-    <div class="noprint digbar topbar">
-      <button type="button" class="nbtn" onclick="toggleLive()">📊 Tabelle &amp; Paarungen</button>
-      <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label><label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="14:00" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label><span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:80px"></span>      <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-      <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
-  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
-    <input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
-    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
-  </span>
     </div>
     <div id="livebox" class="noprint livebox" hidden></div>
 
@@ -784,7 +796,7 @@
   function fmt(n){ return (n>0?'+':'')+n; }
   function key(a,b){ return a<b? a+'-'+b : b+'-'+a; }
 
-  function slotComplete(r,i){ const a=sval(r,i,'A'), b=sval(r,i,'B'); return a!=null && b!=null && Math.max(a,b) >= 15 && Math.abs(a-b) >= 2; }
+  function slotComplete(r,i){ const a=sval(r,i,'A'), b=sval(r,i,'B'); return a!=null && b!=null && Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2; }
   function autoResult(m){
     if(!m) return null;
     const absent = loadAbsent();
@@ -984,7 +996,7 @@
       const other = document.getElementById('s'+(m[1]==='A'?'B':'A')+'_'+m[2]+'_'+m[3]);
       if(!other || other.disabled) return;
       const a = num(inp), b = num(other); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= 15 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      if(!(Math.max(a,b) >= POINT_TARGET && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
@@ -1053,7 +1065,12 @@
   const BASE_START = '10:00';
   const BASE_END   = '14:00';
   const NROUNDS    = ROUNDS.length;
-  const MODE_TABLE = [{min:43,mode:'1 Satz bis 21'},{min:17,mode:'1 Satz bis 15'}];
+  const POINT_KEY    = 'turnier12sw_points';
+  const POINT_OPTIONS = [15, 21];
+  const MODE_MIN     = {15:17, 21:25};
+  let POINT_TARGET   = 15;
+  function loadPointTarget(){ try{ const v=parseInt(localStorage.getItem(POINT_KEY),10); if(POINT_OPTIONS.indexOf(v)>=0) POINT_TARGET=v; }catch(e){} const s=document.getElementById('pointTarget'); if(s) s.value=String(POINT_TARGET); }
+  function onPointTargetChange(v){ const n=parseInt(v,10); POINT_TARGET = POINT_OPTIONS.indexOf(n)>=0 ? n : 15; try{ localStorage.setItem(POINT_KEY, String(POINT_TARGET)); }catch(e){} applyTimes(); computeAll(); }
   function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
   function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
   function applyTimes(){
@@ -1067,14 +1084,21 @@
       el.innerHTML=el.dataset.orig.replace(/(\d{1,2}):(\d{2})/g,(mm,h,mn)=>fmtMin(startMin+Math.round((+h*60+ +mn-baseS)*newDur/origDur)));
     });
     const minPerRound=Math.round(newDur/NROUNDS);
-    let modeText='⚠ zu kurz';
-    for(const {min,mode} of MODE_TABLE){ if(minPerRound>=min){ modeText=mode; break; } }
+    const modeText='1 Satz bis '+POINT_TARGET;
+    const warn = minPerRound < (MODE_MIN[POINT_TARGET] || 25);
     document.querySelectorAll('.rmode').forEach(el=>el.textContent=modeText);
     const info=document.getElementById('roundDurInfo');
     if(info){
       info.textContent='≈ '+minPerRound+' Min./Runde · '+modeText;
-      info.style.color=modeText.startsWith('\u26a0')?'#c00':minPerRound>=28?'#2a7a2a':minPerRound>=20?'#c67c00':'#c00';
     }
+    const rvPer=document.getElementById('rv-perGame');
+    if(rvPer){
+      rvPer.textContent='≈'+minPerRound+' Min';
+      const item=rvPer.closest('.cfgres-item'); if(item) item.classList.toggle('is-warn', warn);
+    }
+    const rvMode=document.getElementById('rv-mode'); if(rvMode) rvMode.textContent=modeText;
+    const rvDur=document.getElementById('rv-duration');
+    if(rvDur){ const h=Math.floor(newDur/60), m=newDur%60; rvDur.textContent=(h? h+' h ':'')+m+' min'; }
   }
   function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} applyTimes(); }
   function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){} applyTimes(); }
@@ -1114,6 +1138,7 @@
 
   buildPanel();
   restoreTitle();
+  loadPointTarget();
   restoreScores();
   restoreAbsent();
   loadTimes();
@@ -1217,6 +1242,43 @@
 })();
 </script>
 <!-- BL_ENH_END -->
+
+<!-- BL_AUTOFILL · Gewinnerseite automatisch auf Zielpunktzahl setzen (nur Bildschirm-Eingabe) -->
+<script>
+(function(){
+  if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
+  function target(){
+    var s = document.getElementById('pointTarget');
+    var v = s ? parseInt(s.value, 10) : NaN;
+    return (v === 15 || v === 21) ? v : null;
+  }
+  function partnerOf(el){
+    var m;
+    if((m = /^g(\d+)_(\d+)$/.exec(el.id))){
+      var op = el.getAttribute('data-op'); if(op == null) return null;
+      return document.getElementById('g' + m[1] + '_' + op);
+    }
+    if((m = /^s(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+      return document.getElementById('s' + (m[1] === 'A' ? 'B' : 'A') + '_' + m[2] + '_' + m[3]);
+    }
+    return null;
+  }
+  document.addEventListener('change', function(e){
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    var t = target(); if(t == null) return;
+    var raw = String(el.value || '').trim();
+    if(!/^\d+$/.test(raw)) return;
+    var v = parseInt(raw, 10);
+    if(v < 0 || v > t - 2) return;                         // nur Verlierer-Werte (0…Ziel-2) füllen die Gegenseite
+    var p = partnerOf(el);
+    if(!p || p.disabled) return;
+    if(String(p.value || '').trim() !== '') return;        // vorhandenen Wert nie überschreiben
+    p.value = String(t);
+    p.dispatchEvent(new Event('input', {bubbles:true}));   // Speichern + Neuberechnung auslösen
+  });
+})();
+</script>
 
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}

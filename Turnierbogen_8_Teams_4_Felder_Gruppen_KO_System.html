@@ -393,8 +393,33 @@
 <p class="sub tt">4 Felder · 10:00–15:00 · Gruppenphase + Playoffs · 5 Spiele/Team · alle Plätze 1–8 ausgespielt</p>
 <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
-<div class="noprint namectl">
-  <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+<div class="noprint cfgcard">
+  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-grid">
+    <label class="cfgfield cfgfield--wide">📝 Turniertitel
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…">
+    </label>
+    <label class="cfgfield">⏱ Start
+      <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
+    </label>
+    <label class="cfgfield">🏁 Ende
+      <input type="time" id="endTime" value="15:00" onchange="onEndTime()">
+    </label>
+  </div>
+  <div class="cfgresult">
+    <div class="cfgres-item is-primary"><span class="cfgres-val">8</span><span class="cfgres-lbl">Teams</span></div>
+    <div class="cfgres-item"><span class="cfgres-val">4</span><span class="cfgres-lbl">Felder</span></div>
+    <div class="cfgres-item"><span class="cfgres-val">1×21</span><span class="cfgres-lbl">Spielmodus</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="roundDurInfo">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
+  </div>
+  <div class="cfgcard-actions">
+    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
+    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+    <span class="spacer"></span>
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+  </div>
   <div id="namepanel" class="namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions">
@@ -402,7 +427,6 @@
       <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
     </div>
   </div>
-  <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
   <div id="fieldpanel" class="namepanel" hidden>
     <div class="ngrid" style="grid-template-columns:repeat(4,1fr)">
       <label>Feld 1<input type="text" id="fni_0" placeholder="Feld 1" oninput="onFieldInput(0)"></label>
@@ -412,18 +436,6 @@
     </div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
   </div>
-</div>
-
-<div class="noprint digitalbar">
-  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()" style="font-size:12px;padding:2px 4px"></label>
-  <label class="nhint" style="display:inline-flex;align-items:center;gap:4px">🏁 Ende <input type="time" id="endTime" value="15:00" onchange="onEndTime()" style="font-size:12px;padding:2px 4px"></label>
-  <span class="nhint" id="roundDurInfo" style="font-style:italic;min-width:170px"></span>
-  <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-  <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
-  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
-    <input id="session-title-input" type="text" placeholder="Turnieltitel eingeben…" style="padding:4px 8px;font-size:12px;border:1px solid #bbb;border-radius:4px;width:200px">
-    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
-  </span>
 </div>
 
 <div class="topgrid">
@@ -1283,8 +1295,7 @@
     const finalMins = parseRangeDuration(finalsTime ? finalsTime.textContent : '');
     const info = document.getElementById('roundDurInfo');
     if(info){
-      info.textContent = 'R1–4 ≈ ' + (shortMins != null ? shortMins : '–') + ' Min. · R5 ≈ ' + (finalMins != null ? finalMins : '–') + ' Min.';
-      info.style.color = shortMins >= 25 && finalMins >= 50 ? '#2a7a2a' : shortMins >= 17 ? '#c67c00' : '#c00';
+      const _h=Math.floor(newDur/60),_m=newDur%60; info.textContent=(_h? _h+' h ':'')+_m+' min';
     }
   }
   function onStartTime(){ try { localStorage.setItem(START_KEY, document.getElementById('startTime').value); } catch(e){} applyTimes(); }
