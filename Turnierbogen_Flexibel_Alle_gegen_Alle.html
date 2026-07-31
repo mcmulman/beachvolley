@@ -408,13 +408,14 @@
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Zeit-Slot</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Teilsätze gesamt</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Spiele/Team</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fields">–</span><span class="cfgres-lbl">Felder</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Spiele/Sätze pro Team</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fields">–</span><span class="cfgres-lbl">Felder / Slots je Runde</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Satzumfang gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Slotzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
   </div>
 
   <div class="cfgcard-actions">
@@ -920,6 +921,11 @@
   /* ================= Zeiten ================= */
   function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
   function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+  function fmtDur(mins){
+    const m = Math.max(0, Math.round(mins));
+    const h = Math.floor(m/60), r = m%60;
+    return h>0 ? (h + ':' + (r<10?'0':'') + r + ' h') : (r + ' min');
+  }
   function totalMatchesCount(){ return SCHEDULE.reduce((sum, rd) => sum + rd.matches.length, 0); }
   function setRangePerMatch(){
     if(SET_MODE === '2x15tb') return {min:2, max:3};
@@ -946,7 +952,9 @@
     const setRange = setRangePerMatch();
     const totalSetsMin = totalMatches * setRange.min;
     const totalSetsMax = totalMatches * setRange.max;
-    const perSet = Math.max(1, Math.round(per / expectedSetsPerMatch()));
+    const perSet = Math.max(1, Math.round(recPerMatch / expectedSetsPerMatch()));
+    const playMin = total * recPerMatch;
+    const bufferMin = dur - playMin;
     /* Spielplan-Slots */
     document.querySelectorAll('.sched .rtime[data-slot]').forEach(el=>{
       const s=+el.getAttribute('data-slot');
@@ -962,16 +970,21 @@
     if(evalEl) evalEl.textContent = fmtMin(startMin+total*per);
     /* Ergebnis-Readout */
     const warn = !enough;
-    setRV('rv-perGame', '≈'+per+' Min');
+    setRV('rv-perGame', per + ' / ' + recPerMatch + ' Min');
     setRVState('rv-perGame', warn ? 'warn' : null);
     setRV('rv-mode', modeText);
     const setsText = (totalSetsMin === totalSetsMax)
-      ? (totalSetsMin + ' · ≈' + perSet + ' Min/Satz')
-      : (totalSetsMin + '–' + totalSetsMax + ' · ≈' + perSet + ' Min/Satz');
+      ? (totalSetsMin + ' Sätze (' + setRange.min + '/Spiel) · ≈' + perSet + ' Min/Satz')
+      : (totalSetsMin + '–' + totalSetsMax + ' Sätze (' + setRange.min + '–' + setRange.max + '/Spiel) · ≈' + perSet + ' Min/Satz');
     setRV('rv-subsets', setsText);
-    const win = Math.max(0, endMin-startMin);
-    const wh=Math.floor(win/60), wm=win%60;
-    setRV('rv-duration', (wh>0?wh+' h ':'')+wm+' min');
+    setRV('rv-duration', fmtDur(dur) + ' / ' + fmtDur(playMin));
+    if(bufferMin >= 0){
+      setRV('rv-buffer', '+' + fmtDur(bufferMin));
+      setRVState('rv-buffer', null);
+    } else {
+      setRV('rv-buffer', '−' + fmtDur(Math.abs(bufferMin)));
+      setRVState('rv-buffer', 'warn');
+    }
     /* Sub-Zeile aktualisieren */
     const subMode=document.querySelector('#h-sub .rmode');
     if(subMode) subMode.textContent=modeText;
@@ -1169,14 +1182,14 @@
     }
     const matchesPerRound = SCHEDULE.length ? SCHEDULE[0].matches.length : 0;
     const slotsPerRound = Math.max(1, Math.ceil(matchesPerRound / NFIELDS));
+    const setRangeTeam = setRangePerMatch();
+    const teamSetsMin = gamesPerTeam * setRangeTeam.min;
+    const teamSetsMax = gamesPerTeam * setRangeTeam.max;
     setRV('rv-rounds', ROUNDS.length);
-    setRV('rv-perTeam', gamesPerTeam);
-    setRV('rv-fields', NFIELDS);
-    const fEl = document.getElementById('rv-fields');
-    if(fEl){
-      const lbl = fEl.parentElement.querySelector('.cfgres-lbl');
-      if(lbl) lbl.textContent = slotsPerRound>1 ? (slotsPerRound+' Zeit-Slots/R') : 'Felder (parallel)';
-    }
+    setRV('rv-perTeam', teamSetsMin === teamSetsMax
+      ? (gamesPerTeam + ' Spiele · ' + teamSetsMin + ' Sätze')
+      : (gamesPerTeam + ' Spiele · ' + teamSetsMin + '–' + teamSetsMax + ' Sätze'));
+    setRV('rv-fields', NFIELDS + ' Felder · ' + slotsPerRound + ' Slot' + (slotsPerRound>1?'s':'') + '/R');
   }
   function setRV(id, val){ const el=document.getElementById(id); if(el) el.textContent = val; }
   function setRVState(id, state){
