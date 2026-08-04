@@ -409,12 +409,14 @@
     const BASE_END = 840;
     const TEAM_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20];
     const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7, 14:7, 16:7, 18:7, 20:7};
-    const MODE_MIN = {'15':17, '21':25, '2x15':30};
+    const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x15tb':40, '2x21tb':45};
     const POINT_OPTIONS = [15, 21];
     const SET_MODES = [
       {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
       {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
-      {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'}
+      {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'},
+      {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'},
+      {id:'2x21tb', target:21, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 21 + Entscheidungssatz'}
     ];
     const DEFAULT_FIELD_POOL = ['Feld 1', 'Feld 2', 'Feld 3', 'Feld 4', 'Feld 5', 'Feld 6', 'Feld 7', 'Feld 8', 'Feld 9', 'Feld 10', 'Feld 11', 'Feld 12'];
     const DEFAULT_ROUND1_12 = [[2,12],[5,7],[1,3],[9,8],[6,11],[10,4]];
@@ -445,6 +447,11 @@
     function setTarget(){ return modeDef().target; }
     function setCount(){ return modeDef().sets; }
     function isMulti(){ return setCount() > 1; }
+    function hasDecidingSet(){ return !!modeDef().decidingSet; }
+    function targetForSet(setNo){
+      if(setNo === 3 && hasDecidingSet()) return modeDef().decidingTarget || setTarget();
+      return setTarget();
+    }
     function applyCfg(cfg){
       NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = NTEAMS / 2;
       if(cfg.p != null){
@@ -567,7 +574,7 @@
         + '<h2>Kurzanleitung – so läuft das Turnier</h2>'
         + '<ol>'
         + '<li><span class="hi">Ablauf:</span> ' + NROUNDS + ' Runden, ' + NTEAMS + ' Teams, ' + NFIELDS + ' Felder. Jedes Team spielt pro Runde genau einmal – insgesamt ' + NROUNDS + ' Spiele pro Team, niemand scheidet aus.</li>'
-        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? '2 Sätze bis 15 Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.' : '1 Satz bis ' + POINT_TARGET + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 1 Pkt., Niederlage = 0. Freilos = 1 Pkt. ohne Ball-Differenz.</li>'
+        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? (hasDecidingSet() ? '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Bei 1:1 entscheidet ein 3. Satz bis ' + targetForSet(3) + ' Punkte. Sieger = mehr gewonnene Sätze; bei Satz-Gleichstand die Gesamt-Ball-Differenz.' : '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.') : '1 Satz bis ' + setTarget() + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 1 Pkt., Niederlage = 0. Freilos = 1 Pkt. ohne Ball-Differenz.</li>'
         + '<li><span class="hi">Zentrale Tabelle (Seite 1):</span> Nach jedem Spiel: oben Spielergebnis (z. B. 15:11 S = Sieg, 11:15 N = Niederlage), darunter aufaddierten Gesamtstand (Siege / Ball-Differenz / Punkte gesamt, z. B. Σ 2/+4/+30). Dann Rang in Pl.-Spalte.</li>'
         + '<li><span class="hi">Nächste Paarungen:</span> Aus Pl.-Spalte bilden: Pl. 1-2, 3-4, 5-6 usw. Bereits gespielte Paarungen möglichst tauschen.</li>'
         + '<li><span class="hi">Wertung/Tie-Break:</span> S → BD → +P → direkter Vergleich → Los.</li>'
@@ -610,13 +617,13 @@
           + '<td data-field="' + i + '">' + escapeHtml(getFieldName(i)) + '</td>'
           + '<td id="rA_' + r + '_' + i + '"></td>'
           + '<td id="rB_' + r + '_' + i + '"></td>'
-          + '<td class="resu"><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="sA_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sB_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' + (isMulti() ? '<span class="setsep">|</span><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="s2A_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s2B_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' : '') + '</td>'
+          + '<td class="resu"><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="sA_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sB_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' + (isMulti() ? '<span class="setsep">|</span><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="s2A_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s2B_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' : '') + (hasDecidingSet() ? '<span class="setsep">|</span><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="s3A_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s3B_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off" placeholder="TB"></span>' : '') + '</td>'
           + '<td id="rw_' + r + '_' + i + '"></td>'
           + '</tr>';
       }
       return '<div class="round-block">'
         + '<h2 class="tt" data-round="' + r + '">Runde ' + r + ' · ' + fromMin(win.start) + '–' + fromMin(win.end) + '</h2>'
-        + '<div class="round-subline">' + (r === 1 ? 'Startverteilung' : 'automatisch gesetzt') + ' · <span class="rmode">1 Satz bis 15</span> · 2 Punkte Vorsprung</div>'
+        + '<div class="round-subline">' + (r === 1 ? 'Startverteilung' : 'automatisch gesetzt') + ' · <span class="rmode">' + (isMulti() ? (hasDecidingSet() ? (SET_MODE === '2x21tb' ? '2 Sätze bis 21 + Tiebreak bis 15' : '2 Sätze bis 15 + Tiebreak bis 15') : '2 Sätze bis ' + setTarget()) : '1 Satz bis ' + setTarget()) + '</span> · 2 Punkte Vorsprung</div>'
         + '<table class="round-table">' + rows + '</table>'
         + '</div>';
     }
@@ -786,7 +793,9 @@
     function num(el){ if(!el) return null; const v = String(el.value || '').trim(); if(v === '') return null; const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; }
     function sval(r, i, side){ return num(document.getElementById('s' + side + '_' + r + '_' + i)); }
     function sval2(r, i, side){ return num(document.getElementById('s2' + side + '_' + r + '_' + i)); }
+    function sval3(r, i, side){ return num(document.getElementById('s3' + side + '_' + r + '_' + i)); }
     function setValid(a, b){ return a != null && b != null && Math.max(a, b) >= POINT_TARGET && Math.abs(a - b) >= 2; }
+    function setValidForSet(a, b, setNo){ return a != null && b != null && Math.max(a, b) >= targetForSet(setNo) && Math.abs(a - b) >= 2; }
     function slotResult(r, i){
       const m = MATCHES[r][i];
       const a1 = sval(r, i, 'A'), b1 = sval(r, i, 'B');
@@ -795,8 +804,29 @@
       }
       const a2 = sval2(r, i, 'A'), b2 = sval2(r, i, 'B');
       const aSets = (a1 > b1 ? 1 : 0) + (a2 > b2 ? 1 : 0), bSets = 2 - aSets;
-      const aBalls = a1 + a2, bBalls = b1 + b2;
+      let aBalls = a1 + a2, bBalls = b1 + b2;
       let winner;
+      
+      // Für TB-Modi: Wenn 1:1 Sätze, gibt es einen 3. Satz
+      if(hasDecidingSet() && aSets === 1 && bSets === 1){
+        const a3 = sval3(r, i, 'A'), b3 = sval3(r, i, 'B');
+        if(a3 != null || b3 != null){
+          if(setValidForSet(a3, b3, 3)){
+            aBalls += (a3 || 0);
+            bBalls += (b3 || 0);
+            if(a3 > b3) winner = m.a;
+            else if(b3 > a3) winner = m.b;
+            else winner = null;
+            return {aBalls, bBalls, aSets:(a3 > b3 ? 2 : 1), bSets:(a3 > b3 ? 1 : 2), winner};
+          }
+          // 3. Satz unvollständig → noch nicht entschieden
+          return null;
+        }
+        // TB-Modus und 1:1 aber kein 3. Satz eingegeben
+        return null;
+      }
+      
+      // Normale 2-Satz-Logik (oder TB-Modus mit klarem Gewinner nach 2 Sätzen)
       if(aSets > bSets) winner = m.a;
       else if(bSets > aSets) winner = m.b;
       else winner = aBalls > bBalls ? m.a : (bBalls > aBalls ? m.b : null);
@@ -805,6 +835,9 @@
     function slotHasScore(r, i){
       if(sval(r, i, 'A') == null || sval(r, i, 'B') == null) return false;
       if(isMulti() && (sval2(r, i, 'A') == null || sval2(r, i, 'B') == null)) return false;
+      if(hasDecidingSet() && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
+        if(sval3(r, i, 'A') == null || sval3(r, i, 'B') == null) return false;
+      }
       return true;
     }
     function key(a, b){ return a < b ? a + '-' + b : b + '-' + a; }
@@ -832,6 +865,9 @@
       if(isFreilos(r, i)) return true;
       if(!setValid(sval(r, i, 'A'), sval(r, i, 'B'))) return false;
       if(isMulti() && !setValid(sval2(r, i, 'A'), sval2(r, i, 'B'))) return false;
+      if(hasDecidingSet() && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
+        if(!setValidForSet(sval3(r, i, 'A'), sval3(r, i, 'B'), 3)) return false;
+      }
       return true;
     }
     function roundComplete(r){
@@ -1306,7 +1342,8 @@
     var s = document.getElementById('pointTarget');
     if(!s) return null;
     var v = String(s.value);
-    if(v === '2x15') return 15;
+    if(v === '2x15' || v === '2x15tb') return 15;
+    if(v === '2x21tb') return 21;
     var n = parseInt(v, 10);
     return (n === 15 || n === 21) ? n : null;
   }

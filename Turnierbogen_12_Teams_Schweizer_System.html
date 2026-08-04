@@ -475,7 +475,7 @@
       <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
       <div class="cfgcard-grid">
         <label class="cfgfield cfgfield--wide">📝 Turniertitel<input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>
-        <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)"><option value="15">1 Satz bis 15</option><option value="21">1 Satz bis 21</option><option value="2x15">2 Sätze bis 15</option></select></label>
+        <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)"><option value="15">1 Satz bis 15</option><option value="21">1 Satz bis 21</option><option value="2x15">2 Sätze bis 15</option><option value="2x15tb">2 Sätze bis 15 + Entscheidungssatz</option><option value="2x21tb">2 Sätze bis 21 + Entscheidungssatz</option></select></label>
         <label class="cfgfield">⏱ Start<input type="time" id="startTime" value="10:00" onchange="onStartTime()"></label>
         <label class="cfgfield">🏁 Ende<input type="time" id="endTime" value="14:00" onchange="onEndTime()"></label>
       </div>
@@ -796,11 +796,13 @@
   function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
   function sval(r,i,side){ return num(document.getElementById('s'+side+'_'+r+'_'+i)); }
   function sval2(r,i,side){ return num(document.getElementById('s2'+side+'_'+r+'_'+i)); }
+  function sval3(r,i,side){ return num(document.getElementById('s3'+side+'_'+r+'_'+i)); }
   function fmt(n){ return (n>0?'+':'')+n; }
   function key(a,b){ return a<b? a+'-'+b : b+'-'+a; }
 
   /* gültiger Einzelsatz: Ziel erreicht + 2 Punkte Vorsprung */
   function setValid(a,b){ return a!=null && b!=null && Math.max(a,b) >= setTarget() && Math.abs(a-b) >= 2; }
+  function setValidForSet(a,b,setNo){ return a!=null && b!=null && Math.max(a,b) >= targetForSet(setNo) && Math.abs(a-b) >= 2; }
   /* Ergebnis eines Spiel-Slots über 1 oder 2 Sätze; null wenn unvollständig */
   function slotResult(r,i){
     const a1=sval(r,i,'A'), b1=sval(r,i,'B');
@@ -811,8 +813,29 @@
     const a2=sval2(r,i,'A'), b2=sval2(r,i,'B');
     if(!setValid(a1,b1) || !setValid(a2,b2)) return null;
     const aSets=(a1>b1?1:0)+(a2>b2?1:0), bSets=(b1>a1?1:0)+(b2>a2?1:0);
-    const aBalls=a1+a2, bBalls=b1+b2;
+    let aBalls=a1+a2, bBalls=b1+b2;
     let winner;
+    
+    // TB-Modus: Wenn 1:1 nach 2 Sätzen, gibt es einen 3. Satz
+    if(hasDecidingSet() && aSets===1 && bSets===1){
+      const a3=sval3(r,i,'A'), b3=sval3(r,i,'B');
+      if(a3!=null || b3!=null){
+        if(setValidForSet(a3,b3,3)){
+          aBalls += (a3 || 0);
+          bBalls += (b3 || 0);
+          if(a3>b3) winner='a';
+          else if(b3>a3) winner='b';
+          else winner=null;
+          return {aBalls, bBalls, aSets:(a3>b3?2:1), bSets:(a3>b3?1:2), winner};
+        }
+        // 3. Satz unvollständig
+        return null;
+      }
+      // TB-Modus und 1:1 aber kein 3. Satz eingegeben
+      return null;
+    }
+    
+    // Normale 2-Satz-Logik
     if(aSets>bSets) winner='a';
     else if(bSets>aSets) winner='b';
     else if(aBalls>bBalls) winner='a';
@@ -1159,30 +1182,54 @@
   const SET_MODES = [
     {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
     {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
-    {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'}
+    {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'},
+    {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'},
+    {id:'2x21tb', target:21, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 21 + Entscheidungssatz'}
   ];
-  const MODE_MIN     = {'15':17, '21':25, '2x15':30};
+  const MODE_MIN     = {'15':17, '21':25, '2x15':30, '2x15tb':40, '2x21tb':45};
   let POINT_TARGET   = 15;
   let SET_MODE       = '15';
   function modeDef(){ return SET_MODES.find(m=>m.id===SET_MODE) || SET_MODES[0]; }
   function setTarget(){ return modeDef().target; }
   function setCount(){ return modeDef().sets; }
   function isMulti(){ return setCount() > 1; }
+  function hasDecidingSet(){ return !!modeDef().decidingSet; }
+  function targetForSet(setNo){
+    if(setNo === 3 && hasDecidingSet()) return modeDef().decidingTarget || setTarget();
+    return setTarget();
+  }
   function applySetMode(){
     document.querySelectorAll('td.resu').forEach(td=>{
       const a = td.querySelector('input[id^="sA_"]'); if(!a) return;
       const mm = /^sA_(\d+)_(\d+)$/.exec(a.id); if(!mm) return;
       const r=mm[1], i=mm[2];
-      const existing = document.getElementById('s2A_'+r+'_'+i);
+      const existing2 = document.getElementById('s2A_'+r+'_'+i);
+      const existing3 = document.getElementById('s3A_'+r+'_'+i);
+      
       if(isMulti()){
-        if(!existing){
+        if(!existing2){
           const sep=document.createElement('span'); sep.className='setsep'; sep.textContent='|';
           const grp=document.createElement('span'); grp.className='setgrp';
           grp.innerHTML='<input class="score" type="text" inputmode="numeric" id="s2A_'+r+'_'+i+'" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s2B_'+r+'_'+i+'" oninput="onScore()" autocomplete="off">';
           td.appendChild(sep); td.appendChild(grp);
         }
-      } else if(existing){
-        const grp=existing.closest('.setgrp');
+      } else if(existing2){
+        const grp=existing2.closest('.setgrp');
+        const sep=grp && grp.previousElementSibling;
+        if(grp) grp.remove();
+        if(sep && sep.classList && sep.classList.contains('setsep')) sep.remove();
+      }
+      
+      // TB-Modus: 3. Satz Input
+      if(hasDecidingSet()){
+        if(!existing3){
+          const sep=document.createElement('span'); sep.className='setsep'; sep.textContent='|';
+          const grp=document.createElement('span'); grp.className='setgrp';
+          grp.innerHTML='<input class="score" type="text" inputmode="numeric" id="s3A_'+r+'_'+i+'" oninput="onScore()" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s3B_'+r+'_'+i+'" oninput="onScore()" autocomplete="off" placeholder="TB">';
+          td.appendChild(sep); td.appendChild(grp);
+        }
+      } else if(existing3){
+        const grp=existing3.closest('.setgrp');
         const sep=grp && grp.previousElementSibling;
         if(grp) grp.remove();
         if(sep && sep.classList && sep.classList.contains('setsep')) sep.remove();
@@ -1382,7 +1429,8 @@
     var v = s.value;
     if(v === '15') return 15;
     if(v === '21') return 21;
-    if(v === '2x15') return 15;
+    if(v === '2x15' || v === '2x15tb') return 15;
+    if(v === '2x21tb') return 21;
     return null;
   }
   function partnerOf(el){
@@ -1391,7 +1439,7 @@
       var op = el.getAttribute('data-op'); if(op == null) return null;
       return document.getElementById('g' + m[1] + '_' + op);
     }
-    if((m = /^s(2)?(A|B)_(\d+)_(\d+)$/.exec(el.id))){
+    if((m = /^s([23])?(A|B)_(\d+)_(\d+)$/.exec(el.id))){
       var pre = 's' + (m[1] || '');
       return document.getElementById(pre + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
     }

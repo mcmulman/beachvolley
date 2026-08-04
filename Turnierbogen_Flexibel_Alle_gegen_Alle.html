@@ -524,15 +524,16 @@
     {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
     {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
     {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'},
-    {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'}
+    {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'},
+    {id:'2x21tb', target:21, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 21 + Entscheidungssatz'}
   ];
-  const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x15tb':40};  // empfohlene Minuten/Spiel je Modus
+  const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x15tb':40, '2x21tb':45};  // empfohlene Minuten/Spiel je Modus
 
   /* Dynamischer Zustand (wird bei Aufbau gesetzt) */
   let NTEAMS = 8;
   let NFIELDS = 4;
   let POINT_TARGET = 21;   // Zielpunktzahl pro Satz (aus Modus abgeleitet)
-  let SET_MODE = '21';     // aktiver Satz-Modus ('15' | '21' | '2x15' | '2x15tb')
+  let SET_MODE = '21';     // aktiver Satz-Modus ('15' | '21' | '2x15' | '2x15tb' | '2x21tb')
   function modeDef(){ return SET_MODES.find(m=>m.id===SET_MODE) || SET_MODES[1]; }
   function setTarget(){ return modeDef().target; }
   function setCount(){ return modeDef().sets; }
@@ -832,7 +833,7 @@
           st[a].sc += res.aBalls; st[b].sc += res.bBalls;
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
-        } else if(sa!=null || sb!=null || gv2(r,a)!=null || gv2(r,b)!=null){
+        } else if(sa!=null || sb!=null || gv2(r,a)!=null || gv2(r,b)!=null || gv3(r,a)!=null || gv3(r,b)!=null){
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
         } else {
@@ -928,7 +929,7 @@
   }
   function totalMatchesCount(){ return SCHEDULE.reduce((sum, rd) => sum + rd.matches.length, 0); }
   function setRangePerMatch(){
-    if(SET_MODE === '2x15tb') return {min:2, max:3};
+    if(SET_MODE === '2x15tb' || SET_MODE === '2x21tb') return {min:2, max:3};
     const c = setCount();
     return {min:c, max:c};
   }
@@ -1156,7 +1157,9 @@
       'jedes Team spielt ' + gamesPerTeam + ' Spiele (jeder gegen jeden)' + oddNote;
     const modeDesc = document.getElementById('g-mode-desc');
     if(modeDesc){
-      if(SET_MODE === '2x15tb'){
+      if(SET_MODE === '2x21tb'){
+        modeDesc.textContent = '2 Sätze bis 21 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung).';
+      } else if(SET_MODE === '2x15tb'){
         modeDesc.textContent = '2 Sätze bis 15 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung).';
       } else if(SET_MODE === '2x15'){
         modeDesc.textContent = '2 Sätze bis 15 Punkte, jeweils mit 2 Punkten Vorsprung; bei 1:1 entscheidet die Ball-Differenz.';
@@ -1166,13 +1169,15 @@
     }
     document.getElementById('h-legend').innerHTML =
       '<b>Modus:</b> Jeder gegen jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel ' + modeDef().label
-      + (SET_MODE === '2x15tb' ? ' (bei 1:1 entscheidet der dritte Satz)'
+      + (SET_MODE === '2x15tb' || SET_MODE === '2x21tb' ? ' (bei 1:1 entscheidet der dritte Satz)'
          : (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung')) + '.';
     const schedTable = document.querySelector('table.sched');
     if(schedTable) schedTable.classList.toggle('compact', setCount() >= 3);
     const inputExamples = document.getElementById('inputExamples');
     if(inputExamples){
-      if(SET_MODE === '2x15tb'){
+      if(SET_MODE === '2x21tb'){
+        inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 nötig).';
+      } else if(SET_MODE === '2x15tb'){
         inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 nötig).';
       } else if(SET_MODE === '2x15'){
         inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 zählt die Ball-Differenz).';
@@ -1383,6 +1388,7 @@
     if(v === '21') return 21;
     if(v === '2x15') return 15;
     if(v === '2x15tb') return 15;
+    if(v === '2x21tb') return 21;
     return null;
   }
   function partnerOf(el){
