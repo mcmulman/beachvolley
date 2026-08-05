@@ -499,6 +499,7 @@
     let fieldsVisible = false;
     let dropoutVisible = false;
     let liveVisible = false;
+    let LAST_TIMEFIT_NEEDED_FIELDS = null;
     const SESSION_KEY = 'sw_univ';
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
     const SESSION_TITLE = 'Schweizer System (Universal)';
@@ -509,6 +510,22 @@
     function saveJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
     function fromMin(min){ const m = ((Math.round(min) % 1440) + 1440) % 1440; const h = Math.floor(m / 60); const mm = m % 60; return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0'); }
     function toMin(text){ const m = /^(\d{1,2}):(\d{2})$/.exec(String(text || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
+    function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+    function fmtDur(mins){
+      const m = Math.max(0, Math.round(mins));
+      const h = Math.floor(m/60), r = m%60;
+      return h>0 ? (h + ':' + (r<10?'0':'') + r + ' h') : (r + ' min');
+    }
+    function neededFieldsForWindow(durationMin, recPerMatch){
+      const maxF = NFIELDS;
+      const maxSlotsAvail = Math.floor(Math.max(0, durationMin) / Math.max(1, recPerMatch));
+      const slotsNeeded = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / Math.max(1, maxF));
+      for(let f=1; f<=maxF; f++){
+        const slots = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / Math.max(1, f));
+        if(slots <= maxSlotsAvail) return f;
+      }
+      return null;
+    }
     function defaultRoundsForTeams(t){ return DEFAULT_ROUNDS[t] || 7; }
     function clampRounds(v){ const n = parseInt(v, 10); if(Number.isNaN(n)) return defaultRoundsForTeams(NTEAMS); return Math.max(3, Math.min(11, n)); }
     function modeDef(){ return SET_MODES.find(m => m.id === SET_MODE) || SET_MODES[0]; }
@@ -740,11 +757,13 @@
         + '    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Spiel</span></div>'
         + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>'
         + '    <div class="cfgres-item"><span class="cfgres-val">' + NTEAMS + '</span><span class="cfgres-lbl">Teams</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val">' + NFIELDS + '</span><span class="cfgres-lbl">Felder (T÷2)</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val">' + NFIELDS + '</span><span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span><span class="cfgres-lbl">Felder (aktuell · benötigt)</span></div>'
+        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>'
         + '    <div class="cfgres-item"><span class="cfgres-val">' + NROUNDS + '</span><span class="cfgres-lbl">Runden</span></div>'
         + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>'
         + '  </div>'
         + '  <div class="cfgcard-actions">'
+        + '    <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>'
         + '    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>'
         + '    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>'
         + '    <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>'
@@ -778,6 +797,7 @@
       restoreTitle();
       restoreScores();
       applyTimes();
+      computeTimes();
       computeAll();
     }
     function hydratePanels(){
@@ -821,8 +841,8 @@
       saveCfg({t:NTEAMS, r:NROUNDS, p:def.id});
       renderApp();
     }
-    function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); }
-    function onEndTime(){ try{ localStorage.setItem(END_KEY, document.getElementById('endTime').value || '14:00'); }catch(e){} applyTimes(); }
+    function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); computeTimes(); }
+    function onEndTime(){ try{ localStorage.setItem(END_KEY, document.getElementById('endTime').value || '14:00'); }catch(e){} applyTimes(); computeTimes(); }
     function toggleNames(){ namesVisible = !namesVisible; const el = document.getElementById('namepanel'); if(el) el.hidden = !namesVisible; }
     function toggleFields(){ fieldsVisible = !fieldsVisible; const el = document.getElementById('fieldpanel'); if(el) el.hidden = !fieldsVisible; }
     function toggleDropout(){ dropoutVisible = !dropoutVisible; const el = document.getElementById('dropoutpanel'); if(el) el.hidden = !dropoutVisible; }
@@ -1151,6 +1171,61 @@
         const roundEnd = roundStart + slotMin * 0.65;
         el.textContent = 'Runde ' + r + ' · ' + fromMin(roundStart) + '–' + fromMin(roundEnd);
       });
+    }
+    function computeTimes(){
+      const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
+      const startMinRaw=toMin(sEl?sEl.value:BASE_START)||toMin(BASE_START);
+      const endMinRaw=toMin(eEl?eEl.value:BASE_END)||toMin(BASE_END);
+      const startMin = startMinRaw;
+      const endMin = endMinRaw < startMinRaw ? endMinRaw + 24*60 : endMinRaw;
+      const total = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / NFIELDS) * (MODE_MIN[SET_MODE] || 25);
+      const dur = Math.max(30, endMin - startMin);
+      const per = Math.max(5, Math.floor(dur / NROUNDS));
+      const modeText = modeDef().label;
+      const recPerMatch = MODE_MIN[SET_MODE] || 25;
+      const enough = per >= recPerMatch;
+      const neededFields = neededFieldsForWindow(dur, recPerMatch);
+      LAST_TIMEFIT_NEEDED_FIELDS = neededFields;
+      const neededEndMin = startMin + total;
+      const bufferMin = dur - (total || 0);
+      
+      setRV('rv-perGame', per + ' / ' + recPerMatch + ' Min');
+      if(document.getElementById('rv-perGame')?.closest('.cfgres-item')) {
+        document.getElementById('rv-perGame').closest('.cfgres-item').classList.toggle('is-warn', !enough);
+      }
+      setRV('rv-mode', modeText);
+      if(neededFields == null){
+        setRV('rv-fitFields', '∞ benötigt');
+        if(document.getElementById('rv-fitFields')?.closest('.cfgres-item')) {
+          document.getElementById('rv-fitFields').closest('.cfgres-item').classList.add('is-warn');
+        }
+      } else {
+        setRV('rv-fitFields', neededFields + (neededFields === NFIELDS ? ' ✓' : ' benötigt'));
+        if(document.getElementById('rv-fitFields')?.closest('.cfgres-item')) {
+          document.getElementById('rv-fitFields').closest('.cfgres-item').classList.toggle('is-warn', neededFields > NFIELDS);
+        }
+      }
+      setRV('rv-fitEnd', fmtMin(neededEndMin));
+      if(document.getElementById('rv-fitEnd')?.closest('.cfgres-item')) {
+        document.getElementById('rv-fitEnd').closest('.cfgres-item').classList.toggle('is-warn', bufferMin < 0);
+      }
+    }
+    function applyTimefitFields(){
+      if(LAST_TIMEFIT_NEEDED_FIELDS == null){
+        alert('Im gewählten Zeitfenster ist das Schweizer System mit dieser Teamzahl nicht machbar. Bitte Teamzahl reduzieren, Zeitfenster erweitern oder kürzeren Modus wählen.');
+        return;
+      }
+      if(LAST_TIMEFIT_NEEDED_FIELDS === NFIELDS){
+        alert('Die aktuelle Feldzahl passt bereits zum Zeitfenster.');
+        return;
+      }
+      NFIELDS = LAST_TIMEFIT_NEEDED_FIELDS;
+      saveCfg({t:NTEAMS, r:NROUNDS, p:SET_MODE});
+      renderApp();
+    }
+    function setRV(id, text){
+      const el = document.getElementById(id);
+      if(el) el.textContent = text;
     }
     function updateTeamLegends(){
       let html = '';
