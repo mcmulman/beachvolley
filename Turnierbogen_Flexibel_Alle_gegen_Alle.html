@@ -289,6 +289,8 @@
     .vs { font-size:7pt; }
     .sched thead { display: table-header-group; }
     .sched tbody { display: table-row-group; }
+    .track thead { display: table-header-group; }
+    .track tbody { display: table-row-group; }
     .teams .name { height:5.5mm; }
     .track th, .track td { padding:0.8mm 1mm; }
     .track .rcell, .track td { height:auto; }
@@ -317,7 +319,7 @@
     input.score:focus { outline:none; }
     input[type=text]:not(.score) { display:none; }
     .sched tr.round-hidden { display: table-row !important; }
-    #scheduleSection { zoom:1 !important; transform:none !important; }
+    #scheduleSection { transform:none !important; }
   }
 
     /* Screen polish overrides */
@@ -613,7 +615,7 @@
       }
       input.score {
         min-width: 42px;
-        min-height: 36px;
+        min-height: 44px;
         font-size: 16px;
       }
       .mobile-jumpbar {
@@ -631,7 +633,7 @@
         backdrop-filter: blur(8px);
       }
       .mobile-jumpbar .nbtn {
-        min-height: 40px;
+        min-height: 44px;
         padding: 6px 4px;
         font-size: 12px;
       }
@@ -723,15 +725,21 @@
   <div class="cfgresult" id="cfgResult">
     <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Spiele/Sätze pro Team</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fields">–</span><span class="cfgres-lbl">Felder / Slots je Runde</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Satzumfang gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Slotzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Pro Team</span></div>
+    <div class="cfgres-item">
+      <span class="cfgres-val" id="rv-fields">–</span>
+      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
+      <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+    </div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
     <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
   </div>
 
   <div class="cfgcard-actions">
+    <button type="button" class="nbtn" onclick="applyTimefitFields()">⚡ Empf. Felder übernehmen</button>
     <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
     <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
     <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
@@ -797,6 +805,7 @@
 
 <div class="table-scroll is-track">
   <table class="track">
+    <thead id="trackHead"></thead>
     <tbody id="trackBody"></tbody>
   </table>
 </div>
@@ -880,6 +889,7 @@
   let SLOTS  = [];     // ein Eintrag je Zeit-Slot (für Zeitberechnung/Anzeige)
   let DEFAULT_FIELDS = [];
   let SCHEDULE_ROUND_FILTER = '1';
+  let LAST_TIMEFIT_NEEDED_FIELDS = null;
 
   /* ================= Round-Robin (Circle-Methode) ================= */
   function genSchedule(n){
@@ -1027,7 +1037,7 @@
   /* ================= Ergebnisse ================= */
   function onScore(){ const sc={}; document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id) sc[inp.id]=inp.value; }); try{ localStorage.setItem(SCORE_KEY, JSON.stringify(sc)); }catch(e){} computeAll(); }
   function restoreScores(){ const sc=loadScores(); document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id && sc[inp.id]!=null) inp.value=sc[inp.id]; }); }
-  function clearScores(){ if(!confirm('Alle Ergebnisse wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
+  function clearScores(){ if(!confirm('Alle Ergebnisse und Ausfälle wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
 
   /* ================= Auswertungs-Helfer ================= */
   function num(el){
@@ -1240,7 +1250,7 @@
         inp.classList.add('invalid');
         return;
       }
-      const m = inp.id.match(/^g(\d+)?(\d+)_(\d+)$/); if(!m) return;
+      const m = inp.id.match(/^g([23]?)(\d+)_(\d+)$/); if(!m) return;
       const pre = 'g'+(m[1]||'');
       const opp = document.getElementById(pre+m[2]+'_'+inp.getAttribute('data-op'));
       if(!opp || opp.disabled) return;
@@ -1298,6 +1308,19 @@
     const r = setRangePerMatch();
     return r.min === r.max ? r.min : (r.min + r.max) / 2;
   }
+  function scheduleSlotsForFields(fieldCount){
+    const rounds = ROUNDS.length;
+    const mpr = SCHEDULE.length ? SCHEDULE[0].matches.length : Math.floor(NTEAMS / 2);
+    return rounds * Math.max(1, Math.ceil(mpr / Math.max(1, fieldCount)));
+  }
+  function neededFieldsForWindow(durationMin, recPerMatch){
+    const maxF = Math.min(MAX_FIELDS, Math.floor(NTEAMS/2));
+    const maxSlotsAvail = Math.floor(Math.max(0, durationMin) / Math.max(1, recPerMatch));
+    for(let f=1; f<=maxF; f++){
+      if(scheduleSlotsForFields(f) <= maxSlotsAvail) return f;
+    }
+    return null;
+  }
   function computeTimes(){
     const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
     const startMinRaw=toMin(sEl?sEl.value:BASE_START)||toMin(BASE_START);
@@ -1317,6 +1340,9 @@
     const perSet = Math.max(1, Math.round(recPerMatch / expectedSetsPerMatch()));
     const playMin = total * recPerMatch;
     const bufferMin = dur - playMin;
+    const neededFields = neededFieldsForWindow(dur, recPerMatch);
+    LAST_TIMEFIT_NEEDED_FIELDS = neededFields;
+    const neededEndMin = startMin + playMin;
     /* Spielplan-Slots */
     document.querySelectorAll('.sched .rtime[data-slot]').forEach(el=>{
       const s=+el.getAttribute('data-slot');
@@ -1336,8 +1362,8 @@
     setRVState('rv-perGame', warn ? 'warn' : null);
     setRV('rv-mode', modeText);
     const setsText = (totalSetsMin === totalSetsMax)
-      ? (totalSetsMin + ' Sätze (' + setRange.min + '/Spiel) · ≈' + perSet + ' Min/Satz')
-      : (totalSetsMin + '–' + totalSetsMax + ' Sätze (' + setRange.min + '–' + setRange.max + '/Spiel) · ≈' + perSet + ' Min/Satz');
+      ? (totalSetsMin + ' · ≈' + perSet + ' Min/Satz')
+      : (totalSetsMin + '–' + totalSetsMax + ' · ≈' + perSet + ' Min/Satz');
     setRV('rv-subsets', setsText);
     setRV('rv-duration', fmtDur(dur) + ' / ' + fmtDur(playMin));
     if(bufferMin >= 0){
@@ -1347,6 +1373,15 @@
       setRV('rv-buffer', '−' + fmtDur(Math.abs(bufferMin)));
       setRVState('rv-buffer', 'warn');
     }
+    if(neededFields == null){
+      setRV('rv-fitFields', '∞ benötigt');
+      setRVState('rv-fitFields', 'warn');
+    } else {
+      setRV('rv-fitFields', neededFields + (neededFields === NFIELDS ? ' ✓' : ' benötigt'));
+      setRVState('rv-fitFields', neededFields > NFIELDS ? 'warn' : null);
+    }
+    setRV('rv-fitEnd', fmtMin(neededEndMin));
+    setRVState('rv-fitEnd', bufferMin < 0 ? 'warn' : null);
     /* Sub-Zeile aktualisieren */
     const subMode=document.querySelector('#h-sub .rmode');
     if(subMode) subMode.textContent=modeText;
@@ -1458,18 +1493,7 @@
     if(wrap) wrap.scrollLeft = 0;
   }
   function updatePrintScheduleZoom(){
-    const table = document.querySelector('#scheduleSection table.sched');
-    if(!table){
-      document.documentElement.style.setProperty('--sched-print-zoom', '1');
-      return;
-    }
-    const contentW = Math.max(1, table.scrollWidth);
-    const contentH = Math.max(1, table.scrollHeight + 28); // + Caption/Puffer
-    const a4LandscapeInnerW = 1030; // ~297mm minus 12mm + 12mm Rand
-    const a4LandscapeInnerH = 700;  // ~210mm minus 10mm + 10mm Rand
-    let zoom = Math.min(1, a4LandscapeInnerW / contentW, a4LandscapeInnerH / contentH);
-    zoom = Math.max(0.55, zoom);
-    document.documentElement.style.setProperty('--sched-print-zoom', zoom.toFixed(2));
+    // Zoom wird live via beforeprint-Event gesetzt (s.u.)
   }
 
   /* ================= DOM-Aufbau ================= */
@@ -1578,9 +1602,12 @@
   }
   function buildTrackTable(){
     const k = ROUNDS.length;
-    let html = '<tr><th class="tname">Team</th><th class="lbl">kumuliert</th>';
-    for(let r=1;r<=k;r++) html += '<th>R'+r+'</th>';
-    html += '<th class="pos">Platz</th></tr>';
+    const headHtml = '<tr><th class="tname">Team</th><th class="lbl">kumuliert</th>'
+      + Array.from({length:k},(_,i)=>'<th>R'+(i+1)+'</th>').join('')
+      + '<th class="pos">Platz</th></tr>';
+    const headEl = document.getElementById('trackHead');
+    if(headEl) headEl.innerHTML = headHtml;
+    let html = '';
     /* Beispiel-Zeile */
     let ptsEx=[], bdEx=[], p=0, bd=0;
     for(let i=0;i<k;i++){ if(i%3!==1 || i===0) p++; ptsEx.push(p); bd += (i%4===1?-3:4); bdEx.push(bd); }
@@ -1654,7 +1681,7 @@
     setRV('rv-perTeam', teamSetsMin === teamSetsMax
       ? (gamesPerTeam + ' Spiele · ' + teamSetsMin + ' Sätze')
       : (gamesPerTeam + ' Spiele · ' + teamSetsMin + '–' + teamSetsMax + ' Sätze'));
-    setRV('rv-fields', NFIELDS + ' Felder · ' + slotsPerRound + ' Slot' + (slotsPerRound>1?'s':'') + '/R');
+    setRV('rv-fields', NFIELDS + (slotsPerRound > 1 ? ' · ' + slotsPerRound + ' Slots/R' : ''));
   }
   function setRV(id, val){ const el=document.getElementById(id); if(el) el.textContent = val; }
   function setRVState(id, state){
@@ -1706,6 +1733,19 @@
     rebuild();   // baut Spielplan neu (fügt/entfernt Satz-2-Inputs), Ergebnisse bleiben über IDs erhalten
   }
   function onPointTargetChange(v){ setSetMode(v); }
+  function applyTimefitFields(){
+    if(LAST_TIMEFIT_NEEDED_FIELDS == null){
+      alert('Im gewählten Zeitfenster ist das vollständige Jeder-gegen-jeden mit dieser Teamzahl nicht machbar. Bitte Teamzahl reduzieren, Zeitfenster erweitern oder kürzeren Modus wählen.');
+      return;
+    }
+    if(LAST_TIMEFIT_NEEDED_FIELDS === NFIELDS){
+      alert('Die aktuelle Feldzahl passt bereits zum Zeitfenster.');
+      return;
+    }
+    NFIELDS = LAST_TIMEFIT_NEEDED_FIELDS;
+    saveCfg({teams:NTEAMS, fields:NFIELDS, points:SET_MODE});
+    rebuild();
+  }
 
   /* ================= Voller Neuaufbau ================= */
   function rebuild(){
@@ -1754,6 +1794,20 @@
     loadScheduleRoundFilter();
     restoreTitle();
     rebuild();
+
+    // Spielplan bei Druck automatisch skalieren, damit er auf A4 quer passt
+    window.addEventListener('beforeprint', function(){
+      const table = document.querySelector('#scheduleSection table.sched');
+      if(!table) return;
+      const contentW = Math.max(1, table.scrollWidth);
+      const a4W = 1030; // ~297mm – 24mm Ränder in px
+      const zoom = Math.min(1, a4W / contentW);
+      if(zoom < 0.99) table.style.zoom = zoom.toFixed(2);
+    });
+    window.addEventListener('afterprint', function(){
+      const table = document.querySelector('#scheduleSection table.sched');
+      if(table) table.style.zoom = '';
+    });
   })();
 </script>
 
@@ -1844,7 +1898,7 @@
 <script>
 (function(){
   if(window.__BL_AUTOFILL__) return; window.__BL_AUTOFILL__ = true;
-  function target(){
+  function target(el){
     var s = document.getElementById('pointTarget');
     if(!s) return null;
     var v = s.value;
@@ -1852,14 +1906,18 @@
     if(v === '21') return 21;
     if(v === '2x15') return 15;
     if(v === '2x15tb') return 15;
-    if(v === '2x21tb') return 21;
+    if(v === '2x21tb'){
+      var m3 = /^g([23]?)(\d+)_/.exec(el.id);
+      if(m3 && m3[1] === '3') return 15; // Entscheidungssatz
+      return 21;
+    }
     return null;
   }
   function partnerOf(el){
     var m;
-    if((m = /^g(\d+)?(\d+)_(\d+)$/.exec(el.id))){
+    if((m = /^g([23]?)(\d+)_(\d+)$/.exec(el.id))){
       var op = el.getAttribute('data-op'); if(op == null) return null;
-      return document.getElementById('g' + (m[1] || '') + m[2] + '_' + op);
+      return document.getElementById('g' + m[1] + m[2] + '_' + op);
     }
     if((m = /^s(2)?(A|B)_(\d+)_(\d+)$/.exec(el.id))){
       var pre = 's' + (m[1] || '');
@@ -1870,7 +1928,7 @@
   document.addEventListener('change', function(e){
     var el = e.target;
     if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
-    var t = target(); if(t == null) return;
+    var t = target(el); if(t == null) return;
     var raw = String(el.value || '').trim();
     if(!/^\d+$/.test(raw)) return;
     var v = parseInt(raw, 10);
