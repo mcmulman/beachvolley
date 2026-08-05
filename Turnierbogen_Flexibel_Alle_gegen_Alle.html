@@ -120,7 +120,115 @@
   .setupbar label { font-size:12.5px; color:#1f4e79; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
   .setupbar select { padding:5px 8px; font-size:13px; border:1px solid #9db4d4; border-radius:5px; font-weight:700; color:#1f4e79; background:#fff; }
   .setupbar .setinfo { font-size:11.5px; color:#555; font-style:italic; }
-
+  .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
+  .table-scroll table { min-width:100%; }
+  .mobile-scroll-hint { display:none; font-size:11px; color:#5a6375; margin:4px 0 0; }
+  .mobile-schedule-title { display:none; }
+  .mobile-jumpbar { display:none; }
+  .schedule-roundbar {
+    margin: 8px 0 6px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+  .schedule-roundbar label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: #1f4e79;
+    font-weight: 700;
+  }
+  .schedule-roundbar select {
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid #9db4d4;
+    border-radius: 5px;
+    font-weight: 700;
+    color: #1f4e79;
+    background: #fff;
+  }
+  .schedule-roundbar .nbtn {
+    min-height: 32px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .schedule-roundbar .state {
+    font-size: 11px;
+    color: #5a6375;
+    font-weight: 700;
+    padding: 0 2px;
+    align-self: center;
+  }
+  @media screen and (min-width: 641px) {
+    .table-scroll.is-wide {
+      overflow-x: hidden;
+    }
+    .table-scroll.is-wide table.sched {
+      width: 100% !important;
+      min-width: 0 !important;
+      table-layout: fixed;
+    }
+    .table-scroll.is-wide table.sched .rnd {
+      width: 86px;
+      font-size: 12px;
+    }
+    .table-scroll.is-wide table.sched th[data-field] {
+      white-space: normal;
+      word-break: break-word;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+    .table-scroll.is-wide table.sched td {
+      padding: 5px 4px;
+      vertical-align: top;
+    }
+    .table-scroll.is-wide table.sched .pair {
+      white-space: normal;
+      flex-wrap: wrap;
+      gap: 2px;
+      min-height: 0;
+    }
+    .table-scroll.is-wide table.sched .pair .t {
+      flex: 0 0 100%;
+      min-width: 0;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.15;
+    }
+    .table-scroll.is-wide table.sched .pair .setgrp {
+      display: inline-flex;
+      align-items: center;
+    }
+    .table-scroll.is-wide table.sched input.score {
+      width: 28px;
+      height: 24px;
+      font-size: 12px;
+    }
+    .table-scroll.is-wide table.sched .vs {
+      font-size: 12px;
+    }
+    .table-scroll.is-wide table.sched .setsep {
+      margin: 0 2px;
+    }
+    .table-scroll.is-wide table.sched.ultra-compact .rnd {
+      width: 76px;
+      font-size: 11px;
+    }
+    .table-scroll.is-wide table.sched.ultra-compact th[data-field] {
+      font-size: 10px;
+    }
+    .table-scroll.is-wide table.sched.ultra-compact .pair .t {
+      font-size: 10px;
+    }
+    .table-scroll.is-wide table.sched.ultra-compact input.score {
+      width: 24px;
+      height: 22px;
+      font-size: 11px;
+    }
+  }
+  .sched tr.round-hidden { display: none; }
   @media print {
     @page { size: A4 landscape; margin: 10mm 12mm; }
     body {
@@ -156,18 +264,31 @@
       break-before:page;
       page-break-before:always;
     }
-    .sched td { padding:0.9mm 1.4mm; }
-    .sched .rnd { width:24mm; font-size:8.2pt; }
+    .sched {
+      width: 100% !important;
+      table-layout: fixed;
+    }
+    .sched th, .sched td {
+      overflow: hidden;
+      text-overflow: clip;
+      word-break: break-word;
+    }
+    .sched td { padding:0.8mm 1mm; }
+    .sched .rnd { width:20mm; font-size:7.8pt; }
     .sched .rnd .rtime { font-size:7pt; margin-top:0.4mm; }
     .sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; }
     .sched .rnd .rbye { font-size:6.8pt; line-height:1.05; margin-top:0.4mm; color:#5a4300; }
-    .pair, .bye { gap:1.4mm; min-height:0; }
-    .pair .t, .bye .t { min-width:0; font-size:8pt; }
+    .pair, .bye { gap:0.8mm; min-height:0; flex-wrap:wrap; white-space:normal; }
+    .pair .t, .bye .t { min-width:0; font-size:6.9pt; flex:0 0 100%; text-align:center; line-height:1.1; }
+    .pair .setgrp { display:inline-flex; align-items:center; }
+    .setsep { margin:0 0.3mm; }
     .sched.compact .pair, .sched.compact .bye { gap:0.8mm; }
-    .sched.compact .pair .t, .sched.compact .bye .t { font-size:7.2pt; }
-    .sched.compact input.score { width:1.45em; font-size:7.6pt; }
+    .sched.compact .pair .t, .sched.compact .bye .t { font-size:6.6pt; }
+    .sched.compact input.score { width:1.25em; font-size:7.1pt; }
     .sched.compact .setsep { margin:0 0.45mm; }
-    .vs { font-size:8pt; }
+    .vs { font-size:7pt; }
+    .sched thead { display: table-header-group; }
+    .sched tbody { display: table-row-group; }
     .teams .name { height:5.5mm; }
     .track th, .track td { padding:0.8mm 1mm; }
     .track .rcell, .track td { height:auto; }
@@ -183,18 +304,20 @@
       border:none;
       background:transparent;
       box-shadow:none;
-      width:1.7em;
+      width:1.25em;
       height:auto;
       min-height:0;
       padding:0;
       margin:0;
-      font-size:8.3pt;
+      font-size:7.2pt;
       font-weight:700;
       color:#000;
       text-align:center;
     }
     input.score:focus { outline:none; }
     input[type=text]:not(.score) { display:none; }
+    .sched tr.round-hidden { display: table-row !important; }
+    #scheduleSection { zoom:1 !important; transform:none !important; }
   }
 
     /* Screen polish overrides */
@@ -323,6 +446,196 @@
       .digbar,
       .topbar { gap: 12px; }
     }
+    @media screen and (max-width: 640px) {
+      body {
+        padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
+      }
+      .row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .row > div,
+      .row .grow {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+      }
+      .cfgcard-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cfgfield.cfgfield--wide {
+        grid-column: 1 / -1;
+      }
+      .cfgfield--mode {
+        grid-column: 1 / -1;
+      }
+      .cfgfield--start {
+        grid-column: 1 / 2;
+      }
+      .cfgfield--end {
+        grid-column: 2 / 3;
+      }
+      .cfgcard-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .cfgcard-actions .spacer {
+        display: none;
+      }
+      .cfgcard-actions .nbtn {
+        width: 100%;
+        min-height: 40px;
+      }
+      .schedule-roundbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 6px;
+        position: static;
+        padding: 6px 6px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+      }
+      .schedule-roundbar label {
+        min-width: 0;
+      }
+      .schedule-roundbar select {
+        width: 100%;
+      }
+      .schedule-roundbar .state {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+      .mobile-scroll-hint {
+        display: block;
+      }
+      .mobile-schedule-title {
+        display: block;
+        font-weight: 800;
+        color: var(--app-blue-dark, #1f4e79);
+        font-size: 14px;
+        line-height: 1.25;
+        letter-spacing: .3px;
+        padding: 2px 0 6px 11px;
+        border-left: 3px solid var(--app-blue, #1f4e79);
+        margin: 8px 0 6px;
+      }
+      .table-scroll.is-wide table.sched > caption {
+        display: none;
+      }
+      .table-scroll.is-wide {
+        overflow-x: hidden;
+      }
+      .table-scroll.is-wide table.sched {
+        overflow: visible;
+      }
+      .table-scroll.is-wide table.sched caption {
+        white-space: normal;
+        line-height: 1.35;
+        margin-top: 8px;
+      }
+      .table-scroll.is-wide table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .table-scroll.is-wide table.sched > tbody {
+        display: block;
+        width: 100%;
+      }
+      .table-scroll.is-wide table.sched > thead {
+        display: none;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] {
+        display: block;
+        width: 100%;
+        margin: 0 0 10px;
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
+        display: none;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td {
+        display: block;
+        width: 100%;
+        border-left: none;
+        border-right: none;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.rnd {
+        border-top: none;
+        background: #eef3fb;
+        font-weight: 800;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match {
+        border-top: 1px solid #d6e1ef;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match::before {
+        content: attr(data-field-label);
+        display: block;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1f4e79;
+        margin: 0 0 4px;
+      }
+      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.empty {
+        display: none;
+      }
+      .sched td { padding: 6px 4px; }
+      .pair {
+        white-space: normal;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .pair .t {
+        flex: 0 0 100%;
+        min-width: 0;
+        text-align: center;
+        font-size: 11px;
+      }
+      .pair .setgrp {
+        display: inline-flex;
+        align-items: center;
+      }
+      .pair .setsep {
+        margin: 0 1px;
+      }
+      .pair .vs {
+        font-size: 13px;
+      }
+      .table-scroll.is-track table {
+        display: table !important;
+        width: max-content !important;
+        min-width: 560px !important;
+      }
+      input.score {
+        min-width: 42px;
+        min-height: 36px;
+        font-size: 16px;
+      }
+      .mobile-jumpbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: rgba(255,255,255,.96);
+        border-top: 1px solid #cdd8e6;
+        backdrop-filter: blur(8px);
+      }
+      .mobile-jumpbar .nbtn {
+        min-height: 40px;
+        padding: 6px 4px;
+        font-size: 12px;
+      }
+    }
 
 
     /* Print polish overrides */
@@ -384,7 +697,7 @@
 <p class="sub" id="h-sub"></p>
 <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
-<div class="noprint cfgcard">
+<div class="noprint cfgcard" id="configSection">
   <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
     <label class="cfgfield cfgfield--wide">📝 Turniertitel
@@ -396,13 +709,13 @@
     <label class="cfgfield">🏖️ Felder
       <select id="fieldCount" onchange="onFieldCount()"></select>
     </label>
-    <label class="cfgfield">🎯 Punkte/Spiel
+    <label class="cfgfield cfgfield--mode">🎯 Punkte/Spiel
       <select id="pointTarget" onchange="onPointTarget()"></select>
     </label>
-    <label class="cfgfield">⏱ Start
+    <label class="cfgfield cfgfield--start">⏱ Start
       <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
     </label>
-    <label class="cfgfield">🏁 Ende
+    <label class="cfgfield cfgfield--end">🏁 Ende
       <input type="time" id="endTime" value="14:00" onchange="onEndTime()">
     </label>
   </div>
@@ -457,21 +770,36 @@
   </div>
 </div>
 
-<table class="sched">
-  <caption>Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</caption>
-  <tbody id="schedBody"></tbody>
-</table>
+<div class="table-scroll is-wide" id="scheduleSection">
+  <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</p>
+  <div class="noprint schedule-roundbar">
+    <label>Runde
+      <select id="scheduleRoundFilter" onchange="onScheduleRoundFilterChange()"></select>
+    </label>
+    <button id="schedRoundPrevBtn" type="button" class="nbtn" onclick="shiftScheduleRound(-1)" aria-label="Vorherige Runde">◀︎ R</button>
+    <button id="schedRoundNextBtn" type="button" class="nbtn" onclick="shiftScheduleRound(1)" aria-label="Nächste Runde">R ▶︎</button>
+    <span class="state" id="scheduleFilterState" aria-live="polite"></span>
+  </div>
+  <table class="sched">
+    <caption>Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</caption>
+    <thead id="schedHead"></thead>
+    <tbody id="schedBody"></tbody>
+  </table>
+</div>
+<p class="mobile-scroll-hint noprint">Mobile-Ansicht: Runde wählen; alle Felder bleiben sichtbar.</p>
 <p class="input-hint" id="inputExamples">Beispiel Eingabe: 21:19 oder 15:12 (je Team in das eigene Kästchen).</p>
 
 <div class="page-break"></div>
 
 
-<h1>Laufende Tabelle &amp; Endstand</h1>
+<h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>
 <p class="sub">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die letzte Runden-Spalte ist damit automatisch der Endstand → daraus den Platz vergeben.</p>
 
-<table class="track">
-  <tbody id="trackBody"></tbody>
-</table>
+<div class="table-scroll is-track">
+  <table class="track">
+    <tbody id="trackBody"></tbody>
+  </table>
+</div>
 
 <div class="row">
   <div style="flex:0 0 46%">
@@ -502,6 +830,12 @@
 </div>
 
 <button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>
+<div class="mobile-jumpbar noprint">
+  <button type="button" class="nbtn" onclick="document.getElementById('configSection').scrollIntoView({behavior:'smooth',block:'start'})">⚙️ Setup</button>
+  <button type="button" class="nbtn" onclick="document.getElementById('scheduleSection').scrollIntoView({behavior:'smooth',block:'start'})">📋 Spielplan</button>
+  <button type="button" class="nbtn" onclick="document.getElementById('standingsSection').scrollIntoView({behavior:'smooth',block:'start'})">🏁 Tabelle</button>
+  <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
+</div>
 
 <script>
   /* ================= Konfiguration ================= */
@@ -513,6 +847,7 @@
   const CFG_KEY    = 'turnierflexrr_config';
   const START_KEY  = 'turnierflexrr_start';
   const END_KEY    = 'turnierflexrr_end';
+  const ROUND_FILTER_KEY = 'turnierflexrr_sched_round_filter';
   const SESSION_KEY   = 'turnierflexrr';
   const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
   const TITLE_KEY  = SESSION_KEY + '_title';
@@ -544,6 +879,7 @@
   let SCHEDULE = [];   // [{matches:[[a,b],...], bye:teamOrNull}, ...]
   let SLOTS  = [];     // ein Eintrag je Zeit-Slot (für Zeitberechnung/Anzeige)
   let DEFAULT_FIELDS = [];
+  let SCHEDULE_ROUND_FILTER = '1';
 
   /* ================= Round-Robin (Circle-Methode) ================= */
   function genSchedule(n){
@@ -694,11 +1030,24 @@
   function clearScores(){ if(!confirm('Alle Ergebnisse wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
 
   /* ================= Auswertungs-Helfer ================= */
-  function num(el){ if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
+  function num(el){
+    if(!el) return null;
+    const v = (el.value || '').trim();
+    if(v === '') return null;
+    if(!/^\d{1,3}$/.test(v)) return null;
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : n;
+  }
   function gv(r,t){ return num(document.getElementById('g'+r+'_'+t)); }
   function gv2(r,t){ return num(document.getElementById('g2'+r+'_'+t)); }
   function gv3(r,t){ return num(document.getElementById('g3'+r+'_'+t)); }
-  function setValidWithTarget(a,b,target){ return a!=null && b!=null && Math.max(a,b) >= target && Math.abs(a-b) >= 2; }
+  function setValidWithTarget(a,b,target){
+    if(a==null || b==null) return false;
+    const hi = Math.max(a,b), lo = Math.min(a,b);
+    if(hi < target || hi === lo) return false;
+    if(hi === target) return lo <= target - 2;              // z.B. 15:0 .. 15:13 / 21:0 .. 21:19
+    return (hi - lo) === 2 && lo >= (target - 1);           // Deuce-Endstand, z.B. 17:15 / 23:21
+  }
   function setValid(a,b){ return setValidWithTarget(a,b,setTarget()); }
   function targetForSet(setNo){
     if(setNo === 3 && hasDecidingSet()) return modeDef().decidingTarget || setTarget();
@@ -885,13 +1234,25 @@
     document.querySelectorAll('input.score').forEach(i => i.classList.remove('win','invalid'));
     document.querySelectorAll('input.score[data-op]').forEach(inp => {
       if(inp.disabled) return;
+      const raw = (inp.value || '').trim();
+      const own = num(inp);
+      if(raw !== '' && own == null){
+        inp.classList.add('invalid');
+        return;
+      }
       const m = inp.id.match(/^g(\d+)?(\d+)_(\d+)$/); if(!m) return;
       const pre = 'g'+(m[1]||'');
       const opp = document.getElementById(pre+m[2]+'_'+inp.getAttribute('data-op'));
       if(!opp || opp.disabled) return;
-      const a = num(inp), b = num(opp); if(a==null || b==null) return;
+      const oppRaw = (opp.value || '').trim();
+      const a = own, b = num(opp);
+      if(oppRaw !== '' && b == null){
+        inp.classList.add('invalid');
+        return;
+      }
+      if(a==null || b==null) return;
       const setNo = m[1] ? parseInt(m[1],10) : 1;
-      if(!(Math.max(a,b) >= targetForSet(setNo) && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      if(!setValidWithTarget(a,b,targetForSet(setNo))) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }
@@ -1009,6 +1370,7 @@
       const suffix = el.dataset.origText.slice(orig.length);
       el.textContent = (custom && custom.trim() ? custom.trim() : orig) + suffix;
     });
+    syncMobileFieldLabels();
   }
   function buildFieldPanel(){
     const names = loadFieldNames();
@@ -1032,9 +1394,86 @@
   function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
   function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
   function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
+  function loadScheduleRoundFilter(){
+    try{
+      const v = localStorage.getItem(ROUND_FILTER_KEY);
+      if(/^\d+$/.test(v) && +v >= 1) SCHEDULE_ROUND_FILTER = v;
+    }catch(e){}
+  }
+  function saveScheduleRoundFilter(){
+    try{
+      localStorage.setItem(ROUND_FILTER_KEY, SCHEDULE_ROUND_FILTER);
+    }catch(e){}
+  }
+  function fillScheduleRoundFilter(){
+    const sel = document.getElementById('scheduleRoundFilter');
+    if(!sel) return;
+    let html = '';
+    for(let r=1;r<=ROUNDS.length;r++) html += '<option value="'+r+'">Runde '+r+'</option>';
+    sel.innerHTML = html;
+    const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
+    if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
+    sel.value = SCHEDULE_ROUND_FILTER;
+  }
+  function applyScheduleRoundFilter(){
+    const sel = document.getElementById('scheduleRoundFilter');
+    const hint = document.querySelector('.mobile-scroll-hint');
+    const state = document.getElementById('scheduleFilterState');
+    const narrow = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+    const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
+    if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
+    if(sel) sel.value = SCHEDULE_ROUND_FILTER;
+    document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
+      const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
+      tr.classList.toggle('round-hidden', !show);
+    });
+    if(hint && narrow){
+      hint.textContent = 'Mobile-Ansicht: Runde ' + SCHEDULE_ROUND_FILTER;
+    }
+    if(state){
+      state.textContent = 'Runde ' + SCHEDULE_ROUND_FILTER + ' / ' + ROUNDS.length;
+    }
+    const prevBtn = document.getElementById('schedRoundPrevBtn');
+    const nextBtn = document.getElementById('schedRoundNextBtn');
+    if(prevBtn && nextBtn){
+      const r = parseInt(SCHEDULE_ROUND_FILTER, 10) || 1;
+      prevBtn.disabled = r <= 1;
+      nextBtn.disabled = r >= ROUNDS.length;
+    }
+  }
+  function onScheduleRoundFilterChange(){
+    const sel = document.getElementById('scheduleRoundFilter');
+    SCHEDULE_ROUND_FILTER = sel ? sel.value : '1';
+    applyScheduleRoundFilter();
+    saveScheduleRoundFilter();
+  }
+  function shiftScheduleRound(delta){
+    if(!ROUNDS.length) return;
+    const cur = parseInt(SCHEDULE_ROUND_FILTER, 10) || 1;
+    const nxt = Math.max(1, Math.min(ROUNDS.length, cur + delta));
+    SCHEDULE_ROUND_FILTER = String(nxt);
+    applyScheduleRoundFilter();
+    saveScheduleRoundFilter();
+    const wrap = document.getElementById('scheduleSection');
+    if(wrap) wrap.scrollLeft = 0;
+  }
+  function updatePrintScheduleZoom(){
+    const table = document.querySelector('#scheduleSection table.sched');
+    if(!table){
+      document.documentElement.style.setProperty('--sched-print-zoom', '1');
+      return;
+    }
+    const contentW = Math.max(1, table.scrollWidth);
+    const contentH = Math.max(1, table.scrollHeight + 28); // + Caption/Puffer
+    const a4LandscapeInnerW = 1030; // ~297mm minus 12mm + 12mm Rand
+    const a4LandscapeInnerH = 700;  // ~210mm minus 10mm + 10mm Rand
+    let zoom = Math.min(1, a4LandscapeInnerW / contentW, a4LandscapeInnerH / contentH);
+    zoom = Math.max(0.55, zoom);
+    document.documentElement.style.setProperty('--sched-print-zoom', zoom.toFixed(2));
+  }
 
   /* ================= DOM-Aufbau ================= */
-  function matchCellHtml(round, a, b){
+  function matchCellHtml(round, a, b, fieldIdx, fieldLabel){
     const setCnt = setCount();
     const s2 = setCnt >= 2
       ? '<span class="setsep">|</span><span class="setgrp">'
@@ -1050,12 +1489,14 @@
         + '<input class="score" type="text" inputmode="numeric" id="g3'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
         + '</span>'
       : '';
-    return '<td class="match" data-round="'+round+'" data-a="'+a+'" data-b="'+b+'">'
+    return '<td class="match" data-round="'+round+'" data-col="'+fieldIdx+'" data-field-label="'+escapeHtml(fieldLabel)+'" data-a="'+a+'" data-b="'+b+'">'
       + '<span class="pair">'
       +   '<span class="t" data-team="'+a+'">Team '+a+'</span>'
-      +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
-      +   '<span class="vs">:</span>'
-      +   '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+      +   '<span class="setgrp">'
+      +     '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
+      +     '<span class="vs">:</span>'
+      +     '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+      +   '</span>'
       +   s2
       +   s3
       +   '<span class="t" data-team="'+b+'">Team '+b+'</span>'
@@ -1063,9 +1504,10 @@
   }
   function buildScheduleTable(){
     SLOTS = [];
-    let html = '<tr><th class="rnd">R</th>';
-    for(let f=0; f<NFIELDS; f++) html += '<th data-field="'+f+'">Feld '+(f+1)+'</th>';
-    html += '</tr>';
+    let headHtml = '<tr><th class="rnd">R</th>';
+    for(let f=0; f<NFIELDS; f++) headHtml += '<th data-field="'+f+'">Feld '+(f+1)+'</th>';
+    headHtml += '</tr>';
+    let html = '';
     SCHEDULE.forEach((rd, ri) => {
       const roundNo = ri + 1;
       const ml = rd.matches.length;
@@ -1081,16 +1523,29 @@
           cell += '<span class="rbye">spielfrei: <span data-team="'+rd.bye+'">Team '+rd.bye+'</span></span>';
         }
         cell += '</td>';
-        html += '<tr>' + cell;
+        html += '<tr data-round="'+roundNo+'">' + cell;
         for(let f=0; f<NFIELDS; f++){
+          const fieldLabel = DEFAULT_FIELDS[f] || ('Feld ' + (f+1));
           const mi = s*NFIELDS + f;
-          if(mi < ml){ const [a,b] = rd.matches[mi]; html += matchCellHtml(roundNo, a, b); }
-          else { html += '<td class="empty"></td>'; }
+          if(mi < ml){ const [a,b] = rd.matches[mi]; html += matchCellHtml(roundNo, a, b, f, fieldLabel); }
+          else { html += '<td class="empty" data-col="'+f+'" data-field-label="'+escapeHtml(fieldLabel)+'"></td>'; }
         }
         html += '</tr>';
       }
     });
+    const head = document.getElementById('schedHead');
+    if(head) head.innerHTML = headHtml;
     document.getElementById('schedBody').innerHTML = html;
+    syncMobileFieldLabels();
+  }
+  function syncMobileFieldLabels(){
+    document.querySelectorAll('#schedBody td[data-col]').forEach(td => {
+      const i = parseInt(td.getAttribute('data-col'), 10);
+      if(Number.isNaN(i)) return;
+      const hdr = document.querySelector('table.sched th[data-field="'+i+'"]');
+      const lbl = hdr ? hdr.textContent.trim() : ('Feld ' + (i + 1));
+      td.setAttribute('data-field-label', lbl);
+    });
   }
   function buildTeamsTable(){
     const half = Math.ceil(NTEAMS/2);
@@ -1172,7 +1627,12 @@
       + (SET_MODE === '2x15tb' || SET_MODE === '2x21tb' ? ' (bei 1:1 entscheidet der dritte Satz)'
          : (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung')) + '.';
     const schedTable = document.querySelector('table.sched');
-    if(schedTable) schedTable.classList.toggle('compact', setCount() >= 3);
+    if(schedTable){
+      const dense = setCount() >= 3 || NFIELDS >= 6;
+      const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && setCount() >= 2);
+      schedTable.classList.toggle('compact', dense);
+      schedTable.classList.toggle('ultra-compact', ultraDense);
+    }
     const inputExamples = document.getElementById('inputExamples');
     if(inputExamples){
       if(SET_MODE === '2x21tb'){
@@ -1269,11 +1729,14 @@
     buildNamePanel();
     buildFieldPanel();
     updateTexts();
+    fillScheduleRoundFilter();
+    applyScheduleRoundFilter();
 
     restoreScores();
     applyAllFieldNames();
     computeTimes();
     computeAll();
+    updatePrintScheduleZoom();
     if(typeof window.renderAll === 'function'){} // Platzhalter für Enhancer-Hook
   }
 
@@ -1288,6 +1751,7 @@
       if(def){ SET_MODE = def.id; POINT_TARGET = def.target; }
     }
     loadTimes();
+    loadScheduleRoundFilter();
     restoreTitle();
     rebuild();
   })();

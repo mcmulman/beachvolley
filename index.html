@@ -145,16 +145,52 @@
       top: 56px;
       z-index: 110;
     }
+    .filterbar-desktop {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    .mobile-filter-grid { display: none; }
+    .mobile-filter-grid .mf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: #666;
+      font-weight: 600;
+    }
+    .mobile-filter-grid .mf-select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 10px;
+      min-height: 38px;
+    }
+    .mobile-filter-grid .mf-reset {
+      grid-column: 1 / -1;
+      width: 100%;
+      text-align: center;
+      border-radius: 10px;
+      font-size: 13px;
+      min-height: 38px;
+    }
     @media (max-width: 640px) {
       .filterbar {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        justify-content: flex-start;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
+        display: block;
+        padding: 10px 12px;
       }
-      .filterbar::-webkit-scrollbar { display: none; }
-      .filter-btn, .filter-label { flex-shrink: 0; }
+      .filterbar-desktop { display: none; }
+      .mobile-filter-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items: end;
+      }
     }
     .filter-sep {
       width: 1px;
@@ -356,6 +392,21 @@
       color: var(--blue-dark);
       margin-bottom: 6px;
     }
+    .format-info-body { display: block; }
+    .format-toggle {
+      display: none;
+      margin-top: 8px;
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--blue-dark);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+    }
 
     .info-box ul {
       padding-left: 18px;
@@ -402,6 +453,24 @@
       .card-footer { flex-direction: column; align-items: stretch; }
       .btn-open { justify-content: center; }
     }
+    @media (max-width: 640px) {
+      .info-box {
+        padding: 12px 14px;
+      }
+      .info-box h3 {
+        margin-bottom: 0;
+      }
+      .format-toggle {
+        display: block;
+      }
+      .info-box:not(.is-open) .format-info-body {
+        display: none;
+      }
+      .info-box.is-open .format-info-body {
+        display: block;
+        margin-top: 8px;
+      }
+    }
     @media print { .noprint { display: none !important; } }
   </style>
 </head>
@@ -426,21 +495,46 @@
 </header>
 
 <div class="filterbar">
-  <button class="filter-btn active" onclick="filter('all', this)">Alle</button>
-  <div class="filter-sep"></div>
-  <span class="filter-label">Teams:</span>
-  <button class="filter-btn" onclick="filter('4', this)">4</button>
-  <button class="filter-btn" onclick="filter('6', this)">6</button>
-  <button class="filter-btn" onclick="filter('8', this)">8</button>
-  <button class="filter-btn" onclick="filter('10', this)">10</button>
-  <button class="filter-btn" onclick="filter('12', this)">12</button>
-  <button class="filter-btn" onclick="filter('16', this)">16–24</button>
-  <div class="filter-sep"></div>
-  <span class="filter-label">Format:</span>
-  <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
-  <button class="filter-btn" onclick="filter('group', this)">Gruppen</button>
-  <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
-  <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
+  <div class="mobile-filter-grid" aria-label="Mobile Filter">
+    <label class="mf-field">Teams
+      <select id="mobileTeamFilter" class="mf-select" onchange="applyMobileFilters()">
+        <option value="">Alle Teamgrößen</option>
+        <option value="4">4 Teams</option>
+        <option value="6">6 Teams</option>
+        <option value="8">8 Teams</option>
+        <option value="10">10 Teams</option>
+        <option value="12">12 Teams</option>
+        <option value="16">16–24 Teams</option>
+      </select>
+    </label>
+    <label class="mf-field">Format
+      <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
+        <option value="">Alle Formate</option>
+        <option value="rr">Jeder gegen Jeden</option>
+        <option value="group">Gruppen</option>
+        <option value="ko">KO-System</option>
+        <option value="swiss">Schweizer System</option>
+      </select>
+    </label>
+    <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()">Alle anzeigen</button>
+  </div>
+  <div class="filterbar-desktop">
+    <button class="filter-btn active" onclick="filter('all', this)">Alle</button>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Teams:</span>
+    <button class="filter-btn" onclick="filter('4', this)">4</button>
+    <button class="filter-btn" onclick="filter('6', this)">6</button>
+    <button class="filter-btn" onclick="filter('8', this)">8</button>
+    <button class="filter-btn" onclick="filter('10', this)">10</button>
+    <button class="filter-btn" onclick="filter('12', this)">12</button>
+    <button class="filter-btn" onclick="filter('16', this)">16–24</button>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Format:</span>
+    <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
+    <button class="filter-btn" onclick="filter('group', this)">Gruppen</button>
+    <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
+    <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
+  </div>
 </div>
 
 <main>
@@ -468,23 +562,35 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:40px">
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
       <h3>🔁 Jeder gegen Jeden</h3>
-      Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus.
-      <a href="docs/format-jeder-gegen-jeden.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
+      <div class="format-info-body">
+        Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus.
+        <a href="docs/format-jeder-gegen-jeden.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      </div>
     </div>
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
       <h3>🏆 Gruppen + Überkreuz-Finalrunde</h3>
-      Gruppenphase sortiert die Teams, die Finalrunde kreuzt Gruppe A und B. Faire Paarungen, kein Ausscheiden – alle Plätze werden ermittelt.
-      <a href="docs/format-gruppen-platzierungsrunde.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
+      <div class="format-info-body">
+        Gruppenphase sortiert die Teams, die Finalrunde kreuzt Gruppe A und B. Faire Paarungen, kein Ausscheiden – alle Plätze werden ermittelt.
+        <a href="docs/format-gruppen-platzierungsrunde.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      </div>
     </div>
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
       <h3>🇨🇭 Schweizer System</h3>
-      Dynamisch ohne festen Spielplan: nach jeder Runde spielen Gleichrangige gegeneinander. Optimal für viele Teams auf wenigen Feldern.
-      <a href="docs/format-schweizer-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
+      <div class="format-info-body">
+        Dynamisch ohne festen Spielplan: nach jeder Runde spielen Gleichrangige gegeneinander. Optimal für viele Teams auf wenigen Feldern.
+        <a href="docs/format-schweizer-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      </div>
     </div>
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
       <h3>🥊 KO-System</h3>
-      Direktes Ausscheidungsturnier mit Trostrunde: Verlierer spielen weiter um die unteren Plätze. Ideal als Playoff-Phase nach einer Gruppenphase.
-      <a href="docs/format-ko-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
+      <div class="format-info-body">
+        Direktes Ausscheidungsturnier mit Trostrunde: Verlierer spielen weiter um die unteren Plätze. Ideal als Playoff-Phase nach einer Gruppenphase.
+        <a href="docs/format-ko-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
+      </div>
     </div>
   </div>
 
@@ -772,17 +878,49 @@
 </footer>
 
 <script>
-  function filter(tag, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  function applyCardFilters(teamTag, formatTag) {
     document.querySelectorAll('.card').forEach(card => {
-      if (tag === 'all') {
-        card.hidden = false;
-      } else {
-        const tags = (card.dataset.tags || '').split(' ');
-        card.hidden = !tags.includes(tag);
-      }
+      const tags = (card.dataset.tags || '').split(' ');
+      const teamOk = !teamTag || tags.includes(teamTag);
+      const formatOk = !formatTag || tags.includes(formatTag);
+      card.hidden = !(teamOk && formatOk);
     });
+  }
+
+  function filter(tag, btn) {
+    if (btn) {
+      document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    if (tag === 'all') {
+      applyCardFilters('', '');
+    } else {
+      const isFormat = ['rr', 'group', 'ko', 'swiss'].includes(tag);
+      applyCardFilters(isFormat ? '' : tag, isFormat ? tag : '');
+    }
+  }
+
+  function applyMobileFilters() {
+    const team = document.getElementById('mobileTeamFilter')?.value || '';
+    const format = document.getElementById('mobileFormatFilter')?.value || '';
+    applyCardFilters(team, format);
+    document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
+  }
+
+  function resetMobileFilters() {
+    const team = document.getElementById('mobileTeamFilter');
+    const format = document.getElementById('mobileFormatFilter');
+    if (team) team.value = '';
+    if (format) format.value = '';
+    applyCardFilters('', '');
+  }
+
+  function toggleFormatInfo(btn) {
+    const box = btn.closest('.info-box');
+    if (!box) return;
+    const open = box.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.textContent = open ? 'Details ausblenden' : 'Details anzeigen';
   }
 
   const SESSIONS_PREVIEW = 1;
