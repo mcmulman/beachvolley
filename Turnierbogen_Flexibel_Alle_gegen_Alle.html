@@ -868,10 +868,11 @@
     {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
     {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
     {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'},
+    {id:'2x21', target:21, sets:2, label:'2 Sätze bis 21'},
     {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'},
     {id:'2x21tb', target:21, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 21 + Entscheidungssatz'}
   ];
-  const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x15tb':40, '2x21tb':45};  // empfohlene Minuten/Spiel je Modus
+  const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x21':36, '2x15tb':40, '2x21tb':45};  // empfohlene Minuten/Spiel je Modus
 
   /* Dynamischer Zustand (wird bei Aufbau gesetzt) */
   let NTEAMS = 8;
@@ -1458,10 +1459,22 @@
     const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
     if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
     if(sel) sel.value = SCHEDULE_ROUND_FILTER;
-    document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
-      const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
-      tr.classList.toggle('round-hidden', !show);
-    });
+    
+    // Mobile: Filter (hide) non-matching rounds; Desktop: scroll to round
+    if(narrow){
+      document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
+        const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
+        tr.classList.toggle('round-hidden', !show);
+      });
+    } else {
+      // Desktop: remove all hidden classes & scroll to first row of selected round
+      document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
+        tr.classList.remove('round-hidden');
+      });
+      const firstRowOfRound = document.querySelector('#schedBody tr[data-round="'+SCHEDULE_ROUND_FILTER+'"]');
+      if(firstRowOfRound) firstRowOfRound.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    
     if(hint && narrow){
       hint.textContent = 'Mobile-Ansicht: Runde ' + SCHEDULE_ROUND_FILTER;
     }

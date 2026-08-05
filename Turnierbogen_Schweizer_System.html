@@ -159,6 +159,7 @@
       .central-table .name { width:25mm; }
       .central-table .round { width:15mm; }
       .central-table .rplace { width:6mm; }
+      .central-table thead { display: table-header-group; }
       .team-legend {
         font-size:7.2pt;
         padding:1.3mm 2mm;
@@ -389,6 +390,72 @@
       }
     }
 
+    @media screen and (max-width: 640px) {
+  body {
+    padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+  .page { margin-bottom: 16px; }
+  .round-grid {
+    grid-template-columns: 1fr !important;
+  }
+  input.score {
+    min-width: 42px;
+    min-height: 44px;
+    font-size: 16px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .mobile-jumpbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255,255,255,.96);
+    border-top: 1px solid #cdd8e6;
+    backdrop-filter: blur(8px);
+  }
+  .mobile-jumpbar .nbtn {
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    cursor: pointer;
+    border: 1px solid #1f4e79;
+    background: #1f4e79;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+    box-sizing: border-box;
+  }
+}
+
+    @media screen {
+      .schedule-roundbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 6px;
+        padding: 6px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+      .schedule-roundbar label { min-width: 0; display: flex; flex-direction: column; font-size: 12px; font-weight: 700; gap: 2px; }
+      .schedule-roundbar select { width: 100%; font-size: 13px; padding: 4px 6px; border: 1px solid #aab8cc; border-radius: 4px; }
+      .schedule-roundbar .nbtn { min-height: 40px; padding: 6px 10px; font-size: 13px; background: #1f4e79; color: #fff; border: 1px solid #1f4e79; border-radius: 4px; font-weight: 700; cursor: pointer; }
+      .schedule-roundbar .state { grid-column: 1 / -1; text-align: center; font-size: 12px; color: #5a6375; }
+      .round-block.round-hidden { display: none !important; }
+    }
+
 </style>
   <link rel="stylesheet" href="app-skin.css">
 </head>
@@ -407,14 +474,15 @@
     const END_KEY = 'sw_univ_end';
     const BASE_START = 600;
     const BASE_END = 840;
-    const TEAM_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20];
-    const DEFAULT_ROUNDS = {6:5, 8:7, 10:7, 12:7, 14:7, 16:7, 18:7, 20:7};
-    const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x15tb':40, '2x21tb':45};
+    const TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    const DEFAULT_ROUNDS = {5:7, 6:5, 7:7, 8:7, 9:7, 10:7, 11:7, 12:7, 13:7, 14:7, 15:7, 16:7, 17:7, 18:7, 19:7, 20:7};
+    const MODE_MIN = {'15':17, '21':25, '2x15':30, '2x21':36, '2x15tb':40, '2x21tb':45};
     const POINT_OPTIONS = [15, 21];
     const SET_MODES = [
       {id:'15',   target:15, sets:1, label:'1 Satz bis 15'},
       {id:'21',   target:21, sets:1, label:'1 Satz bis 21'},
       {id:'2x15', target:15, sets:2, label:'2 Sätze bis 15'},
+      {id:'2x21', target:21, sets:2, label:'2 Sätze bis 21'},
       {id:'2x15tb', target:15, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 15 + Entscheidungssatz'},
       {id:'2x21tb', target:21, sets:3, decidingSet:true, decidingTarget:15, label:'2 Sätze bis 21 + Entscheidungssatz'}
     ];
@@ -453,7 +521,7 @@
       return setTarget();
     }
     function applyCfg(cfg){
-      NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = NTEAMS / 2;
+      NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = Math.ceil(NTEAMS / 2);
       if(cfg.p != null){
         const def = SET_MODES.find(m => m.id === String(cfg.p));
         if(def){ SET_MODE = def.id; POINT_TARGET = def.target; }
@@ -582,10 +650,10 @@
         + '</div>';
     }
     function buildCentralTable(){
-      let head = '<tr><th class="code">Team</th><th class="name">Name</th>';
+      let head = '<thead><tr><th class="code">Team</th><th class="name">Name</th>';
       for(let r=1;r<=NROUNDS;r++) head += '<th class="round">R' + r + '<br>Erg.+Σ<br>(S/BD/+P)</th><th class="rplace">Pl.</th>';
-      head += '</tr>';
-      let rows = '<tr class="example-row"><td>Team X</td><td>Teamname</td>';
+      head += '</tr></thead>';
+      let rows = '<tbody><tr class="example-row"><td>Team X</td><td>Teamname</td>';
       for(let r=1;r<=NROUNDS;r++) rows += (r === 1 ? '<td>15:11 S<br><span>Σ 1/+4/+15</span></td><td>3</td>' : '<td></td><td></td>');
       rows += '</tr>';
       for(let t=1;t<=NTEAMS;t++){
@@ -593,6 +661,7 @@
         for(let r=1;r<=NROUNDS;r++) rows += '<td id="ct_' + t + '_' + r + '"></td><td class="rplace" id="cp_' + t + '_' + r + '"></td>';
         rows += '</tr>';
       }
+      rows += '</tbody>';
       return '<table class="central-table">' + head + rows + '</table>'
         + '<div style="font-size:7.5px;color:#444;margin-top:3px;line-height:1.5">'
         + '<strong>S</strong> = Siege (aufaddiert) &nbsp;·&nbsp;'
@@ -641,7 +710,13 @@
           + '<div class="round-grid">' + chunk.map(buildRoundBlock).join('') + '</div>'
           + '</section>');
       });
-      return pages.join('');
+      const navHtml = '<div class="noprint schedule-roundbar" id="roundNavBar">'
+        + '<label>Runde<select id="roundSelect" onchange="onRoundSelectChange()"></select></label>'
+        + '<button type="button" class="nbtn" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀ R</button>'
+        + '<button type="button" class="nbtn" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">R ▶</button>'
+        + '<span class="state" id="roundNavState" aria-live="polite"></span>'
+        + '</div>';
+      return navHtml + pages.join('');
     }
     function renderApp(){
       const app = document.getElementById('app');
@@ -693,6 +768,8 @@
         + '</div>'
         + '<div id="livebox" class="noprint livebox"' + (liveVisible ? '' : ' hidden') + '></div>'
         + buildGuide()
+        + '<h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>'
+        + '<p class="sub">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die letzte Runden-Spalte ist damit automatisch der Endstand → daraus den Platz vergeben.</p>'
         + buildCentralTable()
         + '</section>'
         + buildRoundPages()
@@ -1334,6 +1411,41 @@
 </script>
 <!-- BL_ENH_END -->
 
+<!-- BL_PRINT_ZOOM · Zentrale & Runden-Tabellen beim Druck skalieren (Feature 4) -->
+<script>
+(function(){
+  if(window.__BL_PRINT_ZOOM__) return; window.__BL_PRINT_ZOOM__ = true;
+  
+  window.addEventListener('beforeprint', function(){
+    const a4W = 1030; // ~297mm – 24mm Ränder in px
+    
+    // Zentrale Tabelle
+    const centralTable = document.querySelector('.central-table');
+    if(centralTable){
+      const contentW = Math.max(1, centralTable.scrollWidth);
+      const zoom = Math.min(1, a4W / contentW);
+      if(zoom < 0.99) centralTable.style.zoom = zoom.toFixed(2);
+    }
+    
+    // Alle Runden-Tabellen
+    document.querySelectorAll('.round-table').forEach(table => {
+      const contentW = Math.max(1, table.scrollWidth);
+      const zoom = Math.min(1, a4W / contentW);
+      if(zoom < 0.99) table.style.zoom = zoom.toFixed(2);
+    });
+  });
+  
+  window.addEventListener('afterprint', function(){
+    const centralTable = document.querySelector('.central-table');
+    if(centralTable) centralTable.style.zoom = '';
+    
+    document.querySelectorAll('.round-table').forEach(table => {
+      table.style.zoom = '';
+    });
+  });
+})();
+</script>
+
 <!-- BL_AUTOFILL · Gewinnerseite automatisch auf Zielpunktzahl setzen (nur Bildschirm-Eingabe) -->
 <script>
 (function(){
@@ -1381,5 +1493,133 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 </script>
 <script src="appbar.js" defer></script>
 <script src="form-flow.js" defer></script>
+
+<div class="mobile-jumpbar noprint">
+  <button type="button" class="nbtn" onclick="document.querySelector('.page').scrollIntoView({behavior:'smooth',block:'start'})">⚙️ Start</button>
+  <button type="button" class="nbtn" id="jumpbarRoundBtn" onclick="scrollToCurrentRound()">📋 Runde</button>
+  <button type="button" class="nbtn" onclick="document.querySelector('.central-table').scrollIntoView({behavior:'smooth',block:'start'})">🏁 Tabelle</button>
+  <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
+</div>
+
+<script>
+// ── Mobile-Rundennavigator ──────────────────────────────────────────────
+(function(){
+  if(window.__ROUND_NAV__) return;
+  window.__ROUND_NAV__ = true;
+
+  var currentRound = 1;
+  var totalRounds = 0;
+
+  function getRoundBlocks(){
+    return Array.from(document.querySelectorAll('.round-block[data-round]'));
+  }
+
+  function initRoundNav(){
+    // Add data-round if missing
+    document.querySelectorAll('.round-block').forEach(function(b, i){
+      if(!b.getAttribute('data-round')) b.setAttribute('data-round', i + 1);
+    });
+
+    var blocks = getRoundBlocks();
+    if(!blocks.length) return;
+    totalRounds = blocks.length;
+
+    var sel = document.getElementById('roundSelect');
+    if(!sel) return;
+    sel.innerHTML = '';
+    blocks.forEach(function(b, i){
+      var opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = 'Runde ' + (i + 1);
+      sel.appendChild(opt);
+    });
+
+    var bar = document.getElementById('roundNavBar');
+    if(bar) bar.style.display = '';
+
+    applyRoundFilter();
+  }
+
+  function applyRoundFilter(){
+    var blocks = getRoundBlocks();
+    var isMobile = window.innerWidth <= 640;
+    blocks.forEach(function(b, i){
+      if(isMobile){
+        if(i + 1 === currentRound) b.classList.remove('round-hidden');
+        else b.classList.add('round-hidden');
+      } else {
+        b.classList.remove('round-hidden');
+      }
+    });
+    
+    // Desktop: scroll to selected round
+    if(!isMobile){
+      var targetBlock = blocks[currentRound - 1];
+      if(targetBlock) targetBlock.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    
+    var state = document.getElementById('roundNavState');
+    if(state) state.textContent = 'Runde ' + currentRound + ' / ' + totalRounds;
+    var prevBtn = document.getElementById('roundPrevBtn');
+    var nextBtn = document.getElementById('roundNextBtn');
+    if(prevBtn) prevBtn.disabled = currentRound <= 1;
+    if(nextBtn) nextBtn.disabled = currentRound >= totalRounds;
+    var sel = document.getElementById('roundSelect');
+    if(sel) sel.value = currentRound;
+    var bar = document.getElementById('roundNavBar');
+    if(bar) bar.style.display = '';
+  }
+
+  window.onRoundSelectChange = function(){
+    var sel = document.getElementById('roundSelect');
+    if(sel) currentRound = parseInt(sel.value, 10);
+    applyRoundFilter();
+  };
+
+  window.shiftRound = function(delta){
+    currentRound = Math.max(1, Math.min(totalRounds, currentRound + delta));
+    applyRoundFilter();
+  };
+
+  window.scrollToCurrentRound = function(){
+    var blocks = getRoundBlocks();
+    var b = blocks[currentRound - 1];
+    if(b) b.scrollIntoView({behavior:'smooth', block:'start'});
+    else if(blocks[0]) blocks[0].scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  window.addEventListener('resize', applyRoundFilter);
+
+  // Init: wait for DOM to be ready (works both for static and dynamic pages)
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initRoundNav);
+  } else {
+    // If JS has already rendered rounds, init immediately; otherwise retry
+    initRoundNav();
+    if(!getRoundBlocks().length){
+      var tries = 0;
+      var poll = setInterval(function(){
+        if(getRoundBlocks().length || ++tries > 20){ clearInterval(poll); initRoundNav(); }
+      }, 150);
+    }
+  }
+
+  // Re-init after dynamic re-renders (e.g. team count change)
+  window.__roundNavInit = initRoundNav;
+})();
+
+// Hook renderApp to re-init round navigator after re-renders
+(function(){
+  var _orig = window.renderApp;
+  if(typeof _orig === 'function'){
+    window.renderApp = function(){
+      var r = _orig.apply(this, arguments);
+      window.__ROUND_NAV__ = false;
+      if(typeof window.__roundNavInit === 'function') setTimeout(window.__roundNavInit, 0);
+      return r;
+    };
+  }
+})();
+</script>
 </body>
 </html>

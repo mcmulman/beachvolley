@@ -500,9 +500,13 @@
       <select id="mobileTeamFilter" class="mf-select" onchange="applyMobileFilters()">
         <option value="">Alle Teamgrößen</option>
         <option value="4">4 Teams</option>
+        <option value="5">5 Teams</option>
         <option value="6">6 Teams</option>
+        <option value="7">7 Teams</option>
         <option value="8">8 Teams</option>
+        <option value="9">9 Teams</option>
         <option value="10">10 Teams</option>
+        <option value="11">11 Teams</option>
         <option value="12">12 Teams</option>
         <option value="16">16–24 Teams</option>
       </select>
@@ -523,9 +527,13 @@
     <div class="filter-sep"></div>
     <span class="filter-label">Teams:</span>
     <button class="filter-btn" onclick="filter('4', this)">4</button>
+    <button class="filter-btn" onclick="filter('5', this)">5</button>
     <button class="filter-btn" onclick="filter('6', this)">6</button>
+    <button class="filter-btn" onclick="filter('7', this)">7</button>
     <button class="filter-btn" onclick="filter('8', this)">8</button>
+    <button class="filter-btn" onclick="filter('9', this)">9</button>
     <button class="filter-btn" onclick="filter('10', this)">10</button>
+    <button class="filter-btn" onclick="filter('11', this)">11</button>
     <button class="filter-btn" onclick="filter('12', this)">12</button>
     <button class="filter-btn" onclick="filter('16', this)">16–24</button>
     <div class="filter-sep"></div>
@@ -601,7 +609,7 @@
   <div class="grid">
 
     <!-- ── Card: Flexibel ── -->
-    <div class="card" data-tags="4 6 8 10 12 16 rr">
+    <div class="card" data-tags="4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 rr">
       <div class="card-header">
         <span class="format-tag">Jeder gegen Jeden</span>
         <h2>Flexibel · 4–20 Teams</h2>
@@ -788,33 +796,6 @@
       </div>
     </div>
 
-    <!-- ── Card 4 ── -->
-    <div class="card" data-tags="12 swiss">
-      <div class="card-header">
-        <span class="format-tag">Schweizer System</span>
-        <h2>12 Teams · 6 Felder</h2>
-        <div class="sub">dynamische Paarungen · 7 Runden</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 12 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 6 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Dynamische Paarungen</span>
-          <span class="feat">✓ Startrunden-Auslosung</span>
-          <span class="feat">✓ Live-Tabelle</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_12_Teams_Schweizer_System.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
-
     <!-- ── Card: 10T Gruppen ── -->
     <div class="card" data-tags="10 group">
       <div class="card-header">
@@ -843,21 +824,22 @@
     </div>
 
     <!-- ── Card: Universal Schweizer System ── -->
-    <div class="card" data-tags="6 8 10 12 16 swiss">
+    <div class="card" data-tags="5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 swiss">
       <div class="card-header">
         <span class="format-tag">Schweizer System</span>
-        <h2>6–24 Teams · universell</h2>
-        <div class="sub">konfigurierbar · dynamische Paarungen</div>
+        <h2>5–20 Teams · universell</h2>
+        <div class="sub">konfigurierbar · ungerade Teams möglich (Freilos) · dynamische Paarungen</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 6–24 Teams</span>
+          <span class="stat"><span class="icon">👥</span> 5–20 Teams</span>
           <span class="stat"><span class="icon">🎯</span> 5–7 Spiele/Team</span>
           <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
         </div>
         <div class="features">
+          <span class="feat">✓ Ungerade Teamzahl (mit Freilos)</span>
           <span class="feat">✓ Dynamische Paarungen</span>
-          <span class="feat">✓ Teamanzahl wählbar (6–24)</span>
+          <span class="feat">✓ Teamanzahl wählbar (5–20)</span>
           <span class="feat">✓ Live-Tabelle</span>
         </div>
       </div>
