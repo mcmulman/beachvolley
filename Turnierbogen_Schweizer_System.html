@@ -52,7 +52,8 @@
     .digbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
     .digbar .nbtn { background: #0a7d2c; border-color: #0a7d2c; }
     .digbar .nbtn:hover { background: #086323; }
-    .nbtn { padding:7px 14px; font-size:13px; cursor: pointer; border: 1px solid #1f4e79; background: #1f4e79; color: #fff; border-radius: 4px; font-weight: 700; }
+    .nbtn { -webkit-appearance:none; appearance:none; padding:7px 14px; font-size:13px; cursor: pointer; border: 1px solid #1f4e79; background: #1f4e79; color: #fff; border-radius: 4px; font-weight: 700; }
+    .nbtn.active { outline:3px solid #ffb300; outline-offset:2px; }
     .nbtn:hover { background: #163a5c; }
     .nhint { font-size: 10px; color: #555; }
     .namepanel { margin: 4px 0 6px; padding: 8px 10px; border: 1px solid #cdd8e6; border-radius: 5px; background: #f4f8fd; }
@@ -524,9 +525,9 @@
         </div>
         <div class="cfgcard-actions">
           <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>
-          <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
-          <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
-          <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>
+          <button type="button" class="nbtn" id="btnToggleNames" onclick="toggleNames()">✎ Teamnamen</button>
+          <button type="button" class="nbtn" id="btnToggleFields" onclick="toggleFields()">🏟 Felder benennen</button>
+          <button type="button" class="nbtn" id="btnToggleDropout" onclick="toggleDropout()">⚠ Team ausgefallen</button>
           <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
           <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
           <span class="spacer"></span>
@@ -1097,6 +1098,7 @@
       [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
+      ['btnToggleNames','btnToggleFields','btnToggleDropout'].forEach(id => { const b=document.getElementById(id); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); } });
       rebuild();
     }
     function onRoundCountChange(value){
@@ -1111,9 +1113,9 @@
     }
     function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); computeTimes(); }
     function onEndTime(){ try{ localStorage.setItem(END_KEY, document.getElementById('endTime').value || '14:00'); }catch(e){} applyTimes(); computeTimes(); }
-    function toggleNames(){ namesVisible = !namesVisible; const el = document.getElementById('namepanel'); if(el) el.hidden = !namesVisible; }
-    function toggleFields(){ fieldsVisible = !fieldsVisible; const el = document.getElementById('fieldpanel'); if(el) el.hidden = !fieldsVisible; }
-    function toggleDropout(){ dropoutVisible = !dropoutVisible; const el = document.getElementById('dropoutpanel'); if(el) el.hidden = !dropoutVisible; }
+    function toggleNames(){ namesVisible = !namesVisible; const el = document.getElementById('namepanel'); if(el) el.hidden = !namesVisible; const b=document.getElementById('btnToggleNames'); if(b){ b.classList.toggle('active', namesVisible); b.setAttribute('aria-pressed', String(namesVisible)); } }
+    function toggleFields(){ fieldsVisible = !fieldsVisible; const el = document.getElementById('fieldpanel'); if(el) el.hidden = !fieldsVisible; const b=document.getElementById('btnToggleFields'); if(b){ b.classList.toggle('active', fieldsVisible); b.setAttribute('aria-pressed', String(fieldsVisible)); } }
+    function toggleDropout(){ dropoutVisible = !dropoutVisible; const el = document.getElementById('dropoutpanel'); if(el) el.hidden = !dropoutVisible; const b=document.getElementById('btnToggleDropout'); if(b){ b.classList.toggle('active', dropoutVisible); b.setAttribute('aria-pressed', String(dropoutVisible)); } }
     function onNameInput(team){ const names = loadNames(); names[team] = document.getElementById('tn' + team).value || ''; saveNames(names); computeAll(); }
     function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames(defaultNames()); hydratePanels(); computeAll(); }
     function onFieldInput(idx){ const fields = loadFieldNames(); fields[idx] = document.getElementById('fni_' + idx).value || ''; saveFieldNames(fields); rebuild(); }
@@ -1679,6 +1681,20 @@
           setHtml('cp_' + t + '_' + r, roundComplete(r) ? (activePlace[t] ? String(activePlace[t]) : '–') : '');
         }
       }
+      sortCentralTableRows();
+    }
+    /* Sortiert die Team-Zeilen der zentralen Tabelle nach aktuellem Stand
+       (laufende Platzierung über alle bisher eingetragenen Ergebnisse hinweg),
+       damit Laufende Tabelle & Endstand stets von Platz 1 nach unten gelesen
+       werden koennen. Die Muster-Zeile bleibt immer oben. */
+    function sortCentralTableRows(){
+      const tbody = document.querySelector('#centralTableContainer table tbody');
+      if(!tbody) return;
+      const order = displayOrderUpto(NROUNDS);
+      order.forEach(t => {
+        const row = document.getElementById('ctr_' + t);
+        if(row) tbody.appendChild(row);
+      });
     }
     /* Sieger-/Fehler-Markierung der Eingabefelder - identisch in beiden Turnierbogen. */
     function markScores(){

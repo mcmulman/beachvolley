@@ -67,8 +67,12 @@
   .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
   .abt { color:#c00; font-size:0.8em; font-weight:600; }
   input[type=checkbox].ab-check { margin-right: 4px; }
+  .panel-checks { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:6px 12px; }
+  .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; font-size:11px; color:#1f4e79; font-weight:700; }
+  #absentpanel .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; }
   .namectl { margin:0 0 12px; }
-  .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
+  .nbtn { -webkit-appearance:none; appearance:none; padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
+  .nbtn.active { outline:3px solid #ffb300; outline-offset:2px; }
   .nbtn:hover { background:#163a5c; }
   .nhint { font-size:11.5px; color:#555; margin-left:10px; }
   .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
@@ -426,9 +430,9 @@
 
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>
-    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
-    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
-    <button type="button" class="nbtn" onclick="toggleAbsent()">⚠ Team ausgefallen</button>
+    <button type="button" class="nbtn" id="btnToggleNames" onclick="toggleNames()">✎ Teamnamen</button>
+    <button type="button" class="nbtn" id="btnToggleFields" onclick="toggleFields()">🏟 Felder benennen</button>
+    <button type="button" class="nbtn" id="btnToggleAbsent" onclick="toggleAbsent()">⚠ Team ausgefallen</button>
     <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
     <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
     <span class="spacer"></span>
@@ -447,7 +451,7 @@
     <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
   </div>
   <div id="absentpanel" class="namepanel" hidden>
-    <div class="ngrid" id="absentGridContainer"></div>
+    <div class="panel-checks" id="absentGridContainer"></div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearAbsent()">Ausfälle zurücksetzen</button></div>
   </div>
 </div>
@@ -697,12 +701,11 @@
   }
   function buildNamePanel(){
     const names = loadNames();
-    const absent = loadAbsent();
     const grid = document.querySelector('#namepanel .ngrid');
     let html='';
     for(let i=1;i<=NTEAMS;i++){
       const v = names[i] ? String(names[i]).replace(/"/g,'&quot;') : '';
-      html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" autocomplete="off" spellcheck="false" oninput="onNameInput('+i+')"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> ausgefallen</span></label>';
+      html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" autocomplete="off" spellcheck="false" oninput="onNameInput('+i+')"></label>';
     }
     grid.innerHTML = html;
   }
@@ -715,7 +718,7 @@
     applyTeamNames();
     computeAll();
   }
-  function toggleNames(){ const p=document.getElementById('namepanel'); p.hidden=!p.hidden; }
+  function toggleNames(){ const p=document.getElementById('namepanel'); p.hidden=!p.hidden; const b=document.getElementById('btnToggleNames'); if(b){ b.classList.toggle('active', !p.hidden); b.setAttribute('aria-pressed', String(!p.hidden)); } }
   function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames({}); for(let i=1;i<=NTEAMS;i++){ const inp=document.getElementById('tn'+i); if(inp) inp.value=''; applyName(i,''); } computeAll(); }
   function shuffleNames(){
     const names=loadNames(); const vals=[];
@@ -993,7 +996,23 @@
       const c=document.getElementById('pz_'+t);
       if(c){ c.classList.toggle('pz-tie', !!tied); if(tied) c.title='Gleiche Wertung – Platz geteilt'; else c.removeAttribute('title'); }
     });
+    sortTrackTableRows(ranked);
     markScores();
+  }
+  /* Sortiert die Team-Zeilenpaare der Laufenden Tabelle nach aktuellem Stand
+     (laufende Platzierung ueber alle bisher eingetragenen Ergebnisse hinweg),
+     damit Laufende Tabelle & Endstand stets von Platz 1 nach unten gelesen
+     werden koennen. Die Muster-Zeile bleibt immer oben. */
+  function sortTrackTableRows(order){
+    const tbody = document.getElementById('trackBody');
+    if(!tbody) return;
+    order.forEach(t => {
+      const cell = tbody.querySelector('td.tname[data-team="'+t+'"]');
+      const row1 = cell && cell.closest('tr');
+      const row2 = row1 && row1.nextElementSibling;
+      if(row1) tbody.appendChild(row1);
+      if(row2) tbody.appendChild(row2);
+    });
   }
 
   /* ================= Sieger-/Fehler-Markierung ================= */
@@ -1188,7 +1207,7 @@
   }
   function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
   function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
-  function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
+  function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; const b=document.getElementById('btnToggleFields'); if(b){ b.classList.toggle('active', !p.hidden); b.setAttribute('aria-pressed', String(!p.hidden)); } }
   function populateAbsentPanel(){
     const container = document.getElementById('absentGridContainer');
     if(!container) return;
@@ -1204,6 +1223,7 @@
     const p=document.getElementById('absentpanel'); 
     p.hidden=!p.hidden; 
     if(!p.hidden) populateAbsentPanel();
+    const b=document.getElementById('btnToggleAbsent'); if(b){ b.classList.toggle('active', !p.hidden); b.setAttribute('aria-pressed', String(!p.hidden)); }
   }
   function clearAbsent(){ if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return; try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
   function loadScheduleRoundFilter(){
@@ -1585,6 +1605,7 @@
     buildTrackTable();
     buildNamePanel();
     buildFieldPanel();
+    populateAbsentPanel();
     updateTexts();
     fillScheduleRoundFilter();
     applyScheduleRoundFilter();

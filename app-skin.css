@@ -561,7 +561,9 @@
   }
   .nactions .nbtn:hover { background: #f0f5fb; border-color: var(--app-blue); }
 
-  /* Haupt-Einstieg – gefüllt blau, prominent. */
+  /* Haupt-Einstieg – gefüllt blau, prominent. Gilt auch für „Teamnamen“
+     (Umschalt-Button): die Grundfarbe bleibt sichtbar/prominent, der
+     Aktiv-Zustand wird zusätzlich per Rahmen (.active) markiert. */
   .nbtn[onclick*="toggleNames"],
   .nbtn[onclick*="drawGroups"],
   .nbtn[onclick*="drawStart"] {
@@ -575,6 +577,14 @@
   .nbtn[onclick*="drawStart"]:hover {
     background: var(--app-blue);
     border-color: var(--app-blue);
+  }
+
+  /* Aktiv/Inaktiv-Zustand für Umschalt-Buttons (z.B. Teamnamen, Felder
+     benennen, Team ausgefallen): sichtbarer Rahmen statt Farbwechsel,
+     unabhängig von der sonstigen (statischen) Einfärbung oben. */
+  .nbtn.active {
+    outline: 3px solid #ffb300 !important;
+    outline-offset: 2px !important;
   }
 
   /* Speichern – gefüllt grün (Erfolg). !important schlägt Inline-Style. */
