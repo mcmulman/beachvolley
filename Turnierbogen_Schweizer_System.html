@@ -135,21 +135,21 @@
       }
       th, td { padding:1mm 1.2mm; }
       .central-table th, .central-table td {
-        font-size:7.6pt;
-        height:auto;
-        padding:0.8mm 1mm;
+        font-size:7.9pt;
+        height:7.5mm;
+        padding:0.9mm 1.3mm;
       }
-      .central-table span { font-size:6.8pt; }
+      .central-table span { font-size:7pt; }
       .central-table th:nth-child(1),
       .central-table th:nth-child(2),
       .central-table td:nth-child(1),
       .central-table td:nth-child(2) {
-        font-size:8.3pt;
+        font-size:9.2pt;
       }
-      .central-table .code { width:12mm; }
-      .central-table .name { width:25mm; }
-      .central-table .round { width:15mm; }
-      .central-table .rplace { width:6mm; }
+      .central-table .code { width:14mm; }
+      .central-table .name { width:28mm; }
+      .central-table .round { width:17mm; }
+      .central-table .rplace { width:7mm; }
       .central-table thead { display: table-header-group; }
       .team-legend {
         font-size:7.2pt;
@@ -416,11 +416,22 @@
       /* Show all rounds in print mode, ignore inline display:none */
       [data-round-num] { display: block !important; }
       
-      /* Compact print layout for multiple rounds per A4 */
+      /* Compact print layout: mehrere Runden fließen auf dieselbe Seite.
+         Jede Runde bleibt als Ganzes zusammen (avoid), springt aber nur dann
+         auf eine neue Seite, wenn sie nicht mehr auf die aktuelle passt. */
       .rounds-page {
         page-break-inside: avoid;
+        break-inside: avoid;
+        page-break-after: auto;
+        break-after: auto;
         margin: 0 0 12px 0;
         padding: 8px 0;
+      }
+
+      /* Runde 1 startet immer auf einer neuen Seite (nach Konfiguration/Übersicht). */
+      .rounds-page:first-of-type {
+        page-break-before: always;
+        break-before: page;
       }
       
       .rounds-page h1 {
@@ -435,7 +446,16 @@
         margin: 0 0 6px 0;
         padding: 2px 0;
       }
-      
+
+      /* Titel/Erklaerungen sind bei jeder Runde identisch (nicht rundenspezifisch).
+         Um mehrere Runden pro Blatt unterzubringen, werden sie nur einmal am
+         Anfang (Runde 1) gezeigt statt bei jeder einzelnen Runde wiederholt. */
+      .rounds-page:not(:first-of-type) .rcap,
+      .rounds-page:not(:first-of-type) .input-hint,
+      .rounds-page:not(:first-of-type) .page-note {
+        display: none;
+      }
+
       .team-legend {
         display: none;
       }
@@ -783,7 +803,7 @@
     function teamFull(t, opts = {}){
       if(t === 0) return '<span class="bye-team">Freilos</span>';
       const nm = teamNameOf(t);
-      const label = 'Team ' + t + (nm ? ' <span class="tnm">(' + escapeHtml(nm) + ')</span>' : '');
+      const label = '<span class="t-line">Team ' + t + '</span>' + (nm ? '<span class="tnm t-nm">(' + escapeHtml(nm) + ')</span>' : '');
       return opts.markDropped && droppedTeams().has(t) ? '<span class="dropped-team">' + label + '</span>' : label;
     }
     function teamNameCell(t){
@@ -906,10 +926,16 @@
         if(hasDecidingSet()) sets += setColumnHtml('s3', r, i, 'Entsch.', 'TB');
         cells += '<td class="match" data-round="' + r + '" data-col="' + i + '" data-field-label="' + escapeHtml(getFieldName(i)) + '">'
           + '<span class="pair">'
-          +   '<span class="pnames"><span class="t t-a" id="rA_' + r + '_' + i + '"></span><span class="t t-b" id="rB_' + r + '_' + i + '"></span></span>'
+          +   '<span class="pnames">'
+          +     '<span class="pside pside-a" id="rpa_' + r + '_' + i + '"><span class="t t-a" id="rA_' + r + '_' + i + '"></span></span>'
+          +     '<span class="pside pside-b" id="rpb_' + r + '_' + i + '"><span class="t t-b" id="rB_' + r + '_' + i + '"></span></span>'
+          +   '</span>'
           +   '<span class="psets">' + sets + '</span>'
+          +   '<span class="presult">'
+          +     '<span class="mres mres-a"><span class="mscore" id="rsa_' + r + '_' + i + '"></span><span class="tdiff" id="rda_' + r + '_' + i + '"></span></span>'
+          +     '<span class="mres mres-b"><span class="tdiff" id="rdb_' + r + '_' + i + '"></span><span class="mscore" id="rsb_' + r + '_' + i + '"></span></span>'
+          +   '</span>'
           + '</span>'
-          + '<span class="mwin"><span class="mwin-lbl">Sieger</span><span class="mwin-val" id="rw_' + r + '_' + i + '">\u2013</span></span>'
           + '</td>';
       }
       const capText = 'Spielplan &amp; Ergebnisse';
@@ -920,6 +946,7 @@
         +   '<span class="rmode"></span>'
         + '</td></tr>';
       return '<div class="round-block">'
+        + '<p class="input-hint round-explain" id="inputExamples_' + r + '">' + scoreFormLegend() + ' ' + scoreFormExample() + '</p>'
         + '<div class="table-scroll is-wide">'
         +   '<p class="mobile-schedule-title noprint">' + capText + '</p>'
         +   '<table class="sched">'
@@ -927,7 +954,6 @@
         +     '<tbody>' + headRow + headHtml + '<tr data-round="' + r + '">' + cells + '</tr></tbody>'
         +   '</table>'
         + '</div>'
-        + '<p class="input-hint" id="inputExamples_' + r + '">' + scoreFormLegend() + ' ' + scoreFormExample() + '</p>'
         + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDef().label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 1 Punkt</p>'
         + '</div>';
     }
@@ -936,8 +962,8 @@
       for(let i=1; i<=NROUNDS; i++){
         const note = 'Nach jeder Runde: Ergebnis auf Seite 1 eintragen (Ergebnis oben · darunter Σ aufaddiert: Siege / Ball-Diff. / Punkte · dann Rang in Pl.-Spalte) → nächste Paarungen nach Pl.-Spalte bilden: Pl. 1–2, 3–4, 5–6 usw. · bereits gespielte Paarungen möglichst tauschen.';
         pages.push('<section class="page rounds-page" data-round-num="' + i + '">'
-          + '<div class="round-grid">' + buildRoundBlock(i) + '</div>'
           + '<div class="page-note noscreen">' + note + '</div>'
+          + '<div class="round-grid">' + buildRoundBlock(i) + '</div>'
           + '</section>');
       }
       const navHtml = '<div class="noprint schedule-roundbar" id="roundNavBar" style="display:none;">'
@@ -1545,13 +1571,20 @@
       if(isFreilos(r, i)) return freilosWinner(r, i);
       return slotResult(r, i).winner;
     }
-    /* Sieger-Zeile im Ergebnis-Formular setzen (leer => Platzhalter "–"). */
-    function setWinnerCell(r, i, html){
-      const el = document.getElementById('rw_' + r + '_' + i);
+    /* Gewinner-Seite optisch hervorheben (Rahmen) statt eigener "Sieger"-Zeile. */
+    function setWinnerHighlight(r, i, side){
+      const boxA = document.getElementById('rpa_' + r + '_' + i);
+      const boxB = document.getElementById('rpb_' + r + '_' + i);
+      if(boxA) boxA.classList.toggle('is-winner', side === 'a');
+      if(boxB) boxB.classList.toggle('is-winner', side === 'b');
+    }
+    /* Ball-Differenz je Team direkt neben dem Teamnamen (leer => nichts anzeigen). */
+    function setTeamDiff(id, val, positive){
+      const el = document.getElementById(id);
       if(!el) return;
-      el.innerHTML = html || '–';
-      const box = el.closest('.mwin');
-      if(box) box.classList.toggle('is-set', !!html);
+      el.textContent = val || '';
+      el.classList.toggle('pos', !!val && positive === true);
+      el.classList.toggle('neg', !!val && positive === false);
     }
     function renderRounds(){
       for(let r=1;r<=NROUNDS;r++){
@@ -1561,20 +1594,48 @@
           if(!m){
             setHtml('rA_' + r + '_' + i, '');
             setHtml('rB_' + r + '_' + i, '');
-            setWinnerCell(r, i, '');
+            setHtml('rsa_' + r + '_' + i, '');
+            setHtml('rsb_' + r + '_' + i, '');
+            setTeamDiff('rda_' + r + '_' + i, '', null);
+            setTeamDiff('rdb_' + r + '_' + i, '', null);
+            setWinnerHighlight(r, i, null);
             setScorePairState(r, i, {enabled:false, clear:true, placeholder:''});
             continue;
           }
-          setHtml('rA_' + r + '_' + i, teamFull(m.a, {markDropped:true}));
-          setHtml('rB_' + r + '_' + i, teamFull(m.b, {markDropped:true}));
+          const nameA = teamFull(m.a, {markDropped:true});
+          const nameB = teamFull(m.b, {markDropped:true});
+          setHtml('rA_' + r + '_' + i, nameA);
+          setHtml('rB_' + r + '_' + i, nameB);
           if(m.a === 0 || m.b === 0) setScorePairState(r, i, {enabled:false, clear:true, placeholder:'–'});
           else if(isFreilos(r, i)) setScorePairState(r, i, {enabled:false, clear:true, placeholder:'–'});
           else setScorePairState(r, i, {enabled:true, clear:false, placeholder:''});
           const winner = winnerOf(r, i);
-          if(winner){
-            setWinnerCell(r, i, isFreilos(r, i) ? teamFull(winner, {markDropped:true}) + ' <span class="mwin-note">(Freilos)</span>' : teamFull(winner, {markDropped:true}));
+          const side = winner ? (winner === m.a ? 'a' : (winner === m.b ? 'b' : null)) : null;
+          setWinnerHighlight(r, i, side);
+          if(winner && isFreilos(r, i)){
+            const noteId = side === 'a' ? 'rA_' + r + '_' + i : 'rB_' + r + '_' + i;
+            const noteEl = document.getElementById(noteId);
+            if(noteEl) noteEl.innerHTML += ' <span class="mwin-note">(Freilos)</span>';
+          }
+          if(winner && !isFreilos(r, i)){
+            const res = slotResult(r, i);
+            if(res){
+              const diffA = res.aBalls - res.bBalls;
+              setHtml('rsa_' + r + '_' + i, String(res.aBalls));
+              setHtml('rsb_' + r + '_' + i, String(res.bBalls));
+              setTeamDiff('rda_' + r + '_' + i, fmt(diffA), diffA > 0);
+              setTeamDiff('rdb_' + r + '_' + i, fmt(-diffA), -diffA > 0);
+            } else {
+              setHtml('rsa_' + r + '_' + i, '');
+              setHtml('rsb_' + r + '_' + i, '');
+              setTeamDiff('rda_' + r + '_' + i, '', null);
+              setTeamDiff('rdb_' + r + '_' + i, '', null);
+            }
           } else {
-            setWinnerCell(r, i, '');
+            setHtml('rsa_' + r + '_' + i, '');
+            setHtml('rsb_' + r + '_' + i, '');
+            setTeamDiff('rda_' + r + '_' + i, '', null);
+            setTeamDiff('rdb_' + r + '_' + i, '', null);
           }
         }
       }
@@ -1805,12 +1866,19 @@
       if(zoom < 0.99) centralTable.style.zoom = zoom.toFixed(2);
     }
     
-    // Alle Runden-Tabellen
-    document.querySelectorAll('.rounds-page table.sched').forEach(table => {
-      const contentW = Math.max(1, table.scrollWidth);
-      const zoom = Math.min(1, a4W / contentW);
-      if(zoom < 0.99) table.style.zoom = zoom.toFixed(2);
-    });
+    // Alle Runden-Tabellen: EIN gemeinsamer Zoomfaktor fuer alle Tabellen,
+    // sonst wirkt z.B. Runde 1 (mit bereits eingetragenen Teamnamen/Ergebnissen,
+    // dadurch oft breiter) kleiner/anders als die noch leeren Folgerunden,
+    // wenn mehrere Runden auf derselben Seite stehen.
+    const roundTables = Array.from(document.querySelectorAll('.rounds-page table.sched'));
+    if(roundTables.length){
+      let maxContentW = 1;
+      roundTables.forEach(table => { maxContentW = Math.max(maxContentW, table.scrollWidth); });
+      const zoom = Math.min(1, a4W / maxContentW);
+      roundTables.forEach(table => {
+        if(zoom < 0.99) table.style.zoom = zoom.toFixed(2);
+      });
+    }
   });
   
   window.addEventListener('afterprint', function(){

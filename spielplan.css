@@ -16,10 +16,15 @@
                > tr[data-round]
                    > td.match[data-round][data-col][data-field-label]
                    > span.pair
-                       > span.pnames > span.t.t-a + span.t.t-b
+                       > span.pnames                 (Team A links, Team B rechts)
+                           > span.pside.pside-a(span.t)   [links, Team A]
+                           > span.pside.pside-b(span.t)   [rechts, Team B]
+                           (Sieger-Seite erhaelt Klasse .is-winner - Rahmen/Hintergrund am Namen)
                        > span.psets  > span.sset > span.slbl + span.sbox
                                         (input.score + span.vs + input.score)
-                   > span.mwin > span.mwin-lbl + span.mwin-val
+                       > span.presult                (nur Siegpunkte + Diff, keine Namen)
+                           > span.mres.mres-a(span.mscore + span.tdiff)   [links, Team A]
+                           > span.mres.mres-b(span.tdiff + span.mscore)   [rechts, Team B]
      p.input-hint / p.input-hint.round-subline   (Erklaerungen unter der Tabelle)
 
    WICHTIG: Diese Regeln NICHT in den <style>-Bloecken der einzelnen Bogen
@@ -46,25 +51,45 @@
 /* Feldnamen-Zeile: steht je Runde direkt ueber den Karten (nicht im thead), damit im
    Bogen "Alle gegen Alle" jede Runde ihre eigene Beschriftung behaelt. */
 .sched tr.fhead > th { font-size:12px; }
-/* Ergebnis-Formular: je Team eine eigene Zeile mit den zugehoerigen Satz-Feldern,
-     darunter der Sieger separat. So ist immer eindeutig, welches Kaestchen zu welchem
-     Team gehoert. Identisch in beiden Turnierbogen. */
-  .pair { display:flex; flex-direction:column; gap:3px; min-height:32px; }
-.pnames { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-.pair .t, .bye .t { font-weight:bold; font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.t-a { text-align:left; }
-.t-b { text-align:right; }
+/* Ergebnis-Formular, 3 Zeilen pro Karte:
+     1) Teamnamen links/rechts - die Gewinner-Seite wird per Rahmen (.is-winner)
+       direkt am Namen hervorgehoben statt einer eigenen "Sieger"-Zeile,
+     2) die Satz-Kaestchen (links/rechts wie die Namen darueber),
+     3) Ergebnis-Zeile mit Siegpunkten + Ball-Differenz je Team (ohne Namen -
+       die Zuordnung ergibt sich aus der Position links/rechts wie oben).
+   Identisch in beiden Turnierbogen. */
+  .pair { display:flex; flex-direction:column; gap:4px; min-height:32px; }
+.pnames { display:flex; align-items:stretch; justify-content:space-between; gap:8px; }
+.pair .t, .bye .t { display:flex; flex-direction:column; min-width:0; flex:1 1 0; }
+.pair .t .dropped-team { display:flex; flex-direction:column; min-width:0; }
+.t-line { font-weight:bold; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.t-nm { font-weight:normal; font-size:11px; color:#0a7d2c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pnames .t-a { text-align:left; }
+.pnames .t-b { text-align:right; }
 .psets { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
 .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
 .slbl { font-size:10px; font-weight:700; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
 .sbox { display:inline-flex; align-items:center; gap:2px; }
-.mwin { display:flex; align-items:baseline; justify-content:space-between; gap:6px; margin-top:5px; padding-top:4px; border-top:1px dashed var(--soft); font-size:11px; line-height:1.2; }
-.mwin-lbl { color:#666; font-weight:600; }
-.mwin-val { font-weight:bold; color:#777; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mwin.is-set .mwin-val { color:#1b7a1b; }
-.mwin-note { font-weight:normal; color:#777; }
+.pside { display:flex; align-items:center; gap:4px; min-width:0; border-radius:5px; flex:1 1 0; padding:1px 4px; margin:0 -2px; }
+.pside-a { justify-content:flex-start; }
+.pside-b { justify-content:flex-end; }
+.pside.is-winner { background:#e7f6e7; border:1.5px solid #2e8b2e; }
+.pside.is-winner .t { color:#1b5e1b; }
+.presult { display:flex; align-items:center; justify-content:space-between; gap:2px 8px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--soft); }
+.mres { display:flex; align-items:center; gap:4px; min-width:0; }
+.mres-b { justify-content:flex-end; }
+.mscore { font-weight:700; font-size:12px; color:#333; }
+.mscore:empty { display:none; }
+.tdiff { font-weight:800; font-size:11px; color:#888; white-space:nowrap; flex:0 0 auto;
+  background:#eef0f3; padding:1px 6px; border-radius:999px; line-height:1.4; }
+.tdiff.pos { color:#1b7a1b; background:#e0f3e0; }
+.tdiff.neg { color:#a33131; background:#fae3e3; }
+.tdiff:empty { display:none; padding:0; }
+.mwin-note { font-weight:normal; color:#777; font-size:10px; }
 .sched.compact .bye { gap:4px; }
-.sched.compact .pair .t, .sched.compact .bye .t { font-size:12px; }
+.sched.compact .pair .t-line, .sched.compact .bye .t-line { font-size:12px; }
+.sched.compact .pair .t-nm, .sched.compact .bye .t-nm { font-size:10px; }
+.sched.compact .tdiff { font-size:10px; }
 .sched.compact .setsep { margin:0 2px; }
 .sched.compact input.score { width:30px; height:28px; font-size:12px; }
 .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
@@ -168,31 +193,31 @@ input.score:disabled { background:#f7f7f7; color:#999; }
       gap: 3px;
       min-height: 0;
     }
-/* Teamnamen duerfen bei schmalen Spalten (viele Felder) umbrechen statt
-   abgeschnitten zu werden - sie bleiben so immer vollstaendig lesbar. */
-.table-scroll.is-wide table.sched .pair .t,
-  .table-scroll.is-wide table.sched .mwin-val {
-      white-space: normal;
-      overflow: visible;
-      text-overflow: clip;
-      overflow-wrap: anywhere;
-      word-break: normal;
-      hyphens: auto;
-    }
 .table-scroll.is-wide table.sched .pnames {
-      align-items: flex-start;
-      gap: 6px;
+      gap: 5px;
+    }
+.table-scroll.is-wide table.sched .t-line {
+      font-size: 11px;
+      line-height: 1.2;
+    }
+.table-scroll.is-wide table.sched .t-nm {
+      font-size: 9.5px;
+      line-height: 1.15;
     }
 .table-scroll.is-wide table.sched .pair .t {
-      font-size: 11px;
-      line-height: 1.15;
-      flex: 1 1 0;
+      flex: 1 1 auto;
+      min-width: 3.2em;
     }
-.table-scroll.is-wide table.sched .mwin {
+.table-scroll.is-wide table.sched .tdiff {
+      font-size: 10px;
+    }
+.table-scroll.is-wide table.sched .mscore {
+      font-size: 10px;
+    }
+.table-scroll.is-wide table.sched .presult {
       font-size: 10px;
       margin-top: 4px;
       padding-top: 3px;
-      align-items: flex-start;
     }
 .table-scroll.is-wide table.sched input.score {
       width: 28px;
@@ -224,10 +249,20 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .table-scroll.is-wide table.sched.ultra-compact th[data-field] {
       font-size: 10px;
     }
-.table-scroll.is-wide table.sched.ultra-compact .pair .t {
+.table-scroll.is-wide table.sched.ultra-compact .t-line {
       font-size: 10px;
     }
-.table-scroll.is-wide table.sched.ultra-compact .mwin {
+.table-scroll.is-wide table.sched.ultra-compact .t-nm {
+      font-size: 8.5px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .tdiff {
+      font-size: 9px;
+      padding: 0 4px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .mscore {
+      font-size: 9px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .presult {
       font-size: 9px;
     }
 .table-scroll.is-wide table.sched.ultra-compact input.score {
@@ -253,9 +288,11 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     }
 .table-scroll.is-wide table.sched .pair,
   .table-scroll.is-wide table.sched .pnames,
+  .table-scroll.is-wide table.sched .pside,
   .table-scroll.is-wide table.sched .psets,
   .table-scroll.is-wide table.sched .sset,
-  .table-scroll.is-wide table.sched .mwin {
+  .table-scroll.is-wide table.sched .mres,
+  .table-scroll.is-wide table.sched .presult {
       min-width: 0;
       max-width: 100%;
     }
@@ -288,8 +325,13 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; word-break:normal; overflow-wrap:break-word; hyphens:auto; }
 .sched .rnd .rbye { font-size:6.8pt; line-height:1.05; margin-top:0.4mm; color:#5a4300; }
 .pair, .bye { gap:0.6mm; min-height:0; white-space:normal; }
-.pair .t, .bye .t { min-width:0; font-size:6.9pt; line-height:1.1; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; hyphens:auto; }
-.pnames { gap:1.5mm; }
+.pair .t, .bye .t { min-width:0; }
+.t-line { font-size:6.9pt; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.t-nm { font-size:6pt; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tdiff { font-size:6.4pt; color:#000 !important; background:none !important; padding:0 0 0 0.6mm; }
+.mscore { font-size:6.4pt; color:#000 !important; }
+.sched.compact .tdiff { font-size:6.2pt; }
+.pnames { gap:1.2mm; }
 .psets { gap:1.6mm; flex-wrap:wrap; row-gap:0.8mm; }
 .sbox { gap:0.3mm; }
 .slbl { font-size:5.2pt; color:#333; letter-spacing:0; white-space:nowrap; }
@@ -297,12 +339,13 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .sched.compact .slbl { font-size:5pt; }
 /* Kaestchen im Druck sichtbar lassen, damit von Hand eingetragen werden kann. */
     .pair input.score { border:1px solid #888 !important; border-radius:1pt; background:transparent; }
-.mwin { margin-top:0.6mm; padding-top:0.5mm; font-size:6.2pt; border-top:1px dashed #bbb; }
-.mwin-val { color:#000 !important; }
+.presult { margin-top:0.6mm; padding-top:0.5mm; font-size:6.2pt; border-top:1px dashed #bbb; }
+.pside.is-winner { background:none !important; border:0.5pt solid #000 !important; }
+.mwin-note { color:#333 !important; }
 .setsep { margin:0 0.3mm; }
 .sched.compact .bye { gap:0.8mm; }
-.sched.compact .pair .t, .sched.compact .bye .t { font-size:6.6pt; }
-.sched.compact input.score { width:1.25em; font-size:7.1pt; }
+.sched.compact .t-line, .sched.compact .bye .t { font-size:6.6pt; }
+.sched.compact input.score { width:7.5mm; height:5.8mm; font-size:10pt; }
 .sched.compact .setsep { margin:0 0.45mm; }
 .vs { font-size:7pt; }
 .sched thead { display: table-header-group; }
@@ -312,12 +355,12 @@ input.score {
       border:none;
       background:transparent;
       box-shadow:none;
-      width:1.7em;
-      height:4.2mm;
+      width:9mm;
+      height:6.5mm;
       min-height:0;
       padding:0;
       margin:0;
-      font-size:7.2pt;
+      font-size:11pt;
       font-weight:700;
       color:#000;
       text-align:center;
@@ -479,13 +522,25 @@ input.score.invalid {
         white-space: normal;
         gap: 6px;
       }
-.pair .t {
+.pnames {
+        gap: 4px;
+      }
+.t-line {
         font-size: 14px;
+      }
+.t-nm {
+        font-size: 12px;
+      }
+.tdiff {
+        font-size: 12px;
+      }
+.mscore {
+        font-size: 13px;
       }
 .psets { gap: 12px; }
 .sbox { gap: 4px; }
 .slbl { font-size: 11px; }
-.mwin { font-size: 12px; margin-top: 8px; padding-top: 6px; }
+.presult { font-size: 12px; margin-top: 8px; padding-top: 6px; }
 .table-scroll.is-track table {
         display: table !important;
         width: max-content !important;

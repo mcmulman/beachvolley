@@ -679,7 +679,11 @@
     const v = (val||'').trim();
     document.querySelectorAll('[data-team="'+i+'"]').forEach(el => {
       const base = el.getAttribute('data-fb') || ('Team '+i);
-      el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+      if(el.classList.contains('t') && el.closest('.pair')){
+        el.innerHTML = teamCardNameHtml(i, Object.assign({}, loadNames(), { [i]: val }), absent);
+      } else {
+        el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+      }
     });
     const merged = Object.assign({}, loadNames(), { [i]: val });
     document.querySelectorAll('[data-team-name="'+i+'"]').forEach(el => {
@@ -784,6 +788,14 @@
     return {aBalls,bBalls,aSets,bSets,winner};
   }
   function fmt(n){ return (n>0?'+':'')+n; }
+  /* Ball-Differenz je Team direkt neben dem Teamnamen (leer => nichts anzeigen). */
+  function setTeamDiff(td, side, val, positive){
+    const el = td ? td.querySelector('.tdiff[data-diff="' + side + '"]') : null;
+    if(!el) return;
+    el.textContent = val || '';
+    el.classList.toggle('pos', !!val && positive === true);
+    el.classList.toggle('neg', !!val && positive === false);
+  }
   function setCell(id,val,cls){
     const e=document.getElementById(id);
     if(!e) return;
@@ -809,6 +821,15 @@
   function teamNameHtml(i, names, absent){
     const v = ((names && names[i]) || '').trim();
     return 'Team ' + i + (v ? ' <span class="tnm">(' + escapeHtml(v) + ')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+  }
+  /* Team-Label fuer die Spielkarte: "Team N" und ein optionaler Custom-Name
+     stehen auf zwei eigenen Zeilen (t-line/t-nm), jede Zeile wird bei Bedarf
+     einzeilig mit Ellipsis abgeschnitten statt umzubrechen. */
+  function teamCardNameHtml(i, names, absent){
+    const v = ((names && names[i]) || '').trim();
+    return '<span class="t-line">Team ' + i + '</span>'
+      + (v ? '<span class="tnm t-nm">(' + escapeHtml(v) + ')</span>' : '')
+      + (absent ? ' <span class="abt">ausgefallen</span>' : '');
   }
   function setByeView(td, html){
     td.classList.add('is-bye');
@@ -852,13 +873,22 @@
     return nm ? ('Team ' + t + ' (' + nm + ')') : ('Team ' + t);
   }
   function setMatchWinner(td, winnerTeam, note){
-    const box = td ? td.querySelector('.mwin') : null;
-    if(!box) return;
-    const val = box.querySelector('.mwin-val');
-    if(val) val.innerHTML = winnerTeam
-      ? escapeHtml(teamLabelText(winnerTeam)) + (note ? ' <span class="mwin-note">' + note + '</span>' : '')
-      : (note ? '<span class="mwin-note">' + note + '</span>' : '–');
-    box.classList.toggle('is-set', !!winnerTeam);
+    const pnames = td ? td.querySelector('.pnames') : null;
+    const box = td ? td.querySelector('.presult') : null;
+    if(!pnames && !box) return;
+    const a = parseInt(td.getAttribute('data-a'),10);
+    const b = parseInt(td.getAttribute('data-b'),10);
+    const side = winnerTeam === a ? 'a' : (winnerTeam === b ? 'b' : null);
+    const sideA = pnames ? pnames.querySelector('.pside-a') : null;
+    const sideB = pnames ? pnames.querySelector('.pside-b') : null;
+    if(sideA) sideA.classList.toggle('is-winner', side === 'a');
+    if(sideB) sideB.classList.toggle('is-winner', side === 'b');
+    const noteEl = box ? box.querySelector('[data-note]') : null;
+    if(noteEl) noteEl.innerHTML = note ? '<span class="mwin-note">' + note + '</span>' : '';
+  }
+  function setMatchScore(td, side, val){
+    const el = td ? td.querySelector('.mscore[data-score="' + side + '"]') : null;
+    if(el) el.textContent = val || '';
   }
   function computeAll(){
     applyTeamNames();
@@ -879,16 +909,22 @@
             setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
             setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
             setMatchWinner(td, null, 'beide ausgefallen');
+            setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
+            setMatchScore(td,'a',''); setMatchScore(td,'b','');
           } else if(absentA){
             st[b].w += 1; cum[b].pts += 1;
             setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
             setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
             setMatchWinner(td, b, '(kampflos)');
+            setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
+            setMatchScore(td,'a',''); setMatchScore(td,'b','');
           } else {
             st[a].w += 1; cum[a].pts += 1;
             setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
             setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
             setMatchWinner(td, a, '(kampflos)');
+            setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
+            setMatchScore(td,'a',''); setMatchScore(td,'b','');
           }
           return;
         }
@@ -904,14 +940,21 @@
           st[a].sc += res.aBalls; st[b].sc += res.bBalls;
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+          setTeamDiff(td,'a',fmt(da), da>0?true:(da<0?false:null));
+          setTeamDiff(td,'b',fmt(-da), -da>0?true:(-da<0?false:null));
+          setMatchScore(td,'a',String(res.aBalls)); setMatchScore(td,'b',String(res.bBalls));
         } else if(sa!=null || sb!=null || gv2(r,a)!=null || gv2(r,b)!=null || gv3(r,a)!=null || gv3(r,b)!=null){
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
           setMatchWinner(td, null, '');
+          setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
+          setMatchScore(td,'a',''); setMatchScore(td,'b','');
         } else {
           setCell(ptA,''); setCell(bdA,'');
           setCell(ptB,''); setCell(bdB,'');
           setMatchWinner(td, null, '');
+          setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
+          setMatchScore(td,'a',''); setMatchScore(td,'b','');
         }
       });
       /* Freilos bei ungerader Teamzahl: 1 Punkt, ohne Differenz – chronologisch in dieser Runde */
@@ -1275,13 +1318,17 @@
     if(setCnt >= 3) sets += setColumnHtml('g3', round, a, b, 'Entsch.', 'TB');
     return '<td class="match" data-round="'+round+'" data-col="'+fieldIdx+'" data-field-label="'+escapeHtml(fieldLabel)+'" data-a="'+a+'" data-b="'+b+'">'
       + '<span class="pair">'
-      +   '<span class="pnames">'
-      +     '<span class="t t-a" data-team="' + a + '">Team ' + a + '</span>'
-      +     '<span class="t t-b" data-team="' + b + '">Team ' + b + '</span>'
+      +   '<span class="pnames" data-mwin="' + round + '_' + a + '_' + b + '">'
+      +     '<span class="pside pside-a"><span class="t t-a" data-team="' + a + '">Team ' + a + '</span></span>'
+      +     '<span class="pside pside-b"><span class="t t-b" data-team="' + b + '">Team ' + b + '</span></span>'
       +   '</span>'
       +   '<span class="psets">' + sets + '</span>'
+      +   '<span class="presult">'
+      +     '<span class="mres mres-a"><span class="mscore" data-score="a"></span><span class="tdiff" data-diff="a"></span></span>'
+      +     '<span class="mres mres-b"><span class="tdiff" data-diff="b"></span><span class="mscore" data-score="b"></span></span>'
+      +     '<span data-note></span>'
+      +   '</span>'
       + '</span>'
-      + '<span class="mwin" data-mwin="' + round + '_' + a + '_' + b + '"><span class="mwin-lbl">Sieger</span><span class="mwin-val">\u2013</span></span>'
       + '<span class="bye" hidden></span></td>';
   }
   function buildScheduleTable(){
