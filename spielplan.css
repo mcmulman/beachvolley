@@ -1,0 +1,512 @@
+/* ============================================================================
+   spielplan.css – GEMEINSAME Formatierung fuer Spielplan-Tabelle und
+   Ergebnis-Karten ("Runden-Ergebnis") in ALLEN Turnierbogen.
+
+   Markup (in beiden Bogen identisch):
+     div.table-scroll.is-wide
+       > div.schedule-roundbar        (Runden-Navigator)
+       > p.mobile-schedule-title      (nur mobil sichtbar)
+       > table.sched
+           > caption                  (Ueberschrift des Abschnitts)
+           > thead                    (leer - Feldnamen stehen je Runde im tbody)
+           > tbody
+               > tr.rhead[data-round] > td.rhead-cell[colspan]
+                   (span.rlabel "Runde N", span.rtime, span.rmode[, span.rbye])
+               > tr.fhead[data-round] > th[data-field]  (Feldnamen ueber den Karten)
+               > tr[data-round]
+                   > td.match[data-round][data-col][data-field-label]
+                   > span.pair
+                       > span.pnames > span.t.t-a + span.t.t-b
+                       > span.psets  > span.sset > span.slbl + span.sbox
+                                        (input.score + span.vs + input.score)
+                   > span.mwin > span.mwin-lbl + span.mwin-val
+     p.input-hint / p.input-hint.round-subline   (Erklaerungen unter der Tabelle)
+
+   WICHTIG: Diese Regeln NICHT in den <style>-Bloecken der einzelnen Bogen
+   duplizieren – sonst laufen die Bogen wieder auseinander.
+   Wird VOR app-skin.css eingebunden, damit das Skin weiterhin gewinnt.
+   ============================================================================ */
+/* Schedule cells: pairing + result box */
+  .sched td { padding:8px 6px; }
+.sched .rnd { width:48px; font-weight:bold; background:var(--bg); font-size:16px; }
+.sched th { font-size:14px; }
+/* Zwischenueberschrift je Runde: volle Tabellenbreite, "Runde N - Zeit - Spielmodus".
+   Ersetzt die frueher schmale "R"-Spalte. Identisch in beiden Turnierbogen. */
+.sched tr.rhead > td.rhead-cell {
+  padding:6px 10px; background:#eef3fb; border-bottom:1px solid #d6e1ef;
+  text-align:left; vertical-align:middle; line-height:1.35;
+}
+.sched tr.rhead .rlabel { font-weight:800; font-size:13px; color:#1f4e79; letter-spacing:.02em; }
+.sched tr.rhead .rtime { font-weight:700; font-size:12px; color:#1f4e79; }
+.sched tr.rhead .rmode { font-size:11.5px; color:#444; }
+.sched tr.rhead .rbye { font-size:11.5px; color:#7a5a00; }
+.sched tr.rhead .rhead-cell > span { display:inline; margin:0; }
+.sched tr.rhead .rhead-cell > span + span::before { content:"\00b7"; color:#9bb0c8; margin:0 7px; font-weight:400; }
+.sched tr.rhead .rhead-cell > span:empty { display:none; }
+/* Feldnamen-Zeile: steht je Runde direkt ueber den Karten (nicht im thead), damit im
+   Bogen "Alle gegen Alle" jede Runde ihre eigene Beschriftung behaelt. */
+.sched tr.fhead > th { font-size:12px; }
+/* Ergebnis-Formular: je Team eine eigene Zeile mit den zugehoerigen Satz-Feldern,
+     darunter der Sieger separat. So ist immer eindeutig, welches Kaestchen zu welchem
+     Team gehoert. Identisch in beiden Turnierbogen. */
+  .pair { display:flex; flex-direction:column; gap:3px; min-height:32px; }
+.pnames { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.pair .t, .bye .t { font-weight:bold; font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.t-a { text-align:left; }
+.t-b { text-align:right; }
+.psets { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
+.sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.slbl { font-size:10px; font-weight:700; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
+.sbox { display:inline-flex; align-items:center; gap:2px; }
+.mwin { display:flex; align-items:baseline; justify-content:space-between; gap:6px; margin-top:5px; padding-top:4px; border-top:1px dashed var(--soft); font-size:11px; line-height:1.2; }
+.mwin-lbl { color:#666; font-weight:600; }
+.mwin-val { font-weight:bold; color:#777; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mwin.is-set .mwin-val { color:#1b7a1b; }
+.mwin-note { font-weight:normal; color:#777; }
+.sched.compact .bye { gap:4px; }
+.sched.compact .pair .t, .sched.compact .bye .t { font-size:12px; }
+.sched.compact .setsep { margin:0 2px; }
+.sched.compact input.score { width:30px; height:28px; font-size:12px; }
+.score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
+.vs { color:var(--soft); font-weight:bold; font-size:16px; }
+.setsep { color:var(--soft); font-weight:bold; margin:0 4px; }
+.setgrp { white-space:nowrap; }
+.bye-tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#fff3d6; border:1px solid #d7b96d; color:#7a5a00; font-weight:bold; }
+.match.is-bye { background:#fffaf0; }
+.sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
+.input-hint { margin:5px 0 0; font-size:11px; color:#555; }
+.round-subline { font-size:11px; margin:2px 0 0; }
+/* Digital-Eingabe & Teamnamen (Bildschirm) */
+  input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
+                font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
+                border:1px solid var(--soft); border-radius:3px; width:40px; height:32px;
+                -webkit-appearance:none; appearance:none; }
+input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+/* Platzhalter (z. B. "TB" im Entscheidungssatz) dezent ausgegraut. */
+input.score::placeholder { color:#aab4c2; font-weight:600; opacity:1; }
+input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
+input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
+input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
+input.score:disabled { background:#f7f7f7; color:#999; }
+.sched .rnd { width:96px; font-size:13px; }
+.sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
+.sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#444; margin-top:1px; }
+.sched .rnd .rbye { display:block; font-size:9.5px; font-weight:normal; color:#7a5a00; margin-top:2px; }
+.table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
+.table-scroll table { min-width:100%; }
+.mobile-schedule-title { display:none; }
+.schedule-roundbar {
+    margin: 8px 0 6px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+.schedule-roundbar label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: #1f4e79;
+    font-weight: 700;
+  }
+.schedule-roundbar select {
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid #9db4d4;
+    border-radius: 5px;
+    font-weight: 700;
+    color: #1f4e79;
+    background: #fff;
+  }
+.schedule-roundbar .nbtn {
+    min-height: 32px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+.schedule-roundbar .state {
+    font-size: 11px;
+    color: #5a6375;
+    font-weight: 700;
+    padding: 0 2px;
+    align-self: center;
+  }
+
+@media screen and (min-width: 641px) {
+.table-scroll.is-wide {
+      overflow-x: hidden;
+    }
+.table-scroll.is-track table.track {
+      display: table !important;
+      overflow: visible !important;
+      background: none !important;
+    }
+.table-scroll.is-wide table.sched {
+      display: table !important;
+      overflow: visible !important;
+      background: none !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      table-layout: fixed;
+    }
+.table-scroll.is-wide table.sched .rnd {
+      width: 86px;
+      font-size: 12px;
+    }
+.table-scroll.is-wide table.sched th[data-field] {
+      white-space: normal;
+      word-break: break-word;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+.table-scroll.is-wide table.sched td {
+      padding: 5px 4px;
+      vertical-align: top;
+    }
+.table-scroll.is-wide table.sched .pair {
+      white-space: normal;
+      gap: 3px;
+      min-height: 0;
+    }
+/* Teamnamen duerfen bei schmalen Spalten (viele Felder) umbrechen statt
+   abgeschnitten zu werden - sie bleiben so immer vollstaendig lesbar. */
+.table-scroll.is-wide table.sched .pair .t,
+  .table-scroll.is-wide table.sched .mwin-val {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      hyphens: auto;
+    }
+.table-scroll.is-wide table.sched .pnames {
+      align-items: flex-start;
+      gap: 6px;
+    }
+.table-scroll.is-wide table.sched .pair .t {
+      font-size: 11px;
+      line-height: 1.15;
+      flex: 1 1 0;
+    }
+.table-scroll.is-wide table.sched .mwin {
+      font-size: 10px;
+      margin-top: 4px;
+      padding-top: 3px;
+      align-items: flex-start;
+    }
+.table-scroll.is-wide table.sched input.score {
+      width: 28px;
+      height: 24px;
+      font-size: 12px;
+    }
+.table-scroll.is-wide table.sched .slbl {
+      font-size: 9px;
+    }
+.table-scroll.is-wide table.sched .psets {
+      gap: 6px;
+    }
+.table-scroll.is-wide table.sched.compact .psets {
+      gap: 4px;
+    }
+.table-scroll.is-wide table.sched.compact input.score {
+      width: 26px;
+    }
+.table-scroll.is-wide table.sched .vs {
+      font-size: 12px;
+    }
+.table-scroll.is-wide table.sched .setsep {
+      margin: 0 2px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .rnd {
+      width: 76px;
+      font-size: 11px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact th[data-field] {
+      font-size: 10px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .pair .t {
+      font-size: 10px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .mwin {
+      font-size: 9px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact input.score {
+      width: 24px;
+      height: 22px;
+      font-size: 11px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .slbl {
+      font-size: 8px;
+    }
+.table-scroll.is-wide table.sched.ultra-compact .psets {
+      gap: 5px;
+    }
+.table-scroll.is-wide table.sched .rnd .rmode {
+      word-break: normal;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+/* Ueberlaufschutz: bei vielen Feldern x mehreren Saetzen darf der Karteninhalt
+   nie in die Nachbarspalte ragen - stattdessen umbrechen die Satz-Spalten. */
+.table-scroll.is-wide table.sched td.match {
+      overflow: hidden;
+    }
+.table-scroll.is-wide table.sched .pair,
+  .table-scroll.is-wide table.sched .pnames,
+  .table-scroll.is-wide table.sched .psets,
+  .table-scroll.is-wide table.sched .sset,
+  .table-scroll.is-wide table.sched .mwin {
+      min-width: 0;
+      max-width: 100%;
+    }
+.table-scroll.is-wide table.sched .psets {
+      flex-wrap: wrap;
+      row-gap: 5px;
+    }
+
+}
+.sched tr.round-hidden { display: none; }
+
+@media print {
+.sched {
+      width: 100% !important;
+      table-layout: fixed;
+    }
+.sched th, .sched td {
+      overflow: hidden;
+      text-overflow: clip;
+      word-break: break-word;
+    }
+.sched td { padding:0.8mm 1mm; }
+.sched tr.rhead > td.rhead-cell { padding:1mm 1.5mm; background:#eef3fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-bottom:0.4pt solid #9bb0c8; }
+.sched tr.rhead .rlabel { font-size:8.2pt; font-weight:800; color:#000; }
+.sched tr.rhead .rtime { font-size:7.6pt; font-weight:700; color:#000; }
+.sched tr.rhead .rmode { font-size:7pt; color:#333; word-break:normal; overflow-wrap:break-word; hyphens:auto; }
+.sched tr.rhead .rbye { font-size:7pt; color:#5a4300; }
+.sched .rnd { width:20mm; font-size:7.8pt; }
+.sched .rnd .rtime { font-size:7pt; margin-top:0.4mm; }
+.sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; word-break:normal; overflow-wrap:break-word; hyphens:auto; }
+.sched .rnd .rbye { font-size:6.8pt; line-height:1.05; margin-top:0.4mm; color:#5a4300; }
+.pair, .bye { gap:0.6mm; min-height:0; white-space:normal; }
+.pair .t, .bye .t { min-width:0; font-size:6.9pt; line-height:1.1; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; hyphens:auto; }
+.pnames { gap:1.5mm; }
+.psets { gap:1.6mm; flex-wrap:wrap; row-gap:0.8mm; }
+.sbox { gap:0.3mm; }
+.slbl { font-size:5.2pt; color:#333; letter-spacing:0; white-space:nowrap; }
+.sched.compact .psets { gap:1.1mm; }
+.sched.compact .slbl { font-size:5pt; }
+/* Kaestchen im Druck sichtbar lassen, damit von Hand eingetragen werden kann. */
+    .pair input.score { border:1px solid #888 !important; border-radius:1pt; background:transparent; }
+.mwin { margin-top:0.6mm; padding-top:0.5mm; font-size:6.2pt; border-top:1px dashed #bbb; }
+.mwin-val { color:#000 !important; }
+.setsep { margin:0 0.3mm; }
+.sched.compact .bye { gap:0.8mm; }
+.sched.compact .pair .t, .sched.compact .bye .t { font-size:6.6pt; }
+.sched.compact input.score { width:1.25em; font-size:7.1pt; }
+.sched.compact .setsep { margin:0 0.45mm; }
+.vs { font-size:7pt; }
+.sched thead { display: table-header-group; }
+.sched tr.fhead > th { font-size:6.6pt; padding:0.6mm 1mm; }
+.sched tbody { display: table-row-group; }
+input.score {
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      width:1.7em;
+      height:4.2mm;
+      min-height:0;
+      padding:0;
+      margin:0;
+      font-size:7.2pt;
+      font-weight:700;
+      color:#000;
+      text-align:center;
+    }
+input.score:focus { outline:none; }
+/* Platzhalter im Druck ausblenden - die Kaestchen bleiben leer beschreibbar,
+   die Spaltenbeschriftung "Entsch." genuegt als Hinweis. */
+input.score::placeholder { color:transparent !important; }
+.sched tr.round-hidden { display: table-row !important; }
+
+}
+
+@media screen {
+input.score {
+        border: 1.5px solid #b0bec5;
+        border-radius: 4px;
+        background: #fafcff;
+      }
+input.score:focus {
+        outline: 2px solid #1f4e79;
+        background: #fffce0;
+      }
+input.score.win {
+        background: #d4f5d4 !important;
+        border-color: #2e7d2e;
+      }
+input.score.invalid {
+        background: #fde0e0 !important;
+        border-color: #c62828;
+      }
+.sched .rnd {
+        background: #1f4e79;
+        color: #fff;
+        font-weight: 700;
+      }
+.sched .rnd .rtime,
+      .sched .rtime { color: #b8d4ee; }
+.sched .rnd .rmode,
+      .sched .rmode { color: #a0b8cc; }
+.sched .rnd .rbye { color: #ffe4a3; }
+
+}
+
+@media screen and (max-width: 640px) {
+.schedule-roundbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 6px;
+        position: static;
+        padding: 6px 6px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+      }
+.schedule-roundbar label {
+        min-width: 0;
+      }
+.schedule-roundbar select {
+        width: 100%;
+      }
+.schedule-roundbar .state {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+.mobile-schedule-title {
+        display: block;
+        font-weight: 800;
+        color: var(--app-blue-dark, #1f4e79);
+        font-size: 14px;
+        line-height: 1.25;
+        letter-spacing: .3px;
+        padding: 2px 0 6px 11px;
+        border-left: 3px solid var(--app-blue, #1f4e79);
+        margin: 8px 0 6px;
+      }
+.table-scroll.is-wide table.sched > caption {
+        display: none;
+      }
+.table-scroll.is-wide {
+        overflow-x: hidden;
+      }
+.table-scroll.is-wide table.sched {
+        overflow: visible;
+      }
+.table-scroll.is-wide table.sched caption {
+        white-space: normal;
+        line-height: 1.35;
+        margin-top: 8px;
+      }
+.table-scroll.is-wide table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+.table-scroll.is-wide table.sched > tbody {
+        display: block;
+        width: 100%;
+      }
+.table-scroll.is-wide table.sched > thead {
+        display: none;
+      }
+/* Mobil steckt der Feldname bereits in der Karte (data-field-label) -
+   die Feldnamen-Zeile waere hier nur doppelt. */
+.table-scroll.is-wide table.sched > tbody > tr.fhead {
+        display: none !important;
+      }
+/* Mobil ist jede Feld-Zelle eine eigenstaendige Karte mit Abstand zur naechsten. */
+.table-scroll.is-wide table.sched > tbody > tr[data-round] {
+        display: block;
+        width: 100%;
+        margin: 0 0 16px;
+        border: 0;
+        border-radius: 0;
+        background: none;
+        overflow: visible;
+      }
+.table-scroll.is-wide table.sched > tbody > tr.rhead {
+        margin: 0 0 8px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr.rhead > td.rhead-cell {
+        display: block;
+        width: 100%;
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+        background: #eef3fb;
+        padding: 8px 10px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
+        display: none;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round] > td {
+        display: block;
+        width: 100%;
+        border: 1px solid #d6e1ef;
+        border-radius: 8px;
+        background: #fff;
+        margin: 0 0 8px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round] > td:last-child {
+        margin-bottom: 0;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match {
+        padding: 8px 10px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match::before {
+        content: attr(data-field-label);
+        display: block;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1f4e79;
+        margin: 0 0 4px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr[data-round] > td.empty {
+        display: none;
+      }
+.sched td { padding: 6px 4px; }
+.pair {
+        white-space: normal;
+        gap: 6px;
+      }
+.pair .t {
+        font-size: 14px;
+      }
+.psets { gap: 12px; }
+.sbox { gap: 4px; }
+.slbl { font-size: 11px; }
+.mwin { font-size: 12px; margin-top: 8px; padding-top: 6px; }
+.table-scroll.is-track table {
+        display: table !important;
+        width: max-content !important;
+        min-width: 560px !important;
+      }
+input.score {
+        min-width: 42px;
+        min-height: 44px;
+        font-size: 16px;
+      }
+
+}
+
+@media print {
+.sched .rnd {
+        background: #e8edf5 !important;
+        color: #000 !important;
+      }
+.sched .rnd .rtime,
+      .sched .rtime { color: #000 !important; }
+.sched .rnd .rmode,
+      .sched .rmode { color: #333 !important; }
+
+}

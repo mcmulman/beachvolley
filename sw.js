@@ -21,7 +21,6 @@ const PRECACHE = [
   './Turnierbogen_8_Teams_4_Felder_KO_System.html',
   './Turnierbogen_10_Teams_Gruppen_Platzierungsrunde.html',
   './Turnierbogen_12_Teams_6_Felder_Gruppen_Platzierungsrunde.html',
-  './Turnierbogen_12_Teams_Schweizer_System.html',
   './Turnierbogen_16_Teams_8_Felder_Gruppen_Platzierungsrunde.html',
   './Turnierbogen_Flexibel_Alle_gegen_Alle.html',
   './Turnierbogen_Schweizer_System.html',

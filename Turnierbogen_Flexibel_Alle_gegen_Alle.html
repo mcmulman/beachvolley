@@ -34,24 +34,6 @@
   .teams .num { width:24px; font-weight:bold; background:var(--bg); text-align:center; }
   .teams .name { height:26px; }
 
-  /* Schedule cells: pairing + result box */
-  .sched td { padding:8px 6px; }
-  .sched .rnd { width:48px; font-weight:bold; background:var(--bg); font-size:16px; }
-  .sched th { font-size:14px; }
-  .pair, .bye { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; min-height:32px; }
-  .pair .t, .bye .t { display:inline-block; min-width:52px; font-weight:bold; font-size:15px; }
-  .sched.compact .pair, .sched.compact .bye { gap:4px; }
-  .sched.compact .pair .t, .sched.compact .bye .t { min-width:38px; font-size:12px; }
-  .sched.compact .setsep { margin:0 2px; }
-  .sched.compact input.score { width:30px; height:28px; font-size:12px; }
-  .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
-  .vs { color:var(--soft); font-weight:bold; font-size:16px; }
-  .setsep { color:var(--soft); font-weight:bold; margin:0 4px; }
-  .setgrp { white-space:nowrap; }
-  .bye-tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#fff3d6; border:1px solid #d7b96d; color:#7a5a00; font-weight:bold; }
-  .match.is-bye { background:#fffaf0; }
-  .sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
-
   /* Standings */
   .stand td { height:40px; }
   .stand .pl { width:34px; background:var(--bg); font-weight:bold; }
@@ -71,7 +53,6 @@
 
   .legend { font-size:12px; color:#333; margin-top:10px; }
   .legend b { color:#111; }
-  .input-hint { margin:5px 0 0; font-size:11px; color:#555; }
 
   .page-break { page-break-before: always; }
 
@@ -81,28 +62,13 @@
   .guide ol { margin:0; padding-left:20px; }
   .guide li { margin:2px 0; }
   .guide .hi { font-weight:bold; }
-
-  /* Digital-Eingabe & Teamnamen (Bildschirm) */
-  input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
-                font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
-                border:1px solid var(--soft); border-radius:3px; width:40px; height:32px;
-                -webkit-appearance:none; appearance:none; }
-  input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
-  input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
-  input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
-  input.score:disabled { background:#f7f7f7; color:#999; }
   .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
   .byeauto { background:#fff3d6; color:#7a5a00; font-weight:bold; }
   .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
   .abt { color:#c00; font-size:0.8em; font-weight:600; }
   input[type=checkbox].ab-check { margin-right: 4px; }
-  .sched .rnd { width:96px; font-size:13px; }
-  .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
-  .sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#444; margin-top:1px; }
-  .sched .rnd .rbye { display:block; font-size:9.5px; font-weight:normal; color:#7a5a00; margin-top:2px; }
   .namectl { margin:0 0 12px; }
-  .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:5px; font-weight:bold; }
+  .nbtn { padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
   .nbtn:hover { background:#163a5c; }
   .nhint { font-size:11.5px; color:#555; margin-left:10px; }
   .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
@@ -120,116 +86,37 @@
   .setupbar label { font-size:12.5px; color:#1f4e79; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
   .setupbar select { padding:5px 8px; font-size:13px; border:1px solid #9db4d4; border-radius:5px; font-weight:700; color:#1f4e79; background:#fff; }
   .setupbar .setinfo { font-size:11.5px; color:#555; font-style:italic; }
-  .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
-  .table-scroll table { min-width:100%; }
-  .mobile-scroll-hint { display:none; font-size:11px; color:#5a6375; margin:4px 0 0; }
-  .mobile-schedule-title { display:none; }
   .mobile-jumpbar { display:none; }
-  .schedule-roundbar {
-    margin: 8px 0 6px;
-    display: flex;
+  .cfgcard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    flex-wrap: wrap;
-    align-items: end;
   }
-  .schedule-roundbar label {
+  .cfgfield {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    font-size: 11px;
-    color: #1f4e79;
-    font-weight: 700;
+    gap: 4px;
   }
-  .schedule-roundbar select {
-    padding: 5px 8px;
-    font-size: 12px;
-    border: 1px solid #9db4d4;
-    border-radius: 5px;
-    font-weight: 700;
-    color: #1f4e79;
-    background: #fff;
+  .cfgfield input,
+  .cfgfield select {
+    padding: 8px 10px;
+    border: 1px solid #aab8cc;
+    border-radius: 4px;
+    font-size: 13px;
   }
-  .schedule-roundbar .nbtn {
-    min-height: 32px;
-    padding: 5px 10px;
-    font-size: 12px;
+  .cfgfield.cfgfield--wide {
+    grid-column: 1 / -1;
   }
-  .schedule-roundbar .state {
-    font-size: 11px;
-    color: #5a6375;
-    font-weight: 700;
-    padding: 0 2px;
-    align-self: center;
+  .cfgfield--mode {
+    grid-column: 1 / -1;
   }
-  @media screen and (min-width: 641px) {
-    .table-scroll.is-wide {
-      overflow-x: hidden;
-    }
-    .table-scroll.is-wide table.sched {
-      width: 100% !important;
-      min-width: 0 !important;
-      table-layout: fixed;
-    }
-    .table-scroll.is-wide table.sched .rnd {
-      width: 86px;
-      font-size: 12px;
-    }
-    .table-scroll.is-wide table.sched th[data-field] {
-      white-space: normal;
-      word-break: break-word;
-      font-size: 11px;
-      line-height: 1.2;
-    }
-    .table-scroll.is-wide table.sched td {
-      padding: 5px 4px;
-      vertical-align: top;
-    }
-    .table-scroll.is-wide table.sched .pair {
-      white-space: normal;
-      flex-wrap: wrap;
-      gap: 2px;
-      min-height: 0;
-    }
-    .table-scroll.is-wide table.sched .pair .t {
-      flex: 0 0 100%;
-      min-width: 0;
-      text-align: center;
-      font-size: 11px;
-      line-height: 1.15;
-    }
-    .table-scroll.is-wide table.sched .pair .setgrp {
-      display: inline-flex;
-      align-items: center;
-    }
-    .table-scroll.is-wide table.sched input.score {
-      width: 28px;
-      height: 24px;
-      font-size: 12px;
-    }
-    .table-scroll.is-wide table.sched .vs {
-      font-size: 12px;
-    }
-    .table-scroll.is-wide table.sched .setsep {
-      margin: 0 2px;
-    }
-    .table-scroll.is-wide table.sched.ultra-compact .rnd {
-      width: 76px;
-      font-size: 11px;
-    }
-    .table-scroll.is-wide table.sched.ultra-compact th[data-field] {
-      font-size: 10px;
-    }
-    .table-scroll.is-wide table.sched.ultra-compact .pair .t {
-      font-size: 10px;
-    }
-    .table-scroll.is-wide table.sched.ultra-compact input.score {
-      width: 24px;
-      height: 22px;
-      font-size: 11px;
-    }
+  .cfgfield--start {
+    grid-column: 1 / 2;
   }
-  .sched tr.round-hidden { display: none; }
-  @media print {
+  .cfgfield--end {
+    grid-column: 2 / 3;
+  }
+@media print {
     @page { size: A4 landscape; margin: 10mm 12mm; }
     body {
       padding:0;
@@ -264,31 +151,6 @@
       break-before:page;
       page-break-before:always;
     }
-    .sched {
-      width: 100% !important;
-      table-layout: fixed;
-    }
-    .sched th, .sched td {
-      overflow: hidden;
-      text-overflow: clip;
-      word-break: break-word;
-    }
-    .sched td { padding:0.8mm 1mm; }
-    .sched .rnd { width:20mm; font-size:7.8pt; }
-    .sched .rnd .rtime { font-size:7pt; margin-top:0.4mm; }
-    .sched .rnd .rmode { font-size:6.6pt; line-height:1.05; margin-top:0.3mm; }
-    .sched .rnd .rbye { font-size:6.8pt; line-height:1.05; margin-top:0.4mm; color:#5a4300; }
-    .pair, .bye { gap:0.8mm; min-height:0; flex-wrap:wrap; white-space:normal; }
-    .pair .t, .bye .t { min-width:0; font-size:6.9pt; flex:0 0 100%; text-align:center; line-height:1.1; }
-    .pair .setgrp { display:inline-flex; align-items:center; }
-    .setsep { margin:0 0.3mm; }
-    .sched.compact .pair, .sched.compact .bye { gap:0.8mm; }
-    .sched.compact .pair .t, .sched.compact .bye .t { font-size:6.6pt; }
-    .sched.compact input.score { width:1.25em; font-size:7.1pt; }
-    .sched.compact .setsep { margin:0 0.45mm; }
-    .vs { font-size:7pt; }
-    .sched thead { display: table-header-group; }
-    .sched tbody { display: table-row-group; }
     .track thead { display: table-header-group; }
     .track tbody { display: table-row-group; }
     .teams .name { height:5.5mm; }
@@ -302,28 +164,10 @@
       page-break-inside:auto !important;
       break-inside:auto !important;
     }
-    input.score {
-      border:none;
-      background:transparent;
-      box-shadow:none;
-      width:1.25em;
-      height:auto;
-      min-height:0;
-      padding:0;
-      margin:0;
-      font-size:7.2pt;
-      font-weight:700;
-      color:#000;
-      text-align:center;
-    }
-    input.score:focus { outline:none; }
     input[type=text]:not(.score) { display:none; }
-    .sched tr.round-hidden { display: table-row !important; }
-    #scheduleSection { transform:none !important; }
-  }
-
-    /* Screen polish overrides */
-    @media screen {
+    #scheduleSection { transform:none !important; }}/* Screen polish overrides */
+    
+@media screen {
       body {
         padding: 12mm 14mm;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
@@ -412,43 +256,15 @@
         border: 1.5px solid #cdd8e6;
         background: #f7fafd;
       }
-      input.score {
-        border: 1.5px solid #b0bec5;
-        border-radius: 4px;
-        background: #fafcff;
-      }
-      input.score:focus {
-        outline: 2px solid #1f4e79;
-        background: #fffce0;
-      }
-      input.score.win {
-        background: #d4f5d4 !important;
-        border-color: #2e7d2e;
-      }
-      input.score.invalid {
-        background: #fde0e0 !important;
-        border-color: #c62828;
-      }
       .stand .pl,
       .stand .rk { background: #e8edf5; color: #1a1a2e; }
       .track .tnum,
       .track .lbl { background: #f0f5fb; color: #1a1a2e; }
       .track .sum { background: #e8edf5; color: #1a1a2e; }
-      .sched .rnd {
-        background: #1f4e79;
-        color: #fff;
-        font-weight: 700;
-      }
-      .sched .rnd .rtime,
-      .sched .rtime { color: #b8d4ee; }
-      .sched .rnd .rmode,
-      .sched .rmode { color: #a0b8cc; }
-      .sched .rnd .rbye { color: #ffe4a3; }
       .digitalbar,
       .digbar,
-      .topbar { gap: 12px; }
-    }
-    @media screen and (max-width: 640px) {
+      .topbar { gap: 12px; }}
+@media screen and (max-width: 640px) {
       body {
         padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
       }
@@ -462,7 +278,7 @@
         flex: 1 1 100% !important;
       }
       .cfgcard-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr !important;
       }
       .cfgfield.cfgfield--wide {
         grid-column: 1 / -1;
@@ -471,10 +287,10 @@
         grid-column: 1 / -1;
       }
       .cfgfield--start {
-        grid-column: 1 / 2;
+        grid-column: 1 / -1 !important;
       }
       .cfgfield--end {
-        grid-column: 2 / 3;
+        grid-column: 1 / -1 !important;
       }
       .cfgcard-actions {
         display: grid;
@@ -488,136 +304,6 @@
         width: 100%;
         min-height: 40px;
       }
-      .schedule-roundbar {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 6px;
-        position: static;
-        padding: 6px 6px;
-        background: rgba(255,255,255,.96);
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
-      }
-      .schedule-roundbar label {
-        min-width: 0;
-      }
-      .schedule-roundbar select {
-        width: 100%;
-      }
-      .schedule-roundbar .state {
-        grid-column: 1 / -1;
-        text-align: center;
-      }
-      .mobile-scroll-hint {
-        display: block;
-      }
-      .mobile-schedule-title {
-        display: block;
-        font-weight: 800;
-        color: var(--app-blue-dark, #1f4e79);
-        font-size: 14px;
-        line-height: 1.25;
-        letter-spacing: .3px;
-        padding: 2px 0 6px 11px;
-        border-left: 3px solid var(--app-blue, #1f4e79);
-        margin: 8px 0 6px;
-      }
-      .table-scroll.is-wide table.sched > caption {
-        display: none;
-      }
-      .table-scroll.is-wide {
-        overflow-x: hidden;
-      }
-      .table-scroll.is-wide table.sched {
-        overflow: visible;
-      }
-      .table-scroll.is-wide table.sched caption {
-        white-space: normal;
-        line-height: 1.35;
-        margin-top: 8px;
-      }
-      .table-scroll.is-wide table {
-        display: block !important;
-        width: 100% !important;
-        min-width: 0 !important;
-      }
-      .table-scroll.is-wide table.sched > tbody {
-        display: block;
-        width: 100%;
-      }
-      .table-scroll.is-wide table.sched > thead {
-        display: none;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] {
-        display: block;
-        width: 100%;
-        margin: 0 0 10px;
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
-        background: #fff;
-        overflow: hidden;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
-        display: none;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td {
-        display: block;
-        width: 100%;
-        border-left: none;
-        border-right: none;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.rnd {
-        border-top: none;
-        background: #eef3fb;
-        font-weight: 800;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match {
-        border-top: 1px solid #d6e1ef;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match::before {
-        content: attr(data-field-label);
-        display: block;
-        text-align: left;
-        font-size: 11px;
-        font-weight: 700;
-        color: #1f4e79;
-        margin: 0 0 4px;
-      }
-      .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.empty {
-        display: none;
-      }
-      .sched td { padding: 6px 4px; }
-      .pair {
-        white-space: normal;
-        flex-wrap: wrap;
-        gap: 3px;
-      }
-      .pair .t {
-        flex: 0 0 100%;
-        min-width: 0;
-        text-align: center;
-        font-size: 11px;
-      }
-      .pair .setgrp {
-        display: inline-flex;
-        align-items: center;
-      }
-      .pair .setsep {
-        margin: 0 1px;
-      }
-      .pair .vs {
-        font-size: 13px;
-      }
-      .table-scroll.is-track table {
-        display: table !important;
-        width: max-content !important;
-        min-width: 560px !important;
-      }
-      input.score {
-        min-width: 42px;
-        min-height: 44px;
-        font-size: 16px;
-      }
       .mobile-jumpbar {
         position: fixed;
         left: 0;
@@ -625,7 +311,7 @@
         bottom: 0;
         z-index: 999;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 6px;
         padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
         background: rgba(255,255,255,.96);
@@ -636,12 +322,21 @@
         min-height: 44px;
         padding: 6px 4px;
         font-size: 12px;
-      }
-    }
-
-
-    /* Print polish overrides */
-    @media print {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+        cursor: pointer;
+        border: 1px solid #1f4e79;
+        background: #1f4e79;
+        color: #fff;
+        border-radius: 4px;
+        font-weight: 700;
+        box-sizing: border-box;
+      }}/* Print polish overrides */
+    
+@media print {
       body {
         padding: 0;
         font-size: 8.5pt;
@@ -660,22 +355,12 @@
         background: #e8edf5 !important;
         color: #000 !important;
       }
-      .sched .rnd {
-        background: #e8edf5 !important;
-        color: #000 !important;
-      }
-      .sched .rnd .rtime,
-      .sched .rtime { color: #000 !important; }
-      .sched .rnd .rmode,
-      .sched .rmode { color: #333 !important; }
       .guide {
         border: none;
         border-left: 3px solid #1f4e79;
         background: #f5f8fc !important;
-      }
-    }
-
-</style>
+      }}</style>
+  <link rel="stylesheet" href="spielplan.css">
   <style>.track .pos.pz-tie{ background:#fff4d6 !important; } @media print{ .track .pos.pz-tie{ background:#fff4d6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }</style>
   <link rel="stylesheet" href="app-skin.css">
 </head>
@@ -683,8 +368,12 @@
 
 <div class="noprint" style="margin:0 0 8px"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-jeder-gegen-jeden.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
 
+<h1 id="h-title">Turnierbogen – Jeder-gegen-jeden</h1>
+<p class="sub" id="h-sub"></p>
+<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+
 <!-- ======================= SEITE 1 ======================= -->
-<div class="guide">
+<div class="guide" id="guideContainer">
   <h2>Kurzanleitung – so läuft das Turnier</h2>
   <ol>
     <li><span class="hi">Modus:</span> Jeder gegen jeden – <span id="g-games">jedes Team spielt gegen jedes andere</span>, niemand scheidet aus.</li>
@@ -695,20 +384,16 @@
   </ol>
 </div>
 
-<h1 id="h-title">Turnierbogen – Jeder-gegen-jeden</h1>
-<p class="sub" id="h-sub"></p>
-<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
-
 <div class="noprint cfgcard" id="configSection">
   <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
     <label class="cfgfield cfgfield--wide">📝 Turniertitel
-      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…">
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
     </label>
-    <label class="cfgfield">👥 Teams
+    <label class="cfgfield cfgfield--start">👥 Teams
       <select id="teamCount" onchange="onTeamCount()"></select>
     </label>
-    <label class="cfgfield">🏖️ Felder
+    <label class="cfgfield cfgfield--end">🏖️ Felder
       <select id="fieldCount" onchange="onFieldCount()"></select>
     </label>
     <label class="cfgfield cfgfield--mode">🎯 Punkte/Spiel
@@ -725,6 +410,7 @@
   <div class="cfgresult" id="cfgResult">
     <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-teams">–</span><span class="cfgres-lbl">Teams</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Pro Team</span></div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-fields">–</span>
@@ -742,6 +428,7 @@
     <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>
     <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
     <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+    <button type="button" class="nbtn" onclick="toggleAbsent()">⚠ Team ausgefallen</button>
     <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
     <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
     <span class="spacer"></span>
@@ -752,16 +439,20 @@
     <div class="ngrid"></div>
     <div class="nactions">
       <button type="button" class="nbtn" onclick="shuffleNames()">🎲 Teams mischen</button>
-      <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
+      <button type="button" class="nbtn" onclick="clearNames()">Namen leeren</button>
     </div>
   </div>
   <div id="fieldpanel" class="namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
   </div>
+  <div id="absentpanel" class="namepanel" hidden>
+    <div class="ngrid" id="absentGridContainer"></div>
+    <div class="nactions"><button type="button" class="nbtn" onclick="clearAbsent()">Ausfälle zurücksetzen</button></div>
+  </div>
 </div>
 
-<div class="row">
+<div class="row" id="livebox">
   <!-- Teams -->
   <div style="flex:0 0 46%">
     <table class="teams">
@@ -779,7 +470,6 @@
 </div>
 
 <div class="table-scroll is-wide" id="scheduleSection">
-  <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</p>
   <div class="noprint schedule-roundbar">
     <label>Runde
       <select id="scheduleRoundFilter" onchange="onScheduleRoundFilterChange()"></select>
@@ -788,14 +478,15 @@
     <button id="schedRoundNextBtn" type="button" class="nbtn" onclick="shiftScheduleRound(1)" aria-label="Nächste Runde">R ▶︎</button>
     <span class="state" id="scheduleFilterState" aria-live="polite"></span>
   </div>
+  <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
   <table class="sched">
-    <caption>Spielplan &amp; Ergebnisse · Felder = Spalten · Ergebnis in die Kästchen</caption>
+    <caption>Spielplan &amp; Ergebnisse</caption>
     <thead id="schedHead"></thead>
     <tbody id="schedBody"></tbody>
   </table>
 </div>
-<p class="mobile-scroll-hint noprint">Mobile-Ansicht: Runde wählen; alle Felder bleiben sichtbar.</p>
 <p class="input-hint" id="inputExamples">Beispiel Eingabe: 21:19 oder 15:12 (je Team in das eigene Kästchen).</p>
+<p class="input-hint round-subline">Spielmodus: <span class="rmode">1 Satz bis 21</span> · 2 Punkte Vorsprung · Sieg = 1 Punkt</p>
 
 <div class="page-break"></div>
 
@@ -824,7 +515,7 @@
     <table>
       <caption>Tie-Breaker bei Gleichstand</caption>
       <tr><th>Rang</th><th>Kriterium</th></tr>
-      <tr><td>1</td><td>Punkte</td></tr>
+      <tr><td>1</td><td>Punkte (Siege)</td></tr>
       <tr><td>2</td><td>Ball-Differenz</td></tr>
       <tr><td>3</td><td>erzielte Ballpunkte</td></tr>
       <tr><td>4</td><td>direkter Vergleich</td></tr>
@@ -838,9 +529,9 @@
   pro Spiel <span class="rmode">1 Satz bis 21</span> mit 2 Punkten Vorsprung.
 </div>
 
-<button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>
 <div class="mobile-jumpbar noprint">
   <button type="button" class="nbtn" onclick="document.getElementById('configSection').scrollIntoView({behavior:'smooth',block:'start'})">⚙️ Setup</button>
+  <button type="button" class="nbtn" onclick="document.getElementById('guideContainer').scrollIntoView({behavior:'smooth',block:'start'})">📖 Anleitung</button>
   <button type="button" class="nbtn" onclick="document.getElementById('scheduleSection').scrollIntoView({behavior:'smooth',block:'start'})">📋 Spielplan</button>
   <button type="button" class="nbtn" onclick="document.getElementById('standingsSection').scrollIntoView({behavior:'smooth',block:'start'})">🏁 Tabelle</button>
   <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
@@ -1007,7 +698,7 @@
     let html='';
     for(let i=1;i<=NTEAMS;i++){
       const v = names[i] ? String(names[i]).replace(/"/g,'&quot;') : '';
-      html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" oninput="onNameInput('+i+')"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> ausgefallen</span></label>';
+      html += '<label>Team '+i+'<input type="text" id="tn'+i+'" value="'+v+'" placeholder="Name…" autocomplete="off" spellcheck="false" oninput="onNameInput('+i+')"><span style="font-size:11px;color:#555;margin-left:6px"><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> ausgefallen</span></label>';
     }
     grid.innerHTML = html;
   }
@@ -1114,6 +805,7 @@
     }
     return 0;
   }
+  function teamNameOf(i){ return ((loadNames()[i]) || '').trim(); }
   function teamNameHtml(i, names, absent){
     const v = ((names && names[i]) || '').trim();
     return 'Team ' + i + (v ? ' <span class="tnm">(' + escapeHtml(v) + ')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
@@ -1154,8 +846,23 @@
   }
 
   /* ================= Auswertung Round-Robin ================= */
+  /* Sieger-Anzeige je Spiel (separat unter dem Ergebnis-Formular). */
+  function teamLabelText(t){
+    const nm = ((loadNames()[t]) || '').trim();
+    return nm ? ('Team ' + t + ' (' + nm + ')') : ('Team ' + t);
+  }
+  function setMatchWinner(td, winnerTeam, note){
+    const box = td ? td.querySelector('.mwin') : null;
+    if(!box) return;
+    const val = box.querySelector('.mwin-val');
+    if(val) val.innerHTML = winnerTeam
+      ? escapeHtml(teamLabelText(winnerTeam)) + (note ? ' <span class="mwin-note">' + note + '</span>' : '')
+      : (note ? '<span class="mwin-note">' + note + '</span>' : '–');
+    box.classList.toggle('is-set', !!winnerTeam);
+  }
   function computeAll(){
     applyTeamNames();
+    updateTeamsBadge();
     refreshScheduleView();
     const absent = loadAbsent();
     const st={}, cum={};
@@ -1171,14 +878,17 @@
           if(absentA && absentB){
             setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
             setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
+            setMatchWinner(td, null, 'beide ausgefallen');
           } else if(absentA){
             st[b].w += 1; cum[b].pts += 1;
             setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
             setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+            setMatchWinner(td, b, '(kampflos)');
           } else {
             st[a].w += 1; cum[a].pts += 1;
             setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
             setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
+            setMatchWinner(td, a, '(kampflos)');
           }
           return;
         }
@@ -1187,6 +897,7 @@
         if(res){
           if(res.winner==='a'){ st[a].w += 1; cum[a].pts += 1; }
           else if(res.winner==='b'){ st[b].w += 1; cum[b].pts += 1; }
+          setMatchWinner(td, res.winner==='a' ? a : (res.winner==='b' ? b : null), res.winner ? '' : 'unentschieden');
           const da=res.aBalls-res.bBalls;
           st[a].bd += da; st[b].bd -= da;
           cum[a].bd += da; cum[b].bd -= da;
@@ -1196,9 +907,11 @@
         } else if(sa!=null || sb!=null || gv2(r,a)!=null || gv2(r,b)!=null || gv3(r,a)!=null || gv3(r,b)!=null){
           setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
           setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
+          setMatchWinner(td, null, '');
         } else {
           setCell(ptA,''); setCell(bdA,'');
           setCell(ptB,''); setCell(bdB,'');
+          setMatchWinner(td, null, '');
         }
       });
       /* Freilos bei ungerader Teamzahl: 1 Punkt, ohne Differenz – chronologisch in dieser Runde */
@@ -1293,7 +1006,7 @@
 
   /* ================= Zeiten ================= */
   function toMin(t){ const m=/^(\d{1,2}):(\d{2})$/.exec((t||'').trim()); return m? (+m[1]*60 + +m[2]) : null; }
-  function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+  function fmtMin(t){ t=((Math.round(t)%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
   function fmtDur(mins){
     const m = Math.max(0, Math.round(mins));
     const h = Math.floor(m/60), r = m%60;
@@ -1345,18 +1058,21 @@
     LAST_TIMEFIT_NEEDED_FIELDS = neededFields;
     const neededEndMin = startMin + playMin;
     /* Spielplan-Slots */
+    // Anzeige exakt auf das Zeitfenster verteilt (wie im Schweizer System),
+    // damit die letzte Runde genau zur Endzeit endet.
+    const perExact = dur / total;
     document.querySelectorAll('.sched .rtime[data-slot]').forEach(el=>{
       const s=+el.getAttribute('data-slot');
-      el.textContent = fmtMin(startMin+s*per)+'–'+fmtMin(startMin+(s+1)*per);
+      el.textContent = fmtMin(startMin+s*perExact)+'–'+fmtMin(startMin+(s+1)*perExact);
     });
     document.querySelectorAll('.rmode').forEach(el=>el.textContent=modeText);
     /* Zeitplan-Übersicht */
     document.querySelectorAll('.ztime[data-slot]').forEach(el=>{
       const s=+el.getAttribute('data-slot');
-      el.textContent = fmtMin(startMin+s*per);
+      el.textContent = fmtMin(startMin+s*perExact);
     });
     const evalEl=document.getElementById('zEval');
-    if(evalEl) evalEl.textContent = fmtMin(startMin+total*per);
+    if(evalEl) evalEl.textContent = fmtMin(startMin+total*perExact);
     /* Ergebnis-Readout */
     const warn = !enough;
     setRV('rv-perGame', per + ' / ' + recPerMatch + ' Min');
@@ -1415,7 +1131,7 @@
     let html='';
     for(let i=0;i<NFIELDS;i++){
       const v = names[i] ? String(names[i]).replace(/"/g,'&quot;') : '';
-      html += '<label>Feld '+(i+1)+'<input type="text" id="fni_'+i+'" value="'+v+'" placeholder="Feld '+(i+1)+'" oninput="onFieldInput('+i+')"></label>';
+      html += '<label>Feld '+(i+1)+'<input type="text" id="fni_'+i+'" value="'+v+'" placeholder="Feld '+(i+1)+'" autocomplete="off" spellcheck="false" oninput="onFieldInput('+i+')"></label>';
     }
     grid.innerHTML = html;
   }
@@ -1430,6 +1146,23 @@
   function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
   function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
   function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; }
+  function populateAbsentPanel(){
+    const container = document.getElementById('absentGridContainer');
+    if(!container) return;
+    const absent = loadAbsent();
+    let html = '';
+    for(let i=1;i<=NTEAMS;i++){
+      const v = teamNameOf(i) || ('Team '+i);
+      html += '<label><input type="checkbox" class="ab-check" id="ab'+i+'" '+(absent[i] ? 'checked' : '')+' onchange="onAbsentInput('+i+')"> <span>'+escapeHtml(v)+'</span></label>';
+    }
+    container.innerHTML = html;
+  }
+  function toggleAbsent(){ 
+    const p=document.getElementById('absentpanel'); 
+    p.hidden=!p.hidden; 
+    if(!p.hidden) populateAbsentPanel();
+  }
+  function clearAbsent(){ if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return; try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
   function loadScheduleRoundFilter(){
     try{
       const v = localStorage.getItem(ROUND_FILTER_KEY);
@@ -1453,31 +1186,17 @@
   }
   function applyScheduleRoundFilter(){
     const sel = document.getElementById('scheduleRoundFilter');
-    const hint = document.querySelector('.mobile-scroll-hint');
     const state = document.getElementById('scheduleFilterState');
-    const narrow = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
     const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
     if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
     if(sel) sel.value = SCHEDULE_ROUND_FILTER;
-    
-    // Mobile: Filter (hide) non-matching rounds; Desktop: scroll to round
-    if(narrow){
-      document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
-        const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
-        tr.classList.toggle('round-hidden', !show);
-      });
-    } else {
-      // Desktop: remove all hidden classes & scroll to first row of selected round
-      document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
-        tr.classList.remove('round-hidden');
-      });
-      const firstRowOfRound = document.querySelector('#schedBody tr[data-round="'+SCHEDULE_ROUND_FILTER+'"]');
-      if(firstRowOfRound) firstRowOfRound.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-    
-    if(hint && narrow){
-      hint.textContent = 'Mobile-Ansicht: Runde ' + SCHEDULE_ROUND_FILTER;
-    }
+     
+    // Both Desktop AND Mobile: show only selected round
+    document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
+      const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
+      tr.classList.toggle('round-hidden', !show);
+    });
+     
     if(state){
       state.textContent = 'Runde ' + SCHEDULE_ROUND_FILTER + ' / ' + ROUNDS.length;
     }
@@ -1510,40 +1229,63 @@
   }
 
   /* ================= DOM-Aufbau ================= */
+  function scoreInputHtml(prefix, round, tm, op, placeholder){
+    return '<input class="score" type="text" inputmode="numeric" maxlength="3" id="' + prefix + round + '_' + tm + '"'
+      + ' data-rr-round="' + round + '" data-tm="' + tm + '" data-op="' + op + '"'
+      + ' oninput="onScore()" autocomplete="off"'
+      + (placeholder ? ' placeholder="' + placeholder + '"' : '')
+      + ' aria-label="Team ' + tm + (placeholder ? ' Entscheidungssatz' : '') + '">';
+  }
+  /* Eine Team-Zeile im Ergebnis-Formular: Teamname + die zugehörigen Satz-Felder.
+     Dadurch ist immer eindeutig, welches Kästchen zu welchem Team gehört. */
+  function matchSideHtml(round, tm, op){
+    const setCnt = setCount();
+    let inputs = scoreInputHtml('g', round, tm, op, '');
+    if(setCnt >= 2) inputs += scoreInputHtml('g2', round, tm, op, '');
+    if(setCnt >= 3) inputs += scoreInputHtml('g3', round, tm, op, '');
+    return '<span class="pside">'
+      + '<span class="t" data-team="' + tm + '">Team ' + tm + '</span>'
+      + '<span class="sgrp">' + inputs + '</span>'
+      + '</span>';
+  }
+  /* Kurz-Erklaerung des Ergebnis-Formulars – identisch in beiden Turnierbogen. */
+  function scoreFormLegend(){
+    const setCnt = setCount();
+    const cols = setCnt <= 1
+      ? 'ein Kästchenpaar für das Ergebnis'
+      : (setCnt === 2 ? 'je Satz ein Kästchenpaar' : 'je Satz ein Kästchenpaar, der Entscheidungssatz nur bei 1:1');
+    return 'So ausfüllen: ' + cols + ' – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt.';
+  }
+  /* Ein Satz = eine Spalte: Beschriftung oben, darunter die beiden Kaestchen
+     (links Team A, rechts Team B) nebeneinander. Tab-Reihenfolge A1 -> B1 -> A2 -> B2 ...
+     und das Ergebnis ist als "21:19" lesbar. Identisch in beiden Turnierbogen. */
+  function setColumnHtml(prefix, round, a, b, label, ph){
+    return '<span class="sset">'
+      + '<span class="slbl">' + label + '</span>'
+      + '<span class="sbox">'
+      +   scoreInputHtml(prefix, round, a, b, ph || '')
+      +   '<span class="vs">:</span>'
+      +   scoreInputHtml(prefix, round, b, a, ph || '')
+      + '</span></span>';
+  }
   function matchCellHtml(round, a, b, fieldIdx, fieldLabel){
     const setCnt = setCount();
-    const s2 = setCnt >= 2
-      ? '<span class="setsep">|</span><span class="setgrp">'
-        + '<input class="score" type="text" inputmode="numeric" id="g2'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
-        + '<span class="vs">:</span>'
-        + '<input class="score" type="text" inputmode="numeric" id="g2'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
-        + '</span>'
-      : '';
-    const s3 = setCnt >= 3
-      ? '<span class="setsep">|</span><span class="setgrp">'
-        + '<input class="score" type="text" inputmode="numeric" id="g3'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
-        + '<span class="vs">:</span>'
-        + '<input class="score" type="text" inputmode="numeric" id="g3'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
-        + '</span>'
-      : '';
+    let sets = setColumnHtml('g', round, a, b, setCnt <= 1 ? 'Punkte' : 'Satz 1');
+    if(setCnt >= 2) sets += setColumnHtml('g2', round, a, b, 'Satz 2');
+    if(setCnt >= 3) sets += setColumnHtml('g3', round, a, b, 'Entsch.', 'TB');
     return '<td class="match" data-round="'+round+'" data-col="'+fieldIdx+'" data-field-label="'+escapeHtml(fieldLabel)+'" data-a="'+a+'" data-b="'+b+'">'
       + '<span class="pair">'
-      +   '<span class="t" data-team="'+a+'">Team '+a+'</span>'
-      +   '<span class="setgrp">'
-      +     '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+a+'" data-rr-round="'+round+'" data-tm="'+a+'" data-op="'+b+'" oninput="onScore()" autocomplete="off">'
-      +     '<span class="vs">:</span>'
-      +     '<input class="score" type="text" inputmode="numeric" id="g'+round+'_'+b+'" data-rr-round="'+round+'" data-tm="'+b+'" data-op="'+a+'" oninput="onScore()" autocomplete="off">'
+      +   '<span class="pnames">'
+      +     '<span class="t t-a" data-team="' + a + '">Team ' + a + '</span>'
+      +     '<span class="t t-b" data-team="' + b + '">Team ' + b + '</span>'
       +   '</span>'
-      +   s2
-      +   s3
-      +   '<span class="t" data-team="'+b+'">Team '+b+'</span>'
-      + '</span><span class="bye" hidden></span></td>';
+      +   '<span class="psets">' + sets + '</span>'
+      + '</span>'
+      + '<span class="mwin" data-mwin="' + round + '_' + a + '_' + b + '"><span class="mwin-lbl">Sieger</span><span class="mwin-val">\u2013</span></span>'
+      + '<span class="bye" hidden></span></td>';
   }
   function buildScheduleTable(){
     SLOTS = [];
-    let headHtml = '<tr><th class="rnd">R</th>';
-    for(let f=0; f<NFIELDS; f++) headHtml += '<th data-field="'+f+'">Feld '+(f+1)+'</th>';
-    headHtml += '</tr>';
     let html = '';
     SCHEDULE.forEach((rd, ri) => {
       const roundNo = ri + 1;
@@ -1552,15 +1294,20 @@
       for(let s=0; s<slots; s++){
         const slotIndex = SLOTS.length;
         SLOTS.push({ round: roundNo, part: s+1, of: slots });
-        let label = 'R'+roundNo + (slots>1 ? ' · '+(s+1)+'/'+slots : '');
-        let cell = '<td class="rnd">'+label
+        let label = 'Runde ' + roundNo + (slots>1 ? ' · Teil '+(s+1)+'/'+slots : '');
+        let head = '<td class="rhead-cell" colspan="'+NFIELDS+'">'
+          + '<span class="rlabel">'+label+'</span>'
           + '<span class="rtime tt" data-slot="'+slotIndex+'"></span>'
           + '<span class="rmode"></span>';
         if(rd.bye != null && s === 0){
-          cell += '<span class="rbye">spielfrei: <span data-team="'+rd.bye+'">Team '+rd.bye+'</span></span>';
+          head += '<span class="rbye">spielfrei: <span data-team="'+rd.bye+'">Team '+rd.bye+'</span></span>';
         }
-        cell += '</td>';
-        html += '<tr data-round="'+roundNo+'">' + cell;
+        head += '</td>';
+        html += '<tr class="rhead" data-round="'+roundNo+'">' + head + '</tr>';
+        let fhead = '<tr class="fhead" data-round="'+roundNo+'">';
+        for(let f=0; f<NFIELDS; f++) fhead += '<th scope="col" data-field="'+f+'">Feld '+(f+1)+'</th>';
+        html += fhead + '</tr>';
+        html += '<tr data-round="'+roundNo+'">';
         for(let f=0; f<NFIELDS; f++){
           const fieldLabel = DEFAULT_FIELDS[f] || ('Feld ' + (f+1));
           const mi = s*NFIELDS + f;
@@ -1571,7 +1318,7 @@
       }
     });
     const head = document.getElementById('schedHead');
-    if(head) head.innerHTML = headHtml;
+    if(head) head.innerHTML = '';
     document.getElementById('schedBody').innerHTML = html;
     syncMobileFieldLabels();
   }
@@ -1668,22 +1415,24 @@
          : (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung')) + '.';
     const schedTable = document.querySelector('table.sched');
     if(schedTable){
-      const dense = setCount() >= 3 || NFIELDS >= 6;
-      const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && setCount() >= 2);
+      const dense = setCount() >= 2 || NFIELDS >= 6;
+      const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && setCount() >= 2) || (NFIELDS >= 5 && setCount() >= 3);
       schedTable.classList.toggle('compact', dense);
       schedTable.classList.toggle('ultra-compact', ultraDense);
     }
     const inputExamples = document.getElementById('inputExamples');
     if(inputExamples){
+      let ex;
       if(SET_MODE === '2x21tb'){
-        inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 nötig).';
+        ex = 'Beispiel: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 nötig).';
       } else if(SET_MODE === '2x15tb'){
-        inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 nötig).';
+        ex = 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 nötig).';
       } else if(SET_MODE === '2x15'){
-        inputExamples.textContent = 'Beispiel Eingabe: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 zählt die Ball-Differenz).';
+        ex = 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 zählt die Ball-Differenz).';
       } else {
-        inputExamples.textContent = 'Beispiel Eingabe: 21:19 oder 15:12 (je Team in das eigene Kästchen).';
+        ex = 'Beispiel: ' + POINT_TARGET + ':' + Math.max(0, POINT_TARGET - 2) + ' oder ' + POINT_TARGET + ':' + Math.max(0, POINT_TARGET - 8) + '.';
       }
+      inputExamples.textContent = scoreFormLegend() + ' ' + ex;
     }
     const matchesPerRound = SCHEDULE.length ? SCHEDULE[0].matches.length : 0;
     const slotsPerRound = Math.max(1, Math.ceil(matchesPerRound / NFIELDS));
@@ -1691,10 +1440,18 @@
     const teamSetsMin = gamesPerTeam * setRangeTeam.min;
     const teamSetsMax = gamesPerTeam * setRangeTeam.max;
     setRV('rv-rounds', ROUNDS.length);
+    updateTeamsBadge();
     setRV('rv-perTeam', teamSetsMin === teamSetsMax
       ? (gamesPerTeam + ' Spiele · ' + teamSetsMin + ' Sätze')
       : (gamesPerTeam + ' Spiele · ' + teamSetsMin + '–' + teamSetsMax + ' Sätze'));
     setRV('rv-fields', NFIELDS + (slotsPerRound > 1 ? ' · ' + slotsPerRound + ' Slots/R' : ''));
+  }
+  function updateTeamsBadge(){
+    const absent = loadAbsent();
+    let out = 0;
+    for(let i=1;i<=NTEAMS;i++) if(absent[i]) out++;
+    setRV('rv-teams', out ? (NTEAMS + ' · ' + out + ' ausgefallen') : NTEAMS);
+    setRVState('rv-teams', out ? 'warn' : null);
   }
   function setRV(id, val){ const el=document.getElementById(id); if(el) el.textContent = val; }
   function setRVState(id, state){
@@ -1860,6 +1617,48 @@
   }catch(e){}
 
   function num(v){ v = (v==null?'':String(v)).trim(); if(v==='') return null; if(!/^\d{1,3}$/.test(v)) return null; return parseInt(v,10); }
+
+  // ── Ergebnisfelder: nur Ziffern zulassen ──────────────────────────────
+  // Zusaetzlich komfortabel: "21:19" (auch eingefuegt) wird automatisch auf
+  // beide Kaestchen verteilt, und ":" / "-" / "/" springt ins Partnerfeld.
+  function scorePartner(inp){
+    var id = inp.id || '', m;
+    // "Alle gegen Alle": g|g2|g3 + Runde + "_" + Team (Gegner steht in data-op)
+    if(inp.dataset && inp.dataset.op != null && (m = /^(g[23]?)(\d+)_(\d+)$/.exec(id))){
+      return document.getElementById(m[1] + m[2] + '_' + inp.dataset.op);
+    }
+    // Schweizer System: s|s2|s3 + A|B + "_" + Runde + "_" + Feld
+    if((m = /^(s[23]?)(A|B)_(\d+)_(\d+)$/.exec(id))){
+      return document.getElementById(m[1] + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
+    }
+    return null;
+  }
+  function sanitizeScore(inp){
+    var v = inp.value == null ? '' : String(inp.value);
+    var pair = /^\s*(\d{1,3})\s*[:\-\/]\s*(\d{1,3})\s*$/.exec(v);
+    if(pair){
+      inp.value = pair[1];
+      var partner = scorePartner(inp);
+      if(partner && !partner.disabled) partner.value = pair[2];
+      return;
+    }
+    var clean = v.replace(/\D+/g, '').slice(0, 3);
+    if(clean !== v) inp.value = clean;
+  }
+  document.addEventListener('input', function(e){
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score')) return;
+    sanitizeScore(el);
+  }, true);
+  document.addEventListener('keydown', function(e){
+    if(e.key !== ':' && e.key !== '-' && e.key !== '/') return;
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    var partner = scorePartner(el);
+    if(!partner || partner.disabled) return;
+    e.preventDefault();
+    partner.focus(); if(partner.select) partner.select();
+  }, true);
   // ── Ungültig-Tooltip + offene/erledigte Spiele hervorheben ──
   function update(){
     document.querySelectorAll('input.score').forEach(function(inp){

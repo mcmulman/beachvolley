@@ -20,7 +20,7 @@
     h1 { margin: 0 0 3px; font-size: 16px; }
     h2 { margin: 0 0 2px; font-size: 11px; }
     table { width: 100%; border-collapse: collapse; margin: 3px 0 5px; }
-    th, td { border: 1px solid #222; padding: 2px 3px; vertical-align: middle; }
+    th, td { border: 1px solid #222; padding: 2px 3px; vertical-align: middle; text-align: center; }
     th { background: #eee; font-weight: 700; }
     .meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 3px; font-size: 9px; }
     .sub { color: #444; font-size: 8.5px; margin: 0 0 4px; }
@@ -39,10 +39,11 @@
     .central-table span { font-size: 6.5px; color: #444; }
     .central-table th:nth-child(1), .central-table th:nth-child(2), .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 7.2px; font-weight: 700; }
     .example-row td { background: #f7f7f7; color: #555; font-style: italic; }
-    .round-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 6mm; margin-top: 3mm; }
-    .round-subline { font-size: 8px; margin-bottom: 2px; }
-    .round-table th, .round-table td { font-size: 9px; height: 6.4mm; padding: 2px 4px; }
-    .round-table td:nth-child(2), .round-table td:nth-child(3) { font-size: 10px; font-weight: 700; }
+    .round-grid { display: grid; grid-template-columns: 1fr; gap: 3mm 6mm; margin-top: 3mm; }
+    .legend { font-size: 12px; color: #333; margin-top: 10px; }
+    .noscreen { display: none; }
+@media print { .noscreen { display: block; }}
+    .legend b { color: #111; }
     .team-legend { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px 6px; border: 1px solid #555; padding: 2px 4px; margin-top: 3px; font-size: 7.1px; line-height: 1.1; justify-content: start; }
     .team-legend span { white-space: nowrap; }
     .team-legend strong { font-weight: 800; }
@@ -66,34 +67,21 @@
     .cfggrid label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; font-weight: 700; color: #1f4e79; }
     .cfggrid input, .cfggrid select { padding: 4px 6px; font-size: 11px; border: 1px solid #aab8cc; border-radius: 3px; }
     .cfgmeta { margin-top: 6px; font-size: 10px; color: #555; }
-    .livebox { margin: 4px 0 6px; padding: 8px 12px 10px; border: 1px solid #bfe0c8; border-radius: 8px; background: #f6fbf7; font-size: 11px; }
-    .livebox h3 { margin: 2px 0 4px; font-size: 12px; color: #0a3d20; }
-    /* Ranking und Paarungen kompakt nebeneinander; Tabellen nur so breit wie nötig. */
-    .livebox .live-cols { display: flex; flex-wrap: wrap; gap: 6px 26px; align-items: flex-start; }
-    .livebox .live-col { flex: 0 1 auto; }
-    .livebox table.livetab { border-collapse: collapse; margin-bottom: 4px; width: auto; }
-    .livebox table.livetab td, .livebox table.livetab th { border: 1px solid #cdd8e6; padding: 1px 6px; text-align: center; font-size: 10.5px; }
-    .livebox table.livetab th { background: #e7f6ec; }
-    .livebox table.livetab tr.tie-row td { background: #fff4d6; }
-    .livebox table.livetab .tie-eq { color:#b8860b; font-weight:700; margin-left:2px; }
-    .livebox .tie-note { font-size:10px; color:#7a5c00; margin:2px 0 6px; }
-    .resu .vs { color: #999; font-weight: 700; margin: 0 1px; }
-    .resu .setgrp { white-space: nowrap; }
-    .resu .setsep { color: #bbb; font-weight: 700; margin: 0 2px; }
+    /* Teams-/Zeitplan-Übersicht (identisch zu Alle-gegen-Alle) */
+    .row { display: flex; gap: 8mm; align-items: flex-start; }
+    .grow { flex: 1; }
+    caption { text-align: left; font-weight: bold; font-size: 14px; margin: 14px 0 5px; }
+    .teams td { text-align: left; }
+    .teams .num { width: 24px; font-weight: bold; background: #eee; text-align: center; }
+    .teams .name { height: 26px; }
     .central-table .auto { background: #e7f6ec; }
-    .round-table .auto-tm { background: #eef6ff; }
-    .bye-team { font-style: italic; color: #555; }
     .dropped-team { color: #b00020; text-decoration: line-through; }
+    .abt { color: #c00; font-size: 0.8em; font-weight: 600; }
     .dropped-note { color: #b00020; font-style: italic; }
     .drop-row td:first-child, .drop-row td:nth-child(2) { background: #fff6f7; }
     .panel-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px 12px; }
     .panel-checks label { display: flex; flex-direction: row; align-items: center; gap: 8px; font-size: 11px; color: #1f4e79; font-weight: 700; }
-    input.score { padding: 0; margin: 0; text-align: center; font-family: inherit; font-weight: 700; font-size: 9px; color: #0a2e52; background: #fff; border: 1px solid #999; border-radius: 2px; width: 22px; height: 14px; vertical-align: middle; -webkit-appearance: none; appearance: none; }
-    input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    input.score:focus { outline: 1px solid #1f4e79; background: #fffce8; }
-    input.score.win { background: #d6f5d6 !important; border-color: #2e8b2e; }
-    input.score.invalid { background: #ffe0e0 !important; border-color: #cc3333; }
-    @media print {
+@media print {
       @page { size: A4 landscape; margin: 10mm 12mm; }
       body {
         margin:0;
@@ -131,6 +119,9 @@
       }
       .guide h2 { font-size:9.8pt; }
       .guide li { font-size:8pt; margin:0.35mm 0; }
+      .row, .teams { page-break-inside:avoid; break-inside:avoid; }
+      caption { font-size:9pt; margin:2mm 0 1mm; }
+      .teams .name { height:5.5mm; }
       .page-note {
         margin:0 0 2mm;
         padding:1.5mm 2.5mm;
@@ -171,37 +162,8 @@
         page-break-inside:avoid;
         break-inside:avoid;
       }
-      .round-subline { font-size:7.5pt; margin-bottom:0.8mm; }
-      .round-table th, .round-table td {
-        font-size:8pt;
-        height:auto;
-        padding:0.95mm 1.2mm;
-      }
-      .round-table td:nth-child(2),
-      .round-table td:nth-child(3) {
-        font-size:9pt;
-      }
-      .round-table tr {
-        page-break-inside:avoid;
-        break-inside:avoid;
-      }
-      input.score {
-        border:none;
-        background:transparent;
-        box-shadow:none;
-        width:1.7em;
-        height:auto;
-        padding:0;
-        margin:0;
-        font-size:8pt;
-        font-weight:700;
-        color:#000;
-        text-align:center;
-      }
-      input.score:focus { outline:none; }
-      input[type=text]:not(.score) { display:none; }
-    }
-    @media screen {
+      input[type=text]:not(.score) { display:none; }}
+@media screen {
       body { font-size: 13px; padding: 8mm; }
       .page { width: 100%; max-width: 1200px; min-height: auto; margin: 0 auto 24px; }
       h1 { font-size: 20px; }
@@ -219,17 +181,11 @@
       .central-table .round { width: auto; min-width: 82px; }
       .central-table .rplace { width: auto; min-width: 28px; }
       .round-grid { gap: 8px 16px; margin-top: 10px; }
-      .round-subline { font-size: 11px; }
-      .round-table th, .round-table td { font-size: 12px; height: auto; padding: 4px 6px; }
-      .round-table td:nth-child(2), .round-table td:nth-child(3) { font-size: 13px; }
       .team-legend { font-size: 11px; padding: 4px 8px; gap: 2px 10px; }
-      input.score { width: 36px; height: 26px; font-size: 13px; }
       .namepanel label, .cfggrid label { font-size: 12px; }
-      .nhint, .cfgmeta { font-size: 11px; }
-    }
-
-    /* Screen polish overrides */
-    @media screen {
+      .nhint, .cfgmeta { font-size: 11px; }}/* Screen polish overrides */
+    
+@media screen {
       body {
         padding: 12mm 14mm;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
@@ -318,45 +274,16 @@
         border: 1.5px solid #cdd8e6;
         background: #f7fafd;
       }
-      input.score {
-        border: 1.5px solid #b0bec5;
-        border-radius: 4px;
-        background: #fafcff;
-      }
-      input.score:focus {
-        outline: 2px solid #1f4e79;
-        background: #fffce0;
-      }
-      input.score.win {
-        background: #d4f5d4 !important;
-        border-color: #2e7d2e;
-      }
-      input.score.invalid {
-        background: #fde0e0 !important;
-        border-color: #c62828;
-      }
       .stand .pl,
       .stand .rk { background: #e8edf5; color: #1a1a2e; }
       .track .tnum,
       .track .lbl { background: #f0f5fb; color: #1a1a2e; }
       .track .sum { background: #e8edf5; color: #1a1a2e; }
-      .sched .rnd {
-        background: #1f4e79;
-        color: #fff;
-        font-weight: 700;
-      }
-      .sched .rnd .rtime,
-      .sched .rtime { color: #b8d4ee; }
-      .sched .rnd .rmode,
-      .sched .rmode { color: #a0b8cc; }
       .digitalbar,
       .digbar,
-      .topbar { gap: 12px; }
-    }
-
-
-    /* Print polish overrides */
-    @media print {
+      .topbar { gap: 12px; }}/* Print polish overrides */
+    
+@media print {
       body {
         padding: 0;
         font-size: 8.5pt;
@@ -375,35 +302,66 @@
         background: #e8edf5 !important;
         color: #000 !important;
       }
-      .sched .rnd {
-        background: #e8edf5 !important;
-        color: #000 !important;
-      }
-      .sched .rnd .rtime,
-      .sched .rtime { color: #000 !important; }
-      .sched .rnd .rmode,
-      .sched .rmode { color: #333 !important; }
       .guide {
         border: none;
         border-left: 3px solid #1f4e79;
         background: #f5f8fc !important;
-      }
-    }
+      }}
 
-    @media screen and (max-width: 640px) {
+    /* Turnier-Konfigurator: Raster wie in Alle-gegen-alle (global, nicht nur mobil) */
+  .cfgcard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cfgfield {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cfgfield input,
+  .cfgfield select {
+    padding: 8px 10px;
+    border: 1px solid #aab8cc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .cfgfield.cfgfield--wide {
+    grid-column: 1 / -1;
+  }
+  .cfgfield--mode {
+    grid-column: 1 / -1;
+  }
+  .cfgfield--start {
+    grid-column: 1 / 2;
+  }
+  .cfgfield--end {
+    grid-column: 2 / 3;
+  }
+  .mobile-jumpbar { display: none; }
+@media screen and (max-width: 640px) {
   body {
     padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
   }
   .page { margin-bottom: 16px; }
-  .round-grid {
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .row > div,
+  .row .grow {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  .cfgcard-grid {
     grid-template-columns: 1fr !important;
   }
-  input.score {
-    min-width: 42px;
-    min-height: 44px;
-    font-size: 16px !important;
-    width: 44px !important;
-    height: 44px !important;
+  .cfgfield--start,
+  .cfgfield--end {
+    grid-column: 1 / -1 !important;
+  }
+  .round-grid {
+    grid-template-columns: 1fr !important;
   }
   .mobile-jumpbar {
     position: fixed;
@@ -412,7 +370,7 @@
     bottom: 0;
     z-index: 999;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
     background: rgba(255,255,255,.96);
@@ -436,32 +394,194 @@
     font-weight: 700;
     box-sizing: border-box;
   }
-}
-
-    @media screen {
-      .schedule-roundbar {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 6px;
-        padding: 6px;
-        background: rgba(255,255,255,.96);
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
-        margin-bottom: 8px;
+  .cfgcard-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cfgcard-actions .spacer {
+    display: none;
+  }
+  .cfgcard-actions .nbtn {
+    width: 100%;
+    min-height: 40px;
+  }
+  .central-table { table-layout: auto; }
+  .central-table th, .central-table td { font-size: 7px; height: auto; padding: 3px 2px; }
+  .central-table .code { width: auto; min-width: 35px; }
+  .central-table .name { width: auto; min-width: 60px; }
+  .central-table .round { width: auto; min-width: 50px; }
+  .central-table .rplace { width: auto; min-width: 25px; }}
+@media print {
+      /* Show all rounds in print mode, ignore inline display:none */
+      [data-round-num] { display: block !important; }
+      
+      /* Compact print layout for multiple rounds per A4 */
+      .rounds-page {
+        page-break-inside: avoid;
+        margin: 0 0 12px 0;
+        padding: 8px 0;
       }
-      .schedule-roundbar label { min-width: 0; display: flex; flex-direction: column; font-size: 12px; font-weight: 700; gap: 2px; }
-      .schedule-roundbar select { width: 100%; font-size: 13px; padding: 4px 6px; border: 1px solid #aab8cc; border-radius: 4px; }
-      .schedule-roundbar .nbtn { min-height: 40px; padding: 6px 10px; font-size: 13px; background: #1f4e79; color: #fff; border: 1px solid #1f4e79; border-radius: 4px; font-weight: 700; cursor: pointer; }
-      .schedule-roundbar .state { grid-column: 1 / -1; text-align: center; font-size: 12px; color: #5a6375; }
-      .round-block.round-hidden { display: none !important; }
-    }
-
-</style>
+      
+      .rounds-page h1 {
+        font-size: 14px;
+        margin: 0 0 4px 0;
+        padding: 0;
+      }
+      
+      .page-note {
+        font-size: 10px;
+        line-height: 1.3;
+        margin: 0 0 6px 0;
+        padding: 2px 0;
+      }
+      
+      .team-legend {
+        display: none;
+      }
+      
+      .round-grid {
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Page break before standings table */
+      #standingsSection {
+        page-break-before: always;
+        margin-top: 0;
+      }}
+    /* Freilos-Kennzeichnung in den Ergebnis-Karten. */
+    .bye-team { font-style: italic; color: #555; }
+  </style>
+  <link rel="stylesheet" href="spielplan.css">
   <link rel="stylesheet" href="app-skin.css">
 </head>
 <body>
   <div class="noprint" style="margin:0 0 8px;padding:0 4mm"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-schweizer-system.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
-  <div id="app"></div>
+  <div id="app">
+    <section class="page">
+      <h1>Turnierbogen – <span id="headerTeamCount">12</span> Teams · Schweizer System</h1>
+      <p class="sub" id="h-sub"><span id="headerFieldCount">6</span> Felder · <span id="headerRoundCount">7</span> Runden · <span id="headerGamesPerTeam">7</span> Spiele/Team · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.<span id="mainTimeText" class="tt" hidden></span></p>
+      <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+      <div id="guideContainer"></div>
+      <div id="configSection" class="noprint cfgcard">
+        <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+        <div class="cfgcard-grid">
+          <label class="cfgfield cfgfield--wide">📝 Turniertitel
+            <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="cfgfield cfgfield--start">👥 Teams
+            <select id="teamCount" onchange="onTeamCountChange(this.value)"></select>
+          </label>
+          <label class="cfgfield cfgfield--end">🔁 Runden
+            <select id="roundCount" onchange="onRoundCountChange(this.value)"></select>
+          </label>
+          <label class="cfgfield cfgfield--mode">🎯 Punkte/Spiel
+            <select id="pointTarget" onchange="onPointTargetChange(this.value)"></select>
+          </label>
+          <label class="cfgfield cfgfield--start">⏱ Start
+            <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
+          </label>
+          <label class="cfgfield cfgfield--end">🏁 Ende
+            <input type="time" id="endTime" value="14:00" onchange="onEndTime()">
+          </label>
+        </div>
+        <div class="cfgresult">
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">7</span><span class="cfgres-lbl">Runden</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-teams">12</span><span class="cfgres-lbl">Teams</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl">Pro Team</span></div>
+          <div class="cfgres-item">
+            <span class="cfgres-val" id="rv-fields">6</span>
+            <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
+            <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+          </div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
+          <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
+          <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
+        </div>
+        <div class="cfgcard-actions">
+          <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>
+          <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>
+          <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
+          <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>
+          <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
+          <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+          <span class="spacer"></span>
+          <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+        </div>
+      </div>
+      <div id="namepanel" class="noprint namepanel" hidden>
+        <div class="ngrid" id="nameGridContainer"></div>
+        <div class="nactions"><button type="button" class="nbtn" onclick="drawStart()">🎲 Startrunde auslosen</button><button type="button" class="nbtn" onclick="clearNames()">Namen leeren</button></div>
+      </div>
+      <div id="fieldpanel" class="noprint namepanel" hidden>
+        <div class="ngrid" id="fieldGridContainer"></div>
+        <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
+      </div>
+      <div id="dropoutpanel" class="noprint namepanel" hidden>
+        <div class="panel-checks" id="dropoutCheckContainer"></div>
+        <div class="nactions"><button type="button" class="nbtn" onclick="clearDropouts()">Ausfälle zurücksetzen</button></div>
+      </div>
+      <div class="row" id="livebox">
+        <!-- Teams -->
+        <div style="flex:0 0 46%">
+          <table class="teams">
+            <caption>Teams (Namen eintragen)</caption>
+            <tbody id="teamsBody"></tbody>
+          </table>
+        </div>
+        <!-- Zeitplan -->
+        <div class="grow">
+          <table>
+            <caption>Zeitplan</caption>
+            <tbody id="scheduleOverview"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="roundPagesContainer"></div>
+      <h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>
+      <p class="sub">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die letzte Runden-Spalte ist damit automatisch der Endstand → daraus den Platz vergeben.</p>
+      <div id="centralTableContainer"></div>
+
+      <div class="row">
+        <div style="flex:0 0 46%">
+          <table>
+            <caption>Wertung pro Spiel</caption>
+            <tr><th>Ergebnis</th><th>Wertung</th></tr>
+            <tr><td>Sieg</td><td>1 Punkt</td></tr>
+            <tr><td>Niederlage</td><td>0 Punkte</td></tr>
+            <tr><td>Freilos / spielfrei</td><td>1 Punkt, ohne Differenz</td></tr>
+          </table>
+        </div>
+        <div class="grow">
+          <table>
+            <caption>Tie-Breaker bei Gleichstand</caption>
+            <tr><th>Rang</th><th>Kriterium</th></tr>
+            <tr><td>1</td><td>Punkte (Siege)</td></tr>
+            <tr><td>2</td><td>Ball-Differenz</td></tr>
+            <tr><td>3</td><td>erzielte Ballpunkte</td></tr>
+            <tr><td>4</td><td>direkter Vergleich</td></tr>
+            <tr><td>5</td><td>Losentscheid</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="legend" id="h-legend">
+        <b>Modus:</b> Schweizer System · keine KO-Runde ·
+        pro Spiel <span class="rmode">1 Satz bis 15</span> mit 2 Punkten Vorsprung.
+      </div>
+    </section>
+    <div class="mobile-jumpbar noprint">
+      <button type="button" class="nbtn" onclick="document.getElementById('configSection').scrollIntoView({behavior:'smooth',block:'start'})">⚙️ Setup</button>
+      <button type="button" class="nbtn" onclick="document.getElementById('guideContainer').scrollIntoView({behavior:'smooth',block:'start'})">📖 Anleitung</button>
+      <button type="button" class="nbtn" onclick="document.getElementById('roundPagesContainer').scrollIntoView({behavior:'smooth',block:'start'})">📋 Spielplan</button>
+      <button type="button" class="nbtn" onclick="document.getElementById('standingsSection').scrollIntoView({behavior:'smooth',block:'start'})">🏁 Tabelle</button>
+      <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
+    </div>
+  </div>
 
   <script>
     const CFG_KEY = 'sw_univ_cfg';
@@ -492,13 +612,11 @@
     let NTEAMS = 12;
     let NROUNDS = 7;
     let NFIELDS = 6;
-    let POINT_TARGET = 15;
     let SET_MODE = '15';
     let MATCHES = {};
     let namesVisible = false;
     let fieldsVisible = false;
     let dropoutVisible = false;
-    let liveVisible = false;
     let LAST_TIMEFIT_NEEDED_FIELDS = null;
     const SESSION_KEY = 'sw_univ';
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
@@ -516,13 +634,13 @@
       const h = Math.floor(m/60), r = m%60;
       return h>0 ? (h + ':' + (r<10?'0':'') + r + ' h') : (r + ' min');
     }
-    function neededFieldsForWindow(durationMin, recPerMatch){
-      const maxF = NFIELDS;
+     function neededFieldsForWindow(durationMin, recPerMatch){
+      const maxF = Math.ceil(NTEAMS / 2);
+      const matchesPerRound = Math.ceil(NTEAMS / 2);
       const maxSlotsAvail = Math.floor(Math.max(0, durationMin) / Math.max(1, recPerMatch));
-      const slotsNeeded = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / Math.max(1, maxF));
       for(let f=1; f<=maxF; f++){
-        const slots = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / Math.max(1, f));
-        if(slots <= maxSlotsAvail) return f;
+        const slotsNeeded = NROUNDS * Math.ceil(matchesPerRound / Math.max(1, f));
+        if(slotsNeeded <= maxSlotsAvail) return f;
       }
       return null;
     }
@@ -531,6 +649,18 @@
     function modeDef(){ return SET_MODES.find(m => m.id === SET_MODE) || SET_MODES[0]; }
     function setTarget(){ return modeDef().target; }
     function setCount(){ return modeDef().sets; }
+    function setRangePerMatch(){
+      if(SET_MODE === '2x15tb' || SET_MODE === '2x21tb') return {min:2, max:3};
+      const c = setCount();
+      return {min:c, max:c};
+    }
+    function expectedSetsPerMatch(){
+      const r = setRangePerMatch();
+      return r.min === r.max ? r.min : (r.min + r.max) / 2;
+    }
+    function matchesPerRoundCount(){ return Math.ceil(NTEAMS / 2); }
+    function totalMatchesCount(){ return NROUNDS * matchesPerRoundCount(); }
+    function totalSlotsCount(){ return NROUNDS * Math.max(1, Math.ceil(matchesPerRoundCount() / Math.max(1, NFIELDS))); }
     function isMulti(){ return setCount() > 1; }
     function hasDecidingSet(){ return !!modeDef().decidingSet; }
     function targetForSet(setNo){
@@ -541,7 +671,7 @@
       NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = Math.ceil(NTEAMS / 2);
       if(cfg.p != null){
         const def = SET_MODES.find(m => m.id === String(cfg.p));
-        if(def){ SET_MODE = def.id; POINT_TARGET = def.target; }
+        if(def){ SET_MODE = def.id; }
       }
     }
     function loadCfg(){
@@ -615,6 +745,7 @@
     function defaultRound1(){
       if(NTEAMS === 12) return DEFAULT_ROUND1_12.map(p => p.slice());
       const ids = Array.from({length:NTEAMS}, (_, i) => i + 1);
+      if(ids.length % 2 === 1) ids.push(0); // 0 = Freilos-Platzhalter bei ungerader Teamzahl
       const out = [];
       for(let i=0;i<ids.length;i+=2) out.push([ids[i], ids[i+1]]);
       return out;
@@ -623,7 +754,13 @@
       const raw = loadJSON(ROUND1_KEY, null);
       if(!Array.isArray(raw) || raw.length !== NFIELDS) return defaultRound1();
       const flat = raw.flat();
-      const ok = flat.length === NTEAMS && flat.every(t => Number.isInteger(t) && t >= 1 && t <= NTEAMS) && new Set(flat).size === NTEAMS;
+      const expectedByes = (NTEAMS % 2 === 1) ? 1 : 0;
+      const teamValues = flat.filter(t => t !== 0);
+      const byeCount = flat.length - teamValues.length;
+      const ok = flat.length === NTEAMS + expectedByes
+        && byeCount === expectedByes
+        && teamValues.every(t => Number.isInteger(t) && t >= 1 && t <= NTEAMS)
+        && new Set(teamValues).size === NTEAMS;
       return ok ? raw.map(p => [Number(p[0]), Number(p[1])]) : defaultRound1();
     }
     function saveRound1(pairs){ saveJSON(ROUND1_KEY, pairs); }
@@ -651,8 +788,9 @@
     }
     function teamNameCell(t){
       const nm = teamNameOf(t);
-      if(!nm) return droppedTeams().has(t) ? '<span class="dropped-note">ausgefallen</span>' : '';
-      return droppedTeams().has(t) ? '<span class="dropped-team">' + escapeHtml(nm) + '</span>' : escapeHtml(nm);
+      const out = nm ? escapeHtml(nm) : '';
+      const absent = droppedTeams().has(t);
+      return out + (absent ? (out ? ' ' : '') + '<span class="abt">ausgefallen</span>' : '');
     }
     function buildGuide(){
       return '<div class="guide">'
@@ -665,6 +803,33 @@
         + '<li><span class="hi">Wertung/Tie-Break:</span> S → BD → +P → direkter Vergleich → Los.</li>'
         + '</ol>'
         + '</div>';
+    }
+    function buildTeamsTable(){
+      const half = Math.ceil(NTEAMS / 2);
+      let html = '';
+      for(let r = 0; r < half; r++){
+        const left = r + 1, right = r + 1 + half;
+        html += '<tr><td class="num">' + left + '</td><td class="name" data-team-name="' + left + '"></td>';
+        if(right <= NTEAMS) html += '<td class="num">' + right + '</td><td class="name" data-team-name="' + right + '"></td>';
+        else html += '<td class="num" style="background:#f7f7f7"></td><td class="name"></td>';
+        html += '</tr>';
+      }
+      document.getElementById('teamsBody').innerHTML = html;
+    }
+    function buildScheduleOverview(){
+      const rows = [];
+      for(let r = 1; r <= NROUNDS; r++){
+        rows.push({ time: '<span class="ztime" data-slot-round="' + r + '"></span>', lbl: 'R' + r });
+      }
+      rows.push({ time: '<span id="zEval"></span>', lbl: 'Auswertung' });
+      const perCol = Math.ceil(rows.length / 2);
+      let html = '<tr><th>Zeit</th><th>Runde</th><th>Zeit</th><th>Runde</th></tr>';
+      for(let r = 0; r < perCol; r++){
+        const l = rows[r], rr = rows[r + perCol];
+        html += '<tr><td class="tt">' + (l ? l.time : '') + '</td><td>' + (l ? l.lbl : '') + '</td>'
+              + '<td class="tt">' + (rr ? rr.time : '') + '</td><td>' + (rr ? rr.lbl : '') + '</td></tr>';
+      }
+      document.getElementById('scheduleOverview').innerHTML = html;
     }
     function buildCentralTable(){
       let head = '<thead><tr><th class="code">Team</th><th class="name">Name</th>';
@@ -679,126 +844,204 @@
         rows += '</tr>';
       }
       rows += '</tbody>';
-      return '<table class="central-table">' + head + rows + '</table>'
-        + '<div style="font-size:7.5px;color:#444;margin-top:3px;line-height:1.5">'
+      return '<div class="table-scroll"><table class="central-table">' + head + rows + '</table></div>'
+        + '<div class="input-hint">'
         + '<strong>S</strong> = Siege (aufaddiert) &nbsp;·&nbsp;'
         + '<strong>BD</strong> = Ball-Differenz (aufaddiert, z. B. 15:11 → +4 · 11:15 → −4) &nbsp;·&nbsp;'
         + '<strong>+P</strong> = erzielte Punkte (aufaddiert) &nbsp;·&nbsp;'
-        + '<strong>S → N</strong> = Sieg / Niederlage &nbsp;·&nbsp;'
-        + 'Tie-Break: S → BD → +P → direkter Vergleich → Los'
+        + '<strong>S → N</strong> = Sieg / Niederlage'
         + '</div>';
     }
     function baseSlotMin(){ return (BASE_END - BASE_START) / NROUNDS; }
     function roundBaseWindow(r){
       const slotMin = baseSlotMin();
       const start = BASE_START + (r - 1) * slotMin;
-      const end = start + slotMin * 0.65;
+      const end = start + slotMin;
       return {start, end};
     }
+    /* Ergebnis-Formular: je Team eine eigene Zeile mit den zugehoerigen Satz-Feldern,
+       darueber eine Kopfzeile (Satz 1 / Satz 2 / Entsch.), darunter der Sieger separat.
+       Identisch aufgebaut wie im Turnierbogen "Alle gegen Alle". */
+    /* Kurz-Erklaerung des Ergebnis-Formulars - identisch in beiden Turnierbogen. */
+    function scoreFormLegend(){
+      const cols = !isMulti()
+        ? 'ein K\u00e4stchenpaar f\u00fcr das Ergebnis'
+        : (hasDecidingSet() ? 'je Satz ein K\u00e4stchenpaar, der Entscheidungssatz nur bei 1:1' : 'je Satz ein K\u00e4stchenpaar');
+      return 'So ausf\u00fcllen: ' + cols + ' \u2013 linkes K\u00e4stchen = linkes Team, rechtes K\u00e4stchen = rechtes Team. Nur Zahlen; mit \u201e:\u201c springst du ins Nachbark\u00e4stchen. Der Sieger wird darunter angezeigt.';
+    }
+    function scoreFormExample(){
+      if(SET_MODE === '2x21tb') return 'Beispiel: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 n\u00f6tig).';
+      if(SET_MODE === '2x15tb') return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 n\u00f6tig).';
+      if(SET_MODE === '2x15')   return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 z\u00e4hlt die Ball-Differenz).';
+      return 'Beispiel: ' + setTarget() + ':' + Math.max(0, setTarget() - 2) + ' oder ' + setTarget() + ':' + Math.max(0, setTarget() - 8) + '.';
+    }
+    function scoreInputHtml(id, aria, ph){
+      return '<input class="score" type="text" inputmode="numeric" maxlength="3" id="' + id + '"'
+        + ' oninput="onScore(this)" autocomplete="off" aria-label="' + aria + '"'
+        + (ph ? ' placeholder="' + ph + '" data-ph="' + ph + '"' : '') + '>';
+    }
+    /* Ein Satz = eine Spalte: Beschriftung oben, darunter die beiden Kaestchen
+       (links Team A, rechts Team B) nebeneinander. Tab-Reihenfolge A1 -> B1 -> A2 -> B2 ...
+       und das Ergebnis ist als "21:19" lesbar. Identisch in beiden Turnierbogen. */
+    function setColumnHtml(prefix, r, i, label, ph){
+      return '<span class="sset">'
+        + '<span class="slbl">' + label + '</span>'
+        + '<span class="sbox">'
+        +   scoreInputHtml(prefix + 'A_' + r + '_' + i, 'Team A ' + label, ph)
+        +   '<span class="vs">:</span>'
+        +   scoreInputHtml(prefix + 'B_' + r + '_' + i, 'Team B ' + label, ph)
+        + '</span></span>';
+    }
+    /* Runden-Tabelle: exakt derselbe Aufbau wie im Turnierbogen "Alle gegen Alle"
+       (Felder = Spalten, eine Zeile je Runde). Styling kommt aus spielplan.css. */
     function buildRoundBlock(r){
       const win = roundBaseWindow(r);
-      let rows = '<tr><th>Feld</th><th>Team A</th><th>Team B</th><th>Ergebnis</th><th>Sieger</th></tr>';
+      let headHtml = '<tr class="fhead" data-round="' + r + '">';
+      for(let f=0; f<NFIELDS; f++) headHtml += '<th scope="col" data-field="' + f + '">' + escapeHtml(getFieldName(f)) + '</th>';
+      headHtml += '</tr>';
+      let cells = '';
       for(let i=0;i<NFIELDS;i++){
-        rows += '<tr>'
-          + '<td data-field="' + i + '">' + escapeHtml(getFieldName(i)) + '</td>'
-          + '<td id="rA_' + r + '_' + i + '"></td>'
-          + '<td id="rB_' + r + '_' + i + '"></td>'
-          + '<td class="resu"><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="sA_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sB_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' + (isMulti() ? '<span class="setsep">|</span><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="s2A_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s2B_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off"></span>' : '') + (hasDecidingSet() ? '<span class="setsep">|</span><span class="setgrp"><input class="score" type="text" inputmode="numeric" id="s3A_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="s3B_' + r + '_' + i + '" oninput="onScore(this)" autocomplete="off" placeholder="TB"></span>' : '') + '</td>'
-          + '<td id="rw_' + r + '_' + i + '"></td>'
-          + '</tr>';
+        let sets = setColumnHtml('s', r, i, isMulti() ? 'Satz 1' : 'Punkte');
+        if(isMulti()) sets += setColumnHtml('s2', r, i, 'Satz 2');
+        if(hasDecidingSet()) sets += setColumnHtml('s3', r, i, 'Entsch.', 'TB');
+        cells += '<td class="match" data-round="' + r + '" data-col="' + i + '" data-field-label="' + escapeHtml(getFieldName(i)) + '">'
+          + '<span class="pair">'
+          +   '<span class="pnames"><span class="t t-a" id="rA_' + r + '_' + i + '"></span><span class="t t-b" id="rB_' + r + '_' + i + '"></span></span>'
+          +   '<span class="psets">' + sets + '</span>'
+          + '</span>'
+          + '<span class="mwin"><span class="mwin-lbl">Sieger</span><span class="mwin-val" id="rw_' + r + '_' + i + '">\u2013</span></span>'
+          + '</td>';
       }
+      const capText = 'Spielplan &amp; Ergebnisse';
+      const headRow = '<tr class="rhead" data-round="' + r + '">'
+        + '<td class="rhead-cell" colspan="' + NFIELDS + '">'
+        +   '<span class="rlabel">Runde ' + r + '</span>'
+        +   '<span class="rtime tt" data-round="' + r + '">' + fromMin(win.start) + '\u2013' + fromMin(win.end) + '</span>'
+        +   '<span class="rmode"></span>'
+        + '</td></tr>';
       return '<div class="round-block">'
-        + '<h2 class="tt" data-round="' + r + '">Runde ' + r + ' · ' + fromMin(win.start) + '–' + fromMin(win.end) + '</h2>'
-        + '<div class="round-subline">' + (r === 1 ? 'Startverteilung' : 'automatisch gesetzt') + ' · <span class="rmode">' + (isMulti() ? (hasDecidingSet() ? (SET_MODE === '2x21tb' ? '2 Sätze bis 21 + Tiebreak bis 15' : '2 Sätze bis 15 + Tiebreak bis 15') : '2 Sätze bis ' + setTarget()) : '1 Satz bis ' + setTarget()) + '</span> · 2 Punkte Vorsprung</div>'
-        + '<table class="round-table">' + rows + '</table>'
+        + '<div class="table-scroll is-wide">'
+        +   '<p class="mobile-schedule-title noprint">' + capText + '</p>'
+        +   '<table class="sched">'
+        +     '<caption class="rcap" data-round="' + r + '">' + capText + '</caption>'
+        +     '<tbody>' + headRow + headHtml + '<tr data-round="' + r + '">' + cells + '</tr></tbody>'
+        +   '</table>'
+        + '</div>'
+        + '<p class="input-hint" id="inputExamples_' + r + '">' + scoreFormLegend() + ' ' + scoreFormExample() + '</p>'
+        + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDef().label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 1 Punkt</p>'
         + '</div>';
     }
     function buildRoundPages(){
       const pages = [];
-      const chunks = [];
-      for(let i=1;i<=NROUNDS;i+=4) chunks.push(Array.from({length:Math.min(4, NROUNDS - i + 1)}, (_, j) => i + j));
-      chunks.forEach((chunk, idx) => {
-        const title = chunk.length === 1 ? 'Runde ' + chunk[0] : 'Runden ' + chunk[0] + '–' + chunk[chunk.length - 1];
+      for(let i=1; i<=NROUNDS; i++){
         const note = 'Nach jeder Runde: Ergebnis auf Seite 1 eintragen (Ergebnis oben · darunter Σ aufaddiert: Siege / Ball-Diff. / Punkte · dann Rang in Pl.-Spalte) → nächste Paarungen nach Pl.-Spalte bilden: Pl. 1–2, 3–4, 5–6 usw. · bereits gespielte Paarungen möglichst tauschen.';
-        pages.push('<section class="page rounds-page">'
-          + '<h1>' + title + '</h1>'
-          + '<div class="page-note">' + note + '</div>'
-          + '<div class="team-legend"></div>'
-          + '<div class="round-grid">' + chunk.map(buildRoundBlock).join('') + '</div>'
+        pages.push('<section class="page rounds-page" data-round-num="' + i + '">'
+          + '<div class="round-grid">' + buildRoundBlock(i) + '</div>'
+          + '<div class="page-note noscreen">' + note + '</div>'
           + '</section>');
-      });
-      const navHtml = '<div class="noprint schedule-roundbar" id="roundNavBar">'
+      }
+      const navHtml = '<div class="noprint schedule-roundbar" id="roundNavBar" style="display:none;">'
         + '<label>Runde<select id="roundSelect" onchange="onRoundSelectChange()"></select></label>'
-        + '<button type="button" class="nbtn" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀ R</button>'
-        + '<button type="button" class="nbtn" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">R ▶</button>'
+        + '<button type="button" class="nbtn" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀︎ R</button>'
+        + '<button type="button" class="nbtn" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">R ▶︎</button>'
         + '<span class="state" id="roundNavState" aria-live="polite"></span>'
         + '</div>';
       return navHtml + pages.join('');
     }
-    function renderApp(){
-      const app = document.getElementById('app');
-      if(!app) return;
-      app.innerHTML = ''
-        + '<section class="page">'
-        + '<h1>Turnierbogen – ' + NTEAMS + ' Teams · Schweizer System</h1>'
-        + '<p class="sub">' + NFIELDS + ' Felder · <span id="mainTimeText" class="tt"></span> · ' + NROUNDS + ' Runden · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.</p>'
-        + '<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>'
-        + '<div class="noprint cfgcard">'
-        + '  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>'
-        + '  <div class="cfgcard-grid">'
-        + '    <label class="cfgfield cfgfield--wide">📝 Turniertitel<input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>'
-        + '    <label class="cfgfield">👥 Teams<select id="teamCount" onchange="onTeamCountChange(this.value)">' + TEAM_OPTIONS.map(v => '<option value="' + v + '"' + (v === NTEAMS ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label>'
-        + '    <label class="cfgfield">🔁 Runden<input id="roundCount" type="number" min="3" max="11" value="' + NROUNDS + '" onchange="onRoundCountChange(this.value)"></label>'
-        + '    <label class="cfgfield">🎯 Punkte/Spiel<select id="pointTarget" onchange="onPointTargetChange(this.value)">' + SET_MODES.map(m => '<option value="' + m.id + '"' + (m.id === SET_MODE ? ' selected' : '') + '>' + m.label + '</option>').join('') + '</select></label>'
-        + '    <label class="cfgfield">⏱ Start<input type="time" id="startTime" value="' + escapeHtml(loadStartTime()) + '" onchange="onStartTime()"></label>'
-        + '    <label class="cfgfield">🏁 Ende<input type="time" id="endTime" value="' + escapeHtml(loadEndTime()) + '" onchange="onEndTime()"></label>'
-        + '  </div>'
-        + '  <div class="cfgresult">'
-        + '    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">pro Spiel</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val">' + NTEAMS + '</span><span class="cfgres-lbl">Teams</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val">' + NFIELDS + '</span><span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span><span class="cfgres-lbl">Felder (aktuell · benötigt)</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val">' + NROUNDS + '</span><span class="cfgres-lbl">Runden</span></div>'
-        + '    <div class="cfgres-item"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>'
-        + '  </div>'
-        + '  <div class="cfgcard-actions">'
-        + '    <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>'
-        + '    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen</button>'
-        + '    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>'
-        + '    <button type="button" class="nbtn" onclick="toggleDropout()">⚠ Team ausgefallen</button>'
-        + '    <button type="button" class="nbtn" onclick="toggleLive()">📊 Tabelle &amp; Paarungen</button>'
-        + '    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>'
-        + '    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>'
-        + '    <span class="spacer"></span>'
-        + '    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>'
-        + '  </div>'
-        + '</div>'
-        + '<div id="namepanel" class="noprint namepanel"' + (namesVisible ? '' : ' hidden') + '>'
-        + '  <div class="ngrid">' + Array.from({length:NTEAMS}, (_, i) => '<label>Team ' + (i+1) + '<input type="text" id="tn' + (i+1) + '" placeholder="Name…" oninput="onNameInput(' + (i+1) + ')"></label>').join('') + '</div>'
-        + '  <div class="nactions"><button type="button" class="nbtn" onclick="drawStart()">🎲 Startrunde auslosen</button><button type="button" class="nbtn" onclick="clearNames()">Namen leeren</button></div>'
-        + '</div>'
-        + '<div id="fieldpanel" class="noprint namepanel"' + (fieldsVisible ? '' : ' hidden') + '>'
-        + '  <div class="ngrid">' + Array.from({length:NFIELDS}, (_, i) => '<label>' + escapeHtml(getFieldName(i)) + '<input type="text" id="fni_' + i + '" placeholder="' + escapeHtml(getFieldName(i)) + '" oninput="onFieldInput(' + i + ')"></label>').join('') + '</div>'
-        + '  <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>'
-        + '</div>'
-        + '<div id="dropoutpanel" class="noprint namepanel"' + (dropoutVisible ? '' : ' hidden') + '>'
-        + '  <div class="panel-checks">' + Array.from({length:NTEAMS}, (_, i) => '<label><input type="checkbox" id="drop_' + (i+1) + '" onchange="onDropoutChange()"> <span>Team ' + (i+1) + '</span></label>').join('') + '</div>'
-        + '</div>'
-        + '<div id="livebox" class="noprint livebox"' + (liveVisible ? '' : ' hidden') + '></div>'
-        + buildGuide()
-        + '<h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>'
-        + '<p class="sub">Pro Runde den <b>neuen Gesamtstand</b> eintragen = bisheriger Stand + Ergebnis dieser Runde. Die letzte Runden-Spalte ist damit automatisch der Endstand → daraus den Platz vergeben.</p>'
-        + buildCentralTable()
-        + '</section>'
-        + buildRoundPages()
-        + '<button class="noprint" onclick="window.print()" style="margin-top:14px;padding:7px 16px;font-size:14px;cursor:pointer">Drucken</button>';
+    function fillTeamSelect(){
+      const sel = document.getElementById('teamCount');
+      if(!sel) return;
+      sel.innerHTML = TEAM_OPTIONS.map(v => '<option value="' + v + '"' + (v === NTEAMS ? ' selected' : '') + '>' + v + ' Teams</option>').join('');
+    }
+    function fillRoundSelect(){
+      const sel = document.getElementById('roundCount');
+      if(!sel) return;
+      const options = Array.from({length: 9}, (_, i) => {
+        const v = i + 3; // 3-11
+        const isSelected = v === NROUNDS;
+        return '<option value="' + v + '"' + (isSelected ? ' selected' : '') + '>' + v + ' Runden</option>';
+      }).join('');
+      sel.innerHTML = options;
+    }
+    function fillPointSelect(){
+      const sel = document.getElementById('pointTarget');
+      if(!sel) return;
+      sel.innerHTML = SET_MODES.map(m => '<option value="' + m.id + '"' + (m.id === SET_MODE ? ' selected' : '') + '>' + m.label + '</option>').join('');
+    }
+    function updateCfgResult(){
+      const teamLbl = document.getElementById('rv-teams');
+      if(teamLbl){
+        const drop = droppedTeams();
+        let out = 0;
+        for(let t=1;t<=NTEAMS;t++) if(drop.has(t)) out++;
+        teamLbl.textContent = out ? (NTEAMS + ' · ' + out + ' ausgefallen') : String(NTEAMS);
+        const item = teamLbl.closest('.cfgres-item'); if(item) item.classList.toggle('is-warn', out > 0);
+      }
+      const fieldLbl = document.getElementById('rv-fields'); if(fieldLbl) fieldLbl.textContent = String(NFIELDS);
+      const roundLbl = document.getElementById('rv-rounds'); if(roundLbl) roundLbl.textContent = String(NROUNDS);
+      
+      document.getElementById('headerTeamCount').textContent = String(NTEAMS);
+      document.getElementById('headerFieldCount').textContent = String(NFIELDS);
+      document.getElementById('headerRoundCount').textContent = String(NROUNDS);
+      const gpt = document.getElementById('headerGamesPerTeam');
+      if(gpt) gpt.textContent = String(NROUNDS);
+      const legend = document.getElementById('h-legend');
+      if(legend){
+        legend.innerHTML = '<b>Modus:</b> Schweizer System · ' + NTEAMS + ' Teams · jedes Team ' + NROUNDS + ' Spiele · keine KO-Runde · pro Spiel ' + modeDef().label
+          + (hasDecidingSet() ? ' (bei 1:1 entscheidet der dritte Satz)'
+             : (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung')) + '.';
+      }
+    }
+    function buildNamePanel(){
+      const container = document.getElementById('nameGridContainer');
+      if(!container) return;
+      container.innerHTML = Array.from({length:NTEAMS}, (_, i) => '<label>Team ' + (i+1) + '<input type="text" id="tn' + (i+1) + '" placeholder="Name…" autocomplete="off" spellcheck="false" oninput="onNameInput(' + (i+1) + ')"></label>').join('');
+    }
+    function buildFieldPanel(){
+      const container = document.getElementById('fieldGridContainer');
+      if(!container) return;
+      container.innerHTML = Array.from({length:NFIELDS}, (_, i) => '<label>' + escapeHtml(getFieldName(i)) + '<input type="text" id="fni_' + i + '" placeholder="' + escapeHtml(getFieldName(i)) + '" autocomplete="off" spellcheck="false" oninput="onFieldInput(' + i + ')"></label>').join('');
+    }
+    function buildDropoutPanel(){
+      const container = document.getElementById('dropoutCheckContainer');
+      if(!container) return;
+      container.innerHTML = Array.from({length:NTEAMS}, (_, i) => {
+        const t = i + 1;
+        const nm = teamNameOf(t) || ('Team ' + t);
+        return '<label><input type="checkbox" class="drop-check" id="drop_' + t + '" onchange="onDropoutChange()"> <span>' + escapeHtml(nm) + '</span></label>';
+      }).join('');
+    }
+    function clearDropouts(){
+      if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return;
+      saveDroppedTeams(new Set());
+      document.querySelectorAll('input.drop-check').forEach(cb => cb.checked = false);
+      rebuild();
+    }
+    function rebuild(){
+      fillTeamSelect();
+      fillPointSelect();
+      updateCfgResult();
+      buildNamePanel();
+      buildFieldPanel();
+      buildDropoutPanel();
+      const guideContainer = document.getElementById('guideContainer'); if(guideContainer) guideContainer.innerHTML = buildGuide();
+      buildTeamsTable();
+      buildScheduleOverview();
+      const centralContainer = document.getElementById('centralTableContainer'); if(centralContainer) centralContainer.innerHTML = buildCentralTable();
+      const roundContainer = document.getElementById('roundPagesContainer'); if(roundContainer) roundContainer.innerHTML = buildRoundPages();
+       
+      fillRoundSelect();
       hydratePanels();
       restoreTitle();
       restoreScores();
       applyTimes();
       computeTimes();
       computeAll();
+      
+      // Reinitialize round navigator after DOM rebuild
+      if(typeof window.reinitRoundNav === 'function') {
+        window.reinitRoundNav();
+      }
     }
     function hydratePanels(){
       const names = loadNames();
@@ -815,7 +1058,7 @@
       }
       const start = document.getElementById('startTime'); if(start) start.value = loadStartTime();
       const end = document.getElementById('endTime'); if(end) end.value = loadEndTime();
-      const rounds = document.getElementById('roundCount'); if(rounds) rounds.value = NROUNDS;
+      const rounds = document.getElementById('roundCount'); if(rounds) rounds.value = String(NROUNDS);
       const teams = document.getElementById('teamCount'); if(teams) teams.value = String(NTEAMS);
     }
     function onTeamCountChange(value){
@@ -828,29 +1071,27 @@
       [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
-      liveVisible = false;
-      renderApp();
+      rebuild();
     }
     function onRoundCountChange(value){
       const next = clampRounds(value);
       saveCfg({t:NTEAMS, r:next});
-      renderApp();
+      rebuild();
     }
     function onPointTargetChange(value){
       const def = SET_MODES.find(m => m.id === String(value)) || SET_MODES[0];
       saveCfg({t:NTEAMS, r:NROUNDS, p:def.id});
-      renderApp();
+      rebuild();
     }
     function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); computeTimes(); }
     function onEndTime(){ try{ localStorage.setItem(END_KEY, document.getElementById('endTime').value || '14:00'); }catch(e){} applyTimes(); computeTimes(); }
     function toggleNames(){ namesVisible = !namesVisible; const el = document.getElementById('namepanel'); if(el) el.hidden = !namesVisible; }
     function toggleFields(){ fieldsVisible = !fieldsVisible; const el = document.getElementById('fieldpanel'); if(el) el.hidden = !fieldsVisible; }
     function toggleDropout(){ dropoutVisible = !dropoutVisible; const el = document.getElementById('dropoutpanel'); if(el) el.hidden = !dropoutVisible; }
-    function toggleLive(){ liveVisible = !liveVisible; const el = document.getElementById('livebox'); if(el) el.hidden = !liveVisible; }
     function onNameInput(team){ const names = loadNames(); names[team] = document.getElementById('tn' + team).value || ''; saveNames(names); computeAll(); }
     function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames(defaultNames()); hydratePanels(); computeAll(); }
-    function onFieldInput(idx){ const fields = loadFieldNames(); fields[idx] = document.getElementById('fni_' + idx).value || ''; saveFieldNames(fields); renderApp(); }
-    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{ localStorage.removeItem(FIELDS_KEY); }catch(e){} renderApp(); }
+    function onFieldInput(idx){ const fields = loadFieldNames(); fields[idx] = document.getElementById('fni_' + idx).value || ''; saveFieldNames(fields); rebuild(); }
+    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{ localStorage.removeItem(FIELDS_KEY); }catch(e){} rebuild(); }
     function onDropoutChange(){
       const set = new Set();
       for(let t=1;t<=NTEAMS;t++) if(document.getElementById('drop_' + t)?.checked) set.add(t);
@@ -860,6 +1101,7 @@
     function drawStart(){
       if(!confirm('Startrunde neu auslosen? Die bestehende Runde 1 wird überschrieben.')) return;
       const ids = Array.from({length:NTEAMS}, (_, i) => i + 1);
+      if(ids.length % 2 === 1) ids.push(0); // 0 = Freilos-Platzhalter bei ungerader Teamzahl
       for(let i=ids.length - 1;i>0;i--){ const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
       const pairs = [];
       for(let i=0;i<ids.length;i+=2) pairs.push([ids[i], ids[i+1]]);
@@ -869,7 +1111,7 @@
     function resetTournament(){
       if(!confirm('Neues Turnier starten? Teamnamen, Ergebnisse, Freilos/Dropout und die Startrunde werden gelöscht.')) return;
       [NAMES_KEY, SCORES_KEY, ROUND1_KEY, DROPOUT_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
-      renderApp();
+      rebuild();
     }
     function restoreScores(){
       const scores = loadScores();
@@ -887,12 +1129,29 @@
       document.querySelectorAll('input.score').forEach(inp => { inp.value = ''; });
       computeAll();
     }
-    function num(el){ if(!el) return null; const v = String(el.value || '').trim(); if(v === '') return null; const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; }
+    function num(el){
+      if(!el) return null;
+      const v = String(el.value || '').trim();
+      if(v === '') return null;
+      if(!/^\d{1,3}$/.test(v)) return null;
+      const n = parseInt(v, 10);
+      return Number.isNaN(n) ? null : n;
+    }
     function sval(r, i, side){ return num(document.getElementById('s' + side + '_' + r + '_' + i)); }
     function sval2(r, i, side){ return num(document.getElementById('s2' + side + '_' + r + '_' + i)); }
     function sval3(r, i, side){ return num(document.getElementById('s3' + side + '_' + r + '_' + i)); }
-    function setValid(a, b){ return a != null && b != null && Math.max(a, b) >= POINT_TARGET && Math.abs(a - b) >= 2; }
-    function setValidForSet(a, b, setNo){ return a != null && b != null && Math.max(a, b) >= targetForSet(setNo) && Math.abs(a - b) >= 2; }
+    /* Gueltiges Satzergebnis: Zielpunktzahl erreicht UND 2 Punkte Vorsprung.
+       Ueber die Zielpunktzahl hinaus nur im Deuce (dann exakt 2 Punkte Differenz),
+       z. B. 21:19 ok, 23:21 ok, 25:10 nicht. Identisch in beiden Turnierbogen. */
+    function setValidWithTarget(a, b, target){
+      if(a == null || b == null) return false;
+      const hi = Math.max(a, b), lo = Math.min(a, b);
+      if(hi < target || hi === lo) return false;
+      if(hi === target) return lo <= target - 2;
+      return (hi - lo) === 2 && lo >= (target - 1);
+    }
+    function setValid(a, b){ return setValidWithTarget(a, b, setTarget()); }
+    function setValidForSet(a, b, setNo){ return setValidWithTarget(a, b, targetForSet(setNo)); }
     function slotResult(r, i){
       const m = MATCHES[r][i];
       const a1 = sval(r, i, 'A'), b1 = sval(r, i, 'B');
@@ -1141,36 +1400,48 @@
       }
     }
     function setHtml(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html || ''; }
+    function applySchedDensity(){
+      const dense = setCount() >= 2 || NFIELDS >= 6;
+      const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && setCount() >= 2) || (NFIELDS >= 5 && setCount() >= 3);
+      document.querySelectorAll('.rounds-page table.sched').forEach(t => {
+        t.classList.toggle('compact', dense);
+        t.classList.toggle('ultra-compact', ultraDense);
+      });
+    }
     function applyTimes(){
       const startMin = toMin(document.getElementById('startTime')?.value) ?? BASE_START;
-      const endMinRaw = toMin(document.getElementById('endTime')?.value);
-      const endMin = endMinRaw != null && endMinRaw > startMin ? endMinRaw : Math.max(startMin + 30, BASE_END);
+      const endMinRaw = toMin(document.getElementById('endTime')?.value) ?? BASE_END;
+      // Ende vor Start = Turnierende nach Mitternacht (gleiche Regel wie in computeTimes()).
+      const endMin = endMinRaw < startMin ? endMinRaw + 24 * 60 : endMinRaw;
       const total = Math.max(30, endMin - startMin);
       const slotMin = total / NROUNDS;
       const mode = modeDef().label;
-      const warn = slotMin < (MODE_MIN[SET_MODE] || 25);
       const durText = '≈ ' + Math.round(slotMin) + ' Min./Runde · ' + mode;
       document.querySelectorAll('.rmode').forEach(el => el.textContent = mode);
+      applySchedDensity();
       const info1 = document.getElementById('roundDurInfo');
       const info2 = document.getElementById('roundDurInfo2');
       if(info1){ info1.textContent = durText; }
       if(info2){ info2.textContent = durText; }
-      const rvPer = document.getElementById('rv-perGame');
-      if(rvPer){
-        rvPer.textContent = '≈' + Math.round(slotMin) + ' Min';
-        const item = rvPer.closest('.cfgres-item'); if(item){ item.classList.toggle('is-warn', warn); }
-      }
-      const rvMode = document.getElementById('rv-mode'); if(rvMode) rvMode.textContent = mode;
-      const rvDur = document.getElementById('rv-duration');
-      if(rvDur){ const h=Math.floor(total/60), m=total%60; rvDur.textContent = (h? h+' h ':'') + m + ' min'; }
       const main = document.getElementById('mainTimeText');
       if(main) main.textContent = fromMin(startMin) + '–' + fromMin(endMin);
-      document.querySelectorAll('.tt[data-round]').forEach(el => {
+      document.querySelectorAll('.rtime[data-round]').forEach(el => {
         const r = +el.dataset.round;
         const roundStart = startMin + (r - 1) * slotMin;
-        const roundEnd = roundStart + slotMin * 0.65;
-        el.textContent = 'Runde ' + r + ' · ' + fromMin(roundStart) + '–' + fromMin(roundEnd);
+        const roundEnd = roundStart + slotMin;
+        el.textContent = fromMin(roundStart) + '–' + fromMin(roundEnd);
       });
+      populateScheduleOverviewTimes(startMin, endMin);
+    }
+    function populateScheduleOverviewTimes(startMin, endMin){
+      const total = Math.max(30, endMin - startMin);
+      const slotMin = total / NROUNDS;
+      for(let r = 1; r <= NROUNDS; r++){
+        const el = document.querySelector('[data-slot-round="' + r + '"]');
+        if(el) el.textContent = fromMin(startMin + (r - 1) * slotMin);
+      }
+      const evalEl = document.getElementById('zEval');
+      if(evalEl) evalEl.textContent = fromMin(endMin);
     }
     function computeTimes(){
       const sEl=document.getElementById('startTime'), eEl=document.getElementById('endTime');
@@ -1178,37 +1449,55 @@
       const endMinRaw=toMin(eEl?eEl.value:BASE_END)||toMin(BASE_END);
       const startMin = startMinRaw;
       const endMin = endMinRaw < startMinRaw ? endMinRaw + 24*60 : endMinRaw;
-      const total = NROUNDS * Math.ceil(Math.ceil(NTEAMS / 2) / NFIELDS) * (MODE_MIN[SET_MODE] || 25);
       const dur = Math.max(30, endMin - startMin);
-      const per = Math.max(5, Math.floor(dur / NROUNDS));
+      const totalSlots = Math.max(1, totalSlotsCount());
+      const per = Math.max(5, Math.floor(dur / totalSlots));
       const modeText = modeDef().label;
       const recPerMatch = MODE_MIN[SET_MODE] || 25;
       const enough = per >= recPerMatch;
+      const totalMatches = Math.max(1, totalMatchesCount());
+      const setRange = setRangePerMatch();
+      const totalSetsMin = totalMatches * setRange.min;
+      const totalSetsMax = totalMatches * setRange.max;
+      const perSet = Math.max(1, Math.round(recPerMatch / expectedSetsPerMatch()));
+      const playMin = totalSlots * recPerMatch;
+      const bufferMin = dur - playMin;
       const neededFields = neededFieldsForWindow(dur, recPerMatch);
       LAST_TIMEFIT_NEEDED_FIELDS = neededFields;
-      const neededEndMin = startMin + total;
-      const bufferMin = dur - (total || 0);
-      
+      const neededEndMin = startMin + playMin;
+
       setRV('rv-perGame', per + ' / ' + recPerMatch + ' Min');
-      if(document.getElementById('rv-perGame')?.closest('.cfgres-item')) {
-        document.getElementById('rv-perGame').closest('.cfgres-item').classList.toggle('is-warn', !enough);
-      }
+      setRVState('rv-perGame', enough ? null : 'warn');
       setRV('rv-mode', modeText);
-      if(neededFields == null){
-        setRV('rv-fitFields', '∞ benötigt');
-        if(document.getElementById('rv-fitFields')?.closest('.cfgres-item')) {
-          document.getElementById('rv-fitFields').closest('.cfgres-item').classList.add('is-warn');
-        }
+      setRV('rv-subsets', (totalSetsMin === totalSetsMax)
+        ? (totalSetsMin + ' · \u2248' + perSet + ' Min/Satz')
+        : (totalSetsMin + '\u2013' + totalSetsMax + ' · \u2248' + perSet + ' Min/Satz'));
+      setRV('rv-duration', fmtDur(dur) + ' / ' + fmtDur(playMin));
+      if(bufferMin >= 0){
+        setRV('rv-buffer', '+' + fmtDur(bufferMin));
+        setRVState('rv-buffer', null);
       } else {
-        setRV('rv-fitFields', neededFields + (neededFields === NFIELDS ? ' ✓' : ' benötigt'));
-        if(document.getElementById('rv-fitFields')?.closest('.cfgres-item')) {
-          document.getElementById('rv-fitFields').closest('.cfgres-item').classList.toggle('is-warn', neededFields > NFIELDS);
-        }
+        setRV('rv-buffer', '\u2212' + fmtDur(Math.abs(bufferMin)));
+        setRVState('rv-buffer', 'warn');
+      }
+      if(neededFields == null){
+        setRV('rv-fitFields', '\u221e benötigt');
+        setRVState('rv-fitFields', 'warn');
+      } else {
+        setRV('rv-fitFields', neededFields + (neededFields === NFIELDS ? ' \u2713' : ' benötigt'));
+        setRVState('rv-fitFields', neededFields > NFIELDS ? 'warn' : null);
       }
       setRV('rv-fitEnd', fmtMin(neededEndMin));
-      if(document.getElementById('rv-fitEnd')?.closest('.cfgres-item')) {
-        document.getElementById('rv-fitEnd').closest('.cfgres-item').classList.toggle('is-warn', bufferMin < 0);
-      }
+      setRVState('rv-fitEnd', bufferMin < 0 ? 'warn' : null);
+      const gamesPerTeam = NROUNDS;
+      setRV('rv-perTeam', setRange.min === setRange.max
+        ? (gamesPerTeam + ' Spiele · ' + (gamesPerTeam * setRange.min) + ' Sätze')
+        : (gamesPerTeam + ' Spiele · ' + (gamesPerTeam * setRange.min) + '\u2013' + (gamesPerTeam * setRange.max) + ' Sätze'));
+    }
+    function setRVState(id, state){
+      const el = document.getElementById(id); if(!el) return;
+      const item = el.closest('.cfgres-item'); if(!item) return;
+      item.classList.remove('is-warn'); if(state === 'warn') item.classList.add('is-warn');
     }
     function applyTimefitFields(){
       if(LAST_TIMEFIT_NEEDED_FIELDS == null){
@@ -1216,12 +1505,14 @@
         return;
       }
       if(LAST_TIMEFIT_NEEDED_FIELDS === NFIELDS){
-        alert('Die aktuelle Feldzahl passt bereits zum Zeitfenster.');
+        alert('Die aktuelle Feldzahl (' + NFIELDS + ') passt bereits zum Zeitfenster.');
         return;
       }
+      const oldFields = NFIELDS;
       NFIELDS = LAST_TIMEFIT_NEEDED_FIELDS;
-      saveCfg({t:NTEAMS, r:NROUNDS, p:SET_MODE});
-      renderApp();
+      try{ localStorage.setItem(FIELDS_KEY, JSON.stringify({count: NFIELDS})); }catch(e){}
+      alert('Feldzahl optimiert: ' + oldFields + ' → ' + NFIELDS + ' Felder');
+      rebuild();
     }
     function setRV(id, text){
       const el = document.getElementById(id);
@@ -1241,18 +1532,26 @@
       }
     }
     function setScorePairState(r, i, state){
-      ['sA','sB','s2A','s2B'].forEach(pre => {
+      ['sA','sB','s2A','s2B','s3A','s3B'].forEach(pre => {
         const el = document.getElementById(pre + '_' + r + '_' + i);
         if(!el) return;
         el.disabled = !state.enabled;
         if(state.clear) el.value = '';
-        el.placeholder = state.placeholder || '';
+        el.placeholder = state.placeholder || el.dataset.ph || '';
       });
     }
     function winnerOf(r, i){
       if(!slotComplete(r, i)) return null;
       if(isFreilos(r, i)) return freilosWinner(r, i);
       return slotResult(r, i).winner;
+    }
+    /* Sieger-Zeile im Ergebnis-Formular setzen (leer => Platzhalter "–"). */
+    function setWinnerCell(r, i, html){
+      const el = document.getElementById('rw_' + r + '_' + i);
+      if(!el) return;
+      el.innerHTML = html || '–';
+      const box = el.closest('.mwin');
+      if(box) box.classList.toggle('is-set', !!html);
     }
     function renderRounds(){
       for(let r=1;r<=NROUNDS;r++){
@@ -1262,7 +1561,7 @@
           if(!m){
             setHtml('rA_' + r + '_' + i, '');
             setHtml('rB_' + r + '_' + i, '');
-            setHtml('rw_' + r + '_' + i, '');
+            setWinnerCell(r, i, '');
             setScorePairState(r, i, {enabled:false, clear:true, placeholder:''});
             continue;
           }
@@ -1273,9 +1572,9 @@
           else setScorePairState(r, i, {enabled:true, clear:false, placeholder:''});
           const winner = winnerOf(r, i);
           if(winner){
-            setHtml('rw_' + r + '_' + i, isFreilos(r, i) ? teamFull(winner, {markDropped:true}) + ' <span class="bye-team">(Freilos)</span>' : teamFull(winner, {markDropped:true}));
+            setWinnerCell(r, i, isFreilos(r, i) ? teamFull(winner, {markDropped:true}) + ' <span class="mwin-note">(Freilos)</span>' : teamFull(winner, {markDropped:true}));
           } else {
-            setHtml('rw_' + r + '_' + i, '');
+            setWinnerCell(r, i, '');
           }
         }
       }
@@ -1320,61 +1619,37 @@
         }
       }
     }
+    /* Sieger-/Fehler-Markierung der Eingabefelder - identisch in beiden Turnierbogen. */
     function markScores(){
       document.querySelectorAll('input.score').forEach(inp => inp.classList.remove('win', 'invalid'));
       document.querySelectorAll('input.score').forEach(inp => {
         if(inp.disabled) return;
-        const m = /^s(2)?(A|B)_(\d+)_(\d+)$/.exec(inp.id); if(!m) return;
+        const raw = (inp.value || '').trim();
+        const own = num(inp);
+        if(raw !== '' && own == null){ inp.classList.add('invalid'); return; }
+        const m = /^s(2|3)?(A|B)_(\d+)_(\d+)$/.exec(inp.id); if(!m) return;
         const pre = m[1] || '';
         const other = document.getElementById('s' + pre + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
-        const a = num(inp), b = num(other); if(a == null || b == null) return;
-        if(!(Math.max(a, b) >= POINT_TARGET && Math.abs(a - b) >= 2)) inp.classList.add('invalid'); else if(a > b) inp.classList.add('win');
+        if(!other || other.disabled) return;
+        const oppRaw = (other.value || '').trim();
+        const a = own, b = num(other);
+        if(oppRaw !== '' && b == null){ inp.classList.add('invalid'); return; }
+        if(a == null || b == null) return;
+        const setNo = pre === '3' ? 3 : (pre === '2' ? 2 : 1);
+        if(!setValidWithTarget(a, b, targetForSet(setNo))) inp.classList.add('invalid');
+        else if(a > b) inp.classList.add('win');
       });
-    }
-    function updateLive(){
-      const box = document.getElementById('livebox'); if(!box) return;
-      let last = 0;
-      for(let r=1;r<=NROUNDS;r++) if(roundComplete(r)) last = r;
-      const st = statsUpto(NROUNDS);
-      let playedTotal = 0;
-      for(let t=1;t<=NTEAMS;t++) playedTotal += st[t].g;
-      if(playedTotal === 0){ box.innerHTML = '<em>Noch keine Ergebnisse erfasst – sobald das erste Spiel eingetragen ist, erscheint hier das aktuelle Ranking.</em>'; return; }
-      const ord = displayOrderUpto(NROUNDS);
-      let rank = '<h3>Aktuelles Ranking</h3><table class="livetab"><tr><th>Pl</th><th>Team</th><th>S</th><th>BD</th><th>+P</th><th title="gespielte Spiele">Sp</th></tr>';
-      const sameWert = (a, b) => st[a].s === st[b].s && st[a].bd === st[b].bd && st[a].p === st[b].p;
-      const rankOf = {};
-      ord.forEach((t, idx) => { rankOf[t] = (idx > 0 && sameWert(ord[idx - 1], t)) ? rankOf[ord[idx - 1]] : idx + 1; });
-      let anyTie = false;
-      ord.forEach((t, idx) => {
-        const tied = (idx > 0 && sameWert(ord[idx - 1], t)) || (idx < ord.length - 1 && sameWert(ord[idx + 1], t));
-        if(tied) anyTie = true;
-        const cls = (droppedTeams().has(t) ? 'drop-row ' : '') + (tied ? 'tie-row' : '');
-        rank += '<tr' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + '><td>' + rankOf[t] + '.' + (tied ? '<span class="tie-eq" title="Gleiche Wertung – Platz geteilt">=</span>' : '') + '</td><td>' + teamFull(t, {markDropped:true}) + '</td><td>' + st[t].s + '</td><td>' + fmt(st[t].bd) + '</td><td>' + st[t].p + '</td><td>' + st[t].g + '</td></tr>';
-      });
-      rank += '</table>';
-      if(anyTie) rank += '<div class="tie-note">= geteilter Platz: identische Wertung (Siege / Balldifferenz / Punkte).</div>';
-      let pair = '';
-      const nr = last + 1;
-      if(nr <= NROUNDS && MATCHES[nr]){
-        pair = '<h3>Paarungen Runde ' + nr + '</h3><table class="livetab">';
-        MATCHES[nr].forEach(m => {
-          pair += '<tr><td>' + escapeHtml(m.field) + '</td><td>' + teamFull(m.a, {markDropped:true}) + '</td><td>vs</td><td>' + teamFull(m.b, {markDropped:true}) + '</td></tr>';
-        });
-        pair += '</table>';
-      }
-      box.innerHTML = '<div class="live-cols"><div class="live-col">' + rank + '</div>'
-        + (pair ? '<div class="live-col">' + pair + '</div>' : '')
-        + '</div>';
     }
     function computeAll(){
       buildMatches();
+      updateCfgResult();
       applyTimes();
+      computeTimes();
       updateTeamLegends();
       updateNameCells();
       renderRounds();
       renderCentral();
       markScores();
-      updateLive();
       registerSession();
     }
     document.addEventListener('keydown', e => {
@@ -1387,7 +1662,7 @@
       if(idx >= 0 && idx < list.length - 1){ list[idx + 1].focus(); list[idx + 1].select?.(); }
     });
     loadCfg();
-    renderApp();
+    rebuild();
   </script>
 <!-- BL_ENH_START · Bedienhilfen: offene Spiele, Ungültig-Tooltip, Speicher-Feedback, Pfeiltasten (nur Bildschirm) -->
 <script>
@@ -1425,16 +1700,48 @@
   }catch(e){}
 
   function num(v){ v = (v==null?'':String(v)).trim(); if(v==='') return null; if(!/^\d{1,3}$/.test(v)) return null; return parseInt(v,10); }
-  function scorePairs(){
-    var all = Array.prototype.slice.call(document.querySelectorAll('input.score'));
-    var pairs = []; for(var i=0;i+1<all.length;i+=2){ pairs.push([all[i], all[i+1]]); }
-    return pairs;
-  }
-  function pairValid(a,b){
-    if(a.classList.contains('invalid')||b.classList.contains('invalid')) return false;
-    return num(a.value)!=null && num(b.value)!=null;
-  }
 
+  // ── Ergebnisfelder: nur Ziffern zulassen ──────────────────────────────
+  // Zusaetzlich komfortabel: "21:19" (auch eingefuegt) wird automatisch auf
+  // beide Kaestchen verteilt, und ":" / "-" / "/" springt ins Partnerfeld.
+  function scorePartner(inp){
+    var id = inp.id || '', m;
+    // "Alle gegen Alle": g|g2|g3 + Runde + "_" + Team (Gegner steht in data-op)
+    if(inp.dataset && inp.dataset.op != null && (m = /^(g[23]?)(\d+)_(\d+)$/.exec(id))){
+      return document.getElementById(m[1] + m[2] + '_' + inp.dataset.op);
+    }
+    // Schweizer System: s|s2|s3 + A|B + "_" + Runde + "_" + Feld
+    if((m = /^(s[23]?)(A|B)_(\d+)_(\d+)$/.exec(id))){
+      return document.getElementById(m[1] + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
+    }
+    return null;
+  }
+  function sanitizeScore(inp){
+    var v = inp.value == null ? '' : String(inp.value);
+    var pair = /^\s*(\d{1,3})\s*[:\-\/]\s*(\d{1,3})\s*$/.exec(v);
+    if(pair){
+      inp.value = pair[1];
+      var partner = scorePartner(inp);
+      if(partner && !partner.disabled) partner.value = pair[2];
+      return;
+    }
+    var clean = v.replace(/\D+/g, '').slice(0, 3);
+    if(clean !== v) inp.value = clean;
+  }
+  document.addEventListener('input', function(e){
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score')) return;
+    sanitizeScore(el);
+  }, true);
+  document.addEventListener('keydown', function(e){
+    if(e.key !== ':' && e.key !== '-' && e.key !== '/') return;
+    var el = e.target;
+    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
+    var partner = scorePartner(el);
+    if(!partner || partner.disabled) return;
+    e.preventDefault();
+    partner.focus(); if(partner.select) partner.select();
+  }, true);
   // ── #1 Ungültig-Tooltip + #3 offene/erledigte Spiele hervorheben ──
   function update(){
     document.querySelectorAll('input.score').forEach(function(inp){
@@ -1443,19 +1750,15 @@
     });
     document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
 
-    document.querySelectorAll('tr[data-match-row]').forEach(function(row){
-      var inputs = row.querySelectorAll('input.score'); if(!inputs.length) return;
-      var anyEnabled = false; inputs.forEach(function(i){ if(!i.disabled) anyEnabled = true; });
-      if(!anyEnabled) return;
-      var wcell = row.querySelector('.winner-cell');
-      var decided = wcell && wcell.textContent.trim() !== '';
-      inputs.forEach(function(i){ var td = i.closest('td'); if(td) td.classList.add(decided?'bl-done':'bl-open'); });
-    });
-    scorePairs().forEach(function(p){
-      var a = p[0], b = p[1];
-      if(a.closest('tr[data-match-row]')) return;
-      if(a.disabled || b.disabled) return;
-      var td = a.closest('td'); if(td) td.classList.add(pairValid(a,b)?'bl-done':'bl-open');
+    // Je Spielkarte genau EINE Markierung - identisch zum Bogen "Alle gegen Alle".
+    document.querySelectorAll('td.match').forEach(function(td){
+      var round = parseInt(td.getAttribute('data-round'), 10);
+      var col   = parseInt(td.getAttribute('data-col'), 10);
+      if(isNaN(round) || isNaN(col)) return;
+      var activeInputs = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(function(inp){ return !inp.disabled; });
+      if(!activeInputs.length) return;
+      var done = (typeof window.slotComplete === 'function') ? !!window.slotComplete(round, col) : false;
+      td.classList.add(done ? 'bl-done' : 'bl-open');
     });
   }
 
@@ -1463,7 +1766,7 @@
   function schedule(){ if(scheduled) return; scheduled = true;
     (window.requestAnimationFrame||setTimeout)(function(){ scheduled=false; try{ update(); }catch(e){} }); }
 
-  ['computeAll','renderAll'].forEach(function(fn){
+  ['computeAll','rebuild'].forEach(function(fn){
     if(typeof window[fn]==='function'){ var orig = window[fn];
       window[fn] = function(){ var r = orig.apply(this, arguments); schedule(); return r; }; }
   });
@@ -1503,7 +1806,7 @@
     }
     
     // Alle Runden-Tabellen
-    document.querySelectorAll('.round-table').forEach(table => {
+    document.querySelectorAll('.rounds-page table.sched').forEach(table => {
       const contentW = Math.max(1, table.scrollWidth);
       const zoom = Math.min(1, a4W / contentW);
       if(zoom < 0.99) table.style.zoom = zoom.toFixed(2);
@@ -1514,7 +1817,7 @@
     const centralTable = document.querySelector('.central-table');
     if(centralTable) centralTable.style.zoom = '';
     
-    document.querySelectorAll('.round-table').forEach(table => {
+    document.querySelectorAll('.rounds-page table.sched').forEach(table => {
       table.style.zoom = '';
     });
   });
@@ -1569,130 +1872,136 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 <script src="appbar.js" defer></script>
 <script src="form-flow.js" defer></script>
 
-<div class="mobile-jumpbar noprint">
-  <button type="button" class="nbtn" onclick="document.querySelector('.page').scrollIntoView({behavior:'smooth',block:'start'})">⚙️ Start</button>
-  <button type="button" class="nbtn" id="jumpbarRoundBtn" onclick="scrollToCurrentRound()">📋 Runde</button>
-  <button type="button" class="nbtn" onclick="document.querySelector('.central-table').scrollIntoView({behavior:'smooth',block:'start'})">🏁 Tabelle</button>
-  <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
-</div>
-
 <script>
-// ── Mobile-Rundennavigator ──────────────────────────────────────────────
+// ── Rundennavigator (Single-Round View) ──────────────────────────────────
 (function(){
-  if(window.__ROUND_NAV__) return;
-  window.__ROUND_NAV__ = true;
+  if(window.__ROUND_NAV_INIT__) return;
+  window.__ROUND_NAV_INIT__ = true;
 
-  var currentRound = 1;
-  var totalRounds = 0;
+  const STORAGE_KEY = 'beachl_swiss_round';
+  let currentRound = 1;
 
-  function getRoundBlocks(){
-    return Array.from(document.querySelectorAll('.round-block[data-round]'));
+  // Show only selected round, hide all others
+  function filterToRound(roundNum) {
+    currentRound = roundNum;
+    
+    // Save to localStorage
+    try { localStorage.setItem(STORAGE_KEY, String(roundNum)); } catch(e) {}
+    
+    // Apply filter: show only current round
+    const allRounds = document.querySelectorAll('[data-round-num]');
+    allRounds.forEach(function(el) {
+      const rNum = parseInt(el.getAttribute('data-round-num'), 10);
+      el.style.display = (rNum === roundNum) ? '' : 'none';
+    });
+    
+    // Update select dropdown
+    const sel = document.getElementById('roundSelect');
+    if(sel) sel.value = String(roundNum);
+    
+    // Update navigator state text
+    const totalRounds = document.querySelectorAll('[data-round-num]').length;
+    const state = document.getElementById('roundNavState');
+    if(state) {
+      state.textContent = 'Runde ' + roundNum + ' / ' + totalRounds;
+    }
+
+    const prevBtn = document.getElementById('roundPrevBtn');
+    const nextBtn = document.getElementById('roundNextBtn');
+    if(prevBtn && nextBtn) {
+      prevBtn.disabled = roundNum <= 1;
+      nextBtn.disabled = roundNum >= totalRounds;
+    }
   }
 
-  function initRoundNav(){
-    // Add data-round if missing
-    document.querySelectorAll('.round-block').forEach(function(b, i){
-      if(!b.getAttribute('data-round')) b.setAttribute('data-round', i + 1);
+  // Initialize navigator with all available rounds
+  function initNavigator() {
+    // Find all rounds and build select options
+    const roundSet = new Set();
+    document.querySelectorAll('[data-round-num]').forEach(function(el) {
+      const rNum = parseInt(el.getAttribute('data-round-num'), 10);
+      if(!isNaN(rNum)) roundSet.add(rNum);
     });
-
-    var blocks = getRoundBlocks();
-    if(!blocks.length) return;
-    totalRounds = blocks.length;
-
-    var sel = document.getElementById('roundSelect');
-    if(!sel) return;
-    sel.innerHTML = '';
-    blocks.forEach(function(b, i){
-      var opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = 'Runde ' + (i + 1);
-      sel.appendChild(opt);
-    });
-
-    var bar = document.getElementById('roundNavBar');
-    if(bar) bar.style.display = '';
-
-    applyRoundFilter();
-  }
-
-  function applyRoundFilter(){
-    var blocks = getRoundBlocks();
-    var isMobile = window.innerWidth <= 640;
-    blocks.forEach(function(b, i){
-      if(isMobile){
-        if(i + 1 === currentRound) b.classList.remove('round-hidden');
-        else b.classList.add('round-hidden');
-      } else {
-        b.classList.remove('round-hidden');
+    
+    if(roundSet.size === 0) return; // No rounds found
+    
+    const rounds = Array.from(roundSet).sort((a, b) => a - b);
+    const totalRounds = rounds.length;
+    
+    // Populate select dropdown
+    const sel = document.getElementById('roundSelect');
+    if(sel) {
+      sel.innerHTML = '';
+      rounds.forEach(function(r) {
+        const opt = document.createElement('option');
+        opt.value = String(r);
+        opt.textContent = 'Runde ' + r;
+        sel.appendChild(opt);
+      });
+    }
+    
+    // Load saved round from localStorage, or default to 1
+    let savedRound = 1;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(saved) {
+        const r = parseInt(saved, 10);
+        if(!isNaN(r) && rounds.includes(r)) {
+          savedRound = r;
+        }
       }
-    });
+    } catch(e) {}
     
-    // Desktop: scroll to selected round
-    if(!isMobile){
-      var targetBlock = blocks[currentRound - 1];
-      if(targetBlock) targetBlock.scrollIntoView({behavior:'smooth',block:'center'});
-    }
+    // Apply filter to saved/default round
+    filterToRound(savedRound);
     
-    var state = document.getElementById('roundNavState');
-    if(state) state.textContent = 'Runde ' + currentRound + ' / ' + totalRounds;
-    var prevBtn = document.getElementById('roundPrevBtn');
-    var nextBtn = document.getElementById('roundNextBtn');
-    if(prevBtn) prevBtn.disabled = currentRound <= 1;
-    if(nextBtn) nextBtn.disabled = currentRound >= totalRounds;
-    var sel = document.getElementById('roundSelect');
-    if(sel) sel.value = currentRound;
-    var bar = document.getElementById('roundNavBar');
+    // Show navigator bar
+    const bar = document.getElementById('roundNavBar');
     if(bar) bar.style.display = '';
   }
 
-  window.onRoundSelectChange = function(){
-    var sel = document.getElementById('roundSelect');
-    if(sel) currentRound = parseInt(sel.value, 10);
-    applyRoundFilter();
+  // Event handlers
+  window.onRoundSelectChange = function() {
+    const sel = document.getElementById('roundSelect');
+    if(sel) filterToRound(parseInt(sel.value, 10));
   };
 
-  window.shiftRound = function(delta){
-    currentRound = Math.max(1, Math.min(totalRounds, currentRound + delta));
-    applyRoundFilter();
-  };
-
-  window.scrollToCurrentRound = function(){
-    var blocks = getRoundBlocks();
-    var b = blocks[currentRound - 1];
-    if(b) b.scrollIntoView({behavior:'smooth', block:'start'});
-    else if(blocks[0]) blocks[0].scrollIntoView({behavior:'smooth', block:'start'});
-  };
-
-  window.addEventListener('resize', applyRoundFilter);
-
-  // Init: wait for DOM to be ready (works both for static and dynamic pages)
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initRoundNav);
-  } else {
-    // If JS has already rendered rounds, init immediately; otherwise retry
-    initRoundNav();
-    if(!getRoundBlocks().length){
-      var tries = 0;
-      var poll = setInterval(function(){
-        if(getRoundBlocks().length || ++tries > 20){ clearInterval(poll); initRoundNav(); }
-      }, 150);
+  window.shiftRound = function(delta) {
+    const sel = document.getElementById('roundSelect');
+    if(!sel) return;
+    const idx = Array.from(sel.options).findIndex(o => o.value === String(currentRound));
+    if(idx >= 0) {
+      const newIdx = Math.max(0, Math.min(sel.options.length - 1, idx + delta));
+      sel.selectedIndex = newIdx;
+      filterToRound(parseInt(sel.options[newIdx].value, 10));
     }
+  };
+
+  // Initialize when DOM is ready
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNavigator);
+  } else {
+    initNavigator();
   }
 
-  // Re-init after dynamic re-renders (e.g. team count change)
-  window.__roundNavInit = initRoundNav;
+  // Re-init when config changes (called from rebuild())
+  window.reinitRoundNav = function() {
+    initNavigator();
+  };
+
 })();
 
-// Hook renderApp to re-init round navigator after re-renders
-(function(){
-  var _orig = window.renderApp;
-  if(typeof _orig === 'function'){
-    window.renderApp = function(){
-      var r = _orig.apply(this, arguments);
-      window.__ROUND_NAV__ = false;
-      if(typeof window.__roundNavInit === 'function') setTimeout(window.__roundNavInit, 0);
-      return r;
-    };
+// After rebuild(), reinitialize the round navigator
+(function() {
+  const originalRebuild = window.rebuild;
+  if(typeof originalRebuild === 'function') {
+   window.rebuild = function() {
+     const result = originalRebuild.apply(this, arguments);
+     if(typeof window.reinitRoundNav === 'function') {
+       window.reinitRoundNav();
+     }
+     return result;
+   };
   }
 })();
 </script>

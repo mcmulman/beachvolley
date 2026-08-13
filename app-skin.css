@@ -302,8 +302,11 @@
        3) Tabellen-Label = <caption>             → 14px, uppercase, Akzent
      Ausgenommen: Kurzanleitung (.guide h2) und Runden-Divider (.tt). */
   body > h1 ~ h1,
+  .page > h1 ~ h1,
+  section > h1 ~ h1,
   .rounds-page > h1,
   body > h2:not(.tt):not(.guide),
+  .page > h2:not(.tt):not(.guide),
   .panel > h2:not(.tt) {
     color: var(--app-blue-dark);
     font-weight: 800;
@@ -316,12 +319,15 @@
   /* Body-Abschnitte brauchen Luft nach oben/unten; Panel-Header nutzen die
      Panel-Polsterung und bleiben ohne zusätzliche Ränder. */
   body > h1 ~ h1,
+  .page > h1 ~ h1,
+  section > h1 ~ h1,
   .rounds-page > h1,
-  body > h2:not(.tt):not(.guide) {
+  body > h2:not(.tt):not(.guide),
+  .page > h2:not(.tt):not(.guide) {
     margin: 22px 0 10px;
   }
   /* Struktur-/Index-Zellen (Runde, Team-Nr., Summe, Platz …) einheitlich. */
-  .track .tnum, .track .sum, .sched .rnd, .teams .num,
+  .track .tnum, .track .sum, .sched .rnd, .sched tr.rhead > td.rhead-cell, .teams .num,
   .stand .pl, .central-table .rk, .grp-box .tnum {
     background: var(--app-tint);
     color: var(--app-blue-dark);
