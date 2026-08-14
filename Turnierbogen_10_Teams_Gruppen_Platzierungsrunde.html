@@ -35,6 +35,14 @@
   .sched .rnd .rmode { display:block; font-size:9.5px; font-weight:normal; color:#333; line-height:1.15; margin-top:1px; }
   .pair { display:flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; }
   .pair .t { display:inline-block; min-width:48px; font-weight:bold; font-size:12.5px; }
+  /* Best-of-3-Ergebnis (Finale / Spiel um Platz 3): mehrere Satz-Spalten je Match,
+     analog zum Muster aus "Schweizer System"/"Alle gegen Alle" (setColumnHtml). */
+  .pair.pair-bo3 { white-space:normal; flex-wrap:wrap; row-gap:4px; }
+  .psets { display:inline-flex; align-items:flex-end; justify-content:center; gap:7px; flex-wrap:wrap; }
+  .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
+  .slbl { font-size:9px; font-weight:bold; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap; }
+  .sbox { display:inline-flex; align-items:center; gap:2px; }
+  .sbox input.score { width:30px; }
   .score { border:1px solid var(--soft); border-radius:3px; width:34px; height:28px; display:inline-block; }
   input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
                 font-size:14px; color:#0a2e52; vertical-align:middle; background:#fff;
@@ -521,8 +529,8 @@
   <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th><th data-field="4">Feld 5</th></tr>
   <tr>
     <td class="rnd">Finalrunde 2<span class="rtime tt">13:24–13:46</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze<br>Pl. 5–8: 1 Satz bis 21</span></td>
-    <td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair"><span class="t" data-slot="winK1a"><span class="src">Sieger</span><span class="gocode">K1a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK1b"><span class="src">Sieger</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
-    <td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair"><span class="t" data-slot="losK1a"><span class="src">Verl.</span><span class="gocode">K1a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK1b"><span class="src">Verl.</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
+    <td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair pair-bo3"><span class="t" data-slot="winK1a"><span class="src">Sieger</span><span class="gocode">K1a</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN2_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN2_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Entsch.</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FINtb_h" placeholder="TB" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FINtb_a" placeholder="TB" oninput="onScore()" autocomplete="off"></span></span></span><span class="t" data-slot="winK1b"><span class="src">Sieger</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
+    <td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair pair-bo3"><span class="t" data-slot="losK1a"><span class="src">Verl.</span><span class="gocode">K1a</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P32_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P32_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Entsch.</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3tb_h" placeholder="TB" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3tb_a" placeholder="TB" oninput="onScore()" autocomplete="off"></span></span></span><span class="t" data-slot="losK1b"><span class="src">Verl.</span><span class="gocode">K1b</span><span class="rname"></span></span></span></td>
     <td><div class="ghead"><span class="code">um Platz 5</span><span class="route2">→ Platz 5/6</span></div><span class="pair"><span class="t" data-slot="winK2a"><span class="src">Sieger</span><span class="gocode">K2a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P5_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P5_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winK2b"><span class="src">Sieger</span><span class="gocode">K2b</span><span class="rname"></span></span></span></td>
     <td><div class="ghead"><span class="code">um Platz 7</span><span class="route2">→ Platz 7/8</span></div><span class="pair"><span class="t" data-slot="losK2a"><span class="src">Verl.</span><span class="gocode">K2a</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P7_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P7_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losK2b"><span class="src">Verl.</span><span class="gocode">K2b</span><span class="rname"></span></span></span></td>
     <td class="idle">Feld 5 frei</td>
@@ -934,7 +942,10 @@
 
       const complete = teams.every(t => st[t].pl === 4);
       teams.forEach(t => { GSTATS[t] = { games:st[t].pl, w:st[t].w, bd:st[t].bd, sc:st[t].sc, complete }; });
-      const _sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
+      /* "=" (geteilter Platz) nur anzeigen, wenn der direkte Vergleich den
+         scheinbaren Gleichstand NICHT bereits aufgelöst hat – sonst ist die
+         Reihenfolge eindeutig, auch wenn Siege/Ball-Diff./Punkte gleich sind. */
+      const _sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc && directResult(a,b,missingState)===0;
       const _rankOf={};
       ranked.forEach((t,idx)=>{ _rankOf[t] = (idx>0 && _sameW(ranked[idx-1],t)) ? _rankOf[ranked[idx-1]] : idx+1; });
       ranked.forEach((t,idx)=>{
@@ -943,7 +954,11 @@
         const _c=document.getElementById('pz_'+t);
         if(_c){ _c.classList.toggle('pz-tie', !!_tied); if(_tied) _c.title='Gleiche Wertung – Platz geteilt'; else _c.removeAttribute('title'); }
       });
-      seeds[gname] = complete ? ranked.filter(t => !isMissing(t, missingState)) : null;
+      /* NICHT filtern (würde nachfolgende Ränge aufrücken lassen und alle
+         Kreuzpaarungen verschieben) – stattdessen Rang-Position je Team
+         beibehalten und nur ein fehlendes Team an seiner eigenen Position
+         durch 0 (= Freilos für den direkten Gegner) ersetzen. */
+      seeds[gname] = complete ? ranked.map(t => isMissing(t, missingState) ? 0 : t) : null;
     }
     return seeds;
   }
@@ -1014,8 +1029,50 @@
       }
       return {win:0, los:0};
     }
-    const fin = wl2('FIN', r.K1a.win, r.K1b.win);
-    const p3  = wl2('P3',  r.K1a.los, r.K1b.los);
+    /* Finale & Spiel um Platz 3: 2 Gewinnsätze bis 21 (2 Punkte Vorsprung),
+       bei 1:1 Sätzen entscheidet ein Tiebreak bis 15 (2 Punkte Vorsprung).
+       Ball-Differenz/-Summe zählt NUR aus Satz 1+2 – der Tiebreak entscheidet
+       ausschließlich Sieg/Niederlage (identische Logik wie in "Schweizer
+       System" / "Alle gegen Alle" im Modus 2x21tb). */
+    function setOK(a, b, target){
+      if(a == null || b == null) return false;
+      const hi = Math.max(a, b), lo = Math.min(a, b);
+      if(hi < target || hi === lo) return false;
+      if(hi === target) return lo <= target - 2;
+      return (hi - lo) === 2 && lo >= (target - 1);
+    }
+    function addFBestOf3(team, ownBalls, oppBalls, isWinner){
+      if(!team) return;
+      const f = FSTATS[team] || (FSTATS[team] = {g:0, w:0, bd:0, sc:0});
+      f.g += 1; f.sc += ownBalls; f.bd += (ownBalls - oppBalls); if(isWinner) f.w += 1;
+    }
+    function wl2BestOf3(code, home, away){
+      const auto = autoWL(home, away);
+      if(auto) return auto;
+      if(!home || !away) return {win:0, los:0};
+      const h1 = num(document.getElementById('f2_'+code+'_h'));
+      const a1 = num(document.getElementById('f2_'+code+'_a'));
+      const h2 = num(document.getElementById('f2_'+code+'2_h'));
+      const a2 = num(document.getElementById('f2_'+code+'2_a'));
+      if(!setOK(h1, a1, 21) || !setOK(h2, a2, 21)) return {win:0, los:0};
+      const homeSets = (h1 > a1 ? 1 : 0) + (h2 > a2 ? 1 : 0);
+      let winner, loser;
+      if(homeSets === 2){ winner = home; loser = away; }
+      else if(homeSets === 0){ winner = away; loser = home; }
+      else {
+        const h3 = num(document.getElementById('f2_'+code+'tb_h'));
+        const a3 = num(document.getElementById('f2_'+code+'tb_a'));
+        if(!setOK(h3, a3, 15)) return {win:0, los:0};
+        winner = h3 > a3 ? home : away;
+        loser = h3 > a3 ? away : home;
+      }
+      const homeBalls = h1 + h2, awayBalls = a1 + a2;
+      addFBestOf3(home, homeBalls, awayBalls, winner === home);
+      addFBestOf3(away, awayBalls, homeBalls, winner === away);
+      return {win:winner, los:loser};
+    }
+    const fin = wl2BestOf3('FIN', r.K1a.win, r.K1b.win);
+    const p3  = wl2BestOf3('P3',  r.K1a.los, r.K1b.los);
     const p5  = wl2('P5',  r.K2a.win, r.K2b.win);
     const p7  = wl2('P7',  r.K2a.los, r.K2b.los);
     const places = [fin.win, fin.los, p3.win, p3.los, p5.win, p5.los, p7.win, p7.los, r.K3.win, r.K3.los];
@@ -1077,7 +1134,11 @@
       const m = inp.id.match(/^(.*)_(h|a)$/); if(!m) return;
       const other = document.getElementById(m[1]+'_'+(m[2]==='h'?'a':'h'));
       const a = num(inp), b = num(other); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      /* Tiebreak-/Entscheidungssatz-Felder (Finale & Platz 3, "…tb_h/a") gehen
+         bis 15 statt bis 21 – sonst würde ein gültiges 15:13 fälschlich als
+         ungültig markiert. */
+      const target = /tb_(h|a)$/.test(inp.id) ? 15 : 21;
+      if(!(Math.max(a,b) >= target && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }

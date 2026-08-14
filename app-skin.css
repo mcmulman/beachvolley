@@ -90,7 +90,10 @@
       overscroll-behavior-x: contain;
       scrollbar-width: thin;
     }
-    /* Dezente Kanten-Schatten als Scroll-Hinweis. */
+    /* Fallback-Kanten-Schatten direkt auf der Tabelle (nur sichtbar, solange
+       keine Zellen mit eigenem Hintergrund den Tabellen-Hintergrund verdecken,
+       z. B. bei table-layout ohne Zellenfüllung – Bögen mit gefüllten Zellen
+       erhalten den Hinweis stattdessen über den .scrollhint-Wrapper unten). */
     table.sched, table.track {
       background:
         linear-gradient(90deg, #fff 30%, rgba(255,255,255,0)) left / 24px 100% no-repeat,
@@ -99,6 +102,42 @@
         radial-gradient(farthest-side at 100% 50%, rgba(26,58,92,.16), transparent) right / 12px 100% no-repeat;
       background-attachment: local, local, scroll, scroll;
     }
+    /* .scrollhint / .table-scroll: von appbar.js zur Laufzeit um Tabellen mit
+       (durch Zellenhintergründe) unsichtbarem Tabellen-Hintergrund gelegter
+       Wrapper. Da der Wrapper selbst keine deckenden Kind-Hintergründe hat,
+       bleibt der Kanten-Schatten hier zuverlässig sichtbar. */
+    .scrollhint, .table-scroll {
+      background:
+        linear-gradient(90deg, #fff 30%, rgba(255,255,255,0)) left / 24px 100% no-repeat,
+        linear-gradient(90deg, rgba(255,255,255,0), #fff 70%) right / 24px 100% no-repeat,
+        radial-gradient(farthest-side at 0 50%, rgba(26,58,92,.16), transparent) left / 12px 100% no-repeat,
+        radial-gradient(farthest-side at 100% 50%, rgba(26,58,92,.16), transparent) right / 12px 100% no-repeat;
+      background-attachment: local, local, scroll, scroll;
+    }
+    .scrollhint {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+    }
+    .scrollhint > table.sched, .scrollhint > table.track {
+      display: table;
+      overflow: visible;
+      max-width: none;
+    }
+  }
+
+  /* Team-Bezug beim horizontalen Scrollen nicht verlieren: erste Spalte
+     (Team-Name/-Kennung) bleibt sichtbar fixiert, während der Rest der
+     breiten Verlaufs-/Wertungstabelle darunter wegscrollt. */
+  table.track th.tname, table.track td.tname,
+  .central-table th:first-child, .central-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #fff;
   }
 
   /* Die ursprüngliche „← Zur Übersicht"-Zeile wird durch die App-Leiste ersetzt. */
@@ -498,7 +537,8 @@
     box-sizing: border-box !important;
     width: 40px !important;
     height: 32px !important;
-    font-size: 15px !important;
+    /* 16px statt 15px: verhindert iOS-Safari-Auto-Zoom beim Fokussieren. */
+    font-size: 16px !important;
     text-align: center;
     border: 1px solid #c4d0e0;
     border-radius: 8px;

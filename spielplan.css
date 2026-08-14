@@ -407,6 +407,10 @@ input.score.invalid {
 }
 
 @media screen and (max-width: 640px) {
+/* iOS Safari zoomt beim Fokussieren automatisch in Inputs mit <16px Schrift.
+   Auf Mobile daher auf 16px anheben, um den störenden Auto-Zoom beim
+   Ergebnis-Eintragen zwischen den Spielen zu verhindern. */
+input.score { font-size:16px; }
 .schedule-roundbar {
         display: grid;
         grid-template-columns: 1fr auto auto;

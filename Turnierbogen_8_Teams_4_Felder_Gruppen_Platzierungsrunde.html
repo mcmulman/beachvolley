@@ -46,6 +46,13 @@
   .sched th { font-size:13px; }
   .pair { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
   .pair .t { display:inline-block; min-width:58px; font-weight:bold; font-size:14px; }
+  /* Best-of-3-Eingabe (Finale & Spiel um Platz 3): mehrere Satz-Kaestchenpaare
+     nebeneinander/untereinander statt eines einzelnen Paares. */
+  .pair.pair-bo3 { flex-wrap:wrap; white-space:normal; row-gap:4px; }
+  .psets { display:flex; align-items:flex-end; justify-content:center; gap:8px; flex-wrap:wrap; }
+  .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
+  .slbl { font-size:9.5px; font-weight:700; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
+  .sbox { display:inline-flex; align-items:center; gap:2px; }
   .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
   input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
                 font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
@@ -192,6 +199,9 @@
     }
     input.score:focus { outline:none; }
     input[type=text]:not(.score) { display:none; }
+    .pair.pair-bo3 { gap:1mm 2mm; }
+    .psets { gap:1.6mm; }
+    .slbl { font-size:5.2pt; }
   }
 
     /* Screen polish overrides */
@@ -551,7 +561,7 @@
 <table class="sched">
   <caption>Finalrunde 2 · Platzierungsspiele (Sieger steigen auf, Verlierer um tieferen Platz)</caption>
   <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th><th data-field="3">Feld 4</th></tr>
-  <tr><td class="rnd">Finalrunde 2<span class="rtime tt">13:00–13:50</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze<br>Pl. 5 &amp; 7: 1 Satz bis 21</span></td><td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair"><span class="t" data-slot="winHF1"><span class="src">Sieger</span><span class="gocode">HF1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winHF2"><span class="src">Sieger</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair"><span class="t" data-slot="losHF1"><span class="src">Verl.</span><span class="gocode">HF1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losHF2"><span class="src">Verl.</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 5</span><span class="route2">→ Platz 5/6</span></div><span class="pair"><span class="t" data-slot="winP58A"><span class="src">Sieger</span><span class="gocode">5–8&nbsp;A</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P5_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P5_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winP58B"><span class="src">Sieger</span><span class="gocode">5–8&nbsp;B</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 7</span><span class="route2">→ Platz 7/8</span></div><span class="pair"><span class="t" data-slot="losP58A"><span class="src">Verl.</span><span class="gocode">5–8&nbsp;A</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P7_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P7_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losP58B"><span class="src">Verl.</span><span class="gocode">5–8&nbsp;B</span><span class="rname"></span></span></span></td></tr>
+  <tr><td class="rnd">Finalrunde 2<span class="rtime tt">13:00–13:50</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze<br>Pl. 5 &amp; 7: 1 Satz bis 21</span></td><td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair pair-bo3"><span class="t" data-slot="winHF1"><span class="src">Sieger</span><span class="gocode">HF1</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN2_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN2_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FINtb_h" oninput="onScore()" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FINtb_a" oninput="onScore()" autocomplete="off" placeholder="TB"></span></span></span><span class="t" data-slot="winHF2"><span class="src">Sieger</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair pair-bo3"><span class="t" data-slot="losHF1"><span class="src">Verl.</span><span class="gocode">HF1</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P32_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P32_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3tb_h" oninput="onScore()" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3tb_a" oninput="onScore()" autocomplete="off" placeholder="TB"></span></span></span><span class="t" data-slot="losHF2"><span class="src">Verl.</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 5</span><span class="route2">→ Platz 5/6</span></div><span class="pair"><span class="t" data-slot="winP58A"><span class="src">Sieger</span><span class="gocode">5–8&nbsp;A</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P5_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P5_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="winP58B"><span class="src">Sieger</span><span class="gocode">5–8&nbsp;B</span><span class="rname"></span></span></span></td><td><div class="ghead"><span class="code">um Platz 7</span><span class="route2">→ Platz 7/8</span></div><span class="pair"><span class="t" data-slot="losP58A"><span class="src">Verl.</span><span class="gocode">5–8&nbsp;A</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f2_P7_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P7_a" oninput="onScore()" autocomplete="off"><span class="t" data-slot="losP58B"><span class="src">Verl.</span><span class="gocode">5–8&nbsp;B</span><span class="rname"></span></span></span></td></tr>
 </table>
 
 <div class="row">
@@ -887,7 +897,7 @@
 
       const complete = teams.every(t => st[t].pl === 3);
       teams.forEach(t => { GSTATS[t] = { games:st[t].pl, w:st[t].w, bd:st[t].bd, sc:st[t].sc, complete }; });
-      const _sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
+      const _sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc && directResult(a,b)===0;
       const _rankOf={};
       ranked.forEach((t,idx)=>{ _rankOf[t] = (idx>0 && _sameW(ranked[idx-1],t)) ? _rankOf[ranked[idx-1]] : idx+1; });
       ranked.forEach((t,idx)=>{
@@ -918,8 +928,8 @@
   function computeFinals(seeds){
     const rankA = seeds.A || [];
     const rankB = seeds.B || [];
-    const availA = rankA.filter(t => !isAbsent(t));
-    const availB = rankB.filter(t => !isAbsent(t));
+    const availA = rankA.map(t => isAbsent(t) ? 0 : t);
+    const availB = rankB.map(t => isAbsent(t) ? 0 : t);
     const seedsReady = !!(seeds.A && seeds.B);
     const seedMap = {
       A1:availA[0] || 0, A2:availA[1] || 0, A3:availA[2] || 0, A4:availA[3] || 0,
@@ -948,6 +958,54 @@
       if(!home && away) return { win:away, los:0 };
       return { win:0, los:0 };
     }
+    /* Sieg-/Niederlage-Buchung mit explizit vorgegebenem Ergebnis (statt aus own>opp
+       hergeleitet) - noetig fuer Best-of-3, weil der Champions-Tiebreak (3. Satz)
+       ueber Sieg/Niederlage entscheiden kann, obwohl die Ball-Summe aus Satz 1+2
+       (die hier gebucht wird) das anders aussehen laesst. */
+    function addFWin(team, own, opp, isWin){
+      if(!team) return;
+      const f = FSTATS[team] || (FSTATS[team] = {g:0, w:0, bd:0, sc:0});
+      f.g += 1;
+      f.sc += own;
+      f.bd += (own - opp);
+      if(isWin) f.w += 1;
+    }
+    /* Best-of-3 mit Tiebreak fuer Finale & Spiel um Platz 3: 2 Gewinnsaetze bis 21
+       (2 Punkte Vorsprung), bei 1:1 entscheidet ein Tiebreak bis 15 (2 Punkte
+       Vorsprung) nur ueber Sieg/Niederlage. Die Ball-Differenz/-Summe zaehlt NUR
+       aus Satz 1+2, der Tiebreak fliesst nicht mit ein (bewusste Design-Entscheidung:
+       ein knapper 2:1-Tiebreak-Sieg soll nicht mehr Ball-Differenz bringen als ein
+       souveraener 2:0-Sieg). Ist ein Satz oder der noetige Tiebreak ungueltig/fehlt,
+       gilt das Match als noch nicht entschieden (win:0). */
+    function resolvePlayBestOf3(prefix, code, home, away){
+      if(home && !away) return { win:home, los:0 };
+      if(!home && away) return { win:away, los:0 };
+      if(!home && !away) return { win:0, los:0 };
+      const h1 = num(document.getElementById(prefix + '_' + code + '_h'));
+      const a1 = num(document.getElementById(prefix + '_' + code + '_a'));
+      const h2 = num(document.getElementById(prefix + '_' + code + '2_h'));
+      const a2 = num(document.getElementById(prefix + '_' + code + '2_a'));
+      const set1Valid = h1 != null && a1 != null && Math.max(h1,a1) >= 21 && Math.abs(h1-a1) >= 2;
+      const set2Valid = h2 != null && a2 != null && Math.max(h2,a2) >= 21 && Math.abs(h2-a2) >= 2;
+      if(!set1Valid || !set2Valid) return { win:0, los:0 };
+      const hSets = (h1 > a1 ? 1 : 0) + (h2 > a2 ? 1 : 0);
+      const aSets = 2 - hSets;
+      const homeBalls = h1 + h2, awayBalls = a1 + a2;
+      if(hSets !== aSets){
+        const winner = hSets > aSets ? home : away;
+        addFWin(home, homeBalls, awayBalls, winner === home);
+        addFWin(away, awayBalls, homeBalls, winner === away);
+        return winner === home ? { win:home, los:away } : { win:away, los:home };
+      }
+      const htb = num(document.getElementById(prefix + '_' + code + 'tb_h'));
+      const atb = num(document.getElementById(prefix + '_' + code + 'tb_a'));
+      const tbValid = htb != null && atb != null && Math.max(htb,atb) >= 15 && Math.abs(htb-atb) >= 2;
+      if(!tbValid) return { win:0, los:0 };
+      const winner = htb > atb ? home : away;
+      addFWin(home, homeBalls, awayBalls, winner === home);
+      addFWin(away, awayBalls, homeBalls, winner === away);
+      return winner === home ? { win:home, los:away } : { win:away, los:home };
+    }
 
     const hf1 = resolvePlay('f1', 'HF1', seedMap.A1, seedMap.B2);
     const hf2 = resolvePlay('f1', 'HF2', seedMap.B1, seedMap.A2);
@@ -963,8 +1021,8 @@
     setResolved('[data-slot="losP58A"]', p58a.los);
     setResolved('[data-slot="losP58B"]', p58b.los);
 
-    const fin = resolvePlay('f2', 'FIN', hf1.win, hf2.win);
-    const p3  = resolvePlay('f2', 'P3', hf1.los, hf2.los);
+    const fin = resolvePlayBestOf3('f2', 'FIN', hf1.win, hf2.win);
+    const p3  = resolvePlayBestOf3('f2', 'P3', hf1.los, hf2.los);
     const p5  = resolvePlay('f2', 'P5', p58a.win, p58b.win);
     const p7  = resolvePlay('f2', 'P7', p58a.los, p58b.los);
     const places = [fin.win, fin.los, p3.win, p3.los, p5.win, p5.los, p7.win, p7.los];
@@ -1030,7 +1088,10 @@
       const m = inp.id.match(/^(.*)_(h|a)$/); if(!m) return;
       const other = document.getElementById(m[1]+'_'+(m[2]==='h'?'a':'h'));
       const a = num(inp), b = num(other); if(a==null || b==null) return;
-      if(!(Math.max(a,b) >= 21 && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
+      /* Tiebreak-Kaestchen (Best-of-3 bei Finale & Spiel um Platz 3) spielen bis
+         15, alle anderen Saetze/Ergebnisse bis 21. */
+      const target = m[1].endsWith('tb') ? 15 : 21;
+      if(!(Math.max(a,b) >= target && Math.abs(a-b) >= 2)) inp.classList.add('invalid');
       else if(a > b) inp.classList.add('win');
     });
   }

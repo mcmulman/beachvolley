@@ -677,8 +677,14 @@
   function computeFinals(seeds){
     const rankA = seeds.A || [];
     const rankB = seeds.B || [];
-    const availA = rankA.filter(t => !isAbsent(t));
-    const availB = rankB.filter(t => !isAbsent(t));
+    /* WICHTIG: hier NICHT filtern (das würde alle nachfolgenden Ränge um eine
+       Position nach vorne rücken lassen und damit ALLE Kreuzpaarungen
+       verändern) – stattdessen jede Rang-Position einzeln beibehalten und nur
+       ein fehlendes Team an seiner eigenen Position durch 0 (= Freilos für den
+       direkten Gegner) ersetzen. So bleibt "Fehlt ein Team, bekommt nur der
+       direkte Gegner ein Freilos" korrekt lokal begrenzt. */
+    const availA = rankA.map(t => isAbsent(t) ? 0 : t);
+    const availB = rankB.map(t => isAbsent(t) ? 0 : t);
     const seedsReady = !!(seeds.A && seeds.B);
     const m = {
       A1:availA[0]||0, A2:availA[1]||0, A3:availA[2]||0, A4:availA[3]||0,
