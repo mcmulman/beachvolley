@@ -545,6 +545,7 @@
       <div id="dropoutpanel" class="noprint namepanel" hidden>
         <div class="panel-checks" id="dropoutCheckContainer"></div>
         <div class="nactions"><button type="button" class="nbtn" onclick="clearDropouts()">Ausfälle zurücksetzen</button></div>
+        <p class="nhint">ℹ️ Ausfälle wirken sich sofort auf Rundenplan, Tabelle und Auslosung aus. Im Ausdruck erscheinen sie automatisch als „ausgefallen"/„Freilos" – dieses Panel selbst wird nicht mitgedruckt.</p>
       </div>
       <div class="row" id="livebox">
         <!-- Teams -->
@@ -818,7 +819,7 @@
         + '<h2>Kurzanleitung – so läuft das Turnier</h2>'
         + '<ol>'
         + '<li><span class="hi">Ablauf:</span> ' + NROUNDS + ' Runden, ' + NTEAMS + ' Teams, ' + NFIELDS + ' Felder. Jedes Team spielt pro Runde genau einmal – insgesamt ' + NROUNDS + ' Spiele pro Team, niemand scheidet aus.</li>'
-        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? (hasDecidingSet() ? '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Bei 1:1 entscheidet ein 3. Satz bis ' + targetForSet(3) + ' Punkte. Sieger = mehr gewonnene Sätze; bei Satz-Gleichstand die Gesamt-Ball-Differenz.' : '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.') : '1 Satz bis ' + setTarget() + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 1 Pkt., Niederlage = 0. Freilos = 1 Pkt. ohne Ball-Differenz.</li>'
+        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? (hasDecidingSet() ? '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Bei 1:1 entscheidet ein 3. Satz bis ' + targetForSet(3) + ' Punkte (zählt nur für Sieg/Niederlage, nicht in die Ball-Differenz). Sieger = mehr gewonnene Sätze; bei Satz-Gleichstand die Gesamt-Ball-Differenz aus Satz 1+2.' : '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.') : '1 Satz bis ' + setTarget() + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 1 Pkt., Niederlage = 0. Freilos = 1 Pkt. ohne Ball-Differenz.</li>'
         + '<li><span class="hi">Zentrale Tabelle (Seite 1):</span> Nach jedem Spiel: oben Spielergebnis (z. B. 15:11 S = Sieg, 11:15 N = Niederlage), darunter aufaddierten Gesamtstand (Siege / Ball-Differenz / Punkte gesamt, z. B. Σ 2/+4/+30). Dann Rang in Pl.-Spalte.</li>'
         + '<li><span class="hi">Nächste Paarungen:</span> Aus Pl.-Spalte bilden: Pl. 1-2, 3-4, 5-6 usw. Bereits gespielte Paarungen möglichst tauschen.</li>'
         + '<li><span class="hi">Wertung/Tie-Break:</span> S → BD → +P → direkter Vergleich → Los.</li>'
@@ -936,6 +937,7 @@
           +     '<span class="mres mres-a"><span class="mscore" id="rsa_' + r + '_' + i + '"></span><span class="tdiff" id="rda_' + r + '_' + i + '"></span></span>'
           +     '<span class="mres mres-b"><span class="tdiff" id="rdb_' + r + '_' + i + '"></span><span class="mscore" id="rsb_' + r + '_' + i + '"></span></span>'
           +   '</span>'
+          +   '<span class="mnote-slot" id="rn_' + r + '_' + i + '"></span>'
           + '</span>'
           + '</td>';
       }
@@ -1188,6 +1190,11 @@
       }
       const a2 = sval2(r, i, 'A'), b2 = sval2(r, i, 'B');
       const aSets = (a1 > b1 ? 1 : 0) + (a2 > b2 ? 1 : 0), bSets = 2 - aSets;
+      /* Balldifferenz/-summe nur aus den regulaeren Saetzen 1+2. Der
+         Champions-Tiebreak (3. Satz) entscheidet nur Sieg/Niederlage und
+         fliesst NICHT in die Ball-Differenz ein, sonst wuerde ein 2:1-Sieg
+         nach knappem Tiebreak die Differenz staerker aufblaehen als ein
+         souveraener 2:0-Sieg. */
       let aBalls = a1 + a2, bBalls = b1 + b2;
       let winner;
       
@@ -1196,8 +1203,6 @@
         const a3 = sval3(r, i, 'A'), b3 = sval3(r, i, 'B');
         if(a3 != null || b3 != null){
           if(setValidForSet(a3, b3, 3)){
-            aBalls += (a3 || 0);
-            bBalls += (b3 || 0);
             if(a3 > b3) winner = m.a;
             else if(b3 > a3) winner = m.b;
             else winner = null;
@@ -1600,6 +1605,7 @@
             setHtml('rsb_' + r + '_' + i, '');
             setTeamDiff('rda_' + r + '_' + i, '', null);
             setTeamDiff('rdb_' + r + '_' + i, '', null);
+            setHtml('rn_' + r + '_' + i, '');
             setWinnerHighlight(r, i, null);
             setScorePairState(r, i, {enabled:false, clear:true, placeholder:''});
             continue;
@@ -1614,12 +1620,13 @@
           const winner = winnerOf(r, i);
           const side = winner ? (winner === m.a ? 'a' : (winner === m.b ? 'b' : null)) : null;
           setWinnerHighlight(r, i, side);
+          setHtml('rn_' + r + '_' + i, '');
           if(winner && isFreilos(r, i)){
             const noteId = side === 'a' ? 'rA_' + r + '_' + i : 'rB_' + r + '_' + i;
             const noteEl = document.getElementById(noteId);
             if(noteEl) noteEl.innerHTML += ' <span class="mwin-note">(Freilos)</span>';
           }
-          if(winner && !isFreilos(r, i)){
+          if(!isFreilos(r, i) && slotComplete(r, i)){
             const res = slotResult(r, i);
             if(res){
               const diffA = res.aBalls - res.bBalls;
@@ -1627,6 +1634,7 @@
               setHtml('rsb_' + r + '_' + i, String(res.bBalls));
               setTeamDiff('rda_' + r + '_' + i, fmt(diffA), diffA > 0);
               setTeamDiff('rdb_' + r + '_' + i, fmt(-diffA), -diffA > 0);
+              if(!res.winner) setHtml('rn_' + r + '_' + i, '<span class="mwin-note">unentschieden</span>');
             } else {
               setHtml('rsa_' + r + '_' + i, '');
               setHtml('rsb_' + r + '_' + i, '');

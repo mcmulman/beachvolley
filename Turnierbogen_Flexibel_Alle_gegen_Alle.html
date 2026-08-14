@@ -439,20 +439,21 @@
     <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
   </div>
 
-  <div id="namepanel" class="namepanel" hidden>
+  <div id="namepanel" class="noprint namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions">
       <button type="button" class="nbtn" onclick="shuffleNames()">🎲 Teams mischen</button>
       <button type="button" class="nbtn" onclick="clearNames()">Namen leeren</button>
     </div>
   </div>
-  <div id="fieldpanel" class="namepanel" hidden>
+  <div id="fieldpanel" class="noprint namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearFields()">Felder zurücksetzen</button></div>
   </div>
-  <div id="absentpanel" class="namepanel" hidden>
+  <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGridContainer"></div>
     <div class="nactions"><button type="button" class="nbtn" onclick="clearAbsent()">Ausfälle zurücksetzen</button></div>
+    <p class="nhint">ℹ️ Ausfälle wirken sich sofort auf Spielplan und Tabelle aus. Im Ausdruck erscheinen sie automatisch als „ausgefallen"/„Freilos" – dieses Panel selbst wird nicht mitgedruckt.</p>
   </div>
 </div>
 
@@ -773,14 +774,17 @@
     const a2=gv2(r,a), b2=gv2(r,b);
     if(!setValid(a1,b1) || !setValid(a2,b2)) return null;
     let aSets=(a1>b1?1:0)+(a2>b2?1:0), bSets=(b1>a1?1:0)+(b2>a2?1:0);
+    /* Balldifferenz/-summe nur aus den regulaeren Saetzen 1+2. Der
+       Champions-Tiebreak (3. Satz) entscheidet nur Sieg/Niederlage und
+       fliesst NICHT in die Ball-Differenz ein, sonst wuerde ein 2:1-Sieg
+       nach knappem Tiebreak die Differenz staerker aufblaehen als ein
+       souveraener 2:0-Sieg. */
     let aBalls=a1+a2, bBalls=b1+b2;
     if(hasDecidingSet() && aSets===bSets){
       const a3=gv3(r,a), b3=gv3(r,b);
       if(!setValidWithTarget(a3,b3,targetForSet(3))) return null;
       aSets += (a3>b3?1:0);
       bSets += (b3>a3?1:0);
-      aBalls += a3;
-      bBalls += b3;
     }
     let winner;
     if(aSets>bSets) winner='a';
@@ -1467,9 +1471,9 @@
     const modeDesc = document.getElementById('g-mode-desc');
     if(modeDesc){
       if(SET_MODE === '2x21tb'){
-        modeDesc.textContent = '2 Sätze bis 21 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung).';
+        modeDesc.textContent = '2 Sätze bis 21 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung). Der Entscheidungssatz zählt nur für Sieg/Niederlage, seine Punkte fließen nicht in die Ball-Differenz ein.';
       } else if(SET_MODE === '2x15tb'){
-        modeDesc.textContent = '2 Sätze bis 15 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung).';
+        modeDesc.textContent = '2 Sätze bis 15 Punkte; bei 1:1 folgt ein Entscheidungssatz bis 15 (jeweils mit 2 Punkten Vorsprung). Der Entscheidungssatz zählt nur für Sieg/Niederlage, seine Punkte fließen nicht in die Ball-Differenz ein.';
       } else if(SET_MODE === '2x15'){
         modeDesc.textContent = '2 Sätze bis 15 Punkte, jeweils mit 2 Punkten Vorsprung; bei 1:1 entscheidet die Ball-Differenz.';
       } else {
