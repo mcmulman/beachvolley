@@ -134,6 +134,7 @@
      breiten Verlaufs-/Wertungstabelle darunter wegscrollt. */
   table.track th.tname, table.track td.tname,
   .central-table th:first-child, .central-table td:first-child {
+    position: -webkit-sticky;
     position: sticky;
     left: 0;
     z-index: 2;
@@ -177,6 +178,7 @@
 
   /* ── Sticky App-Leiste ── */
   .app-bar {
+    position: -webkit-sticky;
     position: sticky;
     top: 0;
     z-index: 200;

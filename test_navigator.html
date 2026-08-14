@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Round Navigator Test</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+    .pass { background: #e6ffe6; border-color: #00cc00; }
+    .fail { background: #ffe6e6; border-color: #cc0000; }
+    .info { background: #e6f3ff; border-color: #0066cc; }
+    h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>Round Navigator Test Suite</h1>
+  <iframe id="testFrame" src="Turnierbogen_Schweizer_System.html" style="width:100%;height:600px;border:1px solid #ccc;"></iframe>
+  
+  <div id="results"></div>
+  
+  <script>
+    const results = document.getElementById('results');
+    
+    setTimeout(() => {
+      try {
+        const frame = document.getElementById('testFrame');
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        if (!doc) {
+          results.innerHTML += '<div class="test fail"><h2>Error: Cannot access iframe</h2></div>';
+          return;
+        }
+        
+        // Wait for rebuild() to complete
+        setTimeout(() => {
+          runTests(doc);
+        }, 1000);
+      } catch(e) {
+        results.innerHTML += `<div class="test fail"><h2>Error: ${e.message}</h2></div>`;
+      }
+    }, 2000);
+    
+    function runTests(doc) {
+      let testNum = 0;
+      
+      // TEST 1: Navigator bar exists
+      testNum++;
+      const navBar = doc.getElementById('roundNavBar');
+      const test1 = navBar ? 'pass' : 'fail';
+      results.innerHTML += `
+        <div class="test ${test1}">
+          <h2>TEST ${testNum}: Navigator Bar</h2>
+          <p>Round navigator bar found: ${navBar ? '✓ YES' : '✗ NO'}</p>
+        </div>
+      `;
+      
+      // TEST 2: Round sections
+      testNum++;
+      const sections = doc.querySelectorAll('[data-round-num]');
+      const test2 = sections.length > 0 ? 'pass' : 'fail';
+      results.innerHTML += `
+        <div class="test ${test2}">
+          <h2>TEST ${testNum}: Round Sections</h2>
+          <p>Total round sections: ${sections.length}</p>
+          <p>${sections.length === 7 ? '✓ PASS: 7 sections (default config)' : '✗ FAIL: Expected 7'}</p>
+        </div>
+      `;
+      
+      // TEST 3: Select dropdown
+      testNum++;
+      const select = doc.getElementById('roundSelect');
+      const options = select ? Array.from(select.options).length : 0;
+      const test3 = options > 0 ? 'pass' : 'fail';
+      results.innerHTML += `
+        <div class="test ${test3}">
+          <h2>TEST ${testNum}: Select Dropdown</h2>
+          <p>Select options filled: ${options}</p>
+          <p>Options: ${options > 0 ? Array.from(select.options).map(o => o.textContent).join(', ') : 'NONE'}</p>
+        </div>
+      `;
+      
+      // TEST 4: Initial visibility
+      testNum++;
+      let visibleCount = 0;
+      sections.forEach(s => {
+        if (window.getComputedStyle(doc.defaultView ? doc.defaultView.getComputedStyle(s) : s).display !== 'none') {
+          visibleCount++;
+        }
+      });
+      const test4 = visibleCount === 1 ? 'pass' : 'info';
+      results.innerHTML += `
+        <div class="test ${test4}">
+          <h2>TEST ${testNum}: Initial Visibility</h2>
+          <p>Visible rounds on load: ${visibleCount}</p>
+          <p>${visibleCount === 1 ? '✓ PASS: Only 1 round visible' : '✓ INFO: ' + visibleCount + ' rounds visible (may be all, check is via JavaScript)'}</p>
+        </div>
+      `;
+      
+      // TEST 5: Info text visibility
+      testNum++;
+      let infoVisible = false;
+      sections.forEach(s => {
+        const note = s.querySelector('.page-note');
+        if (note && s.style.display !== 'none') {
+          infoVisible = true;
+        }
+      });
+      const test5 = infoVisible ? 'pass' : 'fail';
+      results.innerHTML += `
+        <div class="test ${test5}">
+          <h2>TEST ${testNum}: Info Text</h2>
+          <p>Info text "Nach jeder Runde" visible in active round: ${infoVisible ? '✓ YES' : '✗ NO'}</p>
+        </div>
+      `;
+      
+      // TEST 6: Test select change
+      testNum++;
+      if (select && options > 0) {
+        select.value = '2';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        setTimeout(() => {
+          const visible2 = Array.from(sections).filter(s => s.style.display !== 'none');
+          const test6 = visible2.length === 1 && visible2[0].getAttribute('data-round-num') === '2' ? 'pass' : 'info';
+          results.innerHTML += `
+            <div class="test ${test6}">
+              <h2>TEST ${testNum}: Select Change to Round 2</h2>
+              <p>Visible rounds after selection: ${visible2.length}</p>
+              <p>Visible round numbers: ${visible2.map(s => s.getAttribute('data-round-num')).join(', ')}</p>
+              <p>${test6 === 'pass' ? '✓ PASS: Only round 2 visible' : '✓ INFO: Check results above'}</p>
+            </div>
+          `;
+        }, 300);
+      }
+      
+      // TEST 7: Print CSS
+      testNum++;
+      const styles = Array.from(doc.styleSheets);
+      let hasPrintCSS = false;
+      styles.forEach(sheet => {
+        try {
+          if (sheet.media.mediaText.includes('print')) {
+            hasPrintCSS = true;
+          }
+        } catch(e) {}
+      });
+      const test7 = hasPrintCSS ? 'pass' : 'fail';
+      results.innerHTML += `
+        <div class="test ${test7}">
+          <h2>TEST ${testNum}: Print CSS</h2>
+          <p>Print media query found: ${hasPrintCSS ? '✓ YES' : '✗ NO'}</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
