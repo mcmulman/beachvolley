@@ -1124,7 +1124,7 @@
     function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{ localStorage.removeItem(FIELDS_KEY); }catch(e){} rebuild(); }
     function onDropoutChange(){
       const set = new Set();
-      for(let t=1;t<=NTEAMS;t++) if(document.getElementById('drop_' + t)?.checked) set.add(t);
+      for(let t=1;t<=NTEAMS;t++){ const cb = document.getElementById('drop_' + t); if(cb && cb.checked) set.add(t); }
       saveDroppedTeams(set);
       computeAll();
     }
@@ -1351,7 +1351,7 @@
         const order = orderUpto(r - 1);
         const rank = {};
         order.forEach((t, i) => rank[t] = i);
-        pairingList.sort((a, b) => { if(a === 0) return 1; if(b === 0) return -1; return (rank[a] ?? 99) - (rank[b] ?? 99); });
+        pairingList.sort((a, b) => { if(a === 0) return 1; if(b === 0) return -1; const ra = rank[a] === undefined ? 99 : rank[a]; const rb = rank[b] === undefined ? 99 : rank[b]; return ra - rb; });
         const played = new Set();
         for(let pr=1;pr<r;pr++){
           const M = MATCHES[pr];
@@ -1442,8 +1442,12 @@
       });
     }
     function applyTimes(){
-      const startMin = toMin(document.getElementById('startTime')?.value) ?? BASE_START;
-      const endMinRaw = toMin(document.getElementById('endTime')?.value) ?? BASE_END;
+      const startEl = document.getElementById('startTime');
+      const endEl = document.getElementById('endTime');
+      const startParsed = toMin(startEl ? startEl.value : null);
+      const endParsed = toMin(endEl ? endEl.value : null);
+      const startMin = startParsed === null ? BASE_START : startParsed;
+      const endMinRaw = endParsed === null ? BASE_END : endParsed;
       // Ende vor Start = Turnierende nach Mitternacht (gleiche Regel wie in computeTimes()).
       const endMin = endMinRaw < startMin ? endMinRaw + 24 * 60 : endMinRaw;
       const total = Math.max(30, endMin - startMin);
@@ -1744,7 +1748,7 @@
       e.preventDefault();
       const list = Array.from(document.querySelectorAll('input.score:not([disabled])'));
       const idx = list.indexOf(el);
-      if(idx >= 0 && idx < list.length - 1){ list[idx + 1].focus(); list[idx + 1].select?.(); }
+      if(idx >= 0 && idx < list.length - 1){ list[idx + 1].focus(); if(typeof list[idx + 1].select === 'function') list[idx + 1].select(); }
     });
     loadCfg();
     rebuild();

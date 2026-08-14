@@ -883,8 +883,10 @@
   }
 
   function applyMobileFilters() {
-    const team = document.getElementById('mobileTeamFilter')?.value || '';
-    const format = document.getElementById('mobileFormatFilter')?.value || '';
+    const teamEl = document.getElementById('mobileTeamFilter');
+    const formatEl = document.getElementById('mobileFormatFilter');
+    const team = (teamEl && teamEl.value) || '';
+    const format = (formatEl && formatEl.value) || '';
     applyCardFilters(team, format);
     document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
   }

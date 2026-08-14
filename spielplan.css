@@ -331,6 +331,12 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .t-line { font-size:6.9pt; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .t-nm { font-size:6pt; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tdiff { font-size:6.4pt; color:#000 !important; background:none !important; padding:0 0 0 0.6mm; }
+/* Platz fuer die Punktedifferenz im Blanko-Ausdruck freihalten: ohne diese Regel
+   kollabiert der Diff-Badge bei leerem Inhalt (":empty{display:none}" oben) auf
+   0mm Breite, so bleibt vor dem Ausfuellen keine Schreibflaeche fuer die
+   Ball-Differenz uebrig. Zeigt stattdessen eine kleine gepunktete Linie zum
+   handschriftlichen Eintragen. */
+.tdiff:empty { display:inline-block; min-width:7mm; height:2.6mm; border-bottom:0.5pt dotted #999; }
 .mscore { font-size:6.4pt; color:#000 !important; }
 .sched.compact .tdiff { font-size:6.2pt; }
 .pnames { gap:1.2mm; }
