@@ -611,6 +611,7 @@
     const NAMES_KEY = 'sw_univ_names';
     const SCORES_KEY = 'sw_univ_scores';
     const ROUND1_KEY = 'sw_univ_round1';
+    const MATCHES_KEY = 'sw_univ_matches';
     const FIELDS_KEY = 'sw_univ_fields';
     const DROPOUT_KEY = 'sw_univ_dropout';
     const START_KEY = 'sw_univ_start';
@@ -787,6 +788,16 @@
       return ok ? raw.map(p => [Number(p[0]), Number(p[1])]) : defaultRound1();
     }
     function saveRound1(pairs){ saveJSON(ROUND1_KEY, pairs); }
+    /* Persistiert bereits erzeugte Runden-Paarungen (ab Runde 2), damit ein
+       nachträglich markiertes "Team ausgefallen" NICHT rückwirkend die
+       Paarungen bereits gespielter/generierter Runden verändert. Ohne dies
+       würde buildMatches() bei jedem Aufruf ALLE Runden aus der aktuellen
+       (ggf. reduzierten) Team-Liste neu berechnen und dabei bereits
+       eingetragene Ergebnisse fälschlich einer anderen Paarung zuordnen
+       (Ergebnisse sind pro Runde+Feld-Index gespeichert, nicht pro Team-Paar). */
+    function loadPersistedMatches(){ return loadJSON(MATCHES_KEY, {}); }
+    function savePersistedMatches(m){ saveJSON(MATCHES_KEY, m); }
+    function clearPersistedMatches(){ try{ localStorage.removeItem(MATCHES_KEY); }catch(e){} }
     function loadStartTime(){ const t = localStorage.getItem(START_KEY); return toMin(t) == null ? '10:00' : t; }
     function loadEndTime(){ const t = localStorage.getItem(END_KEY); return toMin(t) == null ? '14:00' : t; }
     function scoreIds(){
@@ -1098,7 +1109,7 @@
         const el = document.getElementById('teamCount'); if(el) el.value = String(NTEAMS);
         return;
       }
-      [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
       ['btnToggleNames','btnToggleFields','btnToggleDropout'].forEach(id => { const b=document.getElementById(id); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); } });
@@ -1137,11 +1148,12 @@
       const pairs = [];
       for(let i=0;i<ids.length;i+=2) pairs.push([ids[i], ids[i+1]]);
       saveRound1(pairs);
+      clearPersistedMatches();
       computeAll();
     }
     function resetTournament(){
       if(!confirm('Neues Turnier starten? Teamnamen, Ergebnisse, Freilos/Dropout und die Startrunde werden gelöscht.')) return;
-      [NAMES_KEY, SCORES_KEY, ROUND1_KEY, DROPOUT_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      [NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, DROPOUT_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
       rebuild();
     }
     function restoreScores(){
@@ -1342,7 +1354,20 @@
       MATCHES = {};
       const r1 = loadRound1();
       MATCHES[1] = r1.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i)}));
+      const persisted = loadPersistedMatches();
+      let persistedChanged = false;
       for(let r=2;r<=NROUNDS;r++){
+        const saved = Array.isArray(persisted[r]) ? persisted[r] : null;
+        const savedOk = saved && saved.every(p => Array.isArray(p) && p.length === 2
+          && p.every(t => t === 0 || (Number.isInteger(t) && t >= 1 && t <= NTEAMS)));
+        if(savedOk){
+          // Bereits generierte Paarung wiederverwenden (eingefroren) - verhindert,
+          // dass ein nachträglich markiertes "Team ausgefallen" (oder eine andere
+          // spätere Änderung) die Paarung einer bereits gespielten/gezeigten Runde
+          // rückwirkend verändert und dadurch Ergebnisse falsch zuordnet.
+          MATCHES[r] = saved.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i % NFIELDS)}));
+          continue;
+        }
         if(!roundComplete(r - 1)) break;
         const active = [];
         const drop = droppedTeams();
@@ -1352,7 +1377,27 @@
         const order = orderUpto(r - 1);
         const rank = {};
         order.forEach((t, i) => rank[t] = i);
-        pairingList.sort((a, b) => { if(a === 0) return 1; if(b === 0) return -1; const ra = rank[a] === undefined ? 99 : rank[a]; const rb = rank[b] === undefined ? 99 : rank[b]; return ra - rb; });
+        // Freilos-Historie: Teams, die schon ein Freilos hatten, sollen bei der
+        // Listenreihenfolge nach vorne rücken (weniger anfällig, erneut das
+        // "übrig bleibende" Team zu sein), damit Teams ohne bisheriges Freilos
+        // bevorzugt an die Position neben dem Platzhalter (0) rutschen. So
+        // rotiert das Freilos fair durch alle Teams, statt immer beim
+        // tabellenletzten Team hängen zu bleiben (Doku-Vorgabe: "Jedes Team
+        // sollte höchstens einmal spielfrei sein").
+        const byeCounts = {};
+        for(let pr=1;pr<r;pr++){
+          const M = MATCHES[pr]; if(!M) continue;
+          M.forEach(m => {
+            if(m.a === 0 && m.b > 0) byeCounts[m.b] = (byeCounts[m.b] || 0) + 1;
+            else if(m.b === 0 && m.a > 0) byeCounts[m.a] = (byeCounts[m.a] || 0) + 1;
+          });
+        }
+        pairingList.sort((a, b) => {
+          if(a === 0) return 1; if(b === 0) return -1;
+          const bcA = byeCounts[a] || 0, bcB = byeCounts[b] || 0;
+          if(bcA !== bcB) return bcB - bcA; // mehr bisherige Freilose -> weiter vorne (seltener wieder dran)
+          const ra = rank[a] === undefined ? 99 : rank[a]; const rb = rank[b] === undefined ? 99 : rank[b]; return ra - rb;
+        });
         const played = new Set();
         for(let pr=1;pr<r;pr++){
           const M = MATCHES[pr];
@@ -1431,7 +1476,10 @@
           }
         }
         MATCHES[r] = pairs.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i % NFIELDS)}));
+        persisted[r] = pairs;
+        persistedChanged = true;
       }
+      if(persistedChanged) savePersistedMatches(persisted);
     }
     function setHtml(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html || ''; }
     function applySchedDensity(){
