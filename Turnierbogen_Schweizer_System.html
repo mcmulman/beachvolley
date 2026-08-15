@@ -614,6 +614,7 @@
     const MATCHES_KEY = 'sw_univ_matches';
     const FIELDS_KEY = 'sw_univ_fields';
     const DROPOUT_KEY = 'sw_univ_dropout';
+    const ROUND_MODE_KEY = 'sw_univ_roundmode';
     const START_KEY = 'sw_univ_start';
     const END_KEY = 'sw_univ_end';
     const BASE_START = 600;
@@ -638,6 +639,13 @@
     let NFIELDS = 6;
     let SET_MODE = '15';
     let MATCHES = {};
+    /* Pro Runde eingefrorener Spielmodus (Rundennummer -> Modus-ID). Damit kann
+       der Punkte-Modus (z. B. 15 -> 21) mitten im Turnier umgestellt werden,
+       ohne dass bereits gespielte/eingetragene Runden rückwirkend ungültig
+       werden: jede Runde behält den Modus, der galt, als sie das erste Mal
+       Ergebnisse erhielt. Runden ohne jegliche Eingabe übernehmen weiterhin
+       automatisch die aktuelle Einstellung (siehe buildMatches()). */
+    let ROUND_MODES = {};
     let namesVisible = false;
     let fieldsVisible = false;
     let dropoutVisible = false;
@@ -691,6 +699,46 @@
       if(setNo === 3 && hasDecidingSet()) return modeDef().decidingTarget || setTarget();
       return setTarget();
     }
+    /* --- Pro-Runde-Modus (siehe ROUND_MODES oben) ------------------------ */
+    function loadRoundModes(){
+      const raw = loadJSON(ROUND_MODE_KEY, {}) || {};
+      const out = {};
+      for(const k in raw){
+        const rn = parseInt(k, 10);
+        if(!Number.isInteger(rn)) continue;
+        if(SET_MODES.some(m => m.id === String(raw[k]))) out[rn] = String(raw[k]);
+      }
+      return out;
+    }
+    function saveRoundModes(){ saveJSON(ROUND_MODE_KEY, ROUND_MODES); }
+    /* Modus, der fuer Runde r tatsaechlich gilt: der beim Einfrieren gespeicherte
+       Modus, falls vorhanden, sonst (Runde noch nie erzeugt/gestartet) die
+       aktuell gewaehlte Einstellung. */
+    function modeDefForRound(r){
+      const id = ROUND_MODES[r];
+      if(id != null){ const found = SET_MODES.find(m => m.id === id); if(found) return found; }
+      return modeDef();
+    }
+    function setTargetForRound(r){ return modeDefForRound(r).target; }
+    function setCountForRound(r){ return modeDefForRound(r).sets; }
+    function isMultiForRound(r){ return setCountForRound(r) > 1; }
+    function hasDecidingSetForRound(r){ return !!modeDefForRound(r).decidingSet; }
+    function targetForSetForRound(r, setNo){
+      if(setNo === 3 && hasDecidingSetForRound(r)) return modeDefForRound(r).decidingTarget || setTargetForRound(r);
+      return setTargetForRound(r);
+    }
+    /* Hat Runde r schon irgendeine Zahl in irgendeinem Kaestchen (auch
+       unvollstaendig)? Basiert bewusst auf den gespeicherten Werten
+       (SCORES_KEY), nicht auf dem DOM, da diese Pruefung schon vor dem ersten
+       Rendern der Eingabefelder laufen muss (siehe rebuild()). */
+    function roundHasAnyInput(r){
+      const scores = loadScores();
+      const re = new RegExp('^s[23]?[AB]_' + r + '_\\d+$');
+      for(const k in scores){
+        if(re.test(k) && String(scores[k] == null ? '' : scores[k]).trim() !== '') return true;
+      }
+      return false;
+    }
     function applyCfg(cfg){
       NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = Math.ceil(NTEAMS / 2);
       if(cfg.p != null){
@@ -702,6 +750,7 @@
       const cfg = loadJSON(CFG_KEY, {t:12, r:7}) || {t:12, r:7};
       const t = TEAM_OPTIONS.includes(+cfg.t) ? +cfg.t : 12;
       applyCfg({t, r: cfg.r, p: cfg.p});
+      ROUND_MODES = loadRoundModes();
       return {t:NTEAMS, r:NROUNDS, p:SET_MODE};
     }
     function saveCfg(cfg){ applyCfg(cfg); saveJSON(CFG_KEY, {t:NTEAMS, r:NROUNDS, p:SET_MODE}); }
@@ -897,17 +946,20 @@
        darueber eine Kopfzeile (Satz 1 / Satz 2 / Entsch.), darunter der Sieger separat.
        Identisch aufgebaut wie im Turnierbogen "Alle gegen Alle". */
     /* Kurz-Erklaerung des Ergebnis-Formulars - identisch in beiden Turnierbogen. */
-    function scoreFormLegend(){
-      const cols = !isMulti()
+    function scoreFormLegend(r){
+      const multi = isMultiForRound(r);
+      const cols = !multi
         ? 'ein K\u00e4stchenpaar f\u00fcr das Ergebnis'
-        : (hasDecidingSet() ? 'je Satz ein K\u00e4stchenpaar, der Entscheidungssatz nur bei 1:1' : 'je Satz ein K\u00e4stchenpaar');
+        : (hasDecidingSetForRound(r) ? 'je Satz ein K\u00e4stchenpaar, der Entscheidungssatz nur bei 1:1' : 'je Satz ein K\u00e4stchenpaar');
       return 'So ausf\u00fcllen: ' + cols + ' \u2013 linkes K\u00e4stchen = linkes Team, rechtes K\u00e4stchen = rechtes Team. Nur Zahlen; mit \u201e:\u201c springst du ins Nachbark\u00e4stchen. Der Sieger wird darunter angezeigt.';
     }
-    function scoreFormExample(){
-      if(SET_MODE === '2x21tb') return 'Beispiel: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 n\u00f6tig).';
-      if(SET_MODE === '2x15tb') return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 n\u00f6tig).';
-      if(SET_MODE === '2x15')   return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 z\u00e4hlt die Ball-Differenz).';
-      return 'Beispiel: ' + setTarget() + ':' + Math.max(0, setTarget() - 2) + ' oder ' + setTarget() + ':' + Math.max(0, setTarget() - 8) + '.';
+    function scoreFormExample(r){
+      const id = modeDefForRound(r).id;
+      const target = setTargetForRound(r);
+      if(id === '2x21tb') return 'Beispiel: Satz 1 = 21:19 | Satz 2 = 18:21 | Entscheidungssatz = 15:12 (nur bei 1:1 n\u00f6tig).';
+      if(id === '2x15tb') return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 | Entscheidungssatz = 15:11 (nur bei 1:1 n\u00f6tig).';
+      if(id === '2x15')   return 'Beispiel: Satz 1 = 15:12 | Satz 2 = 13:15 (bei 1:1 z\u00e4hlt die Ball-Differenz).';
+      return 'Beispiel: ' + target + ':' + Math.max(0, target - 2) + ' oder ' + target + ':' + Math.max(0, target - 8) + '.';
     }
     function scoreInputHtml(id, aria, ph){
       return '<input class="score" type="text" inputmode="numeric" maxlength="3" id="' + id + '"'
@@ -935,9 +987,9 @@
       headHtml += '</tr>';
       let cells = '';
       for(let i=0;i<NFIELDS;i++){
-        let sets = setColumnHtml('s', r, i, isMulti() ? 'Satz 1' : 'Punkte');
-        if(isMulti()) sets += setColumnHtml('s2', r, i, 'Satz 2');
-        if(hasDecidingSet()) sets += setColumnHtml('s3', r, i, 'Entsch.', 'TB');
+        let sets = setColumnHtml('s', r, i, isMultiForRound(r) ? 'Satz 1' : 'Punkte');
+        if(isMultiForRound(r)) sets += setColumnHtml('s2', r, i, 'Satz 2');
+        if(hasDecidingSetForRound(r)) sets += setColumnHtml('s3', r, i, 'Entsch.', 'TB');
         cells += '<td class="match" data-round="' + r + '" data-col="' + i + '" data-field-label="' + escapeHtml(getFieldName(i)) + '">'
           + '<span class="pair">'
           +   '<span class="pnames">'
@@ -958,10 +1010,10 @@
         + '<td class="rhead-cell" colspan="' + NFIELDS + '">'
         +   '<span class="rlabel">Runde ' + r + '</span>'
         +   '<span class="rtime tt" data-round="' + r + '">' + fromMin(win.start) + '\u2013' + fromMin(win.end) + '</span>'
-        +   '<span class="rmode"></span>'
+        +   '<span class="rmode">' + modeDefForRound(r).label + '</span>'
         + '</td></tr>';
       return '<div class="round-block">'
-        + '<p class="input-hint round-explain" id="inputExamples_' + r + '">' + scoreFormLegend() + ' ' + scoreFormExample() + '</p>'
+        + '<p class="input-hint round-explain" id="inputExamples_' + r + '">' + scoreFormLegend(r) + ' ' + scoreFormExample(r) + '</p>'
         + '<div class="table-scroll is-wide">'
         +   '<p class="mobile-schedule-title noprint">' + capText + '</p>'
         +   '<table class="sched">'
@@ -969,7 +1021,7 @@
         +     '<tbody>' + headRow + headHtml + '<tr data-round="' + r + '">' + cells + '</tr></tbody>'
         +   '</table>'
         + '</div>'
-        + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDef().label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 1 Punkt</p>'
+        + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDefForRound(r).label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 1 Punkt</p>'
         + '</div>';
     }
     function buildRoundPages(){
@@ -1062,6 +1114,12 @@
       fillTeamSelect();
       fillPointSelect();
       updateCfgResult();
+      // Modus pro Runde synchronisieren/einfrieren, BEVOR die Rundenseiten
+      // (mit ihren Eingabespalten je nach Satzmodus) neu gebaut werden -
+      // sonst würde eine gerade geänderte Punkte-Einstellung erst nach dem
+      // nächsten rebuild() sichtbar bzw. bereits gespielte Runden bekämen
+      // fälschlich die neuen Eingabespalten.
+      buildMatches();
       buildNamePanel();
       buildFieldPanel();
       buildDropoutPanel();
@@ -1109,7 +1167,8 @@
         const el = document.getElementById('teamCount'); if(el) el.value = String(NTEAMS);
         return;
       }
-      [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY, ROUND_MODE_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      ROUND_MODES = {};
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
       ['btnToggleNames','btnToggleFields','btnToggleDropout'].forEach(id => { const b=document.getElementById(id); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); } });
@@ -1153,7 +1212,8 @@
     }
     function resetTournament(){
       if(!confirm('Neues Turnier starten? Teamnamen, Ergebnisse, Freilos/Dropout und die Startrunde werden gelöscht.')) return;
-      [NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, DROPOUT_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      [NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, DROPOUT_KEY, ROUND_MODE_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      ROUND_MODES = {};
       rebuild();
     }
     function restoreScores(){
@@ -1193,12 +1253,12 @@
       if(hi === target) return lo <= target - 2;
       return (hi - lo) === 2 && lo >= (target - 1);
     }
-    function setValid(a, b){ return setValidWithTarget(a, b, setTarget()); }
-    function setValidForSet(a, b, setNo){ return setValidWithTarget(a, b, targetForSet(setNo)); }
+    function setValidForRound(a, b, r){ return setValidWithTarget(a, b, setTargetForRound(r)); }
+    function setValidForSetForRound(a, b, setNo, r){ return setValidWithTarget(a, b, targetForSetForRound(r, setNo)); }
     function slotResult(r, i){
       const m = MATCHES[r][i];
       const a1 = sval(r, i, 'A'), b1 = sval(r, i, 'B');
-      if(!isMulti()){
+      if(!isMultiForRound(r)){
         return {aBalls:a1, bBalls:b1, aSets:(a1 > b1 ? 1 : 0), bSets:(a1 > b1 ? 0 : 1), winner:(a1 > b1 ? m.a : m.b)};
       }
       const a2 = sval2(r, i, 'A'), b2 = sval2(r, i, 'B');
@@ -1212,10 +1272,10 @@
       let winner;
       
       // Für TB-Modi: Wenn 1:1 Sätze, gibt es einen 3. Satz
-      if(hasDecidingSet() && aSets === 1 && bSets === 1){
+      if(hasDecidingSetForRound(r) && aSets === 1 && bSets === 1){
         const a3 = sval3(r, i, 'A'), b3 = sval3(r, i, 'B');
         if(a3 != null || b3 != null){
-          if(setValidForSet(a3, b3, 3)){
+          if(setValidForSetForRound(a3, b3, 3, r)){
             if(a3 > b3) winner = m.a;
             else if(b3 > a3) winner = m.b;
             else winner = null;
@@ -1236,8 +1296,8 @@
     }
     function slotHasScore(r, i){
       if(sval(r, i, 'A') == null || sval(r, i, 'B') == null) return false;
-      if(isMulti() && (sval2(r, i, 'A') == null || sval2(r, i, 'B') == null)) return false;
-      if(hasDecidingSet() && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
+      if(isMultiForRound(r) && (sval2(r, i, 'A') == null || sval2(r, i, 'B') == null)) return false;
+      if(hasDecidingSetForRound(r) && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
         if(sval3(r, i, 'A') == null || sval3(r, i, 'B') == null) return false;
       }
       return true;
@@ -1265,10 +1325,10 @@
     function slotComplete(r, i){
       const M = MATCHES[r]; if(!M || !M[i]) return false;
       if(isFreilos(r, i)) return true;
-      if(!setValid(sval(r, i, 'A'), sval(r, i, 'B'))) return false;
-      if(isMulti() && !setValid(sval2(r, i, 'A'), sval2(r, i, 'B'))) return false;
-      if(hasDecidingSet() && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
-        if(!setValidForSet(sval3(r, i, 'A'), sval3(r, i, 'B'), 3)) return false;
+      if(!setValidForRound(sval(r, i, 'A'), sval(r, i, 'B'), r)) return false;
+      if(isMultiForRound(r) && !setValidForRound(sval2(r, i, 'A'), sval2(r, i, 'B'), r)) return false;
+      if(hasDecidingSetForRound(r) && (sval(r, i, 'A') > sval(r, i, 'B') ? 1 : 0) + (sval2(r, i, 'A') > sval2(r, i, 'B') ? 1 : 0) === 1){
+        if(!setValidForSetForRound(sval3(r, i, 'A'), sval3(r, i, 'B'), 3, r)) return false;
       }
       return true;
     }
@@ -1350,10 +1410,25 @@
       const ids = Array.from({length:NTEAMS}, (_, i) => i + 1);
       return sortTeams(ids, upto);
     }
+    /* Legt fest/aktualisiert, welcher Punkte-Modus fuer Runde r gilt:
+       Solange fuer die Runde noch KEIN Ergebnis eingetragen wurde, folgt sie
+       weiterhin der aktuellen Einstellung (SET_MODE) - so wirkt eine
+       Modusaenderung sofort auf alle noch nicht begonnenen Runden. Sobald die
+       Runde mindestens eine Zahl enthaelt, wird ihr Modus eingefroren und
+       bleibt es dauerhaft, auch wenn SET_MODE spaeter erneut geaendert wird. */
+    function syncRoundMode(r){
+      if(ROUND_MODES[r] !== SET_MODE && (ROUND_MODES[r] == null || !roundHasAnyInput(r))){
+        ROUND_MODES[r] = SET_MODE;
+        return true;
+      }
+      return false;
+    }
     function buildMatches(){
       MATCHES = {};
+      let roundModesChanged = false;
       const r1 = loadRound1();
       MATCHES[1] = r1.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i)}));
+      if(syncRoundMode(1)) roundModesChanged = true;
       const persisted = loadPersistedMatches();
       let persistedChanged = false;
       for(let r=2;r<=NROUNDS;r++){
@@ -1366,6 +1441,7 @@
           // spätere Änderung) die Paarung einer bereits gespielten/gezeigten Runde
           // rückwirkend verändert und dadurch Ergebnisse falsch zuordnet.
           MATCHES[r] = saved.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i % NFIELDS)}));
+          if(syncRoundMode(r)) roundModesChanged = true;
           continue;
         }
         if(!roundComplete(r - 1)) break;
@@ -1478,14 +1554,19 @@
         MATCHES[r] = pairs.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i % NFIELDS)}));
         persisted[r] = pairs;
         persistedChanged = true;
+        if(syncRoundMode(r)) roundModesChanged = true;
       }
       if(persistedChanged) savePersistedMatches(persisted);
+      if(roundModesChanged) saveRoundModes();
     }
     function setHtml(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html || ''; }
     function applySchedDensity(){
-      const dense = setCount() >= 2 || NFIELDS >= 6;
-      const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && setCount() >= 2) || (NFIELDS >= 5 && setCount() >= 3);
       document.querySelectorAll('.rounds-page table.sched').forEach(t => {
+        const headRow = t.querySelector('tr[data-round]');
+        const r = headRow ? +headRow.dataset.round : null;
+        const sc = r ? setCountForRound(r) : setCount();
+        const dense = sc >= 2 || NFIELDS >= 6;
+        const ultraDense = NFIELDS >= 8 || (NFIELDS >= 7 && sc >= 2) || (NFIELDS >= 5 && sc >= 3);
         t.classList.toggle('compact', dense);
         t.classList.toggle('ultra-compact', ultraDense);
       });
@@ -1503,7 +1584,11 @@
       const slotMin = total / NROUNDS;
       const mode = modeDef().label;
       const durText = '≈ ' + Math.round(slotMin) + ' Min./Runde · ' + mode;
-      document.querySelectorAll('.rmode').forEach(el => el.textContent = mode);
+      // Nur die globalen (Kopfzeilen-)Anzeigen des Modus aktualisieren - die
+      // pro Runde eingefrorenen Labels innerhalb eines .round-block bleiben
+      // unangetastet, damit eine spätere Modusänderung nicht rückwirkend die
+      // Anzeige bereits gespielter Runden überschreibt (siehe modeDefForRound()).
+      document.querySelectorAll('.rmode').forEach(el => { if(!el.closest('.round-block')) el.textContent = mode; });
       applySchedDensity();
       const info1 = document.getElementById('roundDurInfo');
       const info2 = document.getElementById('roundDurInfo2');
@@ -1722,7 +1807,7 @@
               const res = slotResult(r, index);
               const wl = res.winner == null ? '–' : (res.winner === t ? 'S' : 'N');
               let scoreStr;
-              if(!isMulti()){
+              if(!isMultiForRound(r)){
                 const own = match.a === t ? sval(r, index, 'A') : sval(r, index, 'B');
                 const opp = match.a === t ? sval(r, index, 'B') : sval(r, index, 'A');
                 scoreStr = own + ':' + opp;
@@ -1774,7 +1859,8 @@
         if(oppRaw !== '' && b == null){ inp.classList.add('invalid'); return; }
         if(a == null || b == null) return;
         const setNo = pre === '3' ? 3 : (pre === '2' ? 2 : 1);
-        if(!setValidWithTarget(a, b, targetForSet(setNo))) inp.classList.add('invalid');
+        const roundNo = +m[3];
+        if(!setValidWithTarget(a, b, targetForSetForRound(roundNo, setNo))) inp.classList.add('invalid');
         else if(a > b) inp.classList.add('win');
       });
     }
