@@ -1453,26 +1453,39 @@
         const order = orderUpto(r - 1);
         const rank = {};
         order.forEach((t, i) => rank[t] = i);
-        // Freilos-Historie: Teams, die schon ein Freilos hatten, sollen bei der
-        // Listenreihenfolge nach vorne rücken (weniger anfällig, erneut das
-        // "übrig bleibende" Team zu sein), damit Teams ohne bisheriges Freilos
-        // bevorzugt an die Position neben dem Platzhalter (0) rutschen. So
-        // rotiert das Freilos fair durch alle Teams, statt immer beim
-        // tabellenletzten Team hängen zu bleiben (Doku-Vorgabe: "Jedes Team
-        // sollte höchstens einmal spielfrei sein").
+        // Freilos-Historie: wie oft und wann (welche Runde zuletzt) hatte jedes
+        // Team schon ein Freilos? Damit kann das NÄCHSTE Freilos fair und
+        // "intelligent" vergeben werden: 1) möglichst noch nie/am seltensten
+        // pausiert, 2) bei Gleichstand am längsten her (0 = noch nie), 3) bei
+        // weiterem Gleichstand das aktuell schwächste Team (übliche Praxis:
+        // lieber ein chancenloses als ein Spitzenteam pausieren lassen). Das
+        // entspricht der gängigen Rotationslösung im Schweizer System: Freilos
+        // rotiert durch ALLE Teams (auch bei ausgefallenen Teams unter den
+        // verbleibenden aktiven), bevor irgendein Team ein zweites bekommt -
+        // und bleibt auch danach fair verteilt statt an einem Team hängen zu
+        // bleiben.
         const byeCounts = {};
+        const lastByeRound = {};
         for(let pr=1;pr<r;pr++){
           const M = MATCHES[pr]; if(!M) continue;
           M.forEach(m => {
-            if(m.a === 0 && m.b > 0) byeCounts[m.b] = (byeCounts[m.b] || 0) + 1;
-            else if(m.b === 0 && m.a > 0) byeCounts[m.a] = (byeCounts[m.a] || 0) + 1;
+            if(m.a === 0 && m.b > 0){ byeCounts[m.b] = (byeCounts[m.b] || 0) + 1; lastByeRound[m.b] = pr; }
+            else if(m.b === 0 && m.a > 0){ byeCounts[m.a] = (byeCounts[m.a] || 0) + 1; lastByeRound[m.a] = pr; }
           });
         }
-        pairingList.sort((a, b) => {
-          if(a === 0) return 1; if(b === 0) return -1;
+        function byeCandidateCompare(a, b){
           const bcA = byeCounts[a] || 0, bcB = byeCounts[b] || 0;
-          if(bcA !== bcB) return bcB - bcA; // mehr bisherige Freilose -> weiter vorne (seltener wieder dran)
-          const ra = rank[a] === undefined ? 99 : rank[a]; const rb = rank[b] === undefined ? 99 : rank[b]; return ra - rb;
+          if(bcA !== bcB) return bcA - bcB; // wenigste bisherige Freilose zuerst
+          const lastA = lastByeRound[a] || 0, lastB = lastByeRound[b] || 0;
+          if(lastA !== lastB) return lastA - lastB; // am längsten her (0 = noch nie) zuerst
+          const ra = rank[a] === undefined ? 99 : rank[a], rb = rank[b] === undefined ? 99 : rank[b];
+          return rb - ra; // bei Gleichstand: schwächeres Team (höherer Rangindex) zuerst
+        }
+        // Rangnahe Reihenfolge fuer die eigentliche Gegner-Paarung (unabhaengig
+        // von der oben ermittelten Freilos-Prioritaet).
+        const activeForPairing = active.slice().sort((a, b) => {
+          const ra = rank[a] === undefined ? 99 : rank[a], rb = rank[b] === undefined ? 99 : rank[b];
+          return ra - rb;
         });
         const played = new Set();
         for(let pr=1;pr<r;pr++){
@@ -1538,19 +1551,50 @@
           }
           return null;
         }
-        let pairs = pairBT(pairingList.slice(), []);
-        if(!pairs){
-          // Fallback (nur falls Wiederholung mathematisch unvermeidbar): rangnah, minimiert Wdh.
-          pairs = [];
-          const g = pairingList.slice();
+        // Greedy-Fallback (nur falls Wiederholung mathematisch unvermeidbar):
+        // rangnah, minimiert Wiederholungen unter den verbleibenden Teams.
+        function greedyPair(list){
+          const out = [];
+          const g = list.slice();
           while(g.length){
             const a = g.shift();
             let j = 0;
-            while(j < g.length && a > 0 && g[j] > 0 && played.has(key(a, g[j]))) j++;
+            while(j < g.length && played.has(key(a, g[j]))) j++;
             if(j >= g.length) j = 0;
-            pairs.push([a, g.splice(j, 1)[0]]);
+            out.push([a, g.splice(j, 1)[0]]);
           }
+          return out;
         }
+        // Wer bekommt ggf. das Freilos dieser Runde? Das wird VORAB und explizit
+        // per Fairness-Priorität entschieden (siehe byeCandidateCompare oben) -
+        // nicht mehr implizit dadurch, welches Team beim Backtracking zufällig
+        // als "übrig" endet. Dadurch bekommt bei ungerader (aktiver) Teamzahl
+        // wirklich abwechselnd jedes Team das Freilos, auch dann noch, wenn der
+        // Rundenplan bereits einmal komplett durchrotiert wurde und Wiederholungen
+        // unvermeidbar werden (sonst würde immer dasselbe Team - typischerweise
+        // das zuerst verarbeitete - erneut pausieren müssen, siehe Regressionstest).
+        let byeTeam = null;
+        let pairs = null;
+        if(activeForPairing.length % 2 === 1){
+          const candidates = activeForPairing.slice().sort(byeCandidateCompare);
+          // Aus Performancegründen (Backtracking kann teuer sein) nur eine
+          // begrenzte Zahl der fairsten Kandidaten ausprobieren, bevor auf den
+          // Greedy-Fallback zurückgegriffen wird.
+          const tryCandidates = candidates.slice(0, Math.min(candidates.length, 6));
+          for(const cand of tryCandidates){
+            const rest = activeForPairing.filter(t => t !== cand);
+            const attempt = pairBT(rest, []);
+            if(attempt){ byeTeam = cand; pairs = attempt; break; }
+          }
+          if(pairs == null){
+            byeTeam = candidates[0];
+            pairs = greedyPair(activeForPairing.filter(t => t !== byeTeam));
+          }
+        } else {
+          pairs = pairBT(activeForPairing, []);
+          if(!pairs) pairs = greedyPair(activeForPairing);
+        }
+        if(byeTeam != null) pairs.push([byeTeam, 0]);
         MATCHES[r] = pairs.map((p, i) => ({a:p[0], b:p[1], field:getFieldName(i % NFIELDS)}));
         persisted[r] = pairs;
         persistedChanged = true;
