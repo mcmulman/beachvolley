@@ -464,6 +464,21 @@ input.score.invalid {
         background: #fde0e0 !important;
         border-color: #c62828;
       }
+/* Teamnamen in den Runden-Ergebniskarten am Bildschirm VOLLSTAENDIG anzeigen
+   statt mit "…" abzuschneiden - lange Namen brechen dafuer auf bis zu zwei
+   Zeilen um (rechte Seite bleibt rechtsbuendig, linke linksbuendig, dadurch
+   wirken unterschiedlich lange Namen bewusst "versetzt" zueinander). Der
+   Druck (A4) bleibt bewusst kompakt/einzeilig - dort ist der Platz begrenzt. */
+.t-line, .t-nm {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+      }
+.pside { align-items: flex-start; }
+.pnames { align-items: flex-start; }
 .sched .rnd {
         background: #1f4e79;
         color: #fff;
