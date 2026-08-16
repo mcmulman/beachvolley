@@ -475,6 +475,48 @@ input.score.invalid {
       .sched .rmode { color: #a0b8cc; }
 .sched .rnd .rbye { color: #ffe4a3; }
 
+/* Runden-Kopfzeile am Bildschirm als moderne Chip-Reihe statt Text mit
+   Mittelpunkt-Trennzeichen (Druck bleibt bewusst kompakt/textuell). */
+.sched tr.rhead > td.rhead-cell {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #eef3fb, #e4edf8);
+        border: 1px solid #d6e1ef;
+        border-bottom: 1px solid #d6e1ef;
+        border-radius: 10px;
+      }
+.sched tr.rhead .rhead-cell > span { display: inline-flex; align-items: center; }
+.sched tr.rhead .rhead-cell > span + span::before { content: none; }
+.sched tr.rhead .rlabel {
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--app-blue-dark, #1a3a5c);
+        color: #fff;
+        font-size: 12.5px;
+      }
+.sched tr.rhead .rtime {
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: rgba(31, 78, 121, .1);
+        color: #1f4e79;
+      }
+.sched tr.rhead .rmode {
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: rgba(31, 78, 121, .07);
+        color: #46586e;
+        font-size: 11px;
+      }
+.sched tr.rhead .rbye {
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: #fff3d6;
+        color: #7a5a00;
+        font-size: 11px;
+      }
+
 }
 
 @media screen and (max-width: 640px) {

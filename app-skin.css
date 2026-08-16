@@ -373,6 +373,11 @@
     background: var(--app-tint);
     color: var(--app-blue-dark);
   }
+  /* Team-Nr.-Zellen als dezente, moderne Chips statt scharfkantiger Boxen. */
+  .teams .num, .track .tnum, .grp-box .tnum {
+    border-radius: 8px;
+    font-weight: 800;
+  }
 
   /* ── Flächen / Panels: einheitliche Karten-Optik ── */
   .guide, .namepanel, .digitalbar, .digbar, .livebox, .panel,
