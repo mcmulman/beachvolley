@@ -2247,7 +2247,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     }
 
     const allBtn = document.getElementById('roundAllToggleBtn');
-    if(allBtn) { allBtn.setAttribute('aria-pressed', 'false'); allBtn.classList.remove('active'); allBtn.textContent = '🗂 Alle Runden'; }
+    if(allBtn) { allBtn.setAttribute('aria-pressed', 'false'); allBtn.classList.remove('roundall-active'); allBtn.textContent = '🗂 Alle Runden'; }
   }
 
   // Show all rounds at once (stacked), so results of every round are visible simultaneously
@@ -2271,7 +2271,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     if(nextBtn) nextBtn.disabled = true;
 
     const allBtn = document.getElementById('roundAllToggleBtn');
-    if(allBtn) { allBtn.setAttribute('aria-pressed', 'true'); allBtn.classList.add('active'); allBtn.textContent = '📄 Einzelne Runde'; }
+    if(allBtn) { allBtn.setAttribute('aria-pressed', 'true'); allBtn.classList.add('roundall-active'); allBtn.textContent = '📄 Einzelne Runde'; }
   }
 
   window.toggleAllRounds = function() {

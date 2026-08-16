@@ -122,83 +122,107 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
 .table-scroll table { min-width:100%; }
 .mobile-schedule-title { display:none; }
-/* Runden-Navigator: bewusst PROMINENT gestaltet (großzügige Buttons, klarer
-   Kontrast, an der App-Leiste "klebend" sticky) - das ist die am häufigsten
-   genutzte Bedienelement während des Turniers (Wechsel zur nächsten Runde). */
+/* Runden-Navigator: bewusst PROMINENT und MODERN gestaltet (Glass-Pill-Leiste,
+   Verlaufs-Buttons, weiche Bewegungen) - an der App-Leiste "klebend" sticky,
+   da dies das am häufigsten genutzte Bedienelement während des Turniers ist
+   (Wechsel zur nächsten Runde). Farbsprache/Radius/Schatten orientieren sich
+   bewusst an der App-Leiste (app-skin.css) für ein durchgängiges Erscheinungsbild. */
 .schedule-roundbar {
-    margin: 10px 0 12px;
+    margin: 12px 0 14px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
     align-items: center;
     position: -webkit-sticky;
     position: sticky;
-    top: calc(var(--app-bar-h, 54px) + 6px);
+    top: calc(var(--app-bar-h, 54px) + 8px);
     z-index: 150;
-    background: #fff;
-    border: 1.5px solid #b9cce4;
-    border-radius: 12px;
-    padding: 10px 12px;
-    box-shadow: 0 3px 12px rgba(31, 78, 121, .16);
+    background: rgba(255, 255, 255, .82);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(31, 78, 121, .14);
+    border-radius: 999px;
+    padding: 8px 10px 8px 16px;
+    box-shadow: 0 6px 20px rgba(20, 50, 90, .14), 0 1px 2px rgba(20, 50, 90, .06);
+    transition: box-shadow .2s;
   }
 .schedule-roundbar label {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    font-size: 11px;
-    color: #1f4e79;
+    gap: 2px;
+    font-size: 10.5px;
+    color: var(--app-blue-dark, #1f4e79);
     font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
   }
 .schedule-roundbar select {
-    padding: 8px 10px;
+    padding: 7px 10px;
     font-size: 14px;
-    border: 1.5px solid #9db4d4;
-    border-radius: 7px;
+    border: 1.5px solid rgba(31, 78, 121, .28);
+    border-radius: 999px;
     font-weight: 700;
-    color: #1f4e79;
+    color: var(--app-blue-dark, #1f4e79);
     background: #fff;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
   }
+.schedule-roundbar select:hover { border-color: var(--app-blue, #1f6fa8); }
+.schedule-roundbar select:focus-visible { outline: 2px solid var(--app-blue, #1f6fa8); outline-offset: 2px; }
+.schedule-roundbar select:disabled { opacity: .45; cursor: not-allowed; }
 .schedule-roundbar .nbtn-round {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     min-height: 44px;
-    padding: 10px 18px;
-    font-size: 15px;
-    font-weight: 800;
-    border-radius: 9px;
-    background: #1f4e79;
+    padding: 10px 20px;
+    font-size: 14.5px;
+    font-weight: 700;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--app-blue-dark, #1a3a5c) 0%, var(--app-blue, #1f6fa8) 100%);
     color: #fff;
-    border: 1.5px solid #1f4e79;
-    box-shadow: 0 2px 8px rgba(31, 78, 121, .3);
+    border: 1px solid transparent;
+    box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
     letter-spacing: .01em;
+    transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
   }
-.schedule-roundbar .nbtn-round:hover { background: #163a5c; border-color: #163a5c; }
+.schedule-roundbar .nbtn-round:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 5px 14px rgba(26, 58, 92, .4); }
+.schedule-roundbar .nbtn-round:active:not(:disabled) { transform: scale(.95); }
+.schedule-roundbar .nbtn-round:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .schedule-roundbar .nbtn-round:disabled {
-    opacity: .38;
+    opacity: .35;
     cursor: not-allowed;
     box-shadow: none;
+    filter: none;
   }
 .schedule-roundbar .nbtn-round-next {
-    background: #0a7d2c;
-    border-color: #0a7d2c;
+    background: linear-gradient(135deg, var(--app-green, #0a7d2c) 0%, #2ea043 100%);
+    box-shadow: 0 3px 10px rgba(10, 125, 44, .32);
   }
-.schedule-roundbar .nbtn-round-next:hover:not(:disabled) { background: #086323; border-color: #086323; }
+.schedule-roundbar .nbtn-round-next:hover:not(:disabled) { box-shadow: 0 5px 14px rgba(10, 125, 44, .4); }
 .schedule-roundbar .nbtn-round-all {
     background: #fff;
-    color: #1f4e79;
-    border: 1.5px solid #1f4e79;
+    color: var(--app-blue-dark, #1f4e79);
+    border: 1.5px solid rgba(31, 78, 121, .3);
     box-shadow: none;
   }
-.schedule-roundbar .nbtn-round-all:hover { background: #eaf1fa; }
-.schedule-roundbar .nbtn-round-all.active {
-    background: #1f4e79;
+.schedule-roundbar .nbtn-round-all:hover:not(:disabled) { background: var(--app-tint, #eef3f9); filter: none; box-shadow: none; }
+.schedule-roundbar .nbtn-round-all.roundall-active {
+    background: var(--app-blue-dark, #1a3a5c);
     color: #fff;
+    border-color: var(--app-blue-dark, #1a3a5c);
+    box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
   }
 .schedule-roundbar .state {
-    font-size: 13px;
-    color: #1f4e79;
-    font-weight: 800;
-    padding: 0 4px;
+    font-size: 12.5px;
+    color: var(--app-blue-dark, #1f4e79);
+    font-weight: 700;
+    padding: 0 6px;
     align-self: center;
+    opacity: .85;
   }
+
 
 @media screen and (min-width: 641px) {
 .table-scroll.is-wide {
@@ -464,13 +488,15 @@ input.score { font-size:16px; }
         gap: 8px;
         position: -webkit-sticky;
         position: sticky;
-        top: calc(var(--app-bar-h, 54px) + 4px);
+        top: calc(var(--app-bar-h, 54px) + 6px);
         z-index: 150;
-        padding: 8px 8px;
-        background: #fff;
-        border: 1.5px solid #b9cce4;
-        border-radius: 10px;
-        box-shadow: 0 3px 12px rgba(31,78,121,.18);
+        padding: 10px 10px;
+        background: rgba(255, 255, 255, .88);
+        -webkit-backdrop-filter: saturate(180%) blur(14px);
+        backdrop-filter: saturate(180%) blur(14px);
+        border: 1px solid rgba(31, 78, 121, .14);
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(20, 50, 90, .16);
       }
 .schedule-roundbar label {
         min-width: 0;
@@ -480,7 +506,7 @@ input.score { font-size:16px; }
       }
 .schedule-roundbar .nbtn-round {
         min-height: 44px;
-        padding: 8px 10px;
+        padding: 8px 14px;
         font-size: 13px;
         white-space: nowrap;
       }
