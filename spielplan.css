@@ -122,12 +122,24 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
 .table-scroll table { min-width:100%; }
 .mobile-schedule-title { display:none; }
+/* Runden-Navigator: bewusst PROMINENT gestaltet (großzügige Buttons, klarer
+   Kontrast, an der App-Leiste "klebend" sticky) - das ist die am häufigsten
+   genutzte Bedienelement während des Turniers (Wechsel zur nächsten Runde). */
 .schedule-roundbar {
-    margin: 8px 0 6px;
+    margin: 10px 0 12px;
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
-    align-items: end;
+    align-items: center;
+    position: -webkit-sticky;
+    position: sticky;
+    top: calc(var(--app-bar-h, 54px) + 6px);
+    z-index: 150;
+    background: #fff;
+    border: 1.5px solid #b9cce4;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 3px 12px rgba(31, 78, 121, .16);
   }
 .schedule-roundbar label {
     display: flex;
@@ -138,24 +150,42 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     font-weight: 700;
   }
 .schedule-roundbar select {
-    padding: 5px 8px;
-    font-size: 12px;
-    border: 1px solid #9db4d4;
-    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1.5px solid #9db4d4;
+    border-radius: 7px;
     font-weight: 700;
     color: #1f4e79;
     background: #fff;
   }
-.schedule-roundbar .nbtn {
-    min-height: 32px;
-    padding: 5px 10px;
-    font-size: 12px;
+.schedule-roundbar .nbtn-round {
+    min-height: 44px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 800;
+    border-radius: 9px;
+    background: #1f4e79;
+    color: #fff;
+    border: 1.5px solid #1f4e79;
+    box-shadow: 0 2px 8px rgba(31, 78, 121, .3);
+    letter-spacing: .01em;
   }
+.schedule-roundbar .nbtn-round:hover { background: #163a5c; border-color: #163a5c; }
+.schedule-roundbar .nbtn-round:disabled {
+    opacity: .38;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+.schedule-roundbar .nbtn-round-next {
+    background: #0a7d2c;
+    border-color: #0a7d2c;
+  }
+.schedule-roundbar .nbtn-round-next:hover:not(:disabled) { background: #086323; border-color: #086323; }
 .schedule-roundbar .state {
-    font-size: 11px;
-    color: #5a6375;
-    font-weight: 700;
-    padding: 0 2px;
+    font-size: 13px;
+    color: #1f4e79;
+    font-weight: 800;
+    padding: 0 4px;
     align-self: center;
   }
 
@@ -420,18 +450,28 @@ input.score { font-size:16px; }
 .schedule-roundbar {
         display: grid;
         grid-template-columns: 1fr auto auto;
-        gap: 6px;
-        position: static;
-        padding: 6px 6px;
-        background: rgba(255,255,255,.96);
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
+        gap: 8px;
+        position: -webkit-sticky;
+        position: sticky;
+        top: calc(var(--app-bar-h, 54px) + 4px);
+        z-index: 150;
+        padding: 8px 8px;
+        background: #fff;
+        border: 1.5px solid #b9cce4;
+        border-radius: 10px;
+        box-shadow: 0 3px 12px rgba(31,78,121,.18);
       }
 .schedule-roundbar label {
         min-width: 0;
       }
 .schedule-roundbar select {
         width: 100%;
+      }
+.schedule-roundbar .nbtn-round {
+        min-height: 44px;
+        padding: 8px 10px;
+        font-size: 13px;
+        white-space: nowrap;
       }
 .schedule-roundbar .state {
         grid-column: 1 / -1;

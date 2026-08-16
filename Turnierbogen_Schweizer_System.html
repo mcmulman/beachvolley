@@ -34,10 +34,16 @@
     .central-table th, .central-table td { font-size: 6.2px; height: 8mm; padding: 1px 2px; }
     .central-table .code { width: 13mm; }
     .central-table .name { width: 27mm; }
+    .central-table .rankcol { width: 10mm; }
     .central-table .round { width: 16mm; }
     .central-table .rplace { width: 6mm; }
     .central-table span { font-size: 6.5px; color: #444; }
     .central-table th:nth-child(1), .central-table th:nth-child(2), .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 7.2px; font-weight: 700; }
+    .rank-badge { display: inline-block; font-weight: 800; }
+    .rank-badge.rank-none { color: #999; font-weight: 400; }
+    .rank-badge.rank-top.rank-1 { color: #8a6d00; }
+    .rank-badge.rank-top.rank-2 { color: #55606b; }
+    .rank-badge.rank-top.rank-3 { color: #8a4b1f; }
     .example-row td { background: #f7f7f7; color: #555; font-style: italic; }
     .round-grid { display: grid; grid-template-columns: 1fr; gap: 3mm 6mm; margin-top: 3mm; }
     .legend { font-size: 12px; color: #333; margin-top: 10px; }
@@ -149,6 +155,7 @@
       }
       .central-table .code { width:14mm; }
       .central-table .name { width:28mm; }
+      .central-table .rankcol { width:11mm; }
       .central-table .round { width:17mm; }
       .central-table .rplace { width:7mm; }
       .central-table thead { display: table-header-group; }
@@ -179,6 +186,7 @@
       .central-table th:nth-child(1), .central-table th:nth-child(2), .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 12px; }
       .central-table .code { width: auto; min-width: 52px; }
       .central-table .name { width: auto; min-width: 100px; }
+      .central-table .rankcol { width: auto; min-width: 46px; }
       .central-table .round { width: auto; min-width: 82px; }
       .central-table .rplace { width: auto; min-width: 28px; }
       .round-grid { gap: 8px 16px; margin-top: 10px; }
@@ -263,6 +271,25 @@
         text-transform: uppercase;
         letter-spacing: 0.3px;
       }
+      /* Rang-Badge direkt am Teamnamen in "Laufende Tabelle & Endstand" - gut
+         sichtbar, damit der (End-)Platz nicht erst in der letzten, weit
+         entfernten Runden-Spalte gesucht werden muss. */
+      .rank-badge {
+        display: inline-block;
+        min-width: 26px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        background: #eef2f7;
+        color: #33455e;
+        font-weight: 800;
+        font-size: 12px;
+        text-align: center;
+      }
+      .rank-badge.rank-none { background: none; color: #99a3b1; font-weight: 500; min-width: 0; padding: 0; }
+      .rank-badge.rank-live { background: #e4ecf7; color: #1f4e79; }
+      .rank-badge.rank-final.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
+      .rank-badge.rank-final.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
+      .rank-badge.rank-final.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
       .nbtn {
         border-radius: 6px;
         padding: 7px 15px;
@@ -412,8 +439,10 @@
   .central-table th, .central-table td { font-size: 7px; height: auto; padding: 3px 2px; }
   .central-table .code { width: auto; min-width: 35px; }
   .central-table .name { width: auto; min-width: 60px; }
+  .central-table .rankcol { width: auto; min-width: 36px; }
   .central-table .round { width: auto; min-width: 50px; }
-  .central-table .rplace { width: auto; min-width: 25px; }}
+  .central-table .rplace { width: auto; min-width: 25px; }
+  .rank-badge { min-width: 22px; padding: 2px 5px; font-size: 11px; }}
 @media print {
       /* Show all rounds in print mode, ignore inline display:none */
       [data-round-num] { display: block !important; }
@@ -915,14 +944,14 @@
       document.getElementById('scheduleOverview').innerHTML = html;
     }
     function buildCentralTable(){
-      let head = '<thead><tr><th class="code">Team</th><th class="name">Name</th>';
+      let head = '<thead><tr><th class="code">Team</th><th class="name">Name</th><th class="rankcol">Platz</th>';
       for(let r=1;r<=NROUNDS;r++) head += '<th class="round">R' + r + '<br>Erg.+Σ<br>(S/BD/+P)</th><th class="rplace">Pl.</th>';
       head += '</tr></thead>';
-      let rows = '<tbody><tr class="example-row"><td>Team X</td><td>Teamname</td>';
+      let rows = '<tbody><tr class="example-row"><td>Team X</td><td>Teamname</td><td class="rankcol"><span class="rank-badge rank-1">1.</span></td>';
       for(let r=1;r<=NROUNDS;r++) rows += (r === 1 ? '<td>15:11 S<br><span>Σ 1/+4/+15</span></td><td>3</td>' : '<td></td><td></td>');
       rows += '</tr>';
       for(let t=1;t<=NTEAMS;t++){
-        rows += '<tr id="ctr_' + t + '" data-team="' + t + '"><td id="cteam_' + t + '">Team ' + t + '</td><td data-team-name="' + t + '"></td>';
+        rows += '<tr id="ctr_' + t + '" data-team="' + t + '"><td id="cteam_' + t + '">Team ' + t + '</td><td data-team-name="' + t + '"></td><td class="rankcol" id="crank_' + t + '"></td>';
         for(let r=1;r<=NROUNDS;r++) rows += '<td id="ct_' + t + '_' + r + '"></td><td class="rplace" id="cp_' + t + '_' + r + '"></td>';
         rows += '</tr>';
       }
@@ -1035,8 +1064,8 @@
       }
       const navHtml = '<div class="noprint schedule-roundbar" id="roundNavBar" style="display:none;">'
         + '<label>Runde<select id="roundSelect" onchange="onRoundSelectChange()"></select></label>'
-        + '<button type="button" class="nbtn" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀︎ R</button>'
-        + '<button type="button" class="nbtn" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">R ▶︎</button>'
+        + '<button type="button" class="nbtn nbtn-round nbtn-round-prev" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀ Zurück</button>'
+        + '<button type="button" class="nbtn nbtn-round nbtn-round-next" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">Weiter ▶</button>'
         + '<span class="state" id="roundNavState" aria-live="polite"></span>'
         + '</div>';
       return navHtml + pages.join('');
@@ -1833,11 +1862,17 @@
       }
     }
     function renderCentral(){
+      // Merkt sich den Platzierungsstand der zuletzt vollständig abgeschlossenen
+      // Runde, um ihn direkt am Teamnamen als Rang-Badge anzuzeigen (siehe unten).
+      // Ist das die letzte Runde, ist das automatisch der Endstand.
+      let lastCompleteRound = 0;
+      let lastActivePlace = null;
       for(let r=1;r<=NROUNDS;r++){
         const st = statsUpto(r);
         const activeOrder = roundComplete(r) ? orderUpto(r) : null;
         const activePlace = {};
         if(activeOrder) activeOrder.forEach((t, idx) => activePlace[t] = idx + 1);
+        if(activeOrder){ lastCompleteRound = r; lastActivePlace = activePlace; }
         for(let t=1;t<=NTEAMS;t++){
           const found = findMatch(r, t);
           let html = '';
@@ -1870,6 +1905,24 @@
           setHtml('ct_' + t + '_' + r, html);
           setHtml('cp_' + t + '_' + r, roundComplete(r) ? (activePlace[t] ? String(activePlace[t]) : '–') : '');
         }
+      }
+      // Rang-Badge direkt am Teamnamen (nicht nur ganz rechts in der letzten
+      // Runden-Spalte): zeigt den aktuellen Platz laufend an und wird optisch
+      // hervorgehoben (Medaille), sobald er nach der letzten Runde feststeht.
+      const isFinal = lastCompleteRound > 0 && lastCompleteRound === NROUNDS;
+      const medal = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+      for(let t=1;t<=NTEAMS;t++){
+        const place = lastActivePlace ? lastActivePlace[t] : null;
+        let badge;
+        if(!place){
+          badge = '<span class="rank-badge rank-none">–</span>';
+        } else {
+          const topCls = place <= 3 ? ' rank-top rank-' + place : '';
+          const icon = isFinal && medal[place] ? medal[place] + ' ' : '';
+          badge = '<span class="rank-badge' + (isFinal ? ' rank-final' : ' rank-live') + topCls + '" title="'
+            + (isFinal ? 'Endplatzierung' : 'Aktueller Platz (laufend)') + ': ' + place + '.">' + icon + place + '.</span>';
+        }
+        setHtml('crank_' + t, badge);
       }
       sortCentralTableRows();
     }
