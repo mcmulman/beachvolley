@@ -837,6 +837,44 @@ input.score {
         margin-left: 8px;
         margin-top: 2px;
       }
+  /* Weitere Flex-Container mit "gap" aus app-skin.css / dem Inline-Style
+     jedes Bogens - ohne diese Ergaenzung ruecken auf alten iPads (< iOS
+     14.5) fast alle Leisten/Karten/Formularfelder ohne jeden Abstand
+     zusammen (einzeiliges "Zusammenkleben" von Icons, Buttons, Labels). */
+.app-bar > * + * { margin-left: 10px; }
+.app-bar__back > * + * { margin-left: 4px; }
+.app-bar__actions > * + * { margin-left: 6px; }
+.app-bar__btn > * + * { margin-left: 6px; }
+.cfgcard-head > * + * { margin-left: 8px; }
+.cfgfield > * + * { margin-top: 5px; }
+.cfgres-item > * + * { margin-top: 3px; }
+.cfg-lbl > * + * { margin-left: 5px; }
+.namepanel label > * + * { margin-top: 2px; }
+.panel-checks label > * + * { margin-left: 8px; }
+.cfgresult {
+        margin-left: -10px;
+        margin-top: -10px;
+      }
+.cfgresult > * {
+        margin-left: 10px;
+        margin-top: 10px;
+      }
+.cfgcard-actions {
+        margin-left: -10px;
+        margin-top: -8px;
+      }
+.cfgcard-actions > * {
+        margin-left: 10px;
+        margin-top: 8px;
+      }
+.nactions {
+        margin-left: -8px;
+        margin-top: -8px;
+      }
+.nactions > * {
+        margin-left: 8px;
+        margin-top: 8px;
+      }
 }
 }
 

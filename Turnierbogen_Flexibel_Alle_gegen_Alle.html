@@ -24,6 +24,16 @@
   .sub { color:#555; font-size:12px; margin:0 0 12px; }
   .row { display:flex; gap:8mm; align-items:flex-start; }
   .grow { flex:1; }
+  /* Fallback fuer Flexbox-"gap" auf aelteren iPads (< iOS 14.5): ohne dies
+     ruecken die Spalten von .row ohne Abstand zusammen. */
+  @media screen {
+    @supports not (gap: 1px) {
+      .row > * + * { margin-left: 8mm; }
+      @media (max-width: 640px) {
+        .row > * + * { margin-left: 0; margin-top: 10px; }
+      }
+    }
+  }
   table { border-collapse:collapse; width:100%; }
   th, td { border:1px solid var(--line); padding:4px 6px; text-align:center; }
   th { background:var(--bg); font-size:12px; }
