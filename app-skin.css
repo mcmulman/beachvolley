@@ -605,6 +605,8 @@
     display: inline-block;
     width: 16px;
     height: 16px;
+    max-width: 16px;
+    max-height: 16px;
     flex: 0 0 auto;
     vertical-align: middle;
   }
