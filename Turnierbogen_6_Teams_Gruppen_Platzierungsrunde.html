@@ -31,26 +31,8 @@
   .grp-box td { text-align:left; }
   .grp-box .gh { width:80px; font-weight:bold; background:var(--bg); }
 
-  .sched td { padding:8px 6px; }
-  .sched .rnd { width:118px; font-weight:bold; background:var(--bg); font-size:13px; }
-  .sched .rnd .rtime { display:block; font-size:11.5px; font-weight:bold; color:#1f4e79; margin-top:2px; }
-  .sched .rnd .rmode { display:block; font-size:10px; font-weight:normal; color:#333; line-height:1.15; margin-top:1px; }
-  .sched th { font-size:13px; }
-  .pair { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
-  .pair .t { display:inline-block; min-width:58px; font-weight:bold; font-size:14px; }
-  /* Best-of-3-Eingabe (Finale & Spiel um Platz 3): mehrere Satz-Kaestchenpaare
-     nebeneinander/untereinander statt eines einzelnen Paares. */
-  .pair.pair-bo3 { flex-wrap:wrap; white-space:normal; row-gap:4px; }
-  .psets { display:flex; align-items:flex-end; justify-content:center; gap:8px; flex-wrap:wrap; }
-  .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
-  .slbl { font-size:9.5px; font-weight:700; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
-  .sbox { display:inline-flex; align-items:center; gap:2px; }
-  .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
-  input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold; font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff; -webkit-appearance:none; appearance:none; }
-  input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
-  input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
-  input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
+  /* .sched/.pair/.psets/.sset/.slbl/.sbox/.score/.vs kommen jetzt aus spielplan.css
+     (gemeinsames Karten-Layout, siehe .match/.pnames/.pside/.presult/.mnote-slot). */
   .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
   .gold { background:var(--gold); }
   .idle { color:#666; font-style:italic; font-size:12px; }
@@ -61,7 +43,6 @@
   .miss { color:#b00020; font-size:0.78em; font-weight:bold; }
   .abt { color:#c00; font-size:0.8em; font-weight:600; }
   .free { color:#666; font-size:0.9em; font-style:italic; }
-  .vs { color:var(--soft); font-weight:bold; font-size:16px; }
 
   .stand td { height:30px; }
   .stand .rk { width:60px; background:var(--bg); font-weight:bold; }
@@ -153,38 +134,12 @@
       break-before:page;
       page-break-before:always;
     }
-    .sched td { padding:0.85mm 1.2mm; }
-    .sched .rnd { width:25mm; font-size:8pt; }
-    .sched .rnd .rtime { font-size:7pt; margin-top:0.35mm; }
-    .sched .rnd .rmode { font-size:6.5pt; line-height:1.05; margin-top:0.25mm; }
-    .pair { gap:1.2mm; }
-    .pair .t { min-width:0; font-size:8pt; }
-    .vs { font-size:8pt; }
     .track th, .track td { padding:0.7mm 0.9mm; }
     .track .rcell, .stand td { height:auto; }
     .track .tname { font-size:7.8pt; }
     .track .lbl { font-size:7.2pt; }
     td.st { font-size:7.2pt; }
     .legend { margin-top:2mm; font-size:7.6pt; }
-    input.score {
-      border:none;
-      background:transparent;
-      box-shadow:none;
-      width:1.65em;
-      height:auto;
-      min-height:0;
-      padding:0;
-      margin:0;
-      font-size:8pt;
-      font-weight:700;
-      color:#000;
-      text-align:center;
-    }
-    input.score:focus { outline:none; }
-    input[type=text]:not(.score) { display:none; }
-    .pair.pair-bo3 { gap:1mm 2mm; }
-    .psets { gap:1.6mm; }
-    .slbl { font-size:5.2pt; }
   }
 
     /* Screen polish overrides */
@@ -277,36 +232,12 @@
         border: 1.5px solid #cdd8e6;
         background: #f7fafd;
       }
-      input.score {
-        border: 1.5px solid #b0bec5;
-        border-radius: 4px;
-        background: #fafcff;
-      }
-      input.score:focus {
-        outline: 2px solid #1f4e79;
-        background: #fffce0;
-      }
-      input.score.win {
-        background: #d4f5d4 !important;
-        border-color: #2e7d2e;
-      }
-      input.score.invalid {
-        background: #fde0e0 !important;
-        border-color: #c62828;
-      }
       .stand .pl,
       .stand .rk { background: #e8edf5; color: #1a1a2e; }
       .track .tnum,
       .track .lbl { background: #f0f5fb; color: #1a1a2e; }
       .track .sum { background: #e8edf5; color: #1a1a2e; }
-      .sched .rnd {
-        background: #1f4e79;
-        color: #fff;
-        font-weight: 700;
-      }
-      .sched .rnd .rtime,
       .sched .rtime { color: #b8d4ee; }
-      .sched .rnd .rmode,
       .sched .rmode { color: #a0b8cc; }
       .digitalbar,
       .digbar,
@@ -334,13 +265,7 @@
         background: #e8edf5 !important;
         color: #000 !important;
       }
-      .sched .rnd {
-        background: #e8edf5 !important;
-        color: #000 !important;
-      }
-      .sched .rnd .rtime,
       .sched .rtime { color: #000 !important; }
-      .sched .rnd .rmode,
       .sched .rmode { color: #333 !important; }
       .guide {
         border: none;
@@ -351,6 +276,7 @@
 
 </style>
   <style>.pos.pz-tie{ background:#fff4d6 !important; } @media print{ .pos.pz-tie{ background:#fff4d6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }</style>
+  <link rel="stylesheet" href="spielplan.css">
   <link rel="stylesheet" href="app-skin.css">
 </head>
 <body>
@@ -372,11 +298,11 @@
 <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
 <div class="noprint cfgcard">
-  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide">📝 Turniertitel <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>
-    <label class="cfgfield">⏱ Start <input type="time" id="startTime" value="10:00" onchange="onStartTime()"></label>
-    <label class="cfgfield">🏁 Ende <input type="time" id="endTime" value="14:00" onchange="onEndTime()"></label>
+    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span> <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…"></label>
+    <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Start</span> <input type="time" id="startTime" value="10:00" onchange="onStartTime()"></label>
+    <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> Ende</span> <input type="time" id="endTime" value="14:00" onchange="onEndTime()"></label>
   </div>
   <div class="cfgresult">
     <div class="cfgres-item is-primary"><span class="cfgres-val">6</span><span class="cfgres-lbl">Teams</span></div>
@@ -385,17 +311,17 @@
     <div class="cfgres-item"><span class="cfgres-val" id="roundDurInfo">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
   </div>
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
-    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
-    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+    <button type="button" class="nbtn" onclick="toggleNames()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen eintragen</button>
+    <button type="button" class="nbtn" onclick="toggleFields()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
+    <button type="button" class="nbtn" onclick="clearScores()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Ergebnisse löschen</button>
+    <button type="button" class="nbtn" onclick="resetTournament()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
     <span class="spacer"></span>
-    <button class="nbtn" onclick="manualSave()" title="Turnier speichern">💾 Speichern</button>
+    <button class="nbtn" onclick="manualSave()" title="Turnier speichern" style="background:#0a7d2c;border-color:#0a7d2c"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
   </div>
   <div id="namepanel" class="namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions">
-      <button type="button" class="nbtn" onclick="drawGroups()">🎲 Gruppen auslosen</button>
+      <button type="button" class="nbtn" onclick="drawGroups()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> Gruppen auslosen</button>
       <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
     </div>
   </div>
@@ -444,28 +370,164 @@
   </div>
 </div>
 
-<table class="sched">
-  <caption>Gruppenphase · Spielplan &amp; Ergebnisse</caption>
-  <tr><th class="rnd">Runde</th><th data-field="0">Feld 1 (Gr. A)</th><th data-field="1">Feld 2 (Gr. B)</th><th data-field="2">Feld 3</th></tr>
-  <tr>
-    <td class="rnd">Runde 1<span class="rtime tt">10:00–10:30</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td>
-    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-grp-round="1" data-tm="1" data-op="2" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-grp-round="1" data-tm="2" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span></td>
-    <td><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-grp-round="1" data-tm="4" data-op="5" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-grp-round="1" data-tm="5" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="5">Team 5</span></span></td>
-    <td class="idle">frei / Einspielen</td>
-  </tr>
-  <tr>
-    <td class="rnd">Runde 2<span class="rtime tt">10:48–11:18</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td>
-    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-grp-round="2" data-tm="1" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-grp-round="2" data-tm="3" data-op="1" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span></td>
-    <td><span class="pair"><span class="t" data-team="4">Team 4</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-grp-round="2" data-tm="4" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-grp-round="2" data-tm="6" data-op="4" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span></td>
-    <td class="idle">frei / Nachholspiel</td>
-  </tr>
-  <tr>
-    <td class="rnd">Runde 3<span class="rtime tt">11:36–12:06</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td>
-    <td><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g3_2" data-grp-round="3" data-tm="2" data-op="3" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_3" data-grp-round="3" data-tm="3" data-op="2" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span></td>
-    <td><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g3_5" data-grp-round="3" data-tm="5" data-op="6" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g3_6" data-grp-round="3" data-tm="6" data-op="5" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span></td>
-    <td class="idle">frei / Nachholspiel</td>
-  </tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Gruppenphase · Spielplan &amp; Ergebnisse</p>
+    <table class="sched">
+      <caption class="rcap" data-round="1">Gruppenphase · Spielplan &amp; Ergebnisse</caption>
+      <tbody>
+        <tr class="rhead" data-round="1"><td class="rhead-cell" colspan="3"><span class="rlabel">Runde 1</span><span class="rtime tt" data-round="1">10:00–10:30</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td></tr>
+        <tr class="fhead" data-round="1"><th scope="col" data-field="0">Feld 1 (Gr. A)</th><th scope="col" data-field="1">Feld 2 (Gr. B)</th><th scope="col" data-field="2">Feld 3</th></tr>
+        <tr data-round="1">
+          <td class="match" data-round="1" data-col="0" data-field-label="Feld 1 (Gr. A)" data-match-teams="1,2">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_0"><span class="t t-a" data-team="1">Team 1</span></span>
+                <span class="pside pside-b" id="gpb_1_0"><span class="t t-b" data-team="2">Team 2</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_1" data-grp-round="1" data-tm="1" data-op="2" oninput="onScore()" autocomplete="off" aria-label="Team 1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_2" data-grp-round="1" data-tm="2" data-op="1" oninput="onScore()" autocomplete="off" aria-label="Team 2 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_0"></span><span class="tdiff" id="gda_1_0"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_0"></span><span class="mscore" id="gsb_1_0"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_0"></span>
+            </span>
+          </td>
+          <td class="match" data-round="1" data-col="1" data-field-label="Feld 2 (Gr. B)" data-match-teams="4,5">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_1"><span class="t t-a" data-team="4">Team 4</span></span>
+                <span class="pside pside-b" id="gpb_1_1"><span class="t t-b" data-team="5">Team 5</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_4" data-grp-round="1" data-tm="4" data-op="5" oninput="onScore()" autocomplete="off" aria-label="Team 4 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_5" data-grp-round="1" data-tm="5" data-op="4" oninput="onScore()" autocomplete="off" aria-label="Team 5 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_1"></span><span class="tdiff" id="gda_1_1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_1"></span><span class="mscore" id="gsb_1_1"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_1"></span>
+            </span>
+          </td>
+          <td class="empty" data-round="1" data-col="2" data-field-label="Feld 3"><span class="idle">frei / Einspielen</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Gruppenphase · Spielplan &amp; Ergebnisse</p>
+    <table class="sched">
+      <caption class="rcap" data-round="2">Gruppenphase · Spielplan &amp; Ergebnisse</caption>
+      <tbody>
+        <tr class="rhead" data-round="2"><td class="rhead-cell" colspan="3"><span class="rlabel">Runde 2</span><span class="rtime tt" data-round="2">10:48–11:18</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td></tr>
+        <tr class="fhead" data-round="2"><th scope="col" data-field="0">Feld 1 (Gr. A)</th><th scope="col" data-field="1">Feld 2 (Gr. B)</th><th scope="col" data-field="2">Feld 3</th></tr>
+        <tr data-round="2">
+          <td class="match" data-round="2" data-col="0" data-field-label="Feld 1 (Gr. A)" data-match-teams="1,3">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_0"><span class="t t-a" data-team="1">Team 1</span></span>
+                <span class="pside pside-b" id="gpb_2_0"><span class="t t-b" data-team="3">Team 3</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_1" data-grp-round="2" data-tm="1" data-op="3" oninput="onScore()" autocomplete="off" aria-label="Team 1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_3" data-grp-round="2" data-tm="3" data-op="1" oninput="onScore()" autocomplete="off" aria-label="Team 3 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_0"></span><span class="tdiff" id="gda_2_0"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_0"></span><span class="mscore" id="gsb_2_0"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_0"></span>
+            </span>
+          </td>
+          <td class="match" data-round="2" data-col="1" data-field-label="Feld 2 (Gr. B)" data-match-teams="4,6">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_1"><span class="t t-a" data-team="4">Team 4</span></span>
+                <span class="pside pside-b" id="gpb_2_1"><span class="t t-b" data-team="6">Team 6</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_4" data-grp-round="2" data-tm="4" data-op="6" oninput="onScore()" autocomplete="off" aria-label="Team 4 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_6" data-grp-round="2" data-tm="6" data-op="4" oninput="onScore()" autocomplete="off" aria-label="Team 6 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_1"></span><span class="tdiff" id="gda_2_1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_1"></span><span class="mscore" id="gsb_2_1"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_1"></span>
+            </span>
+          </td>
+          <td class="empty" data-round="2" data-col="2" data-field-label="Feld 3"><span class="idle">frei / Nachholspiel</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Gruppenphase · Spielplan &amp; Ergebnisse</p>
+    <table class="sched">
+      <caption class="rcap" data-round="3">Gruppenphase · Spielplan &amp; Ergebnisse</caption>
+      <tbody>
+        <tr class="rhead" data-round="3"><td class="rhead-cell" colspan="3"><span class="rlabel">Runde 3</span><span class="rtime tt" data-round="3">11:36–12:06</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td></tr>
+        <tr class="fhead" data-round="3"><th scope="col" data-field="0">Feld 1 (Gr. A)</th><th scope="col" data-field="1">Feld 2 (Gr. B)</th><th scope="col" data-field="2">Feld 3</th></tr>
+        <tr data-round="3">
+          <td class="match" data-round="3" data-col="0" data-field-label="Feld 1 (Gr. A)" data-match-teams="2,3">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_3_0"><span class="t t-a" data-team="2">Team 2</span></span>
+                <span class="pside pside-b" id="gpb_3_0"><span class="t t-b" data-team="3">Team 3</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g3_2" data-grp-round="3" data-tm="2" data-op="3" oninput="onScore()" autocomplete="off" aria-label="Team 2 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g3_3" data-grp-round="3" data-tm="3" data-op="2" oninput="onScore()" autocomplete="off" aria-label="Team 3 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_3_0"></span><span class="tdiff" id="gda_3_0"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_3_0"></span><span class="mscore" id="gsb_3_0"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_3_0"></span>
+            </span>
+          </td>
+          <td class="match" data-round="3" data-col="1" data-field-label="Feld 2 (Gr. B)" data-match-teams="5,6">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_3_1"><span class="t t-a" data-team="5">Team 5</span></span>
+                <span class="pside pside-b" id="gpb_3_1"><span class="t t-b" data-team="6">Team 6</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g3_5" data-grp-round="3" data-tm="5" data-op="6" oninput="onScore()" autocomplete="off" aria-label="Team 5 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g3_6" data-grp-round="3" data-tm="6" data-op="5" oninput="onScore()" autocomplete="off" aria-label="Team 6 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_3_1"></span><span class="tdiff" id="gda_3_1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_3_1"></span><span class="mscore" id="gsb_3_1"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_3_1"></span>
+            </span>
+          </td>
+          <td class="empty" data-round="3" data-col="2" data-field-label="Feld 3"><span class="idle">frei / Nachholspiel</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="legend" style="margin:8px 0 4px">
   <b>Spielstart (jedes Spiel):</b> Pünktlich gemäß Uhrzeit beginnen · Aufschlag &amp; Seitenwahl auslosen · Seitenwechsel alle 7 Punkte · Satz endet bei 21 mit 2 Punkten Vorsprung · Ergebnis sofort eintragen.
@@ -516,27 +578,136 @@
   Halbfinale oben für Plätze 1–4 · A-3 gegen B-3 entscheidet direkt Platz 5–6. Fehlt ein qualifiziertes Team, rückt das nächste anwesende Team der Gruppe nach; sonst erscheint <b>Freilos</b>.
 </div>
 
-<table class="sched">
-  <caption>Finalrunde 1 · Über-Kreuz-Paarungen</caption>
-  <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1 (Platz 1–4)</th><th data-field="1">Feld 2 (Platz 1–4)</th><th data-field="2">Feld 3 (Platz 5–6)</th></tr>
-  <tr>
-    <td class="rnd">Finalrunde 1<span class="rtime tt">12:24–12:54</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td>
-    <td><div class="ghead"><span class="code">HF1</span></div><span class="pair"><span class="t" data-seed="A1"><span class="seedlbl">A-1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_HF1_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_HF1_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B2"><span class="seedlbl">B-2</span><span class="rname"></span></span></span><div class="route">Sieger → Finale · Verlierer → Pl.&nbsp;3</div></td>
-    <td><div class="ghead"><span class="code">HF2</span></div><span class="pair"><span class="t" data-seed="B1"><span class="seedlbl">B-1</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_HF2_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_HF2_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="A2"><span class="seedlbl">A-2</span><span class="rname"></span></span></span><div class="route">Sieger → Finale · Verlierer → Pl.&nbsp;3</div></td>
-    <td><div class="ghead"><span class="code">Pl.&nbsp;5–6</span></div><span class="pair"><span class="t" data-seed="A3"><span class="seedlbl">A-3</span><span class="rname"></span></span><input class="score" type="text" inputmode="numeric" id="f1_P56_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_P56_a" oninput="onScore()" autocomplete="off"><span class="t" data-seed="B3"><span class="seedlbl">B-3</span><span class="rname"></span></span></span><div class="route">Sieger → Pl.&nbsp;5 · Verlierer → Pl.&nbsp;6</div></td>
-  </tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Über-Kreuz-Paarungen</p>
+    <table class="sched">
+      <caption class="rcap" data-round="F1">Finalrunde 1 · Über-Kreuz-Paarungen</caption>
+      <tbody>
+        <tr class="rhead" data-round="F1"><td class="rhead-cell" colspan="3"><span class="rlabel">Finalrunde 1</span><span class="rtime tt" data-round="F1">12:24–12:54</span><span class="rmode">1 Satz bis 21 (2 Pkt. Vorsprung)</span></td></tr>
+        <tr class="fhead" data-round="F1"><th scope="col" data-field="0">Feld 1 (Platz 1–4)</th><th scope="col" data-field="1">Feld 2 (Platz 1–4)</th><th scope="col" data-field="2">Feld 3 (Platz 5–6)</th></tr>
+        <tr data-round="F1">
+          <td class="match" data-round="F1" data-col="0" data-field-label="Feld 1 (Platz 1–4)">
+            <div class="ghead"><span class="code">HF1</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="fpa_HF1"><span class="t t-a" data-seed="A1"><span class="seedlbl">A-1</span><span class="rname"></span></span></span>
+                <span class="pside pside-b" id="fpb_HF1"><span class="t t-b" data-seed="B2"><span class="seedlbl">B-2</span><span class="rname"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_HF1_h" oninput="onScore()" autocomplete="off" aria-label="A-1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_HF1_a" oninput="onScore()" autocomplete="off" aria-label="B-2 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="fsa_HF1"></span><span class="tdiff" id="fda_HF1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="fdb_HF1"></span><span class="mscore" id="fsb_HF1"></span></span>
+              </span>
+              <span class="mnote-slot" id="fn_HF1"></span>
+            </span>
+            <div class="route">Sieger → Finale · Verlierer → Pl.&nbsp;3</div>
+          </td>
+          <td class="match" data-round="F1" data-col="1" data-field-label="Feld 2 (Platz 1–4)">
+            <div class="ghead"><span class="code">HF2</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="fpa_HF2"><span class="t t-a" data-seed="B1"><span class="seedlbl">B-1</span><span class="rname"></span></span></span>
+                <span class="pside pside-b" id="fpb_HF2"><span class="t t-b" data-seed="A2"><span class="seedlbl">A-2</span><span class="rname"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_HF2_h" oninput="onScore()" autocomplete="off" aria-label="B-1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_HF2_a" oninput="onScore()" autocomplete="off" aria-label="A-2 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="fsa_HF2"></span><span class="tdiff" id="fda_HF2"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="fdb_HF2"></span><span class="mscore" id="fsb_HF2"></span></span>
+              </span>
+              <span class="mnote-slot" id="fn_HF2"></span>
+            </span>
+            <div class="route">Sieger → Finale · Verlierer → Pl.&nbsp;3</div>
+          </td>
+          <td class="match" data-round="F1" data-col="2" data-field-label="Feld 3 (Platz 5–6)">
+            <div class="ghead"><span class="code">Pl.&nbsp;5–6</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="fpa_P56"><span class="t t-a" data-seed="A3"><span class="seedlbl">A-3</span><span class="rname"></span></span></span>
+                <span class="pside pside-b" id="fpb_P56"><span class="t t-b" data-seed="B3"><span class="seedlbl">B-3</span><span class="rname"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_P56_h" oninput="onScore()" autocomplete="off" aria-label="A-3 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_P56_a" oninput="onScore()" autocomplete="off" aria-label="B-3 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="fsa_P56"></span><span class="tdiff" id="fda_P56"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="fdb_P56"></span><span class="mscore" id="fsb_P56"></span></span>
+              </span>
+              <span class="mnote-slot" id="fn_P56"></span>
+            </span>
+            <div class="route">Sieger → Pl.&nbsp;5 · Verlierer → Pl.&nbsp;6</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-<table class="sched">
-  <caption>Finalrunde 2 · Platzierungsspiele</caption>
-  <tr><th class="rnd">Spiel</th><th data-field="0">Feld 1</th><th data-field="1">Feld 2</th><th data-field="2">Feld 3</th></tr>
-  <tr>
-    <td class="rnd">Finalrunde 2<span class="rtime tt">13:12–13:42</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td>
-    <td class="gold"><div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div><span class="pair pair-bo3"><span class="t" data-slot="winHF1"><span class="src">Sieger</span><span class="gocode">HF1</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FIN2_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FIN2_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_FINtb_h" oninput="onScore()" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_FINtb_a" oninput="onScore()" autocomplete="off" placeholder="TB"></span></span></span><span class="t" data-slot="winHF2"><span class="src">Sieger</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td>
-    <td><div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div><span class="pair pair-bo3"><span class="t" data-slot="losHF1"><span class="src">Verl.</span><span class="gocode">HF1</span><span class="rname"></span></span><span class="psets"><span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P32_h" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P32_a" oninput="onScore()" autocomplete="off"></span></span><span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" id="f2_P3tb_h" oninput="onScore()" autocomplete="off" placeholder="TB"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f2_P3tb_a" oninput="onScore()" autocomplete="off" placeholder="TB"></span></span></span><span class="t" data-slot="losHF2"><span class="src">Verl.</span><span class="gocode">HF2</span><span class="rname"></span></span></span></td>
-    <td><div class="ghead"><span class="code">Platz 5/6</span></div><div class="idle" style="font-style:normal;line-height:1.45">bereits in Finalrunde 1 entschieden</div></td>
-  </tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: je Satz ein Kästchenpaar, der Tiebreak nur bei 1:1 Sätzen – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Platzierungsspiele</p>
+    <table class="sched">
+      <caption class="rcap" data-round="F2">Finalrunde 2 · Platzierungsspiele</caption>
+      <tbody>
+        <tr class="rhead" data-round="F2"><td class="rhead-cell" colspan="3"><span class="rlabel">Finalrunde 2</span><span class="rtime tt" data-round="F2">13:12–13:42</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td></tr>
+        <tr class="fhead" data-round="F2"><th scope="col" data-field="0">Feld 1</th><th scope="col" data-field="1">Feld 2</th><th scope="col" data-field="2">Feld 3</th></tr>
+        <tr data-round="F2">
+          <td class="match gold" data-round="F2" data-col="0" data-field-label="Feld 1">
+            <div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div>
+            <span class="pair pair-bo3">
+              <span class="pnames">
+                <span class="pside pside-a" id="fpa_FIN"><span class="t t-a" data-slot="winHF1"><span class="src">Sieger</span><span class="gocode">HF1</span><span class="rname"></span></span></span>
+                <span class="pside pside-b" id="fpb_FIN"><span class="t t-b" data-slot="winHF2"><span class="src">Sieger</span><span class="gocode">HF2</span><span class="rname"></span></span></span>
+              </span>
+              <span class="psets">
+                <span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FIN_h" oninput="onScore()" autocomplete="off" aria-label="Finale Team A Satz 1"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FIN_a" oninput="onScore()" autocomplete="off" aria-label="Finale Team B Satz 1"></span></span>
+                <span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FIN2_h" oninput="onScore()" autocomplete="off" aria-label="Finale Team A Satz 2"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FIN2_a" oninput="onScore()" autocomplete="off" aria-label="Finale Team B Satz 2"></span></span>
+                <span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FINtb_h" oninput="onScore()" autocomplete="off" placeholder="TB" aria-label="Finale Team A Tiebreak"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_FINtb_a" oninput="onScore()" autocomplete="off" placeholder="TB" aria-label="Finale Team B Tiebreak"></span></span>
+              </span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="fsa_FIN"></span><span class="tdiff" id="fda_FIN"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="fdb_FIN"></span><span class="mscore" id="fsb_FIN"></span></span>
+              </span>
+              <span class="mnote-slot" id="fn_FIN"></span>
+            </span>
+          </td>
+          <td class="match" data-round="F2" data-col="1" data-field-label="Feld 2">
+            <div class="ghead"><span class="code">um Platz 3</span><span class="route2">→ Platz 3/4</span></div>
+            <span class="pair pair-bo3">
+              <span class="pnames">
+                <span class="pside pside-a" id="fpa_P3"><span class="t t-a" data-slot="losHF1"><span class="src">Verl.</span><span class="gocode">HF1</span><span class="rname"></span></span></span>
+                <span class="pside pside-b" id="fpb_P3"><span class="t t-b" data-slot="losHF2"><span class="src">Verl.</span><span class="gocode">HF2</span><span class="rname"></span></span></span>
+              </span>
+              <span class="psets">
+                <span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P3_h" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team A Satz 1"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P3_a" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team B Satz 1"></span></span>
+                <span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P32_h" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team A Satz 2"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P32_a" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team B Satz 2"></span></span>
+                <span class="sset"><span class="slbl">Tiebreak</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P3tb_h" oninput="onScore()" autocomplete="off" placeholder="TB" aria-label="Platz 3 Team A Tiebreak"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f2_P3tb_a" oninput="onScore()" autocomplete="off" placeholder="TB" aria-label="Platz 3 Team B Tiebreak"></span></span>
+              </span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="fsa_P3"></span><span class="tdiff" id="fda_P3"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="fdb_P3"></span><span class="mscore" id="fsb_P3"></span></span>
+              </span>
+              <span class="mnote-slot" id="fn_P3"></span>
+            </span>
+          </td>
+          <td class="empty" data-round="F2" data-col="2" data-field-label="Feld 3"><div class="ghead"><span class="code">Platz 5/6</span></div><div class="idle" style="font-style:normal;line-height:1.45">bereits in Finalrunde 1 entschieden</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="row">
   <div class="grow">
@@ -703,6 +874,11 @@
     applyTeamDisplay(i);
     computeAll();
   }
+  /* Team ausgefallen/Freilos: absichtlich KEIN Loeschen von Ergebnis-Eingaben hier
+     (weder Gruppenphase noch Finalrunde) - siehe evaluateGroupMatch()/computeFinals(),
+     die ein abwesendes Team ueber isAbsent() automatisch als Freilos werten,
+     unabhaengig von evtl. bereits eingetragenen Punktzahlen. So bleiben alle
+     Ergebnisse anderer (nicht betroffener) Spiele beim Umschalten unangetastet. */
   function onAbsentToggle(i){
     const abs = loadAbsent();
     const on = !!document.getElementById('ta'+i).checked;
@@ -775,9 +951,8 @@
   function num(el){
     if(!el) return null;
     const v = (el.value || '').trim();
-    if(v === '') return null;
-    const n = parseInt(v, 10);
-    return isNaN(n) ? null : n;
+    if(v === '' || !/^\d{1,3}$/.test(v)) return null;
+    return parseInt(v, 10);
   }
   function fmt(n){ return (n > 0 ? '+' : '') + n; }
   function setCell(id, val){
@@ -786,10 +961,97 @@
     if(val === '' || val == null){ e.textContent = ''; e.classList.remove('auto'); }
     else { e.textContent = val; e.classList.add('auto'); }
   }
+  function setHtml(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html || ''; }
   function setResolved(selector, teamNo, placeholder){
     document.querySelectorAll(selector + ' .rname').forEach(el => {
       el.innerHTML = teamNo ? teamFullHTML(teamNo) : (placeholder ? '<span class="free">(' + escapeHtml(placeholder) + ')</span>' : '');
     });
+  }
+  /* Karten-Ergebnis eines Gruppenspiels aktualisieren: Sieger-Rahmen (.is-winner)
+     an der Teambox statt einem grünen Kaestchen, plus Punkte/Ball-Diff. und
+     Freilos-Hinweis im mnote-slot. */
+  function renderGroupMatchCard(round, col, res){
+    const pa = document.getElementById('gpa_' + round + '_' + col);
+    const pb = document.getElementById('gpb_' + round + '_' + col);
+    if(pa) pa.classList.remove('is-winner');
+    if(pb) pb.classList.remove('is-winner');
+    setCell('gsa_' + round + '_' + col, '');
+    setCell('gsb_' + round + '_' + col, '');
+    setCell('gda_' + round + '_' + col, '');
+    setCell('gdb_' + round + '_' + col, '');
+    setHtml('gn_' + round + '_' + col, '');
+    if(!res || !res.resolved) return;
+    if(res.auto){
+      if(res.cmp > 0 && pa) pa.classList.add('is-winner');
+      else if(res.cmp < 0 && pb) pb.classList.add('is-winner');
+      setHtml('gn_' + round + '_' + col, res.cmp === 0 ? '<span class="mwin-note">beide Teams fehlen</span>' : '<span class="mwin-note">(Freilos)</span>');
+      return;
+    }
+    setCell('gsa_' + round + '_' + col, res.home.sc);
+    setCell('gsb_' + round + '_' + col, res.away.sc);
+    setCell('gda_' + round + '_' + col, fmt(res.home.bd));
+    setCell('gdb_' + round + '_' + col, fmt(res.away.bd));
+    if(res.cmp > 0 && pa) pa.classList.add('is-winner');
+    else if(res.cmp < 0 && pb) pb.classList.add('is-winner');
+  }
+  /* Karten-Ergebnis eines Finalrunden-1-Spiels (HF1/HF2/Pl. 5-6, ein einzelner
+     Satz) aktualisieren - analog zu renderGroupMatchCard. */
+  function renderFinalMatchCard(prefix, code, home, away, result){
+    const pa = document.getElementById('fpa_' + code);
+    const pb = document.getElementById('fpb_' + code);
+    if(pa) pa.classList.remove('is-winner');
+    if(pb) pb.classList.remove('is-winner');
+    setCell('fsa_' + code, '');
+    setCell('fsb_' + code, '');
+    setCell('fda_' + code, '');
+    setCell('fdb_' + code, '');
+    setHtml('fn_' + code, '');
+    if(!result || !result.win) return;
+    if(result.auto){
+      if(result.win === home && pa) pa.classList.add('is-winner');
+      else if(result.win === away && pb) pb.classList.add('is-winner');
+      setHtml('fn_' + code, '<span class="mwin-note">(Freilos)</span>');
+      return;
+    }
+    const h = num(document.getElementById(prefix + '_' + code + '_h'));
+    const a = num(document.getElementById(prefix + '_' + code + '_a'));
+    if(h == null || a == null) return;
+    setCell('fsa_' + code, h);
+    setCell('fsb_' + code, a);
+    setCell('fda_' + code, fmt(h - a));
+    setCell('fdb_' + code, fmt(a - h));
+    if(result.win === home && pa) pa.classList.add('is-winner');
+    else if(result.win === away && pb) pb.classList.add('is-winner');
+  }
+  /* Karten-Ergebnis eines Best-of-3-Spiels (Finale/um Platz 3) aktualisieren:
+     Ball-Summe aus Satz 1+2 (siehe resolvePlayBestOf3), Sieger-Rahmen anhand
+     des tatsaechlichen Satz-/Tiebreak-Ergebnisses. */
+  function renderFinalBo3Card(code, home, away, result){
+    const pa = document.getElementById('fpa_' + code);
+    const pb = document.getElementById('fpb_' + code);
+    if(pa) pa.classList.remove('is-winner');
+    if(pb) pb.classList.remove('is-winner');
+    setCell('fsa_' + code, '');
+    setCell('fsb_' + code, '');
+    setCell('fda_' + code, '');
+    setCell('fdb_' + code, '');
+    setHtml('fn_' + code, '');
+    if(!home && !away) return;
+    if(home && !away){ if(pa) pa.classList.add('is-winner'); setHtml('fn_' + code, '<span class="mwin-note">(Freilos)</span>'); return; }
+    if(!home && away){ if(pb) pb.classList.add('is-winner'); setHtml('fn_' + code, '<span class="mwin-note">(Freilos)</span>'); return; }
+    if(!result || !result.win) return;
+    const h1 = num(document.getElementById('f2_' + code + '_h'));
+    const a1 = num(document.getElementById('f2_' + code + '_a'));
+    const h2 = num(document.getElementById('f2_' + code + '2_h'));
+    const a2 = num(document.getElementById('f2_' + code + '2_a'));
+    if(h1 == null || a1 == null || h2 == null || a2 == null) return;
+    const homeBalls = h1 + h2, awayBalls = a1 + a2;
+    setCell('fsa_' + code, homeBalls);
+    setCell('fsb_' + code, awayBalls);
+    setCell('fda_' + code, fmt(homeBalls - awayBalls));
+    setCell('fdb_' + code, fmt(awayBalls - homeBalls));
+    if(result.win === home && pa) pa.classList.add('is-winner');
+    else if(result.win === away && pb) pb.classList.add('is-winner');
   }
   function toMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec((t || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
   function fmtMin(t){ t = ((t % 1440) + 1440) % 1440; const H = Math.floor(t / 60), M = t % 60; return (H < 10 ? '0' : '') + H + ':' + (M < 10 ? '0' : '') + M; }
@@ -842,9 +1104,11 @@
       teams.forEach(t => { st[t] = {w:0, bd:0, sc:0, pl:0}; cum[t] = {pts:0, bd:0}; });
       const pairs = GROUP_MATCHES[gname];
       let complete = true;
+      const col = (gname === 'A') ? 0 : 1;
       pairs.forEach((pair, idx) => {
         const round = idx + 1;
         const res = evaluateGroupMatch(pair[0], pair[1], round);
+        renderGroupMatchCard(round, col, res);
         if(res.resolved){
           applyStatLine(st[pair[0]], res.home);
           applyStatLine(st[pair[1]], res.away);
@@ -988,6 +1252,9 @@
     const hf1 = resolvePlay('f1', 'HF1', seedMap.A1, seedMap.B2);
     const hf2 = resolvePlay('f1', 'HF2', seedMap.B1, seedMap.A2);
     const p56 = resolvePlay('f1', 'P56', seedMap.A3, seedMap.B3);
+    renderFinalMatchCard('f1', 'HF1', seedMap.A1, seedMap.B2, hf1);
+    renderFinalMatchCard('f1', 'HF2', seedMap.B1, seedMap.A2, hf2);
+    renderFinalMatchCard('f1', 'P56', seedMap.A3, seedMap.B3, p56);
 
     setResolved('[data-slot="winHF1"]', hf1.win, '');
     setResolved('[data-slot="winHF2"]', hf2.win, '');
@@ -996,6 +1263,8 @@
 
     const fin = resolvePlayBestOf3('f2', 'FIN', hf1.win, hf2.win);
     const p3 = resolvePlayBestOf3('f2', 'P3', hf1.los, hf2.los);
+    renderFinalBo3Card('FIN', hf1.win, hf2.win, fin);
+    renderFinalBo3Card('P3', hf1.los, hf2.los, p3);
     const places = [fin.win, fin.los, p3.win, p3.los, p56.win, p56.los];
     places.forEach((t, i) => {
       const cell = document.getElementById('place' + (i + 1));

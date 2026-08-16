@@ -66,24 +66,22 @@
     .gold { background:var(--gold); }
     .softbox { background:#fafafa; }
 
-    .sched td { padding:6px; }
-    .sched .rnd { width:120px; font-weight:bold; background:var(--bg); font-size:13px; }
-    .sched .rnd .rtime { display:block; font-size:11px; font-weight:bold; color:#1f4e79; margin-top:2px; }
-    .sched .rnd .rmode { display:block; font-size:9.8px; font-weight:normal; color:#444; margin-top:2px; line-height:1.2; }
-    .pair { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
-    .pair .t { display:inline-block; min-width:76px; font-weight:bold; font-size:13px; }
-    .vs { color:var(--soft); font-weight:bold; font-size:15px; }
-    .score { border:1px solid var(--soft); border-radius:3px; width:40px; height:32px; display:inline-block; }
-    input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
-                  font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
-                  -webkit-appearance:none; appearance:none; }
-    input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-    input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
-    input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
-    input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
-    input.score:disabled { background:#f7f7f7; color:#999; }
+    /* Gemeinsame Karten-/Spielplan-Styles kommen aus spielplan.css */
     .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
     .byeauto { background:#fff3d6 !important; color:#7a5a00 !important; }
+    .idle { color:#666; font-style:italic; font-size:12px; }
+    .seedlbl { display:block; }
+    .rname { display:block; font-size:11px; font-weight:bold; color:#0a7d2c; margin-top:1px; min-height:0; }
+    .rname:empty { display:none; }
+    .free { color:#666; font-size:0.9em; font-style:italic; }
+    .ghead { margin-bottom:5px; text-align:center; }
+    .code { display:inline-block; font-weight:bold; font-size:13px; background:#1f4e79; color:#fff; border-radius:4px; padding:2px 9px; letter-spacing:.4px; }
+    .code.win { background:#b8860b; }
+    .route { display:block; font-size:10.5px; font-weight:bold; color:#1f4e79; margin-top:4px; text-align:center; }
+    .route2 { display:inline-block; font-size:11px; font-weight:bold; color:#111; margin-left:6px; }
+    .gocode { display:inline-block; font-weight:bold; font-size:13px; border:2px solid #1f4e79; color:#1f4e79; background:#eaf1f8; border-radius:4px; padding:0 6px; }
+    .src { display:block; font-size:9.5px; color:#555; font-weight:normal; margin-bottom:1px; }
+    .pside.is-loser { opacity:.72; }
 
     .track th, .track td { padding:3px 4px; }
     .track .tname { width:96px; text-align:left; font-weight:bold; font-size:12px; }
@@ -92,34 +90,6 @@
     .track .pos { width:34px; font-weight:bold; }
     .track .grp { border-top:2px solid var(--line); }
 
-    .panel { border:1.5px solid var(--line); border-radius:6px; padding:8px 10px; background:#fff; }
-    .panel h2 { font-size:14px; margin:0 0 6px; }
-    .panel .subline { font-size:11.5px; color:#555; margin-bottom:8px; }
-    .bracket-wrap { display:grid; grid-template-columns:1.5fr 1fr; gap:8mm; }
-    .bracket-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; align-items:start; }
-    .bcol { display:flex; flex-direction:column; gap:12px; }
-    .btitle { font-size:12px; font-weight:bold; color:#1f4e79; text-align:center; padding-bottom:2px; }
-    .bmatch { border:1px solid var(--line); border-radius:6px; padding:6px; background:#fff; }
-    .bmatch.final { background:var(--gold); }
-    .bmatch .bhead { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:10.5px; color:#1f4e79; font-weight:bold; margin-bottom:5px; }
-    .bmatch .route { font-size:10px; color:#555; margin-top:5px; text-align:center; }
-    .teamslot { border:1px solid #cfd7e2; border-radius:4px; padding:5px 6px; min-height:42px; background:#fafcff; }
-    .teamslot + .teamslot { margin-top:5px; }
-    .teamslot.win { background:#d6f5d6; border-color:#2e8b2e; }
-    .teamslot.loss { background:#f8f8f8; color:#666; }
-    .slot-label { display:block; font-size:10px; font-weight:bold; color:#1f4e79; }
-    .slot-name { display:block; font-size:12.5px; margin-top:2px; }
-    .slot-name.placeholder { color:#666; font-style:italic; }
-    .slot-name.empty { color:#999; }
-
-    .matchname { text-align:left; }
-    .modecol { font-size:11px; color:#444; white-space:nowrap; }
-    .scorewrap { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; }
-    .setpair { display:inline-flex; align-items:center; gap:3px; }
-    .setlbl { font-size:10px; color:#666; min-width:18px; text-align:right; }
-    .winner-cell { text-align:left; font-weight:bold; min-width:130px; }
-    .winner-cell.auto { background:#e7f6ec; color:#0a3d20; }
-    .winner-cell.byeauto { background:#fff3d6; color:#7a5a00; }
     .ko-seed td { text-align:left; }
     .ko-seed .ks { width:66px; font-weight:bold; background:var(--bg); text-align:center; }
 
@@ -152,7 +122,7 @@
         break-inside:avoid;
       }
       th, td { padding:1mm 1.4mm; }
-      .guide, .panel, .topgrid, .bracket-wrap, .sched, .stand, .track, .legend {
+      .guide, .topgrid, .sched, .stand, .track, .legend {
         page-break-inside:avoid;
         break-inside:avoid;
       }
@@ -164,32 +134,13 @@
         break-before:page;
         page-break-before:always;
       }
-      .topgrid { gap:4mm; grid-template-columns:41% 59%; }
-      .bracket-wrap { gap:4mm; }
-      .bracket-grid { gap:2.2mm; }
-      .bcol { gap:2.2mm; }
-      .panel { padding:2.4mm 3mm; }
-      .panel .subline { font-size:7.4pt; margin-bottom:1.3mm; }
-      .btitle { font-size:7.6pt; }
-      .bmatch {
-        padding:2mm;
-        page-break-inside:avoid;
-        break-inside:avoid;
-      }
-      .bmatch .bhead { font-size:7.2pt; margin-bottom:1mm; }
-      .bmatch .route, .route { font-size:6.8pt; margin-top:1mm; }
-      .teamslot { min-height:8mm; padding:1.5mm 1.8mm; }
-      .slot-label { font-size:6.4pt; }
-      .slot-name { font-size:8pt; }
+      .topgrid { gap:4mm; grid-template-columns:calc(41% - 2mm) calc(59% - 2mm); }
       .sched td { padding:0.9mm 1.2mm; }
       .sched .rnd { width:24mm; font-size:8pt; }
       .sched .rnd .rtime { font-size:7pt; margin-top:0.35mm; }
       .sched .rnd .rmode { font-size:6.4pt; line-height:1.05; margin-top:0.25mm; }
       .pair .t { min-width:0; font-size:8pt; }
       .vs { font-size:8pt; }
-      .scorewrap { gap:1.5mm; }
-      .setpair { gap:0.8mm; }
-      .setlbl { font-size:6.8pt; min-width:10pt; }
       input.score {
         border:none;
         background:transparent;
@@ -372,6 +323,7 @@
 
 </style>
   <style>.pos.pz-tie{ background:#fff4d6 !important; } @media print{ .pos.pz-tie{ background:#fff4d6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }</style>
+  <link rel="stylesheet" href="spielplan.css">
   <link rel="stylesheet" href="app-skin.css">
 </head>
 <body>
@@ -396,13 +348,13 @@
 <div class="noprint cfgcard">
   <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide">📝 Turniertitel
+    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…">
     </label>
-    <label class="cfgfield">⏱ Start
+    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Start</span>
       <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
     </label>
-    <label class="cfgfield">🏁 Ende
+    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> Ende</span>
       <input type="time" id="endTime" value="15:00" onchange="onEndTime()">
     </label>
   </div>
@@ -413,17 +365,17 @@
     <div class="cfgres-item"><span class="cfgres-val" id="roundDurInfo">–</span><span class="cfgres-lbl">Gesamtdauer</span></div>
   </div>
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" onclick="toggleNames()">✎ Teamnamen eintragen</button>
-    <button type="button" class="nbtn" onclick="toggleFields()">🏟 Felder benennen</button>
-    <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+    <button type="button" class="nbtn" id="btnToggleNames" onclick="toggleNames()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen eintragen</button>
+    <button type="button" class="nbtn" id="btnToggleFields" onclick="toggleFields()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
+    <button type="button" class="nbtn" onclick="clearScores()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Ergebnisse löschen</button>
+    <button type="button" class="nbtn" onclick="resetTournament()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
     <span class="spacer"></span>
-    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
   </div>
   <div id="namepanel" class="namepanel" hidden>
     <div class="ngrid"></div>
     <div class="nactions">
-      <button type="button" class="nbtn" onclick="drawGroups()">🎲 Gruppen auslosen</button>
+      <button type="button" class="nbtn" onclick="drawGroups()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> Gruppen auslosen</button>
       <button type="button" class="nbtn" onclick="clearNames()">Alle leeren</button>
     </div>
   </div>
@@ -489,24 +441,181 @@
 <h2>Gruppenphase · Runden 1–2</h2>
 <p class="sub">Felder 1–2 = Gruppe A · Felder 3–4 = Gruppe B · jede Begegnung: 1 Satz bis 21</p>
 
-<table class="sched">
-  <caption>Gruppenphase · Spielplan &amp; Ergebnisse</caption>
-  <tr><th class="rnd">Runde</th><th data-field="0">Feld 1 (Gr. A)</th><th data-field="1">Feld 2 (Gr. A)</th><th data-field="2">Feld 3 (Gr. B)</th><th data-field="3">Feld 4 (Gr. B)</th></tr>
-  <tr>
-    <td class="rnd">Runde 1<span class="rtime tt">10:00–10:30</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td>
-    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g1_1" data-tm="1" data-op="2" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_2" data-tm="2" data-op="1" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="2">Team 2</span></span></td>
-    <td><span class="pair"><span class="t" data-team="3">Team 3</span><input class="score" type="text" inputmode="numeric" id="g1_3" data-tm="3" data-op="4" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_4" data-tm="4" data-op="3" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span></td>
-    <td><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g1_5" data-tm="5" data-op="6" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_6" data-tm="6" data-op="5" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="6">Team 6</span></span></td>
-    <td><span class="pair"><span class="t" data-team="7">Team 7</span><input class="score" type="text" inputmode="numeric" id="g1_7" data-tm="7" data-op="8" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g1_8" data-tm="8" data-op="7" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span></td>
-  </tr>
-  <tr>
-    <td class="rnd">Runde 2<span class="rtime tt">10:50–11:20</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td>
-    <td><span class="pair"><span class="t" data-team="1">Team 1</span><input class="score" type="text" inputmode="numeric" id="g2_1" data-tm="1" data-op="3" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_3" data-tm="3" data-op="1" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="3">Team 3</span></span></td>
-    <td><span class="pair"><span class="t" data-team="2">Team 2</span><input class="score" type="text" inputmode="numeric" id="g2_2" data-tm="2" data-op="4" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_4" data-tm="4" data-op="2" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="4">Team 4</span></span></td>
-    <td><span class="pair"><span class="t" data-team="5">Team 5</span><input class="score" type="text" inputmode="numeric" id="g2_5" data-tm="5" data-op="7" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_7" data-tm="7" data-op="5" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="7">Team 7</span></span></td>
-    <td><span class="pair"><span class="t" data-team="6">Team 6</span><input class="score" type="text" inputmode="numeric" id="g2_6" data-tm="6" data-op="8" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="g2_8" data-tm="8" data-op="6" data-target="21" oninput="onScore()" autocomplete="off"><span class="t" data-team="8">Team 8</span></span></td>
-  </tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
+    <table class="sched">
+      <caption class="rcap">Spielplan &amp; Ergebnisse</caption>
+      <tbody>
+        <tr class="rhead"><td class="rhead-cell" colspan="4"><span class="rlabel">Runde 1</span><span class="rtime tt">10:00–10:30</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td></tr>
+        <tr class="fhead"><th scope="col" data-field="0">Feld 1 (Gr. A)</th><th scope="col" data-field="1">Feld 2 (Gr. A)</th><th scope="col" data-field="2">Feld 3 (Gr. B)</th><th scope="col" data-field="3">Feld 4 (Gr. B)</th></tr>
+        <tr data-round="1">
+          <td class="match" data-round="1" data-col="0" data-field-label="Feld 1 (Gr. A)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_0"><span class="t t-a" data-team="1">Team 1</span></span>
+                <span class="pside pside-b" id="gpb_1_0"><span class="t t-b" data-team="2">Team 2</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_1" data-tm="1" data-op="2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_2" data-tm="2" data-op="1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 2 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_0"></span><span class="tdiff" id="gda_1_0"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_0"></span><span class="mscore" id="gsb_1_0"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_0"></span>
+            </span>
+          </td>
+          <td class="match" data-round="1" data-col="1" data-field-label="Feld 2 (Gr. A)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_1"><span class="t t-a" data-team="3">Team 3</span></span>
+                <span class="pside pside-b" id="gpb_1_1"><span class="t t-b" data-team="4">Team 4</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_3" data-tm="3" data-op="4" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 3 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_4" data-tm="4" data-op="3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 4 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_1"></span><span class="tdiff" id="gda_1_1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_1"></span><span class="mscore" id="gsb_1_1"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_1"></span>
+            </span>
+          </td>
+          <td class="match" data-round="1" data-col="2" data-field-label="Feld 3 (Gr. B)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_2"><span class="t t-a" data-team="5">Team 5</span></span>
+                <span class="pside pside-b" id="gpb_1_2"><span class="t t-b" data-team="6">Team 6</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_5" data-tm="5" data-op="6" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 5 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_6" data-tm="6" data-op="5" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 6 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_2"></span><span class="tdiff" id="gda_1_2"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_2"></span><span class="mscore" id="gsb_1_2"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_2"></span>
+            </span>
+          </td>
+          <td class="match" data-round="1" data-col="3" data-field-label="Feld 4 (Gr. B)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_1_3"><span class="t t-a" data-team="7">Team 7</span></span>
+                <span class="pside pside-b" id="gpb_1_3"><span class="t t-b" data-team="8">Team 8</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_7" data-tm="7" data-op="8" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 7 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g1_8" data-tm="8" data-op="7" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 8 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_1_3"></span><span class="tdiff" id="gda_1_3"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_1_3"></span><span class="mscore" id="gsb_1_3"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_1_3"></span>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt. Beispiel: 21:19 oder 21:13.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
+    <table class="sched">
+      <caption class="rcap">Spielplan &amp; Ergebnisse</caption>
+      <tbody>
+        <tr class="rhead"><td class="rhead-cell" colspan="4"><span class="rlabel">Runde 2</span><span class="rtime tt">10:50–11:20</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td></tr>
+        <tr class="fhead"><th scope="col" data-field="0">Feld 1 (Gr. A)</th><th scope="col" data-field="1">Feld 2 (Gr. A)</th><th scope="col" data-field="2">Feld 3 (Gr. B)</th><th scope="col" data-field="3">Feld 4 (Gr. B)</th></tr>
+        <tr data-round="2">
+          <td class="match" data-round="2" data-col="0" data-field-label="Feld 1 (Gr. A)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_0"><span class="t t-a" data-team="1">Team 1</span></span>
+                <span class="pside pside-b" id="gpb_2_0"><span class="t t-b" data-team="3">Team 3</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_1" data-tm="1" data-op="3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 1 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_3" data-tm="3" data-op="1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 3 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_0"></span><span class="tdiff" id="gda_2_0"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_0"></span><span class="mscore" id="gsb_2_0"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_0"></span>
+            </span>
+          </td>
+          <td class="match" data-round="2" data-col="1" data-field-label="Feld 2 (Gr. A)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_1"><span class="t t-a" data-team="2">Team 2</span></span>
+                <span class="pside pside-b" id="gpb_2_1"><span class="t t-b" data-team="4">Team 4</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_2" data-tm="2" data-op="4" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 2 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_4" data-tm="4" data-op="2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 4 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_1"></span><span class="tdiff" id="gda_2_1"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_1"></span><span class="mscore" id="gsb_2_1"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_1"></span>
+            </span>
+          </td>
+          <td class="match" data-round="2" data-col="2" data-field-label="Feld 3 (Gr. B)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_2"><span class="t t-a" data-team="5">Team 5</span></span>
+                <span class="pside pside-b" id="gpb_2_2"><span class="t t-b" data-team="7">Team 7</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_5" data-tm="5" data-op="7" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 5 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_7" data-tm="7" data-op="5" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 7 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_2"></span><span class="tdiff" id="gda_2_2"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_2"></span><span class="mscore" id="gsb_2_2"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_2"></span>
+            </span>
+          </td>
+          <td class="match" data-round="2" data-col="3" data-field-label="Feld 4 (Gr. B)">
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="gpa_2_3"><span class="t t-a" data-team="6">Team 6</span></span>
+                <span class="pside pside-b" id="gpb_2_3"><span class="t t-b" data-team="8">Team 8</span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_6" data-tm="6" data-op="8" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 6 Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="g2_8" data-tm="8" data-op="6" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Team 8 Punkte">
+              </span></span></span>
+              <span class="presult">
+                <span class="mres mres-a"><span class="mscore" id="gsa_2_3"></span><span class="tdiff" id="gda_2_3"></span></span>
+                <span class="mres mres-b"><span class="tdiff" id="gdb_2_3"></span><span class="mscore" id="gsb_2_3"></span></span>
+              </span>
+              <span class="mnote-slot" id="gn_2_3"></span>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="legend" style="margin:8px 0 4px">
   <b>Nicht gespielte Paarungen:</b> A1–A4, A2–A3, B1–B4, B2–B3. Sie dienen nur als theoretische Restspiele und werden <b>nicht</b> nachgetragen.<br>
@@ -549,134 +658,245 @@
 <h2>KO-Bracket · Runden 3–5</h2>
 <p class="sub">KO-S1 = A-1 · KO-S2 = B-1 · KO-S3 = A-2 · KO-S4 = B-2 · KO-S5 = B-3 · KO-S6 = A-3 · KO-S7 = B-4 · KO-S8 = A-4</p>
 
-<div class="panel">
-  <h2>Visualisiertes KO-Bracket</h2>
-  <div class="subline">Runde 3 = Viertelfinale · Runde 4 = Halbfinale + Platz 5–8 · Runde 5 = Finale + Plätze 3 / 5 / 7</div>
-  <div class="bracket-wrap">
-    <div>
-      <div class="bracket-grid">
-        <div class="bcol">
-          <div class="btitle">Viertelfinale</div>
-          <div class="bmatch">
-            <div class="bhead"><span>QF 1</span><span data-field="0">Feld 1</span></div>
-            <div class="teamslot" data-match-slot="qf1-a"><span class="slot-label">KO-S1</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="qf1-b"><span class="slot-label">KO-S8</span><span class="slot-name"></span></div>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">KO-Runde 3</p>
+    <table class="sched">
+      <caption class="rcap">Runde 3 · Viertelfinale</caption>
+      <tbody>
+        <tr class="rhead"><td class="rhead-cell" colspan="4"><span class="rlabel">Runde 3 · Viertelfinale</span><span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td></tr>
+        <tr class="fhead"><th scope="col" data-field="0">Feld 1</th><th scope="col" data-field="1">Feld 2</th><th scope="col" data-field="2">Feld 3</th><th scope="col" data-field="3">Feld 4</th></tr>
+        <tr>
+          <td class="match" data-match-row="qf1" data-round="3" data-col="0" data-field-label="Feld 1">
+            <div class="ghead"><span class="code">QF1</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_qf1"><span class="t t-a"><span class="seedlbl">KO-S1</span><span class="rname" data-match-team="qf1-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_qf1"><span class="t t-b"><span class="seedlbl">KO-S8</span><span class="rname" data-match-team="qf1-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf1_a" data-match="qf1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF1 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf1_b" data-match="qf1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF1 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_qf1"></span><span class="tdiff" id="kda_qf1"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_qf1"></span><span class="mscore" id="ksb_qf1"></span></span></span>
+              <span class="mnote-slot" id="kn_qf1"></span>
+            </span>
             <div class="route">Sieger → HF 1 · Verlierer → 5–8 A</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>QF 2</span><span data-field="1">Feld 2</span></div>
-            <div class="teamslot" data-match-slot="qf2-a"><span class="slot-label">KO-S4</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="qf2-b"><span class="slot-label">KO-S5</span><span class="slot-name"></span></div>
+          </td>
+          <td class="match" data-match-row="qf2" data-round="3" data-col="1" data-field-label="Feld 2">
+            <div class="ghead"><span class="code">QF2</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_qf2"><span class="t t-a"><span class="seedlbl">KO-S4</span><span class="rname" data-match-team="qf2-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_qf2"><span class="t t-b"><span class="seedlbl">KO-S5</span><span class="rname" data-match-team="qf2-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf2_a" data-match="qf2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF2 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf2_b" data-match="qf2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF2 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_qf2"></span><span class="tdiff" id="kda_qf2"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_qf2"></span><span class="mscore" id="ksb_qf2"></span></span></span>
+              <span class="mnote-slot" id="kn_qf2"></span>
+            </span>
             <div class="route">Sieger → HF 1 · Verlierer → 5–8 A</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>QF 3</span><span data-field="2">Feld 3</span></div>
-            <div class="teamslot" data-match-slot="qf3-a"><span class="slot-label">KO-S2</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="qf3-b"><span class="slot-label">KO-S7</span><span class="slot-name"></span></div>
+          </td>
+          <td class="match" data-match-row="qf3" data-round="3" data-col="2" data-field-label="Feld 3">
+            <div class="ghead"><span class="code">QF3</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_qf3"><span class="t t-a"><span class="seedlbl">KO-S2</span><span class="rname" data-match-team="qf3-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_qf3"><span class="t t-b"><span class="seedlbl">KO-S7</span><span class="rname" data-match-team="qf3-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf3_a" data-match="qf3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF3 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf3_b" data-match="qf3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF3 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_qf3"></span><span class="tdiff" id="kda_qf3"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_qf3"></span><span class="mscore" id="ksb_qf3"></span></span></span>
+              <span class="mnote-slot" id="kn_qf3"></span>
+            </span>
             <div class="route">Sieger → HF 2 · Verlierer → 5–8 B</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>QF 4</span><span data-field="3">Feld 4</span></div>
-            <div class="teamslot" data-match-slot="qf4-a"><span class="slot-label">KO-S3</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="qf4-b"><span class="slot-label">KO-S6</span><span class="slot-name"></span></div>
+          </td>
+          <td class="match" data-match-row="qf4" data-round="3" data-col="3" data-field-label="Feld 4">
+            <div class="ghead"><span class="code">QF4</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_qf4"><span class="t t-a"><span class="seedlbl">KO-S3</span><span class="rname" data-match-team="qf4-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_qf4"><span class="t t-b"><span class="seedlbl">KO-S6</span><span class="rname" data-match-team="qf4-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf4_a" data-match="qf4" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF4 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="qf4_b" data-match="qf4" data-target="21" oninput="onScore()" autocomplete="off" aria-label="QF4 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_qf4"></span><span class="tdiff" id="kda_qf4"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_qf4"></span><span class="mscore" id="ksb_qf4"></span></span></span>
+              <span class="mnote-slot" id="kn_qf4"></span>
+            </span>
             <div class="route">Sieger → HF 2 · Verlierer → 5–8 B</div>
-          </div>
-        </div>
-        <div class="bcol">
-          <div class="btitle">Runde 4</div>
-          <div class="bmatch">
-            <div class="bhead"><span>HF 1</span><span data-field="0">Feld 1</span></div>
-            <div class="teamslot" data-match-slot="hf1-a"><span class="slot-label">Sieger QF 1</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="hf1-b"><span class="slot-label">Sieger QF 2</span><span class="slot-name"></span></div>
-            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>HF 2</span><span data-field="1">Feld 2</span></div>
-            <div class="teamslot" data-match-slot="hf2-a"><span class="slot-label">Sieger QF 3</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="hf2-b"><span class="slot-label">Sieger QF 4</span><span class="slot-name"></span></div>
-            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
-          </div>
-        </div>
-        <div class="bcol">
-          <div class="btitle">Runde 5</div>
-          <div class="bmatch final">
-            <div class="bhead"><span>Finale</span><span data-field="0">Feld 1</span></div>
-            <div class="teamslot" data-match-slot="f1-a"><span class="slot-label">Sieger HF 1</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="f1-b"><span class="slot-label">Sieger HF 2</span><span class="slot-name"></span></div>
-            <div class="route">Platz 1 &amp; 2</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>Platz 3</span><span data-field="1">Feld 2</span></div>
-            <div class="teamslot" data-match-slot="f3-a"><span class="slot-label">Verlierer HF 1</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="f3-b"><span class="slot-label">Verlierer HF 2</span><span class="slot-name"></span></div>
-            <div class="route">Platz 3 &amp; 4</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="bracket-grid" style="grid-template-columns:repeat(2, minmax(0,1fr))">
-        <div class="bcol">
-          <div class="btitle">Platz 5–8</div>
-          <div class="bmatch">
-            <div class="bhead"><span>5–8 A</span><span data-field="2">Feld 3</span></div>
-            <div class="teamslot" data-match-slot="sf5a-a"><span class="slot-label">Verlierer QF 1</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="sf5a-b"><span class="slot-label">Verlierer QF 2</span><span class="slot-name"></span></div>
-            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>5–8 B</span><span data-field="3">Feld 4</span></div>
-            <div class="teamslot" data-match-slot="sf5b-a"><span class="slot-label">Verlierer QF 3</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="sf5b-b"><span class="slot-label">Verlierer QF 4</span><span class="slot-name"></span></div>
-            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
-          </div>
-        </div>
-        <div class="bcol">
-          <div class="btitle">Platzierung</div>
-          <div class="bmatch">
-            <div class="bhead"><span>Platz 5</span><span data-field="2">Feld 3</span></div>
-            <div class="teamslot" data-match-slot="f5-a"><span class="slot-label">Sieger 5–8 A</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="f5-b"><span class="slot-label">Sieger 5–8 B</span><span class="slot-name"></span></div>
-            <div class="route">Platz 5 &amp; 6</div>
-          </div>
-          <div class="bmatch">
-            <div class="bhead"><span>Platz 7</span><span data-field="3">Feld 4</span></div>
-            <div class="teamslot" data-match-slot="f7-a"><span class="slot-label">Verlierer 5–8 A</span><span class="slot-name"></span></div>
-            <div class="teamslot" data-match-slot="f7-b"><span class="slot-label">Verlierer 5–8 B</span><span class="slot-name"></span></div>
-            <div class="route">Platz 7 &amp; 8</div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
-<table class="sched">
-  <caption>Runde 3 · Viertelfinale</caption>
-  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
-  <tr data-match-row="qf1"><td class="rnd">QF 1<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="qf1-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf1_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf1_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf1-b"></td><td class="winner-cell" id="winner_qf1"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="qf2"><td class="rnd">QF 2<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="qf2-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf2_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf2_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf2-b"></td><td class="winner-cell" id="winner_qf2"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="qf3"><td class="rnd">QF 3<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="qf3-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf3_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf3_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf3-b"></td><td class="winner-cell" id="winner_qf3"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="qf4"><td class="rnd">QF 4<span class="rtime tt">11:40–12:10</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="qf4-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="qf4_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="qf4_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="qf4-b"></td><td class="winner-cell" id="winner_qf4"></td><td class="modecol">1 Satz bis 21</td></tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: ein Kästchenpaar für das Ergebnis – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">KO-Runde 4</p>
+    <table class="sched">
+      <caption class="rcap">Runde 4 · Halbfinale + Spiele Platz 5–8</caption>
+      <tbody>
+        <tr class="rhead"><td class="rhead-cell" colspan="4"><span class="rlabel">Runde 4</span><span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td></tr>
+        <tr class="fhead"><th scope="col" data-field="0">Feld 1</th><th scope="col" data-field="1">Feld 2</th><th scope="col" data-field="2">Feld 3</th><th scope="col" data-field="3">Feld 4</th></tr>
+        <tr>
+          <td class="match" data-match-row="hf1" data-round="4" data-col="0" data-field-label="Feld 1">
+            <div class="ghead"><span class="code">HF1</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_hf1"><span class="t t-a"><span class="src">Sieger</span><span class="gocode">QF1</span><span class="rname" data-match-team="hf1-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_hf1"><span class="t t-b"><span class="src">Sieger</span><span class="gocode">QF2</span><span class="rname" data-match-team="hf1-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="hf1_a" data-match="hf1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="HF1 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="hf1_b" data-match="hf1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="HF1 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_hf1"></span><span class="tdiff" id="kda_hf1"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_hf1"></span><span class="mscore" id="ksb_hf1"></span></span></span>
+              <span class="mnote-slot" id="kn_hf1"></span>
+            </span>
+            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
+          </td>
+          <td class="match" data-match-row="hf2" data-round="4" data-col="1" data-field-label="Feld 2">
+            <div class="ghead"><span class="code">HF2</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_hf2"><span class="t t-a"><span class="src">Sieger</span><span class="gocode">QF3</span><span class="rname" data-match-team="hf2-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_hf2"><span class="t t-b"><span class="src">Sieger</span><span class="gocode">QF4</span><span class="rname" data-match-team="hf2-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="hf2_a" data-match="hf2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="HF2 Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="hf2_b" data-match="hf2" data-target="21" oninput="onScore()" autocomplete="off" aria-label="HF2 Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_hf2"></span><span class="tdiff" id="kda_hf2"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_hf2"></span><span class="mscore" id="ksb_hf2"></span></span></span>
+              <span class="mnote-slot" id="kn_hf2"></span>
+            </span>
+            <div class="route">Sieger → Finale · Verlierer → Platz 3</div>
+          </td>
+          <td class="match" data-match-row="sf5a" data-round="4" data-col="2" data-field-label="Feld 3">
+            <div class="ghead"><span class="code">5–8 A</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_sf5a"><span class="t t-a"><span class="src">Verlierer</span><span class="gocode">QF1</span><span class="rname" data-match-team="sf5a-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_sf5a"><span class="t t-b"><span class="src">Verlierer</span><span class="gocode">QF2</span><span class="rname" data-match-team="sf5a-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="sf5a_a" data-match="sf5a" data-target="21" oninput="onScore()" autocomplete="off" aria-label="5-8 A Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="sf5a_b" data-match="sf5a" data-target="21" oninput="onScore()" autocomplete="off" aria-label="5-8 A Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_sf5a"></span><span class="tdiff" id="kda_sf5a"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_sf5a"></span><span class="mscore" id="ksb_sf5a"></span></span></span>
+              <span class="mnote-slot" id="kn_sf5a"></span>
+            </span>
+            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
+          </td>
+          <td class="match" data-match-row="sf5b" data-round="4" data-col="3" data-field-label="Feld 4">
+            <div class="ghead"><span class="code">5–8 B</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_sf5b"><span class="t t-a"><span class="src">Verlierer</span><span class="gocode">QF3</span><span class="rname" data-match-team="sf5b-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_sf5b"><span class="t t-b"><span class="src">Verlierer</span><span class="gocode">QF4</span><span class="rname" data-match-team="sf5b-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox">
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="sf5b_a" data-match="sf5b" data-target="21" oninput="onScore()" autocomplete="off" aria-label="5-8 B Team A Punkte">
+                <span class="vs">:</span>
+                <input class="score" type="text" inputmode="numeric" maxlength="3" id="sf5b_b" data-match="sf5b" data-target="21" oninput="onScore()" autocomplete="off" aria-label="5-8 B Team B Punkte">
+              </span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_sf5b"></span><span class="tdiff" id="kda_sf5b"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_sf5b"></span><span class="mscore" id="ksb_sf5b"></span></span></span>
+              <span class="mnote-slot" id="kn_sf5b"></span>
+            </span>
+            <div class="route">Sieger → Platz 5 · Verlierer → Platz 7</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-<table class="sched">
-  <caption>Runde 4 · Halbfinale + Spiele Platz 5–8</caption>
-  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
-  <tr data-match-row="hf1"><td class="rnd">HF 1<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="hf1-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="hf1_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="hf1_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="hf1-b"></td><td class="winner-cell" id="winner_hf1"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="hf2"><td class="rnd">HF 2<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="hf2-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="hf2_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="hf2_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="hf2-b"></td><td class="winner-cell" id="winner_hf2"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="sf5a"><td class="rnd">5–8 A<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="sf5a-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="sf5a_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sf5a_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="sf5a-b"></td><td class="winner-cell" id="winner_sf5a"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="sf5b"><td class="rnd">5–8 B<span class="rtime tt">12:30–13:00</span><span class="rmode" data-mode="single">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="sf5b-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="sf5b_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="sf5b_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="sf5b-b"></td><td class="winner-cell" id="winner_sf5b"></td><td class="modecol">1 Satz bis 21</td></tr>
-</table>
-
-<table class="sched">
-  <caption>Runde 5 · Finale + Platz 3 / 5 / 7</caption>
-  <tr><th class="rnd">Spiel</th><th>Feld</th><th>Team A</th><th>Ergebnis</th><th>Team B</th><th>Sieger</th><th>Modus</th></tr>
-  <tr data-match-row="f1"><td class="rnd gold">Finale<span class="rtime tt">13:30–14:30</span><span class="rmode">2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td><td data-field="0">Feld 1</td><td class="matchname" data-match-team="f1-a"></td><td><div class="scorewrap"><span class="setpair"><span class="setlbl">S1</span><input class="score" type="text" inputmode="numeric" id="f1_s1a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s1b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">S2</span><input class="score" type="text" inputmode="numeric" id="f1_s2a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s2b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">TB</span><input class="score" type="text" inputmode="numeric" id="f1_s3a" data-target="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f1_s3b" data-target="15" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f1-b"></td><td class="winner-cell" id="winner_f1"></td><td class="modecol">Best of 3</td></tr>
-  <tr data-match-row="f3"><td class="rnd">Platz 3<span class="rtime tt">13:30–14:30</span><span class="rmode">2 Gewinnsätze bis 21<br>Tiebreak bis 15</span></td><td data-field="1">Feld 2</td><td class="matchname" data-match-team="f3-a"></td><td><div class="scorewrap"><span class="setpair"><span class="setlbl">S1</span><input class="score" type="text" inputmode="numeric" id="f3_s1a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s1b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">S2</span><input class="score" type="text" inputmode="numeric" id="f3_s2a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s2b" data-target="21" oninput="onScore()" autocomplete="off"></span><span class="setpair"><span class="setlbl">TB</span><input class="score" type="text" inputmode="numeric" id="f3_s3a" data-target="15" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f3_s3b" data-target="15" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f3-b"></td><td class="winner-cell" id="winner_f3"></td><td class="modecol">Best of 3</td></tr>
-  <tr data-match-row="f5"><td class="rnd">Platz 5<span class="rtime tt">13:30–14:30</span><span class="rmode">1 Satz bis 21</span></td><td data-field="2">Feld 3</td><td class="matchname" data-match-team="f5-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="f5_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f5_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f5-b"></td><td class="winner-cell" id="winner_f5"></td><td class="modecol">1 Satz bis 21</td></tr>
-  <tr data-match-row="f7"><td class="rnd">Platz 7<span class="rtime tt">13:30–14:30</span><span class="rmode">1 Satz bis 21</span></td><td data-field="3">Feld 4</td><td class="matchname" data-match-team="f7-a"></td><td><div class="scorewrap"><span class="setpair"><input class="score" type="text" inputmode="numeric" id="f7_a" data-target="21" oninput="onScore()" autocomplete="off"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" id="f7_b" data-target="21" oninput="onScore()" autocomplete="off"></span></div></td><td class="matchname" data-match-team="f7-b"></td><td class="winner-cell" id="winner_f7"></td><td class="modecol">1 Satz bis 21</td></tr>
-</table>
+<div class="round-block">
+  <p class="input-hint round-explain">So ausfüllen: je Satz ein Kästchenpaar, der Tiebreak nur bei 1:1 Sätzen – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team.</p>
+  <div class="table-scroll is-wide">
+    <p class="mobile-schedule-title noprint">KO-Runde 5</p>
+    <table class="sched">
+      <caption class="rcap">Runde 5 · Finale + Platz 3 / 5 / 7</caption>
+      <tbody>
+        <tr class="rhead"><td class="rhead-cell" colspan="4"><span class="rlabel">Runde 5</span><span class="rtime tt">13:30–14:30</span><span class="rmode">Finale &amp; Pl. 3: 2 Gewinnsätze bis 21 · Tiebreak bis 15</span></td></tr>
+        <tr class="fhead"><th scope="col" data-field="0">Feld 1</th><th scope="col" data-field="1">Feld 2</th><th scope="col" data-field="2">Feld 3</th><th scope="col" data-field="3">Feld 4</th></tr>
+        <tr>
+          <td class="match gold" data-match-row="f1" data-round="5" data-col="0" data-field-label="Feld 1">
+            <div class="ghead"><span class="code win">FINALE</span><span class="route2">→ Platz 1/2</span></div>
+            <span class="pair pair-bo3">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_f1"><span class="t t-a"><span class="src">Sieger</span><span class="gocode">HF1</span><span class="rname" data-match-team="f1-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_f1"><span class="t t-b"><span class="src">Sieger</span><span class="gocode">HF2</span><span class="rname" data-match-team="f1-b"></span></span></span>
+              </span>
+              <span class="psets">
+                <span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s1a" data-match="f1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Finale Team A Satz 1"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s1b" data-match="f1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Finale Team B Satz 1"></span></span>
+                <span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s2a" data-match="f1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Finale Team A Satz 2"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s2b" data-match="f1" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Finale Team B Satz 2"></span></span>
+                <span class="sset"><span class="slbl">TB</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s3a" data-match="f1" data-target="15" oninput="onScore()" autocomplete="off" aria-label="Finale Team A Tiebreak"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f1_s3b" data-match="f1" data-target="15" oninput="onScore()" autocomplete="off" aria-label="Finale Team B Tiebreak"></span></span>
+              </span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_f1"></span><span class="tdiff" id="kda_f1"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_f1"></span><span class="mscore" id="ksb_f1"></span></span></span>
+              <span class="mnote-slot" id="kn_f1"></span>
+            </span>
+          </td>
+          <td class="match" data-match-row="f3" data-round="5" data-col="1" data-field-label="Feld 2">
+            <div class="ghead"><span class="code">Platz 3</span><span class="route2">→ Platz 3/4</span></div>
+            <span class="pair pair-bo3">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_f3"><span class="t t-a"><span class="src">Verlierer</span><span class="gocode">HF1</span><span class="rname" data-match-team="f3-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_f3"><span class="t t-b"><span class="src">Verlierer</span><span class="gocode">HF2</span><span class="rname" data-match-team="f3-b"></span></span></span>
+              </span>
+              <span class="psets">
+                <span class="sset"><span class="slbl">Satz 1</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s1a" data-match="f3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team A Satz 1"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s1b" data-match="f3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team B Satz 1"></span></span>
+                <span class="sset"><span class="slbl">Satz 2</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s2a" data-match="f3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team A Satz 2"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s2b" data-match="f3" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team B Satz 2"></span></span>
+                <span class="sset"><span class="slbl">TB</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s3a" data-match="f3" data-target="15" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team A Tiebreak"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f3_s3b" data-match="f3" data-target="15" oninput="onScore()" autocomplete="off" aria-label="Platz 3 Team B Tiebreak"></span></span>
+              </span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_f3"></span><span class="tdiff" id="kda_f3"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_f3"></span><span class="mscore" id="ksb_f3"></span></span></span>
+              <span class="mnote-slot" id="kn_f3"></span>
+            </span>
+          </td>
+          <td class="match" data-match-row="f5" data-round="5" data-col="2" data-field-label="Feld 3">
+            <div class="ghead"><span class="code">Platz 5</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_f5"><span class="t t-a"><span class="src">Sieger</span><span class="gocode">5–8 A</span><span class="rname" data-match-team="f5-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_f5"><span class="t t-b"><span class="src">Sieger</span><span class="gocode">5–8 B</span><span class="rname" data-match-team="f5-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f5_a" data-match="f5" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 5 Team A Punkte"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f5_b" data-match="f5" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 5 Team B Punkte"></span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_f5"></span><span class="tdiff" id="kda_f5"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_f5"></span><span class="mscore" id="ksb_f5"></span></span></span>
+              <span class="mnote-slot" id="kn_f5"></span>
+            </span>
+          </td>
+          <td class="match" data-match-row="f7" data-round="5" data-col="3" data-field-label="Feld 4">
+            <div class="ghead"><span class="code">Platz 7</span></div>
+            <span class="pair">
+              <span class="pnames">
+                <span class="pside pside-a" id="kpa_f7"><span class="t t-a"><span class="src">Verlierer</span><span class="gocode">5–8 A</span><span class="rname" data-match-team="f7-a"></span></span></span>
+                <span class="pside pside-b" id="kpb_f7"><span class="t t-b"><span class="src">Verlierer</span><span class="gocode">5–8 B</span><span class="rname" data-match-team="f7-b"></span></span></span>
+              </span>
+              <span class="psets"><span class="sset"><span class="slbl">Punkte</span><span class="sbox"><input class="score" type="text" inputmode="numeric" maxlength="3" id="f7_a" data-match="f7" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 7 Team A Punkte"><span class="vs">:</span><input class="score" type="text" inputmode="numeric" maxlength="3" id="f7_b" data-match="f7" data-target="21" oninput="onScore()" autocomplete="off" aria-label="Platz 7 Team B Punkte"></span></span></span>
+              <span class="presult"><span class="mres mres-a"><span class="mscore" id="ksa_f7"></span><span class="tdiff" id="kda_f7"></span></span><span class="mres mres-b"><span class="tdiff" id="kdb_f7"></span><span class="mscore" id="ksb_f7"></span></span></span>
+              <span class="mnote-slot" id="kn_f7"></span>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="row">
   <div class="grow">
@@ -734,6 +954,10 @@
   ];
   const GROUPS = { A:[1,2,3,4], B:[5,6,7,8] };
   const GROUP_ROUNDS = [1, 2];
+  const GROUP_CARD_MATCHES = {
+    1:[{ col:0, a:1, b:2 }, { col:1, a:3, b:4 }, { col:2, a:5, b:6 }, { col:3, a:7, b:8 }],
+    2:[{ col:0, a:1, b:3 }, { col:1, a:2, b:4 }, { col:2, a:5, b:7 }, { col:3, a:6, b:8 }]
+  };
   const KO_SEED_LABELS = {
     1:'A-1', 2:'B-1', 3:'A-2', 4:'B-2',
     5:'B-3', 6:'A-3', 7:'B-4', 8:'A-4'
@@ -942,9 +1166,8 @@
 
   function parseNum(v){
     const s = String(v == null ? '' : v).trim();
-    if(s === '') return null;
-    const n = parseInt(s, 10);
-    return isNaN(n) ? null : n;
+    if(s === '' || !/^\d{1,3}$/.test(s)) return null;
+    return parseInt(s, 10);
   }
   function num(el){ return el ? parseNum(el.value) : null; }
   function formatDiff(n){ return (n > 0 ? '+' : '') + n; }
@@ -959,6 +1182,7 @@
       el.classList.add('auto');
     }
   }
+  function setHtml(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html || ''; }
   function validSingle(a, b, target){
     return a != null && b != null && a !== b && Math.max(a, b) >= target && Math.abs(a - b) >= 2;
   }
@@ -972,6 +1196,38 @@
     const own = groupValue(round, team), other = groupValue(round, opp);
     if(!validSingle(own, other, 21)) return { resolved:false, cmp:0, w:0, bd:0, sc:0, pl:0 };
     return { resolved:true, cmp:own > other ? 1 : -1, w:own > other ? 1 : 0, bd:own - other, sc:own, pl:1 };
+  }
+  function renderGroupMatchCard(round, col, home, away){
+    const pa = document.getElementById('gpa_' + round + '_' + col);
+    const pb = document.getElementById('gpb_' + round + '_' + col);
+    if(pa){ pa.classList.remove('is-winner', 'is-loser'); }
+    if(pb){ pb.classList.remove('is-winner', 'is-loser'); }
+    setCell('gsa_' + round + '_' + col, '');
+    setCell('gsb_' + round + '_' + col, '');
+    setCell('gda_' + round + '_' + col, '');
+    setCell('gdb_' + round + '_' + col, '');
+    setHtml('gn_' + round + '_' + col, '');
+    const res = evaluateGroupEntry(round, home, away);
+    if(!res || !res.resolved) return;
+    const homeAbsent = isAbsent(home), awayAbsent = isAbsent(away);
+    if(homeAbsent || awayAbsent){
+      if(homeAbsent && awayAbsent){
+        setHtml('gn_' + round + '_' + col, '<span class="mwin-note">beide Teams ausgefallen</span>');
+        return;
+      }
+      if(res.cmp > 0){ if(pa) pa.classList.add('is-winner'); if(pb) pb.classList.add('is-loser'); }
+      else if(res.cmp < 0){ if(pb) pb.classList.add('is-winner'); if(pa) pa.classList.add('is-loser'); }
+      setHtml('gn_' + round + '_' + col, '<span class="mwin-note">(Freilos)</span>');
+      return;
+    }
+    const h = groupValue(round, home), a = groupValue(round, away);
+    if(!validSingle(h, a, 21)) return;
+    setCell('gsa_' + round + '_' + col, h);
+    setCell('gsb_' + round + '_' + col, a);
+    setCell('gda_' + round + '_' + col, formatDiff(h - a));
+    setCell('gdb_' + round + '_' + col, formatDiff(a - h));
+    if(res.cmp > 0){ if(pa) pa.classList.add('is-winner'); if(pb) pb.classList.add('is-loser'); }
+    else if(res.cmp < 0){ if(pb) pb.classList.add('is-winner'); if(pa) pa.classList.add('is-loser'); }
   }
   function computeGroups(){
     const seedLists = { A:null, B:null };
@@ -1021,6 +1277,9 @@
       });
       seedLists[groupName] = complete ? ranked : null;
     });
+    Object.keys(GROUP_CARD_MATCHES).forEach(round => {
+      GROUP_CARD_MATCHES[round].forEach(({ col, a, b }) => renderGroupMatchCard(parseInt(round, 10), col, a, b));
+    });
     return seedLists;
   }
   function computeKoSeeds(groupSeeds){
@@ -1043,7 +1302,7 @@
       const cell = document.getElementById('koseed_' + seed);
       if(!cell) continue;
       const team = CURRENT_KO_STATE.slots[seed] || 0;
-      cell.innerHTML = team ? ('<b>' + KO_SEED_LABELS[seed] + '</b> · ' + teamResultHTML(team)) : ('<span class="slot-name placeholder">[' + KO_SEED_LABELS[seed] + ']</span>');
+      cell.innerHTML = team ? ('<b>' + KO_SEED_LABELS[seed] + '</b> · ' + teamResultHTML(team)) : ('<span class="free">[' + KO_SEED_LABELS[seed] + ']</span>');
     }
   }
 
@@ -1111,83 +1370,77 @@
     }
     return { winner:0, loser:0, auto:'' };
   }
-  function setSlotContent(el, team, placeholder){
-    const nameEl = el.querySelector('.slot-name');
-    if(!nameEl) return;
-    if(team){
-      nameEl.innerHTML = teamResultHTML(team);
-      nameEl.classList.remove('placeholder', 'empty');
-    } else if(placeholder){
-      nameEl.textContent = '[' + placeholder + ']';
-      nameEl.classList.add('placeholder');
-      nameEl.classList.remove('empty');
-    } else {
-      nameEl.innerHTML = '&nbsp;';
-      nameEl.classList.add('empty');
-      nameEl.classList.remove('placeholder');
-    }
-  }
-  function renderBracketSlots(){
-    const mapping = {
-      'qf1-a':[CURRENT_KO_STATE.slots[1] || 0, 'A-1'], 'qf1-b':[CURRENT_KO_STATE.slots[8] || 0, 'A-4'],
-      'qf2-a':[CURRENT_KO_STATE.slots[4] || 0, 'B-2'], 'qf2-b':[CURRENT_KO_STATE.slots[5] || 0, 'B-3'],
-      'qf3-a':[CURRENT_KO_STATE.slots[2] || 0, 'B-1'], 'qf3-b':[CURRENT_KO_STATE.slots[7] || 0, 'B-4'],
-      'qf4-a':[CURRENT_KO_STATE.slots[3] || 0, 'A-2'], 'qf4-b':[CURRENT_KO_STATE.slots[6] || 0, 'A-3'],
-      'hf1-a':[resolveSource('qf1-w'), 'Sieger QF 1'], 'hf1-b':[resolveSource('qf2-w'), 'Sieger QF 2'],
-      'hf2-a':[resolveSource('qf3-w'), 'Sieger QF 3'], 'hf2-b':[resolveSource('qf4-w'), 'Sieger QF 4'],
-      'sf5a-a':[resolveSource('qf1-l'), 'Verlierer QF 1'], 'sf5a-b':[resolveSource('qf2-l'), 'Verlierer QF 2'],
-      'sf5b-a':[resolveSource('qf3-l'), 'Verlierer QF 3'], 'sf5b-b':[resolveSource('qf4-l'), 'Verlierer QF 4'],
-      'f1-a':[resolveSource('hf1-w'), 'Sieger HF 1'], 'f1-b':[resolveSource('hf2-w'), 'Sieger HF 2'],
-      'f3-a':[resolveSource('hf1-l'), 'Verlierer HF 1'], 'f3-b':[resolveSource('hf2-l'), 'Verlierer HF 2'],
-      'f5-a':[resolveSource('sf5a-w'), 'Sieger 5–8 A'], 'f5-b':[resolveSource('sf5b-w'), 'Sieger 5–8 B'],
-      'f7-a':[resolveSource('sf5a-l'), 'Verlierer 5–8 A'], 'f7-b':[resolveSource('sf5b-l'), 'Verlierer 5–8 B']
-    };
-    Object.keys(mapping).forEach(key => {
-      const el = document.querySelector('[data-match-slot="' + key + '"]');
-      if(el) setSlotContent(el, mapping[key][0], mapping[key][1]);
-    });
-    KO_ORDER.forEach(id => {
-      const info = getWinnerInfo(id);
-      const teams = getMatchTeams(id);
-      ['a','b'].forEach((side, idx) => {
-        const el = document.querySelector('[data-match-slot="' + id + '-' + side + '"]');
-        if(!el) return;
-        el.classList.remove('win', 'loss');
-        if(info.winner && teams[idx] === info.winner) el.classList.add('win');
-        if(info.loser && teams[idx] === info.loser) el.classList.add('loss');
-      });
-    });
-  }
   function renderTableMatches(){
     KO_ORDER.forEach(id => {
+      const cfg = KO_MATCHES[id];
       const teams = getMatchTeams(id);
       const info = getWinnerInfo(id);
-      const row = document.querySelector('[data-match-row="' + id + '"]');
       document.querySelectorAll('[data-match-team="' + id + '-a"]').forEach(el => {
-        el.innerHTML = teams[0] ? teamResultHTML(teams[0]) : '<span class="slot-name placeholder">[offen]</span>';
+        el.innerHTML = teams[0] ? teamResultHTML(teams[0]) : '<span class="free">[offen]</span>';
       });
       document.querySelectorAll('[data-match-team="' + id + '-b"]').forEach(el => {
-        el.innerHTML = teams[1] ? teamResultHTML(teams[1]) : '<span class="slot-name placeholder">[offen]</span>';
+        el.innerHTML = teams[1] ? teamResultHTML(teams[1]) : '<span class="free">[offen]</span>';
       });
-      const winnerCell = document.getElementById('winner_' + id);
-      const inputs = row ? Array.from(row.querySelectorAll('input.score')) : [];
+
+      const pa = document.getElementById('kpa_' + id);
+      const pb = document.getElementById('kpb_' + id);
+      if(pa) pa.classList.remove('is-winner', 'is-loser');
+      if(pb) pb.classList.remove('is-winner', 'is-loser');
+      if(info.winner && info.loser){
+        if(teams[0] === info.winner){ if(pa) pa.classList.add('is-winner'); if(pb) pb.classList.add('is-loser'); }
+        if(teams[1] === info.winner){ if(pb) pb.classList.add('is-winner'); if(pa) pa.classList.add('is-loser'); }
+      } else if(info.winner){
+        if(teams[0] === info.winner && pa) pa.classList.add('is-winner');
+        if(teams[1] === info.winner && pb) pb.classList.add('is-winner');
+      }
+
+      const inputs = cfg.format === 'single'
+        ? [document.getElementById(id + '_a'), document.getElementById(id + '_b')]
+        : [1,2,3].flatMap(set => [document.getElementById(id + '_s' + set + 'a'), document.getElementById(id + '_s' + set + 'b')]);
       const autoBye = info.auto === 'bye';
       const doubleBye = info.auto === 'double-bye';
-      inputs.forEach(inp => { inp.disabled = autoBye || doubleBye || (!teams[0] && !teams[1]); });
-      if(!winnerCell) return;
-      winnerCell.classList.remove('auto', 'byeauto');
-      if(info.winner && autoBye){
-        winnerCell.innerHTML = 'Freilos: ' + teamResultHTML(info.winner);
-        winnerCell.classList.add('byeauto');
-      } else if(info.winner){
-        winnerCell.innerHTML = teamResultHTML(info.winner);
-        winnerCell.classList.add('auto');
-      } else if(doubleBye){
-        winnerCell.innerHTML = '<span class="abt">beide Teams ausgefallen</span>';
-        winnerCell.classList.add('byeauto');
-      } else {
-        winnerCell.innerHTML = '';
+      inputs.filter(Boolean).forEach(inp => { inp.disabled = autoBye || doubleBye || (!teams[0] && !teams[1]); });
+
+      setCell('ksa_' + id, '');
+      setCell('ksb_' + id, '');
+      setCell('kda_' + id, '');
+      setCell('kdb_' + id, '');
+      setHtml('kn_' + id, '');
+
+      if(doubleBye){
+        setHtml('kn_' + id, '<span class="mwin-note">beide Teams ausgefallen</span>');
+        return;
       }
+      if(autoBye && info.winner){
+        setHtml('kn_' + id, '<span class="mwin-note">(Freilos)</span>');
+        return;
+      }
+      if(!info.winner) return;
+
+      if(cfg.format === 'single'){
+        const a = num(document.getElementById(id + '_a'));
+        const b = num(document.getElementById(id + '_b'));
+        if(!validSingle(a, b, cfg.target || 21)) return;
+        setCell('ksa_' + id, a);
+        setCell('ksb_' + id, b);
+        setCell('kda_' + id, formatDiff(a - b));
+        setCell('kdb_' + id, formatDiff(b - a));
+        return;
+      }
+
+      const h1 = num(document.getElementById(id + '_s1a'));
+      const a1 = num(document.getElementById(id + '_s1b'));
+      const h2 = num(document.getElementById(id + '_s2a'));
+      const a2 = num(document.getElementById(id + '_s2b'));
+      const set1Valid = validSingle(h1, a1, 21);
+      const set2Valid = validSingle(h2, a2, 21);
+      if(!set1Valid || !set2Valid) return;
+      const home = h1 + h2;
+      const away = a1 + a2;
+      setCell('ksa_' + id, home);
+      setCell('ksb_' + id, away);
+      setCell('kda_' + id, formatDiff(home - away));
+      setCell('kdb_' + id, formatDiff(away - home));
     });
   }
   function renderPlacements(){
@@ -1357,7 +1610,6 @@
     const groupSeeds = computeGroups();
     CURRENT_KO_STATE = computeKoSeeds(groupSeeds);
     renderKoSeedList();
-    renderBracketSlots();
     renderTableMatches();
     renderPlacements();
     markScores();
@@ -1438,17 +1690,20 @@
     });
     document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
 
-    document.querySelectorAll('tr[data-match-row]').forEach(function(row){
-      var inputs = row.querySelectorAll('input.score'); if(!inputs.length) return;
+    document.querySelectorAll('td.match').forEach(function(cell){
+      var inputs = cell.querySelectorAll('input.score'); if(!inputs.length) return;
       var anyEnabled = false; inputs.forEach(function(i){ if(!i.disabled) anyEnabled = true; });
       if(!anyEnabled) return;
-      var wcell = row.querySelector('.winner-cell');
-      var decided = wcell && wcell.textContent.trim() !== '';
-      inputs.forEach(function(i){ var td = i.closest('td'); if(td) td.classList.add(decided?'bl-done':'bl-open'); });
+      var decided = !!cell.querySelector('.pside.is-winner');
+      if(!decided){
+        var note = cell.querySelector('.mnote-slot');
+        decided = !!(note && note.textContent.trim() !== '');
+      }
+      cell.classList.add(decided ? 'bl-done' : 'bl-open');
     });
     scorePairs().forEach(function(p){
       var a = p[0], b = p[1];
-      if(a.closest('tr[data-match-row]')) return;
+      if(a.closest('td.match')) return;
       if(a.disabled || b.disabled) return;
       var td = a.closest('td'); if(td) td.classList.add(pairValid(a,b)?'bl-done':'bl-open');
     });
