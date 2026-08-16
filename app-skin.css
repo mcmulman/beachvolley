@@ -586,11 +586,37 @@
     border-radius: 10px;
     cursor: pointer;
     box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
     transition: background .15s, border-color .15s, transform .1s, box-shadow .15s;
   }
   .nbtn:hover { background: #d8e8f8; }
   .nbtn:active { transform: translateY(1px); }
   .nbtn:focus-visible { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+
+  /* Einheitliche Linien-Icons (SVG statt Emoji) in Buttons: rendern auf
+     jedem Gerät/Browser garantiert identisch - anders als Emoji, die auf
+     älteren iPads/Systemfonts abweichend oder als Ersatzkästchen erscheinen
+     können. currentColor lässt das Icon automatisch die Textfarbe des
+     jeweiligen Buttons annehmen (auch im aktiven/deaktivierten Zustand). */
+  .nico {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    vertical-align: middle;
+  }
+
+  /* Icon + Text als ein Flex-Item in Spalten-Layouts (z.B. .cfgfield),
+     damit Icon und Beschriftung nebeneinander bleiben statt zu Zeilen
+     zu werden. */
+  .cfg-lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
 
   /* Kontext-Normalisierung: alte grüne/kontextabhängige Basis überschreiben. */
   .digitalbar .nbtn, .digbar .nbtn, .namectl .nbtn {

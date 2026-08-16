@@ -480,8 +480,8 @@
     <label>Runde
       <select id="scheduleRoundFilter" onchange="onScheduleRoundFilterChange()"></select>
     </label>
-    <button id="schedRoundPrevBtn" type="button" class="nbtn nbtn-round nbtn-round-prev" onclick="shiftScheduleRound(-1)" aria-label="Vorherige Runde">◀ Zurück</button>
-    <button id="schedRoundNextBtn" type="button" class="nbtn nbtn-round nbtn-round-next" onclick="shiftScheduleRound(1)" aria-label="Nächste Runde">Weiter ▶</button>
+    <button id="schedRoundPrevBtn" type="button" class="nbtn nbtn-round nbtn-round-prev" onclick="shiftScheduleRound(-1)" aria-label="Vorherige Runde"><span class="chev chev-left" aria-hidden="true"></span> Zurück</button>
+    <button id="schedRoundNextBtn" type="button" class="nbtn nbtn-round nbtn-round-next" onclick="shiftScheduleRound(1)" aria-label="Nächste Runde">Weiter <span class="chev chev-right" aria-hidden="true"></span></button>
     <span class="state" id="scheduleFilterState" aria-live="polite"></span>
   </div>
   <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>

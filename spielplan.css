@@ -103,6 +103,22 @@
 .sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
 .input-hint { margin:5px 0 0; font-size:11px; color:#555; }
 .round-subline { font-size:11px; margin:2px 0 0; }
+/* "Alle Runden"-Ansicht: Überschriften (Runden-Titel) und Eingabe-Anleitung
+   sind bei jeder Runde identisch (bzw. redundant) - werden komplett
+   ausgeblendet, damit alle Runden ohne Text dazwischen eng aufeinander
+   folgen. Der Runden-Kopf (Nummer/Zeit/Modus direkt ueber der Tabelle)
+   bleibt erhalten, da er pro Runde unterschiedlich ist. */
+body.round-showall .rounds-page .input-hint,
+body.round-showall .rounds-page .mobile-schedule-title,
+body.round-showall .rounds-page .rcap {
+  display: none;
+}
+body.round-showall .rounds-page {
+  margin-bottom: 6px;
+}
+body.round-showall .round-grid {
+  margin-top: 4px;
+}
 /* Digital-Eingabe & Teamnamen (Bildschirm) */
   input.score { padding:0; margin:0; text-align:center; font-family:inherit; font-weight:bold;
                 font-size:15px; color:#0a2e52; vertical-align:middle; background:#fff;
@@ -148,16 +164,18 @@ input.score:disabled { background:#f7f7f7; color:#999; }
   }
 .schedule-roundbar label {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 10.5px;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    font-size: 11.5px;
     color: var(--app-blue-dark, #1f4e79);
     font-weight: 700;
-    letter-spacing: .02em;
-    text-transform: uppercase;
+    letter-spacing: .01em;
   }
 .schedule-roundbar select {
-    padding: 7px 10px;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 7px 12px;
     font-size: 14px;
     border: 1.5px solid rgba(31, 78, 121, .28);
     border-radius: 999px;
@@ -185,22 +203,54 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     border: 1px solid transparent;
     box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
     letter-spacing: .01em;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
     transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
   }
-.schedule-roundbar .nbtn-round:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 5px 14px rgba(26, 58, 92, .4); }
-.schedule-roundbar .nbtn-round:active:not(:disabled) { transform: scale(.95); }
+.schedule-roundbar .nbtn-round:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow: 0 5px 14px rgba(26, 58, 92, .4);
+    background: linear-gradient(135deg, var(--app-blue-dark, #1a3a5c) 0%, var(--app-blue, #1f6fa8) 100%);
+    color: #fff;
+  }
+.schedule-roundbar .nbtn-round:active:not(:disabled) {
+    transform: scale(.95);
+    background: linear-gradient(135deg, var(--app-blue-dark, #1a3a5c) 0%, var(--app-blue, #1f6fa8) 100%);
+    color: #fff;
+  }
 .schedule-roundbar .nbtn-round:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .schedule-roundbar .nbtn-round:disabled {
     opacity: .35;
     cursor: not-allowed;
     box-shadow: none;
     filter: none;
+    /* Explizit Verlauf + weiße Schrift erneut setzen: verhindert, dass die
+       allgemeine ".nbtn:hover"-Regel (aus app-skin.css, gleiche Spezifitaet,
+       aber spaeter geladen) bei "haengendem" Hover-Zustand nach einem Tap
+       (typisch auf Touch-Geraeten) den Verlauf durch eine helle Flaeche
+       ersetzt und weißen Text auf fast-weißem Grund unlesbar macht. */
+    background: linear-gradient(135deg, var(--app-blue-dark, #1a3a5c) 0%, var(--app-blue, #1f6fa8) 100%);
+    color: #fff;
   }
 .schedule-roundbar .nbtn-round-next {
     background: linear-gradient(135deg, var(--app-green, #0a7d2c) 0%, #2ea043 100%);
     box-shadow: 0 3px 10px rgba(10, 125, 44, .32);
   }
-.schedule-roundbar .nbtn-round-next:hover:not(:disabled) { box-shadow: 0 5px 14px rgba(10, 125, 44, .4); }
+.schedule-roundbar .nbtn-round-next:hover:not(:disabled) {
+    box-shadow: 0 5px 14px rgba(10, 125, 44, .4);
+    background: linear-gradient(135deg, var(--app-green, #0a7d2c) 0%, #2ea043 100%);
+    color: #fff;
+  }
+.schedule-roundbar .nbtn-round-next:active:not(:disabled) {
+    background: linear-gradient(135deg, var(--app-green, #0a7d2c) 0%, #2ea043 100%);
+    color: #fff;
+  }
+.schedule-roundbar .nbtn-round-next:disabled {
+    background: linear-gradient(135deg, var(--app-green, #0a7d2c) 0%, #2ea043 100%);
+    color: #fff;
+  }
 .schedule-roundbar .nbtn-round-all {
     background: #fff;
     color: var(--app-blue-dark, #1f4e79);
@@ -208,11 +258,45 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     box-shadow: none;
   }
 .schedule-roundbar .nbtn-round-all:hover:not(:disabled) { background: var(--app-tint, #eef3f9); filter: none; box-shadow: none; }
+.schedule-roundbar .nbtn-round-all:active:not(:disabled) { background: var(--app-tint, #eef3f9); color: var(--app-blue-dark, #1f4e79); }
 .schedule-roundbar .nbtn-round-all.roundall-active {
     background: var(--app-blue-dark, #1a3a5c);
     color: #fff;
     border-color: var(--app-blue-dark, #1a3a5c);
     box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
+  }
+  /* Hoehere Spezifitaet noetig, damit das aktive "Alle Runden"-Icon bei
+     Hover/stuck-Hover (Touch-Tap) nicht durch die generische
+     ":hover:not(:disabled)"-Regel auf eine helle Flaeche zurueckgesetzt
+     wird - sonst weißer Text auf fast-weißem Grund. */
+.schedule-roundbar .nbtn-round-all.roundall-active:hover:not(:disabled) {
+    background: var(--app-blue-dark, #1a3a5c);
+    color: #fff;
+    filter: none;
+    box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
+  }
+.schedule-roundbar .nbtn-round-all.roundall-active:active:not(:disabled) {
+    background: var(--app-blue-dark, #1a3a5c);
+    color: #fff;
+  }
+/* Pfeil-Icons als reine CSS-Formen (Border-Ecke, rotiert) statt Unicode-
+   Pfeilzeichen ("◀"/"▶") - auf älteren iPads/Safari-Versionen fehlen
+   diesen Glyphen manchmal im Systemfont und erscheinen als Ersatzkästchen. */
+.schedule-roundbar .nbtn-round .chev {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 8px;
+    height: 8px;
+    border: solid currentColor;
+    flex: 0 0 auto;
+  }
+.schedule-roundbar .nbtn-round .chev-left {
+    border-width: 0 0 2.4px 2.4px;
+    transform: rotate(45deg);
+  }
+.schedule-roundbar .nbtn-round .chev-right {
+    border-width: 2.4px 2.4px 0 0;
+    transform: rotate(45deg);
   }
 .schedule-roundbar .state {
     font-size: 12.5px;
@@ -240,6 +324,11 @@ input.score:disabled { background:#f7f7f7; color:#999; }
       width: 100% !important;
       min-width: 0 !important;
       table-layout: fixed;
+      /* separate statt collapse, damit die Match-Zellen als abgerundete
+         Karten dargestellt werden koennen (border-radius greift bei
+         collapse nicht auf <td>). */
+      border-collapse: separate;
+      border-spacing: 6px 6px;
     }
 .table-scroll.is-wide table.sched .rnd {
       width: 86px;
@@ -352,6 +441,10 @@ input.score:disabled { background:#f7f7f7; color:#999; }
    nie in die Nachbarspalte ragen - stattdessen umbrechen die Satz-Spalten. */
 .table-scroll.is-wide table.sched td.match {
       overflow: hidden;
+      border: 1px solid #d7e2f0;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(15, 45, 90, .07);
     }
 .table-scroll.is-wide table.sched .pair,
   .table-scroll.is-wide table.sched .pnames,
@@ -542,6 +635,7 @@ input.score { font-size:16px; }
 .schedule-roundbar {
         display: grid;
         grid-template-columns: 1fr auto auto;
+        align-items: center;
         gap: 8px;
         position: -webkit-sticky;
         position: sticky;
@@ -701,6 +795,48 @@ input.score {
         font-size: 16px;
       }
 
+}
+
+/* ── Fallback für Flexbox-„gap" auf älteren iPads/Safari-Versionen ──
+   `gap` in Flex-Containern wird erst ab Safari 14.1 (iOS 14.5, April 2021)
+   unterstuetzt. Auf aelteren Geraeten wird die Eigenschaft einfach
+   ignoriert (kein Fehler, aber Elemente ruecken ohne Abstand zusammen).
+   @supports not (gap: 1px) greift NUR, wenn der Browser gap selbst nicht
+   kennt - moderne Browser sehen diesen Block gar nicht erst. */
+@media screen {
+@supports not (gap: 1px) {
+.schedule-roundbar {
+        margin-left: -8px;
+        margin-top: -8px;
+      }
+.schedule-roundbar > * {
+        margin-left: 8px;
+        margin-top: 8px;
+      }
+.nbtn > * + * { margin-left: 6px; }
+.pair > * + * { margin-top: 4px; }
+.pnames > * + * { margin-left: 8px; }
+.pside > * + * { margin-left: 4px; }
+.mres > * + * { margin-left: 4px; }
+.sset > * + * { margin-top: 1px; }
+.sbox > * + * { margin-left: 2px; }
+.psets {
+        margin-left: -10px;
+        margin-top: -10px;
+      }
+.psets > * {
+        margin-left: 10px;
+        margin-top: 10px;
+      }
+.presult {
+        margin-left: -8px;
+        margin-top: -2px;
+      }
+.presult > * {
+        margin-left: 8px;
+        margin-top: 2px;
+      }
+}
 }
 
 @media print {
