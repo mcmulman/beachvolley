@@ -1066,6 +1066,7 @@
         + '<label>Runde<select id="roundSelect" onchange="onRoundSelectChange()"></select></label>'
         + '<button type="button" class="nbtn nbtn-round nbtn-round-prev" id="roundPrevBtn" onclick="shiftRound(-1)" aria-label="Vorherige Runde">◀ Zurück</button>'
         + '<button type="button" class="nbtn nbtn-round nbtn-round-next" id="roundNextBtn" onclick="shiftRound(1)" aria-label="Nächste Runde">Weiter ▶</button>'
+        + '<button type="button" class="nbtn nbtn-round nbtn-round-all" id="roundAllToggleBtn" onclick="toggleAllRounds()" aria-pressed="false" title="Alle Runden gleichzeitig anzeigen">🗂 Alle Runden</button>'
         + '<span class="state" id="roundNavState" aria-live="polite"></span>'
         + '</div>';
       return navHtml + pages.join('');
@@ -2207,12 +2208,16 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   window.__ROUND_NAV_INIT__ = true;
 
   const STORAGE_KEY = 'beachl_swiss_round';
+  const STORAGE_KEY_ALL = 'beachl_swiss_round_showall';
   let currentRound = 1;
+  let showAll = false;
 
   // Show only selected round, hide all others
   function filterToRound(roundNum) {
     currentRound = roundNum;
-    
+    showAll = false;
+    try { localStorage.setItem(STORAGE_KEY_ALL, '0'); } catch(e) {}
+
     // Save to localStorage
     try { localStorage.setItem(STORAGE_KEY, String(roundNum)); } catch(e) {}
     
@@ -2225,7 +2230,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     
     // Update select dropdown
     const sel = document.getElementById('roundSelect');
-    if(sel) sel.value = String(roundNum);
+    if(sel) { sel.value = String(roundNum); sel.disabled = false; }
     
     // Update navigator state text
     const totalRounds = document.querySelectorAll('[data-round-num]').length;
@@ -2240,7 +2245,42 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       prevBtn.disabled = roundNum <= 1;
       nextBtn.disabled = roundNum >= totalRounds;
     }
+
+    const allBtn = document.getElementById('roundAllToggleBtn');
+    if(allBtn) { allBtn.setAttribute('aria-pressed', 'false'); allBtn.classList.remove('active'); allBtn.textContent = '🗂 Alle Runden'; }
   }
+
+  // Show all rounds at once (stacked), so results of every round are visible simultaneously
+  function showAllRounds() {
+    showAll = true;
+    try { localStorage.setItem(STORAGE_KEY_ALL, '1'); } catch(e) {}
+
+    const allRounds = document.querySelectorAll('[data-round-num]');
+    allRounds.forEach(function(el) { el.style.display = ''; });
+
+    const totalRounds = allRounds.length;
+    const sel = document.getElementById('roundSelect');
+    if(sel) sel.disabled = true;
+
+    const state = document.getElementById('roundNavState');
+    if(state) state.textContent = 'Alle ' + totalRounds + ' Runden';
+
+    const prevBtn = document.getElementById('roundPrevBtn');
+    const nextBtn = document.getElementById('roundNextBtn');
+    if(prevBtn) prevBtn.disabled = true;
+    if(nextBtn) nextBtn.disabled = true;
+
+    const allBtn = document.getElementById('roundAllToggleBtn');
+    if(allBtn) { allBtn.setAttribute('aria-pressed', 'true'); allBtn.classList.add('active'); allBtn.textContent = '📄 Einzelne Runde'; }
+  }
+
+  window.toggleAllRounds = function() {
+    if(showAll) {
+      filterToRound(currentRound);
+    } else {
+      showAllRounds();
+    }
+  };
 
   // Initialize navigator with all available rounds
   function initNavigator() {
@@ -2279,9 +2319,17 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         }
       }
     } catch(e) {}
+
+    // Read "show all rounds" preference BEFORE filterToRound() runs,
+    // since filterToRound() resets that flag to '0' as a side effect.
+    let savedShowAll = false;
+    try { savedShowAll = localStorage.getItem(STORAGE_KEY_ALL) === '1'; } catch(e) {}
     
     // Apply filter to saved/default round
     filterToRound(savedRound);
+
+    // Restore "show all rounds" mode if it was active
+    if(savedShowAll) showAllRounds();
     
     // Show navigator bar
     const bar = document.getElementById('roundNavBar');

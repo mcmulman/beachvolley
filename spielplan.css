@@ -181,6 +181,17 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     border-color: #0a7d2c;
   }
 .schedule-roundbar .nbtn-round-next:hover:not(:disabled) { background: #086323; border-color: #086323; }
+.schedule-roundbar .nbtn-round-all {
+    background: #fff;
+    color: #1f4e79;
+    border: 1.5px solid #1f4e79;
+    box-shadow: none;
+  }
+.schedule-roundbar .nbtn-round-all:hover { background: #eaf1fa; }
+.schedule-roundbar .nbtn-round-all.active {
+    background: #1f4e79;
+    color: #fff;
+  }
 .schedule-roundbar .state {
     font-size: 13px;
     color: #1f4e79;
@@ -472,6 +483,9 @@ input.score { font-size:16px; }
         padding: 8px 10px;
         font-size: 13px;
         white-space: nowrap;
+      }
+.schedule-roundbar .nbtn-round-all {
+        grid-column: 1 / -1;
       }
 .schedule-roundbar .state {
         grid-column: 1 / -1;
