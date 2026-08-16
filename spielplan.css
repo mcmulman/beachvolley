@@ -325,11 +325,10 @@ input.score:disabled { background:#f7f7f7; color:#999; }
       width: 100% !important;
       min-width: 0 !important;
       table-layout: fixed;
-      /* separate statt collapse, damit die Match-Zellen als abgerundete
-         Karten dargestellt werden koennen (border-radius greift bei
-         collapse nicht auf <td>). */
-      border-collapse: separate;
-      border-spacing: 6px 6px;
+      /* Dichte, flache Tabelle statt einzelner "Karten": collapse statt
+         separate, kein border-spacing - Zellen liegen direkt aneinander,
+         duenne gemeinsame Gitterlinien trennen sie (max. Platzausbeute). */
+      border-collapse: collapse;
     }
 .table-scroll.is-wide table.sched .rnd {
       width: 86px;
@@ -440,12 +439,12 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     }
 /* Ueberlaufschutz: bei vielen Feldern x mehreren Saetzen darf der Karteninhalt
    nie in die Nachbarspalte ragen - stattdessen umbrechen die Satz-Spalten. */
+.table-scroll.is-wide table.sched td,
+  .table-scroll.is-wide table.sched th {
+      border: 1px solid #d7e2f0;
+    }
 .table-scroll.is-wide table.sched td.match {
       overflow: hidden;
-      border: 1px solid #d7e2f0;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 1px 4px rgba(15, 45, 90, .07);
     }
 .table-scroll.is-wide table.sched .pair,
   .table-scroll.is-wide table.sched .pnames,
@@ -711,24 +710,27 @@ input.score { font-size:16px; }
 .table-scroll.is-wide table.sched > tbody > tr.fhead {
         display: none !important;
       }
-/* Mobil ist jede Feld-Zelle eine eigenstaendige Karte mit Abstand zur naechsten. */
+/* Mobil: dichte flache Liste statt einzelner Karten - Zellen liegen ohne
+   Abstand aneinander, eine duenne Trennlinie ersetzt den Karten-Rahmen
+   (max. Platzausbeute). */
 .table-scroll.is-wide table.sched > tbody > tr[data-round] {
         display: block;
         width: 100%;
-        margin: 0 0 16px;
+        margin: 0;
         border: 0;
         border-radius: 0;
         background: none;
         overflow: visible;
       }
 .table-scroll.is-wide table.sched > tbody > tr.rhead {
-        margin: 0 0 8px;
+        margin: 0;
       }
 .table-scroll.is-wide table.sched > tbody > tr.rhead > td.rhead-cell {
         display: block;
         width: 100%;
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
+        border: 0;
+        border-bottom: 2px solid #9bb0c8;
+        border-radius: 0;
         background: #eef3fb;
         padding: 8px 10px;
       }
@@ -738,16 +740,14 @@ input.score { font-size:16px; }
 .table-scroll.is-wide table.sched > tbody > tr[data-round] > td {
         display: block;
         width: 100%;
-        border: 1px solid #d6e1ef;
-        border-radius: 8px;
+        border: 0;
+        border-bottom: 1px solid #d7e2f0;
+        border-radius: 0;
         background: #fff;
-        margin: 0 0 8px;
-      }
-.table-scroll.is-wide table.sched > tbody > tr[data-round] > td:last-child {
-        margin-bottom: 0;
+        margin: 0;
       }
 .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match {
-        padding: 8px 10px;
+        padding: 6px 8px;
       }
 .table-scroll.is-wide table.sched > tbody > tr[data-round] > td.match::before {
         content: attr(data-field-label);
