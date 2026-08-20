@@ -1,0 +1,470 @@
+/* ============================================================================
+   turnier-base.css – gemeinsames Grundlayout der Turnierbögen
+   (Seitenrahmen, Teams-/Tabellen-/Track-Tabellen, Kurzanleitung, Druck A4 quer,
+    Mobil-Anpassungen). Extrahiert aus dem Bogen "Flexibel Alle-gegen-Alle",
+    damit neue Bögen dieses Layout nicht erneut duplizieren.
+   Einbindungsreihenfolge: turnier-base.css → spielplan.css → app-skin.css
+   ========================================================================== */
+  :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    color:#111; font-size:13px; line-height:1.3;
+    padding:10mm;
+  }
+  h1 { font-size:19px; margin:0 0 3px; }
+  .sub { color:#555; font-size:12px; margin:0 0 12px; }
+  .row { display:flex; gap:8mm; align-items:flex-start; }
+  .grow { flex:1; }
+  /* Ersatzabstaende fuer fehlendes Flexbox-"gap" (Safari < 14.1) stehen
+     gesammelt in core/compat-flexgap.css. */
+  table { border-collapse:collapse; width:100%; }
+  th, td { border:1px solid var(--line); padding:4px 6px; text-align:center; }
+  th { background:var(--bg); font-size:12px; }
+  caption { text-align:left; font-weight:bold; font-size:14px; margin:14px 0 5px; }
+
+  /* Team list */
+  .teams td { text-align:left; }
+  .teams .num { width:24px; font-weight:bold; background:var(--bg); text-align:center; }
+  .teams .name { height:26px; }
+
+  /* Standings */
+  .stand td { height:40px; }
+  .stand .pl { width:34px; background:var(--bg); font-weight:bold; }
+  .stand .nm { text-align:left; }
+
+  /* Running track table */
+  .track th, .track td { padding:3px 4px; }
+  .track .tnum { width:30px; background:var(--bg); font-weight:bold; font-size:15px; }
+  .track .tname { width:120px; text-align:left; font-weight:bold; }
+  .track .lbl { width:118px; text-align:left; font-size:11px; background:#fafafa; }
+  .track .rcell { height:26px; }
+  .track .sum { background:var(--bg); font-weight:bold; width:54px; }
+  .track .pos { width:40px; font-weight:bold; }
+  .track .grp { border-top:2px solid var(--line); }
+  /* Beispielzeile: deutlich vom echten Eintragebereich abgesetzt, damit sie
+     auch im Ausdruck nicht mit einem Team verwechselt wird. */
+  .track .ex { background:#eef6ff; color:#15467a; font-style:italic; }
+  .track .ex .tnum, .track .ex .lbl { background:#dceaf7; font-style:normal; }
+  .track tr.ex.ex-start { border-top:2px dashed #7ea9d4; }
+  .track tr.ex.ex-start > td:first-child { border-left:4px solid #1f4e79; }
+  .track tr.ex.ex-end > td { border-bottom:3px double #1f4e79; }
+  .track .ex-badge {
+    display:inline-block; margin-right:6px; padding:1px 6px;
+    border:1px solid #1f4e79; border-radius:10px;
+    background:#1f4e79; color:#fff;
+    font-size:9px; font-style:normal; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;
+  }
+
+  .legend { font-size:12px; color:#333; margin-top:10px; }
+  .legend b { color:#111; }
+
+  .page-break { page-break-before: always; }
+
+  /* Quick guide */
+  .guide { border:1.5px solid var(--line); border-radius:5px; padding:7px 14px; margin:0 0 12px; background:#eef4fb; }
+  .guide h2 { font-size:14px; margin:0 0 6px; }
+  .guide ol { margin:0; padding-left:20px; }
+  .guide li { margin:2px 0; }
+  .guide .hi { font-weight:bold; }
+  .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
+  .byeauto { background:#fff3d6; color:#7a5a00; font-weight:bold; }
+  .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+  .abt { color:#c00; font-size:0.8em; font-weight:600; }
+  input[type=checkbox].ab-check { margin-right: 4px; }
+  .panel-checks { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:6px 12px; }
+  .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; font-size:11px; color:#1f4e79; font-weight:700; }
+  #absentpanel .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; }
+  .namectl { margin:0 0 12px; }
+  .nbtn { -webkit-appearance:none; appearance:none; padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
+  .nbtn.active { outline:3px solid #ffb300; outline-offset:2px; }
+  .nbtn:hover { background:#163a5c; }
+  .nhint { font-size:11.5px; color:#555; margin-left:10px; }
+  .namepanel { margin-top:10px; padding:12px 14px; border:1px solid #cdd8e6; border-radius:6px; background:#f4f8fd; }
+  .namepanel .ngrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px 14px; }
+  .namepanel label { display:flex; flex-direction:column; font-size:11px; color:#1f4e79; font-weight:bold; gap:3px; }
+  .namepanel input { padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
+  .nactions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .nactions .nbtn { background:#fff; color:#1f4e79; }
+  .nactions .nbtn:hover { background:#e7eef7; }
+  .digitalbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .digitalbar .nbtn { background:#0a7d2c; border-color:#0a7d2c; }
+  .digitalbar .nbtn:hover { background:#086323; }
+  /* Setup-Leiste (Team-/Feldzahl) */
+  .setupbar { margin:0 0 12px; padding:8px 12px; border:1px solid #b9c9e0; border-radius:6px; background:#eef3fb; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .setupbar label { font-size:12.5px; color:#1f4e79; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
+  .setupbar select { padding:5px 8px; font-size:13px; border:1px solid #9db4d4; border-radius:5px; font-weight:700; color:#1f4e79; background:#fff; }
+  .setupbar .setinfo { font-size:11.5px; color:#555; font-style:italic; }
+  .mobile-jumpbar { display:none; }
+  .cfgcard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cfgfield {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cfgfield input,
+  .cfgfield select {
+    padding: 8px 10px;
+    border: 1px solid #aab8cc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .cfgfield.cfgfield--wide {
+    grid-column: 1 / -1;
+  }
+  .cfgfield--mode {
+    grid-column: 1 / -1;
+  }
+  .cfgfield--start {
+    grid-column: 1 / 2;
+  }
+  .cfgfield--end {
+    grid-column: 2 / 3;
+  }
+  /* Kompakte Einezeilen-Leiste: Teams · Runden · Felder nebeneinander.
+     Spannt die ganze Grid-Breite und verteilt seine cfgfield-Kinder als
+     gleichbreite Flex-Items – wie die .setupbar der Vorlagenbögen. */
+  .cfgfield-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .cfgfield-row .cfgfield {
+    flex: 1 1 7rem;
+    min-width: 6rem;
+    max-width: 14rem;
+  }
+@media print {
+    @page { size: A4 landscape; margin: 10mm 12mm; }
+    body {
+      padding:0;
+      font-size:9pt;
+      line-height:1.18;
+      overflow:visible !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .noprint { display:none !important; }
+    #session-title-display { display: block !important; }
+    h1 { font-size:15pt; margin:0 0 1.5mm; }
+    .sub { margin:0 0 2mm; font-size:8.5pt; }
+    caption { margin:2mm 0 1mm; font-size:9pt; }
+    table {
+      width:100% !important;
+      font-size:8pt;
+      overflow:visible !important;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    th, td { padding:1mm 1.6mm; }
+    .guide, .row, .teams, .sched, .track, .legend {
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .guide { margin:0 0 3mm; padding:2.6mm 4mm; }
+    .guide h2 { font-size:10pt; margin:0 0 1mm; }
+    .guide li { margin:0.4mm 0; }
+    .page-break {
+      display:block;
+      break-before:page;
+      page-break-before:always;
+    }
+    /* Beispielzeile bleibt auch im Ausdruck klar abgegrenzt (Ränder drucken
+       immer, Flächen je nach Druckereinstellung). */
+    .track tr.ex.ex-start { border-top:1.2pt dashed #1f4e79 !important; }
+    .track tr.ex.ex-start > td:first-child { border-left:1.6pt solid #000 !important; }
+    .track tr.ex.ex-end > td { border-bottom:1.6pt double #000 !important; }
+    .track .ex-badge {
+      background:#fff !important; color:#000 !important;
+      border:0.6pt solid #000 !important; font-size:6.5pt; padding:0 1mm;
+    }
+    .track thead { display: table-header-group; }
+    .track tbody { display: table-row-group; }
+    .teams .name { height:5.5mm; }
+    .track th, .track td { padding:0.8mm 1mm; }
+    .track .rcell, .track td { height:auto; }
+    .track tr, .sched tr {
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .track {
+      page-break-inside:auto !important;
+      break-inside:auto !important;
+    }
+    /* Der Spielplan darf zwischen den Runden umbrechen. Sonst rutscht eine
+       lange Tabelle als Ganzes auf die nächste Seite und hinterlässt eine
+       fast leere Seite 1. Die einzelnen Zeilen bleiben zusammen (oben). */
+    .sched {
+      page-break-inside:auto !important;
+      break-inside:auto !important;
+    }
+    .sched thead { display:table-header-group; }
+    /* Rundenkopf und Feldkopf dürfen nicht von ihren Spielen getrennt werden –
+       sonst steht auf einer Seite „Finale 11:15“ und auf der nächsten die
+       Partie ohne Überschrift. */
+    .sched tr.rhead, .sched tr.fhead {
+      page-break-after:avoid;
+      break-after:avoid;
+    }
+    input[type=text]:not(.score) { display:none; }
+    #scheduleSection { transform:none !important; }}/* Screen polish overrides */
+    
+@media screen {
+      body {
+        padding: 12mm 14mm;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        color: #1a1a2e;
+        line-height: 1.4;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1f4e79;
+        margin: 0 0 4px;
+        letter-spacing: -0.3px;
+      }
+      .sub {
+        color: #5a6375;
+        font-size: 12.5px;
+        margin: 0 0 14px;
+      }
+      body > .noprint:first-of-type {
+        display: flex !important;
+        align-items: center;
+        gap: 12px !important;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      body > .noprint:first-of-type a {
+        font-size: 13px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .guide {
+        border: none;
+        border-left: 4px solid #1f4e79;
+        border-radius: 0 6px 6px 0;
+        padding: 10px 16px;
+        background: #f0f5fc;
+        margin: 0 0 14px;
+      }
+      .guide h2 {
+        font-size: 13px;
+        color: #1f4e79;
+        font-weight: 700;
+        margin: 0 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .guide li {
+        margin: 3px 0;
+        font-size: 12.5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      th {
+        background: #1f4e79;
+        color: #fff;
+        font-size: 12px;
+        padding: 5px 8px;
+        border: 1px solid #163a5c;
+      }
+      td {
+        border: 1px solid #d4dde8;
+        padding: 5px 7px;
+      }
+      caption {
+        font-size: 14px;
+        font-weight: 800;
+        color: #1f4e79;
+        margin: 16px 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .nbtn {
+        border-radius: 6px;
+        padding: 7px 15px;
+        font-size: 13px;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .nbtn:active { transform: scale(0.97); }
+      .namepanel {
+        border-radius: 8px;
+        border: 1.5px solid #cdd8e6;
+        background: #f7fafd;
+      }
+      .stand .nm {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .stand .pl,
+      .stand .rk { background: #e8edf5; color: #1a1a2e; }
+      .stand .pl { display: none; }
+      .stand .screen-place {
+        display: inline-block;
+        min-width: 26px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #eef2f7;
+        color: #33455e;
+        font-weight: 800;
+        text-align: center;
+        flex: 0 0 auto;
+      }
+      .track .tnum,
+      .track .lbl { background: #f0f5fb; color: #1a1a2e; }
+      .track .sum { background: #e8edf5; color: #1a1a2e; }
+      .digitalbar,
+      .digbar,
+      .topbar { gap: 12px; }}
+@media print {
+      .stand .screen-place { display: none !important; }
+}
+@media screen and (max-width: 640px) {
+      body {
+        padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
+      }
+      .row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .row > div,
+      .row .grow {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+      }
+      .cfgcard-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .cfgfield.cfgfield--wide {
+        grid-column: 1 / -1;
+      }
+      .cfgfield--mode {
+        grid-column: 1 / -1;
+      }
+      .cfgfield--start {
+        grid-column: 1 / -1 !important;
+      }
+      .cfgfield--end {
+        grid-column: 1 / -1 !important;
+      }
+      .cfgfield-row {
+        flex-wrap: wrap;
+      }
+      .cfgfield-row .cfgfield {
+        flex: 1 1 6rem;
+        max-width: 100%;
+      }
+      .cfgcard-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .cfgcard-actions .spacer {
+        display: none;
+      }
+      .cfgcard-actions .nbtn {
+        width: 100%;
+        min-height: 40px;
+      }
+      .mobile-jumpbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: rgba(255,255,255,.96);
+        border-top: 1px solid #cdd8e6;
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+      }
+      .mobile-jumpbar .nbtn {
+        min-height: 44px;
+        padding: 6px 4px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+        cursor: pointer;
+        border: 1px solid #1f4e79;
+        background: #1f4e79;
+        color: #fff;
+        border-radius: 4px;
+        font-weight: 700;
+        box-sizing: border-box;
+      }}/* Print polish overrides */
+    
+  /* ============================================================ LAUFENDE TABELLE
+     Formatierung der kumulierten Runden-Tabelle (track). Kopiert aus der Vorlage
+     Turnierbogen_Flexibel_Alle_gegen_Alle.html, damit alle Bögen gleich aussehen. */
+  .track th, .track td { padding:3px 4px; }
+  .track .tname { width:120px; text-align:left; font-weight:bold; }
+  .track .lbl { width:118px; text-align:left; font-size:11px; background:#fafafa; }
+  .track .rcell { height:26px; }
+  .track .pos { width:40px; font-weight:bold; }
+  .track .grp { border-top:2px solid var(--line, #cdd8e6); }
+  /* Beispielzeile */
+  /* Beispielzeile: deutlich vom echten Eintragebereich abgesetzt, damit sie
+     auch im Ausdruck nicht mit einem Team verwechselt wird. */
+  .track .ex { background:#eef6ff; color:#15467a; font-style:italic; }
+  .track .ex .tname, .track .ex .lbl { background:#dceaf7; font-style:normal; }
+  .track tr.ex.ex-start { border-top:2px dashed #7ea9d4; }
+  .track tr.ex.ex-start > td:first-child { border-left:4px solid #1f4e79; }
+  .track tr.ex.ex-end > td { border-bottom:3px double #1f4e79; }
+  .track .ex-badge {
+    display:inline-block; margin-right:6px; padding:1px 6px;
+    border:1px solid #1f4e79; border-radius:10px;
+    background:#1f4e79; color:#fff;
+    font-size:9px; font-style:normal; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;
+  }
+  /* Fertige Runde = grün, Freilos = gelb */
+  .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
+  .byeauto { background:#fff3d6; color:#7a5a00; font-weight:bold; }
+  .track .pz-tie { background:#fff4d6 !important; }
+
+@media print {
+      body {
+        padding: 0;
+        font-size: 8.5pt;
+        line-height: 1.15;
+      }
+      h1 {
+        font-size: 14pt;
+        color: #000;
+      }
+      caption {
+        font-size: 8.5pt;
+        color: #000;
+        margin: 1.5mm 0 1mm;
+      }
+      th {
+        background: #e8edf5 !important;
+        color: #000 !important;
+      }
+      .guide {
+        border: none;
+        border-left: 3px solid #1f4e79;
+        background: #f5f8fc !important;
+      }}

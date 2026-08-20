@@ -3,11 +3,15 @@
    Ergebnis-Karten ("Runden-Ergebnis") in ALLEN Turnierbogen.
 
    Markup (in beiden Bogen identisch):
+     p.input-hint.hint-top            (Anleitung UNTER der Ueberschrift, VOR der Tabelle -
+                                       nur wenn die Tabelle keine eigene <caption> hat)
      div.table-scroll.is-wide
        > div.schedule-roundbar        (Runden-Navigator)
        > p.mobile-schedule-title      (nur mobil sichtbar)
        > table.sched
            > caption                  (Ueberschrift des Abschnitts)
+               > span.cap-title       (Titel)
+               > span.cap-hint        (Ausfuellanleitung, direkt UNTER dem Titel)
            > thead                    (leer - Feldnamen stehen je Runde im tbody)
            > tbody
                > tr.rhead[data-round] > td.rhead-cell[colspan]
@@ -25,12 +29,25 @@
                        > span.presult                (nur Siegpunkte + Diff, keine Namen)
                            > span.mres.mres-a(span.mscore + span.tdiff)   [links, Team A]
                            > span.mres.mres-b(span.tdiff + span.mscore)   [rechts, Team B]
-     p.input-hint / p.input-hint.round-subline   (Erklaerungen unter der Tabelle)
+                       > span.mnote-slot[data-note]  (Hinweis, z. B. "Unentschieden";
+                                                      NICHT in .presult, sonst rutscht
+                                                      Team B aus der rechten Kante)
+     p.input-hint.hint-top                       (nur ohne eigene <caption>)
+     p.input-hint.round-subline                  (Spielmodus-Zeile unter der Tabelle)
 
    WICHTIG: Diese Regeln NICHT in den <style>-Bloecken der einzelnen Bogen
    duplizieren – sonst laufen die Bogen wieder auseinander.
    Wird VOR app-skin.css eingebunden, damit das Skin weiterhin gewinnt.
    ============================================================================ */
+/* Ueberschrift: Turniertitel gross. Der Turniertyp steht am Bildschirm in der
+   App-Leiste; im Druck fehlt diese, deshalb erscheint er dort klein hinter dem
+   eigenen Turniertitel. Gilt fuer alle Turnierbogen. */
+h1 .h1-type {
+  display:none; font-size:.6em; font-weight:700; color:#46586e; white-space:nowrap;
+}
+h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-weight:400; }
+@media print { h1 .h1-type { display:inline; color:#333; } }
+
 /* Schedule cells: pairing + result box */
   .sched td { padding:8px 6px; }
 .sched .rnd { width:48px; font-weight:bold; background:var(--bg); font-size:16px; }
@@ -41,16 +58,100 @@
   padding:6px 10px; background:#eef3fb; border-bottom:1px solid #d6e1ef;
   text-align:left; vertical-align:middle; line-height:1.35;
 }
+.sched tr.rhead .rhead-content {
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-width:0;
+}
+.sched tr.rhead .rhead-meta {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+  flex:1 1 auto;
+}
 .sched tr.rhead .rlabel { font-weight:800; font-size:13px; color:#1f4e79; letter-spacing:.02em; }
 .sched tr.rhead .rtime { font-weight:700; font-size:12px; color:#1f4e79; }
 .sched tr.rhead .rmode { font-size:11.5px; color:#444; }
 .sched tr.rhead .rbye { font-size:11.5px; color:#7a5a00; }
-.sched tr.rhead .rhead-cell > span { display:inline; margin:0; }
-.sched tr.rhead .rhead-cell > span + span::before { content:"\00b7"; color:#9bb0c8; margin:0 7px; font-weight:400; }
-.sched tr.rhead .rhead-cell > span:empty { display:none; }
+.sched tr.rhead .rhead-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-left:8px;
+  flex-shrink:0;
+}
+.sched tr.rhead .rhead-actions .rnext { display:none; }
+.sched tr.rhead .rhead-actions .rconfirm { order: 0; }
+.sched tr.rhead .rhead-meta > span { display:inline-flex; align-items:center; margin:0; }
+.sched tr.rhead .rhead-meta > span + span::before { content:"\00b7"; color:#9bb0c8; margin:0 7px; font-weight:400; }
+.sched tr.rhead .rhead-meta > span:empty { display:none; }
+.sched tr.rhead .rhead-meta .rnext {
+  display: inline-flex;
+  margin-left: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 999px;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  background: #1f4e79;
+  border-color: #1f4e79;
+  color: #fff;
+}
+.sched tr.rhead .rhead-meta .rnext .chev {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
+  flex: 0 0 auto;
+}
+.sched tr.rhead .rhead-content {
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-width:0;
+}
+.sched tr.rhead .rhead-meta {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+  flex:1 1 auto;
+}
+.sched tr.rhead .rconfirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  margin-left: 0;
+  padding: 0;
+  border-radius: 50% !important;
+  box-sizing: border-box;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  background: #2e8b2e;
+  border-color: #2e8b2e;
+  color: #fff;
+  box-shadow: none;
+  vertical-align: middle;
+}
 /* Feldnamen-Zeile: steht je Runde direkt ueber den Karten (nicht im thead), damit im
    Bogen "Alle gegen Alle" jede Runde ihre eigene Beschriftung behaelt. */
 .sched tr.fhead > th { font-size:12px; }
+.sched tr.fhead > th { position: relative; }
+.sched tr.fhead .fhead-label { display: inline-block; padding-right: 18px; }
 /* Ergebnis-Formular, 3 Zeilen pro Karte:
      1) Teamnamen links/rechts - die Gewinner-Seite wird per Rahmen (.is-winner)
        direkt am Namen hervorgehoben statt einer eigenen "Sieger"-Zeile,
@@ -75,9 +176,13 @@
 .pside-b { justify-content:flex-end; }
 .pside.is-winner { background:#e7f6e7; border:1.5px solid #2e8b2e; }
 .pside.is-winner .t { color:#1b5e1b; }
-.presult { display:flex; align-items:center; justify-content:space-between; gap:2px 8px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--soft); }
+.presult { display:flex; align-items:center; justify-content:space-between; gap:2px 8px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--soft);
+  /* Feste Mindesthoehe, damit die Karte beim Eintragen des ersten Ergebnisses
+     nicht nachtraeglich waechst (sonst springt die ganze Runden-Zeile). */
+  min-height:20px; }
 .mres { display:flex; align-items:center; gap:4px; min-width:0; }
-.mres-b { justify-content:flex-end; }
+.mres-a { justify-content:flex-start; text-align:left; }
+.mres-b { justify-content:flex-end; text-align:right; margin-left:auto; }
 .mscore { font-weight:700; font-size:12px; color:#333; }
 .mscore:empty { display:none; }
 .tdiff { font-weight:800; font-size:11px; color:#888; white-space:nowrap; flex:0 0 auto;
@@ -102,6 +207,35 @@
 .match.is-bye { background:#fffaf0; }
 .sched td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
 .input-hint { margin:5px 0 0; font-size:11px; color:#555; }
+/* Ausfuellanleitung ueber der zugehoerigen Tabelle/dem Spielplan: sitzt direkt
+   am Tabellenkopf, damit sie beim Ausfuellen im Blick ist. Wird nur dort als
+   eigener Absatz genutzt, wo die Tabelle KEINE eigene <caption> hat (Bracket,
+   laufende Tabelle) - sonst steht die Anleitung IM <caption> (.cap-hint). */
+.input-hint.hint-top { margin:0 0 5px; }
+/* Abschnitts-Hinweis: gilt fuer MEHRERE Tabellen eines Abschnitts (z. B. alle
+   Gruppentabellen) und steht deshalb unter der Abschnitts-Ueberschrift statt
+   im <caption> einer einzelnen Tabelle. */
+.input-hint.hint-section { margin:0 0 6px; }
+h1 + .input-hint.hint-top, h2 + .input-hint.hint-top { margin-top:2px; }
+/* Tabellen-Ueberschrift zweizeilig: Titel oben, Anleitung DARUNTER.
+   So steht keine Anleitung ueber der Ueberschrift der Tabelle. */
+caption > .cap-title { display:block; }
+caption > .cap-hint {
+  display:block; margin-top:3px;
+  font-size:11px; font-weight:400; line-height:1.35; color:#555;
+  letter-spacing:0; text-transform:none;
+}
+caption > .cap-hint:empty { display:none; }
+/* Zwischenzeile im Caption (z. B. „Endstand – aus der Finalrunde ableiten") */
+caption > .cap-sub {
+  display:block; margin-top:2px;
+  font-size:11.5px; font-weight:700; line-height:1.3;
+  color:#1f4e79; letter-spacing:0; text-transform:none;
+}
+caption > .cap-sub:empty { display:none; }
+@media print {
+  caption > .cap-hint { font-size:7.5pt; color:#333; margin-top:0.8mm; }
+}
 .round-subline { font-size:11px; margin:2px 0 0; }
 /* "Alle Runden"-Ansicht: Überschriften (Runden-Titel) und Eingabe-Anleitung
    sind bei jeder Runde identisch (bzw. redundant) - werden komplett
@@ -475,7 +609,8 @@ input.score:disabled { background:#f7f7f7; color:#999; }
       word-break: break-word;
     }
 .sched td { padding:0.8mm 1mm; }
-.sched tr.rhead > td.rhead-cell { padding:1mm 1.5mm; background:#eef3fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-bottom:0.4pt solid #9bb0c8; }
+.sched tr.rhead > td.rhead-cell { padding:1mm 1.5mm; background:#eef3fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-bottom:0.4pt solid #9bb0c8; border-top:1.6mm solid transparent; }
+.sched > tbody > tr.rhead:first-child > td.rhead-cell { border-top-width:0; }
 .sched tr.rhead .rlabel { font-size:8.2pt; font-weight:800; color:#000; }
 .sched tr.rhead .rtime { font-size:7.6pt; font-weight:700; color:#000; }
 .sched tr.rhead .rmode { font-size:7pt; color:#333; word-break:normal; overflow-wrap:break-word; hyphens:auto; }
@@ -488,13 +623,13 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .pair .t, .bye .t { min-width:0; }
 .t-line { font-size:6.9pt; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .t-nm { font-size:6pt; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.tdiff { font-size:6.4pt; color:#000 !important; background:none !important; padding:0 0 0 0.6mm; }
+.tdiff { font-size:6.4pt; color:#000 !important; background:none !important; padding:0 0 0 0.6mm; border-radius:0; }
 /* Platz fuer die Punktedifferenz im Blanko-Ausdruck freihalten: ohne diese Regel
    kollabiert der Diff-Badge bei leerem Inhalt (":empty{display:none}" oben) auf
    0mm Breite, so bleibt vor dem Ausfuellen keine Schreibflaeche fuer die
-   Ball-Differenz uebrig. Zeigt stattdessen eine kleine gepunktete Linie zum
-   handschriftlichen Eintragen. */
-.tdiff:empty { display:inline-block; min-width:7mm; height:2.6mm; border-bottom:0.5pt dotted #999; }
+   Ball-Differenz uebrig. Zeigt stattdessen eine Schreiblinie zum
+   handschriftlichen Eintragen - hoch und breit genug fuer eine Handschrift. */
+.tdiff:empty { display:inline-block; min-width:11mm; height:4.4mm; border-bottom:0.5pt dotted #999; }
 .mscore { font-size:6.4pt; color:#000 !important; }
 .sched.compact .tdiff { font-size:6.2pt; }
 .pnames { gap:1.2mm; }
@@ -505,7 +640,10 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .sched.compact .slbl { font-size:5pt; }
 /* Kaestchen im Druck sichtbar lassen, damit von Hand eingetragen werden kann. */
     .pair input.score { border:1px solid #888 !important; border-radius:1pt; background:transparent; }
-.presult { margin-top:0.6mm; padding-top:0.5mm; font-size:6.2pt; border-top:1px dashed #bbb; }
+/* Untere Zeile der Spielkarte: im Ausdruck wird hier von Hand eingetragen,
+   deshalb genug Hoehe reservieren (die Schreiblinien sassen sonst direkt auf
+   der Zellkante und liessen sich nicht beschriften). */
+.presult { margin-top:1mm; padding-top:0.9mm; padding-bottom:1mm; font-size:6.2pt; border-top:1px dashed #bbb; min-height:6mm; align-items:flex-end; }
 .pside.is-winner { background:none !important; border:0.5pt solid #000 !important; }
 .mwin-note { color:#333 !important; }
 .setsep { margin:0 0.3mm; }
@@ -562,13 +700,22 @@ input.score.invalid {
    Zeilen um (rechte Seite bleibt rechtsbuendig, linke linksbuendig, dadurch
    wirken unterschiedlich lange Namen bewusst "versetzt" zueinander). Der
    Druck (A4) bleibt bewusst kompakt/einzeilig - dort ist der Platz begrenzt. */
-.t-line, .t-nm {
+.t-nm {
         white-space: normal;
         overflow: visible;
         text-overflow: clip;
         word-break: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
+      }
+.t-line {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: normal;
+        overflow-wrap: normal;
+        hyphens: none;
+        flex-shrink: 0;
       }
 .pside { align-items: flex-start; }
 .pnames { align-items: flex-start; }
@@ -585,18 +732,24 @@ input.score.invalid {
 
 /* Runden-Kopfzeile am Bildschirm als moderne Chip-Reihe statt Text mit
    Mittelpunkt-Trennzeichen (Druck bleibt bewusst kompakt/textuell). */
+/* WICHTIG: kein display:flex auf der Zelle - das hebt colspan auf, die
+   Kopfzeile waere dann nur so breit wie die erste Spalte. Die Chips werden
+   stattdessen als inline-flex gesetzt und umbrechen von selbst.
+   Der transparente obere Rahmen erzeugt den Abstand zur vorherigen Runde. */
 .sched tr.rhead > td.rhead-cell {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
         background: #eef3fb;
         border: 1px solid #d6e1ef;
-        border-bottom: 1px solid #d6e1ef;
-        border-radius: 10px;
+        border-top: 12px solid transparent;
+        padding: 7px 10px;
       }
-.sched tr.rhead .rhead-cell > span { display: inline-flex; align-items: center; }
-.sched tr.rhead .rhead-cell > span + span::before { content: none; }
+.sched > tbody > tr.rhead:first-child > td.rhead-cell { border-top-width: 0; }
+.sched tr.rhead .rhead-content > span {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        margin: 2px 6px 2px 0;
+      }
+.sched tr.rhead .rhead-content > span + span::before { content: none; }
 .sched tr.rhead .rlabel {
         padding: 3px 10px;
         border-radius: 999px;
@@ -625,6 +778,13 @@ input.score.invalid {
         font-size: 11px;
       }
 
+}
+
+@media print {
+  .sched tr.rhead .rconfirm,
+  .sched tr.rhead .rnext {
+   display: none !important;
+  }
 }
 
 @media screen and (max-width: 640px) {
@@ -680,7 +840,22 @@ input.score { font-size:16px; }
         margin: 8px 0 6px;
       }
 .table-scroll.is-wide table.sched > caption {
+        /* Mobil ersetzt .mobile-schedule-title den Caption-Titel. Die
+           Ausfuellanleitung im Caption bleibt aber sichtbar - sie steht damit
+           genau unter der mobilen Ueberschrift und ueber der Tabelle.
+           Der Abstand haengt an .cap-hint statt am <caption>: fehlt die
+           Anleitung, faellt der Caption dadurch von allein auf Hoehe 0
+           zusammen - ohne :has(), das Safari erst ab 15.4 kennt. */
+        display: block;
+        padding: 0;
+        margin: 0;
+        border-left: 0;
+      }
+.table-scroll.is-wide table.sched > caption > .cap-title {
         display: none;
+      }
+.table-scroll.is-wide table.sched > caption > .cap-hint {
+        margin-bottom: 4px;
       }
 .table-scroll.is-wide {
         overflow-x: hidden;
@@ -732,7 +907,12 @@ input.score { font-size:16px; }
         border-bottom: 2px solid #9bb0c8;
         border-radius: 0;
         background: #eef3fb;
+        background-clip: padding-box;
         padding: 8px 10px;
+        margin-top: 12px;
+      }
+.table-scroll.is-wide table.sched > tbody > tr.rhead:first-child > td.rhead-cell {
+        margin-top: 0;
       }
 .table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
         display: none;
@@ -771,6 +951,13 @@ input.score { font-size:16px; }
       }
 .t-line {
         font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: normal;
+        overflow-wrap: normal;
+        hyphens: none;
+        flex-shrink: 0;
       }
 .t-nm {
         font-size: 12px;
@@ -798,85 +985,12 @@ input.score {
 
 }
 
-/* ── Fallback für Flexbox-„gap" auf älteren iPads/Safari-Versionen ──
-   `gap` in Flex-Containern wird erst ab Safari 14.1 (iOS 14.5, April 2021)
-   unterstuetzt. Auf aelteren Geraeten wird die Eigenschaft einfach
-   ignoriert (kein Fehler, aber Elemente ruecken ohne Abstand zusammen).
-   @supports not (gap: 1px) greift NUR, wenn der Browser gap selbst nicht
-   kennt - moderne Browser sehen diesen Block gar nicht erst. */
-@media screen {
-@supports not (gap: 1px) {
-.schedule-roundbar {
-        margin-left: -8px;
-        margin-top: -8px;
-      }
-.schedule-roundbar > * {
-        margin-left: 8px;
-        margin-top: 8px;
-      }
-.nbtn > * + * { margin-left: 6px; }
-.pair > * + * { margin-top: 4px; }
-.pnames > * + * { margin-left: 8px; }
-.pside > * + * { margin-left: 4px; }
-.mres > * + * { margin-left: 4px; }
-.sset > * + * { margin-top: 1px; }
-.sbox > * + * { margin-left: 2px; }
-.psets {
-        margin-left: -10px;
-        margin-top: -10px;
-      }
-.psets > * {
-        margin-left: 10px;
-        margin-top: 10px;
-      }
-.presult {
-        margin-left: -8px;
-        margin-top: -2px;
-      }
-.presult > * {
-        margin-left: 8px;
-        margin-top: 2px;
-      }
-  /* Weitere Flex-Container mit "gap" aus app-skin.css / dem Inline-Style
-     jedes Bogens - ohne diese Ergaenzung ruecken auf alten iPads (< iOS
-     14.5) fast alle Leisten/Karten/Formularfelder ohne jeden Abstand
-     zusammen (einzeiliges "Zusammenkleben" von Icons, Buttons, Labels). */
-.app-bar > * + * { margin-left: 10px; }
-.app-bar__back > * + * { margin-left: 4px; }
-.app-bar__actions > * + * { margin-left: 6px; }
-.app-bar__btn > * + * { margin-left: 6px; }
-.cfgcard-head > * + * { margin-left: 8px; }
-.cfgfield > * + * { margin-top: 5px; }
-.cfgres-item > * + * { margin-top: 3px; }
-.cfg-lbl > * + * { margin-left: 5px; }
-.namepanel label > * + * { margin-top: 2px; }
-.panel-checks label > * + * { margin-left: 8px; }
-.cfgresult {
-        margin-left: -10px;
-        margin-top: -10px;
-      }
-.cfgresult > * {
-        margin-left: 10px;
-        margin-top: 10px;
-      }
-.cfgcard-actions {
-        margin-left: -10px;
-        margin-top: -8px;
-      }
-.cfgcard-actions > * {
-        margin-left: 10px;
-        margin-top: 8px;
-      }
-.nactions {
-        margin-left: -8px;
-        margin-top: -8px;
-      }
-.nactions > * {
-        margin-left: 8px;
-        margin-top: 8px;
-      }
-}
-}
+/* ── Fallback für Flexbox-„gap" auf älteren iPads (Safari < 14.1) ──
+   Die Ersatzabstaende stehen gesammelt in core/compat-flexgap.css und
+   werden ueber <html class="no-flexgap"> (core/compat.js) aktiviert.
+   Ein reines @supports not (gap: 1px) reicht nicht: Safari kennt `gap`
+   seit Version 12 fuer Grid und meldet es deshalb als unterstuetzt,
+   ignoriert es in Flex-Containern aber bis 14.0. */
 
 @media print {
 .sched .rnd {
@@ -889,3 +1003,301 @@ input.score {
       .sched .rmode { color: #333 !important; }
 
 }
+
+/* ============================================================================
+   ERSTE SPALTE (Team / Name) – einheitlich in ALLEN Turnierbögen
+   Betrifft: laufende Tabelle (.track .tname), Platzierungs-/Gruppentabellen
+   (.stand .nm), Schweizer Gesamttabelle (.central-table .teamcol) und die
+   Teamnamen-Liste (.teams .name).
+   Regeln: links ausgerichtet, "Team 12" bricht nie um, ein zusätzlich
+   eingetragener Teamname steht darunter und wird bei Platzmangel gekürzt.
+   ========================================================================== */
+.track .tname,
+.stand .nm,
+.central-table .teamcol,
+.teams .name {
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.track .tname,
+.central-table .teamcol { min-width: 96px; }
+.stand .nm { min-width: 110px; }
+
+/* "Team N" bleibt immer in einer Zeile und wird nie umgebrochen. */
+.track .tname .t-line,
+.stand .nm .t-line,
+.central-table .teamcol .t-line,
+.teams .name .t-line {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+}
+/* Der frei vergebene Teamname steht darunter und wird bei Bedarf gekürzt. */
+.track .tname .t-nm,
+.stand .nm .t-nm,
+.central-table .teamcol .t-nm,
+.teams .name .t-nm {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+/* ============================================================================
+   BEISPIELZEILE – in allen Bögen gleich abgesetzt
+   .ex/.ex-start/.ex-end (laufende Tabelle) und .example-row (Schweizer).
+   Linien statt Flächen, damit die Abgrenzung auch im Ausdruck sichtbar ist.
+   ========================================================================== */
+.track tr.ex.ex-start,
+tr.example-row.ex-start { border-top: 2px dashed #7ea9d4; }
+.track tr.ex.ex-start > td:first-child,
+tr.example-row.ex-start > td:first-child { border-left: 4px solid #1f4e79; }
+.track tr.ex.ex-end > td,
+tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
+.ex-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border: 1px solid #1f4e79;
+  border-radius: 10px;
+  background: #1f4e79;
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+@media print {
+  .track .tname,
+  .central-table .teamcol { min-width: 24mm; }
+  .stand .nm { min-width: 26mm; }
+  .track tr.ex.ex-start,
+  tr.example-row.ex-start { border-top: 1.2pt dashed #1f4e79 !important; }
+  .track tr.ex.ex-start > td:first-child,
+  tr.example-row.ex-start > td:first-child { border-left: 1.6pt solid #000 !important; }
+  .track tr.ex.ex-end > td,
+  tr.example-row.ex-end > td { border-bottom: 1.6pt double #000 !important; }
+  .ex-badge {
+    background: #fff !important;
+    color: #000 !important;
+    border: .6pt solid #000 !important;
+    font-size: 6.5pt;
+    padding: 0 1mm;
+  }
+}
+
+/* ============================================================================
+   ZENTRALE TABELLEN – "Laufende Tabelle & Endstand" (table.track) und
+   "Schweizer Tabelle" (table.central-table) sehen in ALLEN Bögen gleich aus.
+   Diese Regeln sind die einzige Quelle; in den <style>-Blöcken der Bögen
+   NICHT duplizieren.
+   ========================================================================== */
+.central-table { table-layout: fixed; }
+.central-table th, .central-table td { font-size: 6.2px; height: 8mm; padding: 1px 2px; }
+.central-table .teamcol { width: 40mm; }
+.central-table .rankcol { width: 10mm; }
+.central-table .round { width: 16mm; }
+.central-table .rplace { width: 6mm; }
+.central-table span { font-size: 6.5px; color: #444; }
+.central-table th:nth-child(1), .central-table th:nth-child(2),
+.central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 7.2px; font-weight: 700; }
+.central-table .auto { background: #e7f6ec; }
+
+/* Platz-Spalten beider Tabellen identisch: zentriert und fett. */
+.track .pos, .central-table .rankcol, .central-table .rplace { text-align: center; font-weight: 700; }
+
+/* Beispielzeile der Schweizer Tabelle wie in der laufenden Tabelle. */
+.example-row td { background: #eef6ff; color: #15467a; font-style: italic; }
+.example-row .teamcol, .example-row .lbl { background: #dceaf7; font-style: normal; }
+
+.rank-badge { display: inline-block; font-weight: 800; }
+.rank-badge.rank-none { color: #999; font-weight: 400; }
+.rank-badge.rank-top.rank-1 { color: #8a6d00; }
+.rank-badge.rank-top.rank-2 { color: #55606b; }
+.rank-badge.rank-top.rank-3 { color: #8a4b1f; }
+
+@media screen {
+  .central-table th, .central-table td { font-size: 11px; height: auto; padding: 4px 4px; }
+  .central-table span { font-size: 10px; color: #444; }
+  .central-table th:nth-child(1), .central-table th:nth-child(2),
+  .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 12px; }
+  .central-table .teamcol { width: auto; min-width: 140px; }
+  .central-table .rankcol { width: auto; min-width: 46px; }
+  .central-table .round { width: auto; min-width: 82px; }
+  .central-table .rplace { width: auto; min-width: 28px; }
+  /* Rang-Badge direkt am Platz – der (End-)Platz muss nicht in der letzten,
+     weit entfernten Runden-Spalte gesucht werden. */
+  .rank-badge {
+    display: inline-block;
+    min-width: 26px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #33455e;
+    font-weight: 800;
+    font-size: 12px;
+    text-align: center;
+  }
+  .rank-badge.rank-none { background: none; color: #99a3b1; font-weight: 500; min-width: 0; padding: 0; }
+  .rank-badge.rank-live { background: #e4ecf7; color: #1f4e79; }
+  .rank-badge.rank-final.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
+  .rank-badge.rank-final.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
+  .rank-badge.rank-final.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
+}
+
+@media screen and (max-width: 640px) {
+  .central-table { table-layout: auto; }
+  .central-table th, .central-table td { font-size: 7px; height: auto; padding: 3px 2px; }
+  .central-table .teamcol { width: auto; min-width: 85px; }
+  .central-table .rankcol { width: auto; min-width: 36px; }
+  .central-table .round { width: auto; min-width: 50px; }
+  .central-table .rplace { width: auto; min-width: 25px; }
+  .central-table th:nth-child(1), .central-table th:nth-child(2),
+  .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 9px; }
+  .rank-badge { min-width: 22px; padding: 2px 5px; font-size: 11px; }
+}
+
+@media print {
+  .central-table th, .central-table td { font-size: 7.9pt; height: 7.5mm; padding: 0.9mm 1.3mm; }
+  .central-table span { font-size: 7pt; }
+  .central-table th:nth-child(1), .central-table th:nth-child(2),
+  .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 9.2pt; }
+  .central-table .teamcol { width: 42mm; }
+  .central-table .rankcol { width: 11mm; }
+  .central-table .round { width: 17mm; }
+  .central-table .rplace { width: 7mm; }
+  .central-table thead { display: table-header-group; }
+  /* Im Ausdruck ohne Fläche – nur Text, damit die Zahl gut lesbar bleibt. */
+  .rank-badge { background: none !important; box-shadow: none !important; color: #000 !important;
+    min-width: 0; padding: 0; font-size: 9.2pt; }
+  .example-row td { background: none !important; color: #000 !important; }
+}
+
+/* Erste Spalte beider zentraler Tabellen exakt gleich groß. */
+@media screen {
+  .track th.tname, .track td.tname,
+  .central-table th.teamcol, .central-table td.teamcol { font-size: 13px; }
+}
+@media print {
+  .track th.tname, .track td.tname,
+  .central-table th.teamcol, .central-table td.teamcol { font-size: 9.2pt; }
+}
+
+/* ============================================================================
+   Inhalt der ersten Spalte (Team-Nummer + freier Teamname) in JEDEM Bogen
+   identisch – auch in den Bögen ohne core/turnier-base.css.
+   ========================================================================== */
+.tnm { font-weight: 400; font-size: 0.82em; color: #0a7d2c; }
+.track .tname .t-line, .central-table .teamcol .t-line,
+.stand .nm .t-line, .teams .name .t-line { font-size: 13px; font-weight: 700; color: inherit; }
+.track .tname .t-nm, .central-table .teamcol .t-nm,
+.stand .nm .t-nm, .teams .name .t-nm { font-size: 11px; font-weight: 400; color: #0a7d2c; }
+
+@media screen {
+  /* Gleiche Spaltenbreite in laufender Tabelle und Schweizer Tabelle. */
+  .track th.tname, .track td.tname,
+  .central-table th.teamcol, .central-table td.teamcol { width: 150px; min-width: 150px; }
+}
+@media screen and (max-width: 640px) {
+  .track th.tname, .track td.tname,
+  .central-table th.teamcol, .central-table td.teamcol { width: 96px; min-width: 96px; }
+  .track .tname .t-line, .central-table .teamcol .t-line { font-size: 11px; }
+  .track .tname .t-nm, .central-table .teamcol .t-nm { font-size: 9.5px; }
+}
+@media print {
+  .track th.tname, .track td.tname,
+  .central-table th.teamcol, .central-table td.teamcol { width: 34mm; min-width: 34mm; }
+  .track .tname .t-line, .central-table .teamcol .t-line { font-size: 9.2pt; }
+  .track .tname .t-nm, .central-table .teamcol .t-nm { font-size: 7.4pt; color: #000; }
+}
+
+/* Bei table-layout:fixed verteilt der Browser übrige Breite auf alle Spalten
+   mit fester Breite. Damit die erste Spalte nicht aufgeblasen wird, bleiben
+   nur die Runden-Spalten flexibel – sie nehmen den Rest auf. */
+.central-table .round { width: auto; }
+@media print { .central-table .round { width: auto; min-width: 17mm; } }
+
+/* Badge darf nicht von .central-table span (10px/#444) übersteuert werden. */
+.central-table span.ex-badge,
+.track span.ex-badge,
+.stand span.ex-badge { font-size: 9px; color: #fff; background: #1f4e79; font-style: normal; }
+@media print {
+  .central-table span.ex-badge,
+  .track span.ex-badge,
+  .stand span.ex-badge { font-size: 6.5pt; color: #000 !important; background: #fff !important; border: .6pt solid #000 !important; }
+}
+
+/* Rahmen der Beispielzeile direkt auf die Zellen legen: bei border-collapse
+   entscheidet sonst je Spalte der stärkere Rahmen, wodurch die gestrichelte
+   Linie in manchen Tabellen Lücken bekam. */
+tr.ex-start > td, tr.ex-start > th,
+tr.example-row.ex-start > td { border-top: 2px dashed #7ea9d4; }
+tr.ex-end > td,
+tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
+tr.ex-start > td:first-child,
+tr.example-row.ex-start > td:first-child { border-left: 4px solid #1f4e79; }
+@media print {
+  tr.ex-start > td, tr.ex-start > th,
+  tr.example-row.ex-start > td { border-top: 1.2pt dashed #1f4e79 !important; }
+  tr.ex-end > td,
+  tr.example-row.ex-end > td { border-bottom: 1.6pt double #000 !important; }
+  tr.ex-start > td:first-child,
+  tr.example-row.ex-start > td:first-child { border-left: 1.6pt solid #000 !important; }
+}
+
+/* Durchgehende Linien über die GESAMTE Tabellenbreite:
+   - 3px gestrichelt gewinnt bei border-collapse gegen 2px-Rahmen der Kopfzeile
+   - Zellen mit rowspan (erste Spalte der laufenden Tabelle) brauchen die
+     untere Doppellinie separat, weil sie nicht zur .ex-end-Zeile gehören. */
+tr.ex-start > td, tr.ex-start > th,
+tr.example-row.ex-start > td { border-top: 3px dashed #7ea9d4; }
+tr.ex-start > td[rowspan] { border-bottom: 3px double #1f4e79; }
+@media print {
+  tr.ex-start > td, tr.ex-start > th,
+  tr.example-row.ex-start > td { border-top: 1.5pt dashed #1f4e79 !important; }
+  tr.ex-start > td[rowspan] { border-bottom: 1.6pt double #000 !important; }
+}
+
+@media print {
+  /* Beispielzeile im Ausdruck überall neutral: keine Farbfläche, schwarzer
+     kursiver Text – erkennbar bleibt sie an Strichlinie und Doppellinie. */
+  tr.ex, tr.example-row,
+  tr.ex > td, tr.ex > th,
+  tr.example-row > td { background: none !important; color: #000 !important; font-style: italic; }
+}
+
+/* ============================================================
+   Hinweise getrennt fuer Bildschirm und Papier
+   Am Bildschirm rechnet die App mit, auf dem Ausdruck traegt die
+   Turnierleitung alles von Hand ein. Beide Texte stehen im Markup,
+   sichtbar ist immer nur der passende. */
+.only-print { display: none; }
+.only-screen { display: inline; }
+/* Blockvariante fuer ganze Anleitungs-Bloecke (z. B. eine komplette <ol>),
+   damit Online- und Druck-Anleitung wirklich getrennte Texte sein koennen. */
+.only-screen.blk { display: block; }
+@media print {
+  .only-screen, .only-screen.blk { display: none !important; }
+  .only-print { display: inline; }
+  .only-print.blk { display: block; }
+}
+
+/* ============================================================
+   Zeitplan-Uebersicht (zweispaltig neben der Teamliste)
+   Gleiche Optik in allen Boegen: schmale Zeitspalte, damit der
+   Rundenname auch auf Papier ungekuerzt lesbar bleibt. */
+table.timeplan { table-layout: fixed; width: 100%; }
+table.timeplan th, table.timeplan td { padding: 2px 6px; }
+table.timeplan th:nth-child(odd), table.timeplan td:nth-child(odd) {
+  width: 4.6em; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums;
+}
+table.timeplan td:nth-child(even) { text-align: left; }
+table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }

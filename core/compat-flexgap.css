@@ -1,0 +1,224 @@
+/* ============================================================================
+   compat-flexgap.css – Ersatzabstaende fuer Flexbox-"gap"
+
+   Greift nur, wenn core/compat.js <html class="no-flexgap"> gesetzt hat, also
+   auf Safari < 14.1 (iPad bis iOS 14.4, insbesondere die auf iOS 12.5.7
+   festsitzenden Geraete iPad Air 1 / iPad mini 2 / iPad mini 3).
+   Moderne Browser sehen von dieser Datei nichts.
+
+   Drei Muster:
+     a) Container OHNE Umbruch
+          > * + *   bekommt margin-left (Zeile) bzw. margin-top (Spalte)
+
+     b) Container MIT flex-wrap
+          > *:not(:last-child)  margin-right  (Abstand in der Zeile)
+          > *                   margin-bottom (Abstand zwischen den Zeilen)
+          Container             margin-bottom um denselben Wert verringert
+        Bewusst KEIN negativer margin-top/-left am Container: der wuerde den
+        Container selbst verschieben und in Flex-/Grid-Eltern dessen Groesse
+        verfaelschen. Ein negativer margin-bottom verschiebt nichts und
+        gleicht die zusaetzliche Hoehe exakt aus.
+
+     c) Container mit nacktem TEXT als Kind (z. B. <label>Runde<select>…)
+        Der Text ist ein anonymes Flex-Item und laesst sich nicht selektieren;
+        "> * + *" traefe hier nichts. Steht der Text VORNE, ist das Feld das
+        erste Element-Kind - genau das drueckt ":first-child" aus. Steht der
+        Text HINTEN, bekommt das Element davor den Rand auf seiner Rueckseite.
+        Beide Bogen-Varianten (nackter Text bzw. <span class="cfg-lbl">) sind
+        damit gleichzeitig abgedeckt.
+
+   WICHTIG: als LETZTES Stylesheet einbinden. Bei jedem neuen Flex-Container
+   mit "gap" hier den passenden Ersatzabstand ergaenzen.
+   ========================================================================== */
+
+/* ══ Spielkarten – gelten am Bildschirm UND im Druck ═════════════════════ */
+.no-flexgap .pair > * + * { margin-top: 4px; }
+/* Achtung: gap ADDIERT sich zu vorhandenen Margins, ein Ersatz-margin
+   ERSETZT sie dagegen. Kinder mit eigenem Margin in Gap-Richtung – hier
+   .presult – brauchen deshalb die Summe aus beidem. */
+.no-flexgap .pair > .presult { margin-top: 8px; }   /* 4px eigene + 4px gap */
+.no-flexgap .pnames > * + * { margin-left: 8px; }
+.no-flexgap .pside > * + * { margin-left: 4px; }
+.no-flexgap .mres > * + * { margin-left: 4px; }
+.no-flexgap .sset > * + * { margin-top: 1px; }
+.no-flexgap .sbox > * + * { margin-left: 2px; }
+/* .psets und .presult koennen umbrechen. In den engen Tabellenzellen wird
+   bewusst NUR der waagerechte Abstand nachgebildet: eine zusaetzliche
+   Zeilenhoehe wuerde jede Spielkarte und damit den ganzen Spielplan
+   aufblaehen. Die Satz-Kaestchen haben eigene Rahmen und Innenabstaende,
+   im seltenen Umbruchfall kleben sie also trotzdem nicht aneinander. */
+.no-flexgap .psets > *:not(:last-child) { margin-right: 10px; }
+.no-flexgap .presult > *:not(:last-child) { margin-right: 8px; }
+
+/* Breite Spielplan-Tabellen setzen eigene, kleinere Abstaende
+   (spielplan.css, @media screen and (min-width: 641px)). */
+@media screen and (min-width: 641px) {
+  .no-flexgap .table-scroll.is-wide table.sched .pair > * + * { margin-top: 3px; }
+  .no-flexgap .table-scroll.is-wide table.sched .pair > .presult { margin-top: 7px; } /* 4px eigene + 3px gap */
+  .no-flexgap .table-scroll.is-wide table.sched .pnames > * + * { margin-left: 5px; }
+  .no-flexgap .table-scroll.is-wide table.sched .psets > *:not(:last-child) { margin-right: 6px; }
+  .no-flexgap .table-scroll.is-wide table.sched.compact .psets > *:not(:last-child) { margin-right: 4px; }
+  .no-flexgap .table-scroll.is-wide table.sched.ultra-compact .psets > *:not(:last-child) { margin-right: 5px; }
+}
+
+/* ══ Seitenlayout – Bildschirm UND Druck ════════════════════════════════ */
+.no-flexgap .row > *:not(:last-child) { margin-right: 8mm; }
+.no-flexgap .row > * { margin-bottom: 8mm; }
+.no-flexgap .row { margin-bottom: -8mm; }
+.no-flexgap .grpwrap > *:not(:last-child) { margin-right: 8mm; }
+.no-flexgap .grpwrap > * { margin-bottom: 8mm; }
+.no-flexgap .grpwrap { margin-bottom: -8mm; }
+
+/* KO-Baum */
+.no-flexgap .bracket > * + * { margin-left: 6mm; }
+.no-flexgap .bracket .brcol > * + * { margin-top: 4px; }
+.no-flexgap .bracket .brm .brside > * + * { margin-left: 4px; }
+@media (max-width: 700px) {
+  /* .bracket steht hier auf flex-direction: column */
+  .no-flexgap .bracket > * + * { margin-left: 0; margin-top: 6mm; }
+}
+
+/* ══ Nur Bildschirm: Bedienleisten, Konfig-Karte, Panels ════════════════ */
+@media screen {
+  /* App-Leiste (eigene margin-bottom: 14px) */
+  .no-flexgap .app-bar > *:not(:last-child) { margin-right: 10px; }
+  .no-flexgap .app-bar > * { margin-bottom: 10px; }
+  .no-flexgap .app-bar { margin-bottom: 4px; }
+  .no-flexgap .app-bar__back > * + * { margin-left: 4px; }
+  .no-flexgap .app-bar__actions > * + * { margin-left: 6px; }
+  .no-flexgap .app-bar__btn > * + * { margin-left: 6px; }
+
+  /* Runden-Navigator ueber dem Spielplan (eigene margin-bottom: 14px) */
+  .no-flexgap .schedule-roundbar > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .schedule-roundbar > * { margin-bottom: 8px; }
+  .no-flexgap .schedule-roundbar { margin-bottom: 6px; }
+  .no-flexgap .schedule-roundbar label > * + * { margin-left: 7px; }
+  .no-flexgap .schedule-roundbar label > select:first-child { margin-left: 7px; } /* Muster c */
+
+  /* Buttons: das Icon ist ein Element, die Beschriftung ein nackter Text
+     (Muster c). Der Abstand haengt deshalb am Icon – auf der Seite, auf der
+     es steht: "<svg>Text" und "‹ Zurueck" rechts, "Weiter ›" links. */
+  .no-flexgap .nbtn > svg,
+  .no-flexgap .nbtn > .nico { margin-right: 6px; }
+  .no-flexgap .nbtn-round-prev > .chev { margin-right: 6px; }
+  .no-flexgap .nbtn-round-next > .chev { margin-left: 6px; }
+
+  /* Turnier-Konfiguration */
+  /* .cfgcard-head enthaelt nur einen Textknoten – kein Ersatz noetig. */
+  .no-flexgap .cfgfield > * + * { margin-top: 5px; }
+  .no-flexgap .cfgfield > input:first-child,
+  .no-flexgap .cfgfield > select:first-child { margin-top: 5px; }     /* Muster c */
+  .no-flexgap .cfg-lbl > svg { margin-right: 5px; }                   /* Muster c */
+  .no-flexgap .cfgres-item > * + * { margin-top: 3px; }
+  .no-flexgap .cfgfield-row > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .cfgfield-row > * { margin-bottom: 8px; }
+  .no-flexgap .cfgfield-row { margin-bottom: -8px; }
+  .no-flexgap .cfgresult > *:not(:last-child) { margin-right: 10px; }
+  .no-flexgap .cfgresult > * { margin-bottom: 10px; }
+  .no-flexgap .cfgresult { margin-bottom: -8px; }                     /* eigene 2px */
+  .no-flexgap .cfgcard-actions > *:not(:last-child) { margin-right: 10px; }
+  .no-flexgap .cfgcard-actions > * { margin-bottom: 8px; }
+  .no-flexgap .cfgcard-actions { margin-bottom: -8px; }
+
+  /* Namens-, Feld- und Ausfall-Panel */
+  .no-flexgap .namepanel label > * + * { margin-top: 3px; }
+  .no-flexgap .namepanel label > input:first-child { margin-top: 3px; } /* Muster c */
+  .no-flexgap .cfggrid label > * + * { margin-top: 3px; }
+  .no-flexgap .cfggrid label > input:first-child,
+  .no-flexgap .cfggrid label > select:first-child { margin-top: 3px; } /* Muster c */
+  .no-flexgap .panel-checks label > input:first-child { margin-right: 8px; } /* Muster c */
+  .no-flexgap .nactions > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .nactions > * { margin-bottom: 8px; }
+  .no-flexgap .nactions { margin-bottom: -8px; }
+
+  /* Aeltere Leisten (Flexibel- und Schweizer-Bogen) */
+  .no-flexgap .digitalbar > *:not(:last-child),
+  .no-flexgap .digbar > *:not(:last-child) { margin-right: 10px; }
+  .no-flexgap .digitalbar > *,
+  .no-flexgap .digbar > * { margin-bottom: 8px; }
+  .no-flexgap .digitalbar,
+  .no-flexgap .digbar { margin-bottom: 4px; }                         /* eigene 12px */
+  .no-flexgap .topbar > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .topbar > * { margin-bottom: 8px; }
+  .no-flexgap .topbar { margin-bottom: 4px; }                         /* eigene 12px */
+  .no-flexgap .setupbar > *:not(:last-child) { margin-right: 14px; }
+  .no-flexgap .setupbar > * { margin-bottom: 14px; }
+  .no-flexgap .setupbar { margin-bottom: -2px; }                      /* eigene 12px */
+  .no-flexgap .setupbar label > * + * { margin-left: 6px; }
+  .no-flexgap .setupbar label > select:first-child { margin-left: 6px; } /* Muster c */
+
+  /* Zurueck-/Navigationszeile ganz oben */
+  /* Topbar der Turnierboegen. ":not(.appbar)" haelt die Regeln von der
+     Startseite fern – deren erste .noprint-Leiste ist die .appbar und hat
+     eigene, groessere Abstaende. */
+  .no-flexgap body > .noprint:first-of-type:not(.appbar) > *:not(:last-child) { margin-right: 12px; }
+  .no-flexgap body > .noprint:first-of-type:not(.appbar) > * { margin-bottom: 12px; }
+  .no-flexgap body > .noprint:first-of-type:not(.appbar) { margin-bottom: -4px; }  /* eigene 8px */
+  .no-flexgap body > .noprint:first-of-type:not(.appbar) a > * + * { margin-left: 6px; }
+
+  /* Teamname + Platz-Chip in den Wertungstabellen */
+  .no-flexgap .stand .nm > * + * { margin-left: 8px; }
+}
+
+@media screen and (max-width: 640px) {
+  /* .row steht hier auf flex-direction: column, Abstand 10px */
+  .no-flexgap .row > *:not(:last-child) { margin-right: 0; }
+  .no-flexgap .row > * { margin-bottom: 10px; }
+  .no-flexgap .row { margin-bottom: -10px; }
+  .no-flexgap .pair > * + * { margin-top: 6px; }
+  .no-flexgap .pair > .presult { margin-top: 14px; }  /* 8px eigene + 6px gap */
+  .no-flexgap .pnames > * + * { margin-left: 4px; }
+  .no-flexgap .sbox > * + * { margin-left: 4px; }
+  .no-flexgap .psets > *:not(:last-child) { margin-right: 12px; }
+}
+
+@media screen and (max-width: 560px) {
+  .no-flexgap .app-bar > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .app-bar > * { margin-bottom: 8px; }
+  .no-flexgap .app-bar { margin-bottom: 6px; }
+}
+
+/* ══ Nur Druck: die Spielkarten nutzen dort mm-Abstaende ════════════════ */
+@media print {
+  .no-flexgap .pair > * + * { margin-top: 0.6mm; }
+  .no-flexgap .pair > .presult { margin-top: 1.6mm; } /* 1mm eigene + 0.6mm gap */
+  .no-flexgap .pnames > * + * { margin-left: 1.2mm; }
+  .no-flexgap .sbox > * + * { margin-left: 0.3mm; }
+  .no-flexgap .psets > *:not(:last-child) { margin-right: 1.6mm; }
+  .no-flexgap .sched.compact .psets > *:not(:last-child) { margin-right: 1.1mm; }
+}
+
+/* ══ Startseite (index.html) ════════════════════════════════════════════ */
+.no-flexgap .appbar > * + * { margin-left: 12px; }
+.no-flexgap .appbar .brand > * + * { margin-left: 10px; }
+.no-flexgap .appbar-actions > * + * { margin-left: 8px; }
+.no-flexgap .pill > * + * { margin-left: 6px; }
+.no-flexgap .pill > span:first-child { margin-left: 6px; }            /* Muster c */
+.no-flexgap .filterbar > *:not(:last-child),
+.no-flexgap .filterbar-desktop > *:not(:last-child) { margin-right: 8px; }
+.no-flexgap .filterbar > *,
+.no-flexgap .filterbar-desktop > * { margin-bottom: 6px; }
+.no-flexgap .filterbar,
+.no-flexgap .filterbar-desktop { margin-bottom: -6px; }
+.no-flexgap .mobile-filter-grid .mf-field > * + * { margin-top: 4px; }
+.no-flexgap .mobile-filter-grid .mf-field > select:first-child { margin-top: 4px; } /* Muster c */
+/* Inline gesetzte Flex-Container auf der Startseite (style="…gap:…") */
+.no-flexgap #sessions-label > span > * + * { margin-left: 12px; }
+.no-flexgap #sessions-more > button > * + * { margin-left: 6px; }
+.no-flexgap .card-body > * + * { margin-top: 12px; }
+.no-flexgap .card-footer > * + * { margin-left: 10px; }
+/* .btn-open enthaelt nur einen Textknoten – kein Ersatz noetig. */
+.no-flexgap .stat > span:first-child { margin-right: 4px; }          /* Muster c */
+.no-flexgap .stats > *:not(:last-child) { margin-right: 6px; }
+.no-flexgap .stats > * { margin-bottom: 6px; }
+.no-flexgap .stats { margin-bottom: -6px; }
+.no-flexgap .features > *:not(:last-child) { margin-right: 5px; }
+.no-flexgap .features > * { margin-bottom: 5px; }
+.no-flexgap .features { margin-bottom: -5px; }
+.no-flexgap .session-card > * + * { margin-left: 14px; }
+.no-flexgap .session-actions > * + * { margin-left: 8px; }
+@media (max-width: 560px) {
+  /* .filterbar laeuft hier ohne Umbruch als Scroll-Leiste */
+  .no-flexgap .filterbar > * { margin-bottom: 0; }
+  .no-flexgap .filterbar { margin-bottom: 0; }
+}

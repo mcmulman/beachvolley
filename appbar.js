@@ -2,9 +2,20 @@
    „← Zur Übersicht"-Navizeile. Rein Bildschirm-relevant; die Leiste ist .noprint
    und damit im Druck unsichtbar. */
 (function () {
+  /* Titel fuer die App-Leiste: die Bogen setzen ihn ueber
+     document.body.dataset.barTitle ("KO-System · 8 Teams · 4 Felder").
+     Fallback fuer Seiten ohne diese Angabe: der Fenstertitel ohne das Wort
+     "Turnierbogen" und ohne die Groessenangabe in Klammern. */
   function cleanTitle(t) {
     if (!t) return 'Turnierbogen';
-    return t.replace(/^\s*Turnierbogen\s*[–—-]?\s*/i, '').trim() || t.trim();
+    var s = String(t).replace(/\s*\([^()]*\)\s*$/, '');
+    s = s.replace(/\s*[–—-]\s*Turnierbogen\b/i, '');
+    s = s.replace(/^\s*Turnierbogen\s*[–—-]?\s*/i, '');
+    return s.trim() || String(t).trim();
+  }
+  function barTitle() {
+    var t = document.body && document.body.getAttribute('data-bar-title');
+    return (t && t.trim()) ? t.trim() : cleanTitle(document.title);
   }
 
   function build() {
@@ -35,7 +46,7 @@
 
     var title = document.createElement('div');
     title.className = 'app-bar__title';
-    title.textContent = cleanTitle(document.title);
+    title.textContent = barTitle();
     bar.appendChild(title);
 
     var actions = document.createElement('div');
@@ -66,9 +77,10 @@
     // Titel live nachziehen, falls die Seite document.title dynamisch aktualisiert
     // (z. B. bei Änderung der Teamanzahl) – sonst zeigt die App-Leiste einen veralteten Stand.
     var titleEl = document.querySelector('title');
-    if (titleEl && window.MutationObserver) {
-      new MutationObserver(function () { title.textContent = cleanTitle(document.title); })
-        .observe(titleEl, { childList: true });
+    if (window.MutationObserver) {
+      var sync = function () { title.textContent = barTitle(); };
+      if (titleEl) new MutationObserver(sync).observe(titleEl, { childList: true });
+      new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['data-bar-title'] });
     }
 
     // Mobile Scroll-Hinweis: Tabellen (Spielplan/Verlauf), die border-collapse

@@ -30,21 +30,8 @@
     .guide li { font-size: 8px; margin: 1px 0; line-height: 1.3; }
     .guide .hi { font-weight: 700; }
     .page-note { border: 1px solid #888; border-radius: 3px; padding: 2px 8px; font-size: 7.5px; margin: 0 0 3px; line-height: 1.3; background: #f9f9f9; }
-    .central-table { table-layout: fixed; }
-    .central-table th, .central-table td { font-size: 6.2px; height: 8mm; padding: 1px 2px; }
-    .central-table .code { width: 13mm; }
-    .central-table .name { width: 27mm; }
-    .central-table .rankcol { width: 10mm; }
-    .central-table .round { width: 16mm; }
-    .central-table .rplace { width: 6mm; }
-    .central-table span { font-size: 6.5px; color: #444; }
-    .central-table th:nth-child(1), .central-table th:nth-child(2), .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 7.2px; font-weight: 700; }
-    .rank-badge { display: inline-block; font-weight: 800; }
-    .rank-badge.rank-none { color: #999; font-weight: 400; }
-    .rank-badge.rank-top.rank-1 { color: #8a6d00; }
-    .rank-badge.rank-top.rank-2 { color: #55606b; }
-    .rank-badge.rank-top.rank-3 { color: #8a4b1f; }
-    .example-row td { background: #f7f7f7; color: #555; font-style: italic; }
+    /* Zentrale Tabelle, Rang-Badges und Beispielzeile: zentral in
+       spielplan.css formatiert – hier NICHT duplizieren. */
     .round-grid { display: grid; grid-template-columns: 1fr; gap: 3mm 6mm; margin-top: 3mm; }
     .legend { font-size: 12px; color: #333; margin-top: 10px; }
     .noscreen { display: none; }
@@ -65,6 +52,9 @@
     .namepanel { margin: 4px 0 6px; padding: 8px 10px; border: 1px solid #cdd8e6; border-radius: 5px; background: #f4f8fd; }
     .namepanel .ngrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 12px; }
     .namepanel label { display: flex; flex-direction: column; font-size: 9.5px; color: #1f4e79; font-weight: 700; gap: 2px; }
+    /* Ersatzabstand fuer alte iPads (siehe core/compat-flexgap.css): dieser
+       Bogen nutzt 2px statt der dort hinterlegten 3px. */
+    html.no-flexgap .namepanel label > * + * { margin-top: 2px; }
     .namepanel input, .namepanel select { padding: 4px 6px; font-size: 11px; border: 1px solid #aab8cc; border-radius: 3px; }
     .namepanel input[type="checkbox"] { width: auto; height: auto; padding: 0; }
     .nactions { margin-top: 8px; display: flex; gap: 7px; flex-wrap: wrap; }
@@ -81,7 +71,6 @@
     .teams td { text-align: left; }
     .teams .num { width: 24px; font-weight: bold; background: #eee; text-align: center; }
     .teams .name { height: 26px; }
-    .central-table .auto { background: #e7f6ec; }
     .dropped-team { color: #b00020; text-decoration: line-through; }
     .abt { color: #c00; font-size: 0.8em; font-weight: 600; }
     .dropped-note { color: #b00020; font-style: italic; }
@@ -100,7 +89,6 @@
         print-color-adjust: exact;
       }
       .noprint { display:none !important; }
-      #session-title-display { display: block !important; }
       .page {
         width:auto;
         min-height:0;
@@ -141,24 +129,6 @@
         break-inside:avoid;
       }
       th, td { padding:1mm 1.2mm; }
-      .central-table th, .central-table td {
-        font-size:7.9pt;
-        height:7.5mm;
-        padding:0.9mm 1.3mm;
-      }
-      .central-table span { font-size:7pt; }
-      .central-table th:nth-child(1),
-      .central-table th:nth-child(2),
-      .central-table td:nth-child(1),
-      .central-table td:nth-child(2) {
-        font-size:9.2pt;
-      }
-      .central-table .code { width:14mm; }
-      .central-table .name { width:28mm; }
-      .central-table .rankcol { width:11mm; }
-      .central-table .round { width:17mm; }
-      .central-table .rplace { width:7mm; }
-      .central-table thead { display: table-header-group; }
       .team-legend {
         font-size:7.2pt;
         padding:1.3mm 2mm;
@@ -181,14 +151,6 @@
       .guide h2 { font-size: 14px; margin: 0 0 6px; }
       .guide li { font-size: 12px; margin: 3px 0; }
       .page-note { font-size: 12px; padding: 6px 10px; margin: 0 0 10px; }
-      .central-table th, .central-table td { font-size: 11px; height: auto; padding: 4px 4px; }
-      .central-table span { font-size: 10px; color: #444; }
-      .central-table th:nth-child(1), .central-table th:nth-child(2), .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 12px; }
-      .central-table .code { width: auto; min-width: 52px; }
-      .central-table .name { width: auto; min-width: 100px; }
-      .central-table .rankcol { width: auto; min-width: 46px; }
-      .central-table .round { width: auto; min-width: 82px; }
-      .central-table .rplace { width: auto; min-width: 28px; }
       .round-grid { gap: 8px 16px; margin-top: 10px; }
       .team-legend { font-size: 11px; padding: 4px 8px; gap: 2px 10px; }
       .namepanel label, .cfggrid label { font-size: 12px; }
@@ -271,25 +233,9 @@
         text-transform: uppercase;
         letter-spacing: 0.3px;
       }
-      /* Rang-Badge direkt am Teamnamen in "Laufende Tabelle & Endstand" - gut
+      /* Rang-Badge direkt am Teamnamen in der Schweizer Tabelle - gut
          sichtbar, damit der (End-)Platz nicht erst in der letzten, weit
          entfernten Runden-Spalte gesucht werden muss. */
-      .rank-badge {
-        display: inline-block;
-        min-width: 26px;
-        padding: 3px 7px;
-        border-radius: 999px;
-        background: #eef2f7;
-        color: #33455e;
-        font-weight: 800;
-        font-size: 12px;
-        text-align: center;
-      }
-      .rank-badge.rank-none { background: none; color: #99a3b1; font-weight: 500; min-width: 0; padding: 0; }
-      .rank-badge.rank-live { background: #e4ecf7; color: #1f4e79; }
-      .rank-badge.rank-final.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
-      .rank-badge.rank-final.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
-      .rank-badge.rank-final.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
       .nbtn {
         border-radius: 6px;
         padding: 7px 15px;
@@ -435,14 +381,7 @@
     width: 100%;
     min-height: 40px;
   }
-  .central-table { table-layout: auto; }
-  .central-table th, .central-table td { font-size: 7px; height: auto; padding: 3px 2px; }
-  .central-table .code { width: auto; min-width: 35px; }
-  .central-table .name { width: auto; min-width: 60px; }
-  .central-table .rankcol { width: auto; min-width: 36px; }
-  .central-table .round { width: auto; min-width: 50px; }
-  .central-table .rplace { width: auto; min-width: 25px; }
-  .rank-badge { min-width: 22px; padding: 2px 5px; font-size: 11px; }}
+}
 @media print {
       /* Show all rounds in print mode, ignore inline display:none */
       [data-round-num] { display: block !important; }
@@ -506,14 +445,17 @@
   </style>
   <link rel="stylesheet" href="spielplan.css">
   <link rel="stylesheet" href="app-skin.css">
+  <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
+       Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
   <div class="noprint" style="margin:0 0 8px;padding:0 4mm"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-schweizer-system.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
   <div id="app">
     <section class="page">
-      <h1>Turnierbogen – <span id="headerTeamCount">12</span> Teams · Schweizer System</h1>
-      <p class="sub" id="h-sub"><span id="headerFieldCount">6</span> Felder · <span id="headerRoundCount">7</span> Runden · <span id="headerGamesPerTeam">7</span> Spiele/Team · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.<span id="mainTimeText" class="tt" hidden></span></p>
-      <div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
+      <h1 id="h-title">Schweizer System</h1>
+      <p class="sub" id="h-sub"><span id="headerTeamCount">12</span> Teams · <span id="headerFieldCount">6</span> Felder · <span id="headerRoundCount">7</span> Runden · <span id="headerGamesPerTeam">7</span> Spiele/Team · je <span class="rmode">1 Satz bis 15</span> (2 Pkt. Vorsprung) · Sieg = 2 Pkt.<span id="mainTimeText" class="tt" hidden></span></p>
       <div id="guideContainer"></div>
       <div id="configSection" class="noprint cfgcard">
         <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
@@ -594,8 +536,8 @@
         </div>
       </div>
       <div id="roundPagesContainer"></div>
-      <h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>
-      <p class="sub">Punktestand, Differenz und Platz werden automatisch berechnet. Die Zeilen sortieren sich laufend nach aktuellem Platz (Platz 1 oben) – die letzte Runden-Spalte ist damit automatisch der Endstand.</p>
+      <h1 id="standingsSection">Schweizer Tabelle</h1>
+      <p class="sub"><span class="only-screen">Punkte, Ball-Differenz und Platz werden automatisch berechnet. Die Zeilen sortieren sich laufend nach aktuellem Platz (Platz 1 oben) – die letzte Runden-Spalte ist damit automatisch der Endstand.</span><span class="only-print">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
       <div id="centralTableContainer"></div>
 
       <div class="row">
@@ -603,20 +545,20 @@
           <table>
             <caption>Wertung pro Spiel</caption>
             <tr><th>Ergebnis</th><th>Wertung</th></tr>
-            <tr><td>Sieg</td><td>1 Punkt</td></tr>
+            <tr><td>Sieg</td><td>2 Punkte</td></tr>
             <tr><td>Niederlage</td><td>0 Punkte</td></tr>
-            <tr><td>Freilos / spielfrei</td><td>1 Punkt, ohne Differenz</td></tr>
+            <tr><td>Freilos / spielfrei</td><td>2 Punkte, ohne Ball-Differenz</td></tr>
           </table>
         </div>
         <div class="grow">
           <table>
-            <caption>Tie-Breaker bei Gleichstand</caption>
+            <caption>Reihenfolge bei Gleichstand</caption>
             <tr><th>Rang</th><th>Kriterium</th></tr>
-            <tr><td>1</td><td>Punkte (Siege)</td></tr>
+            <tr><td>1</td><td>Punkte</td></tr>
             <tr><td>2</td><td>Ball-Differenz</td></tr>
             <tr><td>3</td><td>erzielte Ballpunkte</td></tr>
             <tr><td>4</td><td>direkter Vergleich</td></tr>
-            <tr><td>5</td><td>Losentscheid</td></tr>
+            <tr><td>5</td><td>Losentscheid («=» in der Tabelle)</td></tr>
           </table>
         </div>
       </div>
@@ -635,6 +577,7 @@
     </div>
   </div>
 
+  <script src="core/turnier-archive.js"></script>
   <script>
     const CFG_KEY = 'sw_univ_cfg';
     const NAMES_KEY = 'sw_univ_names';
@@ -683,6 +626,30 @@
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
     const SESSION_TITLE = 'Schweizer System (Universal)';
     const TITLE_KEY = SESSION_KEY + '_title';
+
+    /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
+       Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
+    const SHEET_ID = 'swiss';
+    const SHEET_TYPE = 'Schweizer System';
+    const ARCHIVE_KEYS = [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY,
+                          FIELDS_KEY, DROPOUT_KEY, ROUND_MODE_KEY, START_KEY, END_KEY, TITLE_KEY];
+    function archiveOpts(){
+      let names = {};
+      try { names = JSON.parse(localStorage.getItem(NAMES_KEY) || '{}') || {}; } catch(e){}
+      let title = '';
+      try { title = localStorage.getItem(TITLE_KEY) || ''; } catch(e){}
+      const teams = [];
+      for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
+      const hasNames = Object.keys(names).some(k => (names[k] || '').trim() !== '');
+      let scores = {}, dropped = [];
+      try { scores = JSON.parse(localStorage.getItem(SCORES_KEY) || '{}') || {}; } catch(e){}
+      try { dropped = JSON.parse(localStorage.getItem(DROPOUT_KEY) || '[]') || []; } catch(e){}
+      const hasScores = Object.keys(scores).some(k => String(scores[k] || '').trim() !== '');
+      const empty = !hasNames && !hasScores && !dropped.length && !title;
+      return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
+               title:title, teams:teams, liveKey:SESSION_KEY };
+    }
+    if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
 
     function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function loadJSON(key, fallback){ try{ const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }catch(e){ return fallback; } }
@@ -817,11 +784,23 @@
         localStorage.setItem('beachl_sessions', JSON.stringify(registry));
       } catch(e){}
     }
+    /* Ueberschrift + Fenster-/Drucktitel, identisch zu den anderen Bogen. */
+    function applyDocTitle(val) {
+      let t = val;
+      if (t == null) { try { t = localStorage.getItem(TITLE_KEY) || ''; } catch(e) { t = ''; } }
+      document.title = (typeof TArchive !== 'undefined')
+        ? TArchive.docTitle(t, SHEET_TYPE, TArchive.sizeInfo(NTEAMS, NFIELDS))
+        : ('Turnierbogen – ' + SHEET_TYPE);
+      const h = document.getElementById('h-title');
+      if (h) h.innerHTML = (typeof TArchive !== 'undefined')
+        ? TArchive.headTitleHtml(t, SHEET_TYPE) : SHEET_TYPE;
+      if (typeof TArchive !== 'undefined')
+        document.body.setAttribute('data-bar-title', TArchive.barTitle(SHEET_TYPE, NTEAMS, NFIELDS));
+    }
     function saveTitle() {
       const val = (document.getElementById('session-title-input') || {}).value || '';
       try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
-      const disp = document.getElementById('session-title-display');
-      if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+      applyDocTitle(val);
     }
 
     function restoreTitle() {
@@ -829,8 +808,7 @@
         const val = localStorage.getItem(TITLE_KEY) || '';
         const inp = document.getElementById('session-title-input');
         if (inp) inp.value = val;
-        const disp = document.getElementById('session-title-display');
-        if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+        applyDocTitle(val);
       } catch(e) {}
     }
 
@@ -909,8 +887,8 @@
         + '<h2>Kurzanleitung – so läuft das Turnier</h2>'
         + '<ol>'
         + '<li><span class="hi">Ablauf:</span> ' + NROUNDS + ' Runden, ' + NTEAMS + ' Teams, ' + NFIELDS + ' Felder. Jedes Team spielt pro Runde genau einmal – insgesamt ' + NROUNDS + ' Spiele pro Team, niemand scheidet aus.</li>'
-        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? (hasDecidingSet() ? '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Bei 1:1 entscheidet ein 3. Satz bis ' + targetForSet(3) + ' Punkte (zählt nur für Sieg/Niederlage, nicht in die Ball-Differenz). Sieger = mehr gewonnene Sätze; bei Satz-Gleichstand die Gesamt-Ball-Differenz aus Satz 1+2.' : '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.') : '1 Satz bis ' + setTarget() + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 1 Pkt., Niederlage = 0. Freilos = 1 Pkt. ohne Ball-Differenz.</li>'
-        + '<li><span class="hi">Zentrale Tabelle (Seite 1):</span> Nach jedem Spiel: oben Spielergebnis (z. B. 15:11 S = Sieg, 11:15 N = Niederlage), darunter aufaddierten Gesamtstand (Siege / Ball-Differenz / Punkte gesamt, z. B. Σ 2/+4/+30). Dann Rang in Pl.-Spalte.</li>'
+        + '<li><span class="hi">Ergebnis:</span> ' + (isMulti() ? (hasDecidingSet() ? '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Bei 1:1 entscheidet ein 3. Satz bis ' + targetForSet(3) + ' Punkte (zählt nur für Sieg/Niederlage, nicht in die Ball-Differenz). Sieger = mehr gewonnene Sätze; bei Satz-Gleichstand die Gesamt-Ball-Differenz aus Satz 1+2.' : '2 Sätze bis ' + setTarget() + ' Punkte (je mind. 2 Punkte Vorsprung). Sieger = mehr gewonnene Sätze; bei 1:1 entscheidet die Gesamt-Ball-Differenz.') : '1 Satz bis ' + setTarget() + ' Punkte (mind. 2 Punkte Vorsprung).') + ' Sieg = 2 Punkte, Niederlage = 0. Freilos = 2 Punkte ohne Ball-Differenz.</li>'
+        + '<li><span class="hi">Zentrale Tabelle (Seite 1):</span> Nach jedem Spiel: oben Spielergebnis (z. B. 15:11 S = Sieg, 11:15 N = Niederlage), darunter aufaddierten Gesamtstand (Punkte / Ball-Differenz / Ballpunkte gesamt, z. B. Σ 2/+4/+30). Dann Rang in Pl.-Spalte.</li>'
         + '<li><span class="hi">Nächste Paarungen:</span> Aus Pl.-Spalte bilden: Pl. 1-2, 3-4, 5-6 usw. Bereits gespielte Paarungen möglichst tauschen.</li>'
         + '<li><span class="hi">Wertung/Tie-Break:</span> S → BD → +P → direkter Vergleich → Los.</li>'
         + '</ol>'
@@ -944,25 +922,30 @@
       document.getElementById('scheduleOverview').innerHTML = html;
     }
     function buildCentralTable(){
-      let head = '<thead><tr><th class="code">Team</th><th class="name">Name</th><th class="rankcol">Platz</th>';
-      for(let r=1;r<=NROUNDS;r++) head += '<th class="round">R' + r + '<br>Erg.+Σ<br>(S/BD/+P)</th><th class="rplace">Pl.</th>';
+      let head = '<thead><tr><th class="teamcol">Team / Name</th><th class="rankcol">Platz</th>';
+      for(let r=1;r<=NROUNDS;r++) head += '<th class="round">R' + r + '<br>Erg.+Σ<br>(Pkt/BD/+P)</th><th class="rplace">Pl.</th>';
       head += '</tr></thead>';
-      let rows = '<tbody><tr class="example-row"><td>Team X</td><td>Teamname</td><td class="rankcol"><span class="rank-badge rank-1">1.</span></td>';
-      for(let r=1;r<=NROUNDS;r++) rows += (r === 1 ? '<td>15:11 S<br><span>Σ 1/+4/+15</span></td><td>3</td>' : '<td></td><td></td>');
+      let rows = '<tbody><tr class="example-row ex ex-start ex-end">'
+        + '<td class="teamcol"><span class="ex-badge">Beispiel</span>'
+        + '<span class="t-line">Team X</span><span class="tnm t-nm">(Teamname)</span></td>'
+        + '<td class="rankcol"><span class="rank-badge rank-1">1.</span></td>';
+      for(let r=1;r<=NROUNDS;r++) rows += (r === 1 ? '<td>15:11 S<br><span>Σ 2/+4/+15</span></td><td class="rplace">3.</td>' : '<td></td><td></td>');
       rows += '</tr>';
       for(let t=1;t<=NTEAMS;t++){
-        rows += '<tr id="ctr_' + t + '" data-team="' + t + '"><td id="cteam_' + t + '">Team ' + t + '</td><td data-team-name="' + t + '"></td><td class="rankcol" id="crank_' + t + '"></td>';
+        rows += '<tr id="ctr_' + t + '" data-team="' + t + '"><td class="teamcol" id="cteam_' + t + '">Team ' + t + '</td><td class="rankcol" id="crank_' + t + '"></td>';
         for(let r=1;r<=NROUNDS;r++) rows += '<td id="ct_' + t + '_' + r + '"></td><td class="rplace" id="cp_' + t + '_' + r + '"></td>';
         rows += '</tr>';
       }
       rows += '</tbody>';
-      return '<div class="table-scroll"><table class="central-table">' + head + rows + '</table></div>'
-        + '<div class="input-hint">'
-        + '<strong>S</strong> = Siege (aufaddiert) &nbsp;·&nbsp;'
+      /* Spalten-Legende steht VOR der Tabelle, direkt unter der Ueberschrift
+         "Schweizer Tabelle". Die Ausfuellanleitung selbst (online vs. Papier)
+         steht dort schon in der <p class="sub"> - hier nicht wiederholen. */
+      const legend = '<strong>S</strong> = Siege (aufaddiert) &nbsp;·&nbsp;'
         + '<strong>BD</strong> = Ball-Differenz (aufaddiert, z. B. 15:11 → +4 · 11:15 → −4) &nbsp;·&nbsp;'
         + '<strong>+P</strong> = erzielte Punkte (aufaddiert) &nbsp;·&nbsp;'
-        + '<strong>S → N</strong> = Sieg / Niederlage'
-        + '</div>';
+        + '<strong>S → N</strong> = Sieg / Niederlage';
+      return '<div class="input-hint hint-top hint-section">' + legend + '</div>'
+        + '<div class="table-scroll"><table class="central-table">' + head + rows + '</table></div>';
     }
     function baseSlotMin(){ return (BASE_END - BASE_START) / NROUNDS; }
     function roundBaseWindow(r){
@@ -974,13 +957,20 @@
     /* Ergebnis-Formular: je Team eine eigene Zeile mit den zugehoerigen Satz-Feldern,
        darueber eine Kopfzeile (Satz 1 / Satz 2 / Entsch.), darunter der Sieger separat.
        Identisch aufgebaut wie im Turnierbogen "Alle gegen Alle". */
-    /* Kurz-Erklaerung des Ergebnis-Formulars - identisch in beiden Turnierbogen. */
+    /* Kurz-Erklaerung des Ergebnis-Formulars - identisch in beiden Turnierbogen.
+       Bildschirm- und Druckfassung sind logisch getrennt: online rechnet der
+       Bogen mit, auf Papier passiert alles mit dem Stift. */
     function scoreFormLegend(r){
       const multi = isMultiForRound(r);
       const cols = !multi
         ? 'ein K\u00e4stchenpaar f\u00fcr das Ergebnis'
         : (hasDecidingSetForRound(r) ? 'je Satz ein K\u00e4stchenpaar, der Entscheidungssatz nur bei 1:1' : 'je Satz ein K\u00e4stchenpaar');
-      return 'So ausf\u00fcllen: ' + cols + ' \u2013 linkes K\u00e4stchen = linkes Team, rechtes K\u00e4stchen = rechtes Team. Nur Zahlen; mit \u201e:\u201c springst du ins Nachbark\u00e4stchen. Der Sieger wird darunter angezeigt.';
+      return '<span class="only-screen">So tr\u00e4gst du ein: ' + cols + ' \u2013 linkes K\u00e4stchen = linkes Team,'
+        + ' rechtes K\u00e4stchen = rechtes Team. Nur Zahlen; mit \u201e:\u201c oder Enter springst du ins n\u00e4chste K\u00e4stchen.'
+        + ' Der Sieger wird hervorgehoben, Tabelle und Platzierung rechnen automatisch mit.</span>'
+        + '<span class="only-print">So ausf\u00fcllen: ' + cols + ' \u2013 linkes K\u00e4stchen = linkes Team,'
+        + ' rechtes K\u00e4stchen = rechtes Team. Satzergebnis direkt nach dem Spiel mit dem Stift eintragen'
+        + ' und den Namen des Siegers einkreisen.</span>';
     }
     function scoreFormExample(r){
       const id = modeDefForRound(r).id;
@@ -1042,21 +1032,23 @@
         +   '<span class="rmode">' + modeDefForRound(r).label + '</span>'
         + '</td></tr>';
       return '<div class="round-block">'
-        + '<p class="input-hint round-explain" id="inputExamples_' + r + '">' + scoreFormLegend(r) + ' ' + scoreFormExample(r) + '</p>'
         + '<div class="table-scroll is-wide">'
         +   '<p class="mobile-schedule-title noprint">' + capText + '</p>'
         +   '<table class="sched">'
-        +     '<caption class="rcap" data-round="' + r + '">' + capText + '</caption>'
+        +     '<caption class="rcap" data-round="' + r + '">'
+        +       '<span class="cap-title">' + capText + '</span>'
+        +       '<span class="cap-hint round-explain" id="inputExamples_' + r + '">' + scoreFormLegend(r) + ' ' + scoreFormExample(r) + '</span>'
+        +     '</caption>'
         +     '<tbody>' + headRow + headHtml + '<tr data-round="' + r + '">' + cells + '</tr></tbody>'
         +   '</table>'
         + '</div>'
-        + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDefForRound(r).label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 1 Punkt</p>'
+        + '<p class="input-hint round-subline">Spielmodus: <span class="rmode">' + modeDefForRound(r).label + '</span> \u00b7 2 Punkte Vorsprung \u00b7 Sieg = 2 Punkte</p>'
         + '</div>';
     }
     function buildRoundPages(){
       const pages = [];
       for(let i=1; i<=NROUNDS; i++){
-        const note = 'Nach jeder Runde: Ergebnis auf Seite 1 eintragen (Ergebnis oben · darunter Σ aufaddiert: Siege / Ball-Diff. / Punkte · dann Rang in Pl.-Spalte) → nächste Paarungen nach Pl.-Spalte bilden: Pl. 1–2, 3–4, 5–6 usw. · bereits gespielte Paarungen möglichst tauschen.';
+        const note = 'Nach jeder Runde: Ergebnis auf Seite 1 eintragen (Ergebnis oben · darunter Σ aufaddiert: Punkte / Ball-Diff. / Ballpunkte · dann Rang in Pl.-Spalte) → nächste Paarungen nach Pl.-Spalte bilden: Pl. 1–2, 3–4, 5–6 usw. · bereits gespielte Paarungen möglichst tauschen.';
         pages.push('<section class="page rounds-page" data-round-num="' + i + '">'
           + '<div class="page-note noscreen">' + note + '</div>'
           + '<div class="round-grid">' + buildRoundBlock(i) + '</div>'
@@ -1164,6 +1156,8 @@
       fillRoundSelect();
       hydratePanels();
       restoreTitle();
+      (function(){ const i = document.getElementById('session-title-input');
+        if(i && !i.dataset.titleWired){ i.dataset.titleWired = '1'; i.addEventListener('input', saveTitle); } })();
       restoreScores();
       applyTimes();
       computeTimes();
@@ -1243,10 +1237,12 @@
       computeAll();
     }
     function resetTournament(){
-      if(!confirm('Neues Turnier starten? Teamnamen, Ergebnisse, Freilos/Dropout und die Startrunde werden gelöscht.')) return;
-      [NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, DROPOUT_KEY, ROUND_MODE_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+      saveTitle();                       // noch nicht gespeicherten Titel mitsichern
+      const started = TArchive.startNew(archiveOpts());
+      try{ localStorage.setItem(TITLE_KEY, started.title); }catch(e){}
       ROUND_MODES = {};
-      rebuild();
+      location.reload();
     }
     function restoreScores(){
       const scores = loadScores();
@@ -1772,8 +1768,7 @@
     }
     function updateNameCells(){
       for(let t=1;t<=NTEAMS;t++){
-        setHtml('cteam_' + t, droppedTeams().has(t) ? '<span class="dropped-team">Team ' + t + '</span>' : 'Team ' + t);
-        document.querySelectorAll('[data-team-name="' + t + '"]').forEach(el => el.innerHTML = teamNameCell(t));
+        setHtml('cteam_' + t, teamFull(t, { markDropped: true }));
         const row = document.getElementById('ctr_' + t);
         if(row) row.classList.toggle('drop-row', droppedTeams().has(t));
       }
@@ -1883,8 +1878,8 @@
             const {match, index} = found;
             if(isFreilos(r, index)){
               const winner = freilosWinner(r, index);
-              if(t === winner) html = 'Freilos S<br><span>Σ ' + st[t].s + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
-              else html = 'ausgef.<br><span>Σ ' + st[t].s + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
+              if(t === winner) html = 'Freilos S<br><span>Σ ' + (2 * st[t].s) + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
+              else html = 'ausgef.<br><span>Σ ' + (2 * st[t].s) + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
             } else {
               const res = slotResult(r, index);
               const wl = res.winner == null ? '–' : (res.winner === t ? 'S' : 'N');
@@ -1900,13 +1895,13 @@
                 const p2 = match.a === t ? sval2(r, index, 'B') : sval2(r, index, 'A');
                 scoreStr = o1 + ':' + p1 + ' ' + o2 + ':' + p2;
               }
-              html = scoreStr + ' ' + wl + '<br><span>Σ ' + st[t].s + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
+              html = scoreStr + ' ' + wl + '<br><span>Σ ' + (2 * st[t].s) + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
             }
           } else if(droppedTeams().has(t) && r > lastPlayedRoundFor(t)) {
-            html = 'ausgef.<br><span>Σ ' + st[t].s + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
+            html = 'ausgef.<br><span>Σ ' + (2 * st[t].s) + '/' + fmt(st[t].bd) + '/' + st[t].p + '</span>';
           }
           setHtml('ct_' + t + '_' + r, html);
-          setHtml('cp_' + t + '_' + r, roundComplete(r) ? (activePlace[t] ? String(activePlace[t]) : '–') : '');
+          setHtml('cp_' + t + '_' + r, roundComplete(r) ? (activePlace[t] ? activePlace[t] + '.' : '–') : '');
         }
       }
       // Rang-Badge direkt am Teamnamen (nicht nur ganz rechts in der letzten
@@ -1988,130 +1983,8 @@
     loadCfg();
     rebuild();
   </script>
-<!-- BL_ENH_START · Bedienhilfen: offene Spiele, Ungültig-Tooltip, Speicher-Feedback, Pfeiltasten (nur Bildschirm) -->
-<script>
-(function(){
-  if(window.__BL_ENH__) return; window.__BL_ENH__ = true;
-
-  var INVALID_TITLE = 'Ungültiges Ergebnis: Zielpunktzahl nicht erreicht oder kein 2-Punkte-Vorsprung.';
-
-  // ── Styles (nur Bildschirm; Druck bleibt unverändert) ──
-  var css = ''
-    + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
-    +   'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
-    +   'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
-    + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
-    + '@media screen{'
-    +   'td.bl-open{box-shadow:inset 0 0 0 1.5px rgba(240,160,0,.55);background:rgba(255,193,7,.07)}'
-    +   'td.bl-done{border-radius:10px;box-shadow:inset 0 0 0 1.5px rgba(10,125,44,.28);background:rgba(10,125,44,.05)}'
-    + '}'
-    + '@media print{#bl-toast{display:none!important}'
-    +   'td.bl-open{box-shadow:none!important}td.bl-done{opacity:1!important}}';
-  var st = document.createElement('style'); st.textContent = css;
-  document.head.appendChild(st);
-
-  // ── #4 Speicher-Feedback: echtes localStorage-Speichern anzeigen ──
-  var toast = document.createElement('div'); toast.id = 'bl-toast'; toast.textContent = '✓ gespeichert';
-  var toastT = null, saveT = null, armed = false;
-  function showToast(){ if(!toast.isConnected && document.body) document.body.appendChild(toast);
-    toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function(){ toast.classList.remove('show'); }, 1400); }
-  try{
-    var SP = window.Storage && window.Storage.prototype;
-    if(SP && !SP.__bl_wrapped){ var _set = SP.setItem; SP.__bl_wrapped = true;
-      SP.setItem = function(k,v){ _set.call(this,k,v);
-        if(armed){ clearTimeout(saveT); saveT = setTimeout(showToast, 450); } };
-    }
-  }catch(e){}
-
-  function num(v){ v = (v==null?'':String(v)).trim(); if(v==='') return null; if(!/^\d{1,3}$/.test(v)) return null; return parseInt(v,10); }
-
-  // ── Ergebnisfelder: nur Ziffern zulassen ──────────────────────────────
-  // Zusaetzlich komfortabel: "21:19" (auch eingefuegt) wird automatisch auf
-  // beide Kaestchen verteilt, und ":" / "-" / "/" springt ins Partnerfeld.
-  function scorePartner(inp){
-    var id = inp.id || '', m;
-    // "Alle gegen Alle": g|g2|g3 + Runde + "_" + Team (Gegner steht in data-op)
-    if(inp.dataset && inp.dataset.op != null && (m = /^(g[23]?)(\d+)_(\d+)$/.exec(id))){
-      return document.getElementById(m[1] + m[2] + '_' + inp.dataset.op);
-    }
-    // Schweizer System: s|s2|s3 + A|B + "_" + Runde + "_" + Feld
-    if((m = /^(s[23]?)(A|B)_(\d+)_(\d+)$/.exec(id))){
-      return document.getElementById(m[1] + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
-    }
-    return null;
-  }
-  function sanitizeScore(inp){
-    var v = inp.value == null ? '' : String(inp.value);
-    var pair = /^\s*(\d{1,3})\s*[:\-\/]\s*(\d{1,3})\s*$/.exec(v);
-    if(pair){
-      inp.value = pair[1];
-      var partner = scorePartner(inp);
-      if(partner && !partner.disabled) partner.value = pair[2];
-      return;
-    }
-    var clean = v.replace(/\D+/g, '').slice(0, 3);
-    if(clean !== v) inp.value = clean;
-  }
-  document.addEventListener('input', function(e){
-    var el = e.target;
-    if(!el || !el.classList || !el.classList.contains('score')) return;
-    sanitizeScore(el);
-  }, true);
-  document.addEventListener('keydown', function(e){
-    if(e.key !== ':' && e.key !== '-' && e.key !== '/') return;
-    var el = e.target;
-    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
-    var partner = scorePartner(el);
-    if(!partner || partner.disabled) return;
-    e.preventDefault();
-    partner.focus(); if(partner.select) partner.select();
-  }, true);
-  // ── #1 Ungültig-Tooltip + #3 offene/erledigte Spiele hervorheben ──
-  function update(){
-    document.querySelectorAll('input.score').forEach(function(inp){
-      if(inp.classList.contains('invalid')){ if(inp.title!==INVALID_TITLE) inp.title = INVALID_TITLE; }
-      else if(inp.title===INVALID_TITLE){ inp.removeAttribute('title'); }
-    });
-    document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
-
-    // Je Spielkarte genau EINE Markierung - identisch zum Bogen "Alle gegen Alle".
-    document.querySelectorAll('td.match').forEach(function(td){
-      var round = parseInt(td.getAttribute('data-round'), 10);
-      var col   = parseInt(td.getAttribute('data-col'), 10);
-      if(isNaN(round) || isNaN(col)) return;
-      var activeInputs = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(function(inp){ return !inp.disabled; });
-      if(!activeInputs.length) return;
-      var done = (typeof window.slotComplete === 'function') ? !!window.slotComplete(round, col) : false;
-      td.classList.add(done ? 'bl-done' : 'bl-open');
-    });
-  }
-
-  var scheduled = false;
-  function schedule(){ if(scheduled) return; scheduled = true;
-    (window.requestAnimationFrame||setTimeout)(function(){ scheduled=false; try{ update(); }catch(e){} }); }
-
-  ['computeAll','rebuild'].forEach(function(fn){
-    if(typeof window[fn]==='function'){ var orig = window[fn];
-      window[fn] = function(){ var r = orig.apply(this, arguments); schedule(); return r; }; }
-  });
-  document.addEventListener('input', function(){ armed = true; schedule(); }, true);
-
-  // ── #5 Pfeiltasten ↑/↓ zwischen Ergebnisfeldern ──
-  document.addEventListener('keydown', function(e){
-    if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
-    var el = e.target; if(!el || !el.classList || !el.classList.contains('score')) return;
-    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
-    var idx = list.indexOf(el); if(idx<0) return;
-    var next = idx + (e.key==='ArrowDown' ? 1 : -1);
-    if(next>=0 && next<list.length){ e.preventDefault(); list[next].focus(); if(list[next].select) list[next].select(); }
-  }, true);
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(update,80); });
-  else setTimeout(update, 80);
-  window.addEventListener('load', function(){ setTimeout(update, 120); });
-})();
-</script>
-<!-- BL_ENH_END -->
+<!-- Bedienhilfen: gemeinsam fuer alle Boegen -->
+<script src="spielplan-enh.js"></script>
 
 <!-- BL_PRINT_ZOOM · Zentrale & Runden-Tabellen beim Druck skalieren (Feature 4) -->
 <script>

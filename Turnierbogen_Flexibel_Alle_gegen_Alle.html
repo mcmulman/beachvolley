@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Turnierbogen – flexibel, Jeder-gegen-jeden</title>
+<title>Turnierbogen – Jeder gegen Jeden</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -24,16 +24,8 @@
   .sub { color:#555; font-size:12px; margin:0 0 12px; }
   .row { display:flex; gap:8mm; align-items:flex-start; }
   .grow { flex:1; }
-  /* Fallback fuer Flexbox-"gap" auf aelteren iPads (< iOS 14.5): ohne dies
-     ruecken die Spalten von .row ohne Abstand zusammen. */
-  @media screen {
-    @supports not (gap: 1px) {
-      .row > * + * { margin-left: 8mm; }
-      @media (max-width: 640px) {
-        .row > * + * { margin-left: 0; margin-top: 10px; }
-      }
-    }
-  }
+  /* Ersatzabstaende fuer fehlendes Flexbox-"gap" (Safari < 14.1) stehen
+     gesammelt in core/compat-flexgap.css. */
   table { border-collapse:collapse; width:100%; }
   th, td { border:1px solid var(--line); padding:4px 6px; text-align:center; }
   th { background:var(--bg); font-size:12px; }
@@ -58,8 +50,20 @@
   .track .sum { background:var(--bg); font-weight:bold; width:54px; }
   .track .pos { width:40px; font-weight:bold; }
   .track .grp { border-top:2px solid var(--line); }
+  /* Beispielzeile: deutlich vom echten Eintragebereich abgesetzt, damit sie
+     auch im Ausdruck nicht mit einem Team verwechselt wird. */
   .track .ex { background:#eef6ff; color:#15467a; font-style:italic; }
   .track .ex .tnum, .track .ex .lbl { background:#dceaf7; font-style:normal; }
+  .track tr.ex.ex-start { border-top:2px dashed #7ea9d4; }
+  .track tr.ex.ex-start > td:first-child { border-left:4px solid #1f4e79; }
+  .track tr.ex.ex-end > td { border-bottom:3px double #1f4e79; }
+  .track .ex-badge {
+    display:inline-block; margin-right:6px; padding:1px 6px;
+    border:1px solid #1f4e79; border-radius:10px;
+    background:#1f4e79; color:#fff;
+    font-size:9px; font-style:normal; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;
+  }
 
   .legend { font-size:12px; color:#333; margin-top:10px; }
   .legend b { color:#111; }
@@ -131,6 +135,16 @@
     grid-column: 2 / 3;
   }
 @media print {
+    /* Beispielzeile bleibt auch im Ausdruck klar abgegrenzt (Ränder drucken
+       immer, Flächen je nach Druckereinstellung). */
+    .track tr.ex.ex-start { border-top:1.2pt dashed #1f4e79 !important; }
+    .track tr.ex.ex-start > td:first-child { border-left:1.6pt solid #000 !important; }
+    .track tr.ex.ex-end > td { border-bottom:1.6pt double #000 !important; }
+    .track .ex-badge {
+      background:#fff !important; color:#000 !important;
+      border:0.6pt solid #000 !important; font-size:6.5pt; padding:0 1mm;
+    }
+
     @page { size: A4 landscape; margin: 10mm 12mm; }
     body {
       padding:0;
@@ -141,7 +155,6 @@
       print-color-adjust: exact;
     }
     .noprint { display:none !important; }
-    #session-title-display { display: block !important; }
     h1 { font-size:15pt; margin:0 0 1.5mm; }
     .sub { margin:0 0 2mm; font-size:8.5pt; }
     caption { margin:2mm 0 1mm; font-size:9pt; }
@@ -378,23 +391,26 @@
   <link rel="stylesheet" href="spielplan.css">
   <style>.track .pos.pz-tie{ background:#fff4d6 !important; } @media print{ .track .pos.pz-tie{ background:#fff4d6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }</style>
   <link rel="stylesheet" href="app-skin.css">
+  <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
+       Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px"><a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a> <a href="docs/format-jeder-gegen-jeden.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a></div>
 
-<h1 id="h-title">Turnierbogen – Jeder-gegen-jeden</h1>
+<h1 id="h-title">Jeder gegen Jeden</h1>
 <p class="sub" id="h-sub"></p>
-<div id="session-title-display" style="font-size:15px;font-weight:700;color:#1f4e79;margin:2px 0 8px;min-height:0;display:none"></div>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2>Kurzanleitung – so läuft das Turnier</h2>
   <ol>
-    <li><span class="hi">Modus:</span> Jeder gegen jeden – <span id="g-games">jedes Team spielt gegen jedes andere</span>, niemand scheidet aus.</li>
+    <li><span class="hi">Modus:</span> Jeder gegen Jeden – <span id="g-games">jedes Team spielt gegen jedes andere</span>, niemand scheidet aus.</li>
     <li><span class="hi">Pro Spiel:</span> <span id="g-mode-desc">1 Satz bis 21 Punkte, Sieg nur mit 2 Punkten Vorsprung (z. B. 22:20). Bei knapper Zeit bis 15.</span></li>
     <li><span class="hi">Ablauf je Runde:</span> Paarungen lt. Tabelle aufrufen, alle Felder spielen gleichzeitig, dann Ergebnis in die Kästchen eintragen.</li>
-    <li><span class="hi">Wertung:</span> Sieg = 1 Punkt, Niederlage = 0. Fehlt ein Team, bekommt der Gegner ein Freilos (1 Punkt, ohne Differenz). Bei ungerader Teamzahl hat pro Runde ein Team spielfrei.</li>
+    <li><span class="hi">Wertung:</span> Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0. Fehlt ein Team, bekommt der Gegner ein Freilos (2 Punkte, ohne Differenz). Bei ungerader Teamzahl hat pro Runde ein Team spielfrei.</li>
     <li><span class="hi">Auswertung (Seite 2):</span> Punkte und Ball-Differenz pro Runde fortlaufend addieren; die letzte Runde ergibt den Endstand und die Platzierung.</li>
   </ol>
 </div>
@@ -402,22 +418,22 @@
 <div class="noprint cfgcard" id="configSection">
   <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide">📝 Turniertitel
+    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
     </label>
-    <label class="cfgfield cfgfield--start">👥 Teams
+    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Teams</span>
       <select id="teamCount" onchange="onTeamCount()"></select>
     </label>
-    <label class="cfgfield cfgfield--end">🏖️ Felder
+    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder</span>
       <select id="fieldCount" onchange="onFieldCount()"></select>
     </label>
-    <label class="cfgfield cfgfield--mode">🎯 Punkte/Spiel
+    <label class="cfgfield cfgfield--mode"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> Punkte/Spiel</span>
       <select id="pointTarget" onchange="onPointTarget()"></select>
     </label>
-    <label class="cfgfield cfgfield--start">⏱ Start
+    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Start</span>
       <input type="time" id="startTime" value="10:00" onchange="onStartTime()">
     </label>
-    <label class="cfgfield cfgfield--end">🏁 Ende
+    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> Ende</span>
       <input type="time" id="endTime" value="14:00" onchange="onEndTime()">
     </label>
   </div>
@@ -440,14 +456,14 @@
   </div>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" onclick="applyTimefitFields()">⏱ Zeit optimieren</button>
-    <button type="button" class="nbtn" id="btnToggleNames" onclick="toggleNames()">✎ Teamnamen</button>
-    <button type="button" class="nbtn" id="btnToggleFields" onclick="toggleFields()">🏟 Felder benennen</button>
-    <button type="button" class="nbtn" id="btnToggleAbsent" onclick="toggleAbsent()">⚠ Team ausgefallen</button>
+    <button type="button" class="nbtn" id="btnToggleNames" onclick="toggleNames()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen</button>
+    <button type="button" class="nbtn" id="btnToggleFields" onclick="toggleFields()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
+    <button type="button" class="nbtn" id="btnToggleAbsent" onclick="toggleAbsent()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Team ausgefallen</button>
+    <button type="button" class="nbtn" onclick="applyTimefitFields()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
     <button type="button" class="nbtn" onclick="clearScores()">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" onclick="resetTournament()">🗑 Neues Turnier</button>
+    <button type="button" class="nbtn" onclick="resetTournament()"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
     <span class="spacer"></span>
-    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern">💾 Speichern</button>
+    <button class="nbtn" onclick="manualSave()" style="background:#0a7d2c;border-color:#0a7d2c" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
   </div>
 
   <div id="namepanel" class="noprint namepanel" hidden>
@@ -485,30 +501,30 @@
   </div>
 </div>
 
-<div class="table-scroll is-wide" id="scheduleSection">
-  <div class="noprint schedule-roundbar">
+<div class="noprint schedule-roundbar">
     <label>Runde
       <select id="scheduleRoundFilter" onchange="onScheduleRoundFilterChange()"></select>
     </label>
     <button id="schedRoundPrevBtn" type="button" class="nbtn nbtn-round nbtn-round-prev" onclick="shiftScheduleRound(-1)" aria-label="Vorherige Runde"><span class="chev chev-left" aria-hidden="true"></span> Zurück</button>
     <button id="schedRoundNextBtn" type="button" class="nbtn nbtn-round nbtn-round-next" onclick="shiftScheduleRound(1)" aria-label="Nächste Runde">Weiter <span class="chev chev-right" aria-hidden="true"></span></button>
+    <button id="schedRoundAllBtn" type="button" class="nbtn nbtn-round nbtn-round-all" onclick="toggleAllRoundsView()" aria-pressed="false" title="Alle Runden gleichzeitig anzeigen"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg> Alle Runden</button>
     <span class="state" id="scheduleFilterState" aria-live="polite"></span>
-  </div>
+</div>
+<div class="table-scroll is-wide" id="scheduleSection">
   <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
   <table class="sched">
-    <caption>Spielplan &amp; Ergebnisse</caption>
+    <caption><span class="cap-title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="inputExamples">Beispiel Eingabe: 21:19 oder 15:12 (je Team in das eigene Kästchen).</span></caption>
     <thead id="schedHead"></thead>
     <tbody id="schedBody"></tbody>
   </table>
 </div>
-<p class="input-hint" id="inputExamples">Beispiel Eingabe: 21:19 oder 15:12 (je Team in das eigene Kästchen).</p>
-<p class="input-hint round-subline">Spielmodus: <span class="rmode">1 Satz bis 21</span> · 2 Punkte Vorsprung · Sieg = 1 Punkt</p>
+<p class="input-hint round-subline">Spielmodus: <span class="rmode">1 Satz bis 21</span> · 2 Punkte Vorsprung · Sieg = 2 Punkte</p>
 
 <div class="page-break"></div>
 
 
 <h1 id="standingsSection">Laufende Tabelle &amp; Endstand</h1>
-<p class="sub">Punktestand, Differenz und Platz werden automatisch berechnet. Die Zeilen sortieren sich laufend nach aktuellem Platz (Platz 1 oben) – die letzte Runden-Spalte ist damit automatisch der Endstand.</p>
+<p class="sub"><span class="only-screen">Punktestand, Differenz und Platz werden automatisch berechnet. Die Zeilen sortieren sich laufend nach aktuellem Platz (Platz 1 oben) – die letzte Runden-Spalte ist damit automatisch der Endstand.</span><span class="only-print">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
 
 <div class="table-scroll is-track">
   <table class="track">
@@ -522,26 +538,27 @@
     <table>
       <caption>Wertung pro Spiel</caption>
       <tr><th>Ergebnis</th><th>Wertung</th></tr>
-      <tr><td>Sieg</td><td>1 Punkt</td></tr>
+      <tr><td>Sieg</td><td>2 Punkte</td></tr>
+      <tr id="wt-draw" hidden><td>Unentschieden</td><td>1 Punkt</td></tr>
       <tr><td>Niederlage</td><td>0 Punkte</td></tr>
-      <tr><td>Freilos / spielfrei</td><td>1 Punkt, ohne Differenz</td></tr>
+      <tr><td>Freilos / spielfrei</td><td>2 Punkte, ohne Ball-Differenz</td></tr>
     </table>
   </div>
   <div class="grow">
     <table>
-      <caption>Tie-Breaker bei Gleichstand</caption>
+      <caption>Reihenfolge bei Gleichstand</caption>
       <tr><th>Rang</th><th>Kriterium</th></tr>
-      <tr><td>1</td><td>Punkte (Siege)</td></tr>
+      <tr><td>1</td><td>Punkte</td></tr>
       <tr><td>2</td><td>Ball-Differenz</td></tr>
       <tr><td>3</td><td>erzielte Ballpunkte</td></tr>
       <tr><td>4</td><td>direkter Vergleich</td></tr>
-      <tr><td>5</td><td>Losentscheid</td></tr>
+      <tr><td>5</td><td>Losentscheid («=» in der Tabelle)</td></tr>
     </table>
   </div>
 </div>
 
 <div class="legend" id="h-legend">
-  <b>Modus:</b> Jeder gegen jeden · keine KO-Runde ·
+  <b>Modus:</b> Jeder gegen Jeden · keine KO-Runde ·
   pro Spiel <span class="rmode">1 Satz bis 21</span> mit 2 Punkten Vorsprung.
 </div>
 
@@ -553,6 +570,7 @@
   <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
 </div>
 
+<script src="core/turnier-archive.js"></script>
 <script>
   /* ================= Konfiguration ================= */
   const MIN_TEAMS = 4, MAX_TEAMS = 20, MAX_FIELDS = 10;
@@ -567,6 +585,30 @@
   const SESSION_KEY   = 'turnierflexrr';
   const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
   const TITLE_KEY  = SESSION_KEY + '_title';
+  /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
+  const SHEET_ID = 'flex-rr';
+  const SHEET_TYPE = 'Jeder gegen Jeden';
+  const ARCHIVE_KEYS = [STORE_KEY, SCORE_KEY, ABSENT_KEY, FIELD_KEY, CFG_KEY,
+                        START_KEY, END_KEY, ROUND_FILTER_KEY, TITLE_KEY];
+  function archiveOpts(){
+    let names = {};
+    try { names = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch(e){}
+    let title = '';
+    try { title = localStorage.getItem(TITLE_KEY) || ''; } catch(e){}
+    const teams = [];
+    for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
+    let scores = {}, absent = {};
+    try { scores = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}') || {}; } catch(e){}
+    try { absent = JSON.parse(localStorage.getItem(ABSENT_KEY) || '{}') || {}; } catch(e){}
+    const hasNames  = Object.keys(names).some(k => (names[k] || '').trim() !== '');
+    const hasScores = Object.keys(scores).some(k => String(scores[k] || '').trim() !== '');
+    const hasAbsent = Array.isArray(absent) ? absent.length : Object.keys(absent).some(k => absent[k]);
+    const empty = !hasNames && !hasScores && !hasAbsent && !title;
+    return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
+             title:title, teams:teams, liveKey:SESSION_KEY };
+  }
+  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+
   const BASE_START = '10:00';
   const BASE_END   = '14:00';
 
@@ -596,7 +638,7 @@
   let SCHEDULE = [];   // [{matches:[[a,b],...], bye:teamOrNull}, ...]
   let SLOTS  = [];     // ein Eintrag je Zeit-Slot (für Zeitberechnung/Anzeige)
   let DEFAULT_FIELDS = [];
-  let SCHEDULE_ROUND_FILTER = '1';
+  let SCHEDULE_ROUND_FILTER = 'all';
   let LAST_TIMEFIT_NEEDED_FIELDS = null;
 
   /* ================= Round-Robin (Circle-Methode) ================= */
@@ -662,19 +704,30 @@
       localStorage.setItem('beachl_sessions', JSON.stringify(registry));
     } catch(e){}
   }
+  /* Ueberschrift + Fenster-/Drucktitel, identisch zu den anderen Bogen. */
+  function applyDocTitle(val) {
+    let t = val;
+    if (t == null) { try { t = localStorage.getItem(TITLE_KEY) || ''; } catch(e) { t = ''; } }
+    document.title = (typeof TArchive !== 'undefined')
+      ? TArchive.docTitle(t, SHEET_TYPE, TArchive.sizeInfo(NTEAMS, NFIELDS))
+      : ('Turnierbogen – ' + SHEET_TYPE);
+    const h = document.getElementById('h-title');
+    if (h) h.innerHTML = (typeof TArchive !== 'undefined')
+      ? TArchive.headTitleHtml(t, SHEET_TYPE) : SHEET_TYPE;
+    if (typeof TArchive !== 'undefined')
+      document.body.setAttribute('data-bar-title', TArchive.barTitle(SHEET_TYPE, NTEAMS, NFIELDS));
+  }
   function saveTitle() {
     const val = (document.getElementById('session-title-input') || {}).value || '';
     try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
-    const disp = document.getElementById('session-title-display');
-    if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+    applyDocTitle(val);
   }
   function restoreTitle() {
     try {
       const val = localStorage.getItem(TITLE_KEY) || '';
       const inp = document.getElementById('session-title-input');
       if (inp) inp.value = val;
-      const disp = document.getElementById('session-title-display');
-      if (disp) { disp.textContent = val; disp.style.display = val ? 'block' : 'none'; }
+      applyDocTitle(val);
     } catch(e) {}
   }
   function manualSave() {
@@ -687,24 +740,25 @@
   /* ================= Teamnamen ================= */
   function teamListHtml(i, names, absent){
     const v = ((names && names[i]) || '').trim();
-    const out = v ? escapeHtml(v) : '';
-    return out + (absent ? (out ? ' ' : '') + '<span class="abt">ausgefallen</span>' : '');
+  const label = '<span class="t-line">Team ' + i + '</span>'
+    + (v ? '<span class="tnm t-nm">(' + escapeHtml(v) + ')</span>' : '');
+  return absent ? label + ' <span class="abt">ausgefallen</span>' : label;
   }
   function applyName(i, val){
-    const absent = !!loadAbsent()[i];
-    const v = (val||'').trim();
-    document.querySelectorAll('[data-team="'+i+'"]').forEach(el => {
-      const base = el.getAttribute('data-fb') || ('Team '+i);
-      if(el.classList.contains('t') && el.closest('.pair')){
-        el.innerHTML = teamCardNameHtml(i, Object.assign({}, loadNames(), { [i]: val }), absent);
-      } else {
-        el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
-      }
-    });
-    const merged = Object.assign({}, loadNames(), { [i]: val });
-    document.querySelectorAll('[data-team-name="'+i+'"]').forEach(el => {
-      el.innerHTML = teamListHtml(i, merged, absent);
-    });
+  const absent = !!loadAbsent()[i];
+  const v = (val||'').trim();
+  document.querySelectorAll('[data-team="'+i+'"]').forEach(el => {
+    const base = el.getAttribute('data-fb') || ('Team '+i);
+    if(el.classList.contains('t') && el.closest('.pair')){
+      el.innerHTML = teamCardNameHtml(i, Object.assign({}, loadNames(), { [i]: val }), absent);
+    } else {
+      el.innerHTML = base + (v ? ' <span class="tnm">('+escapeHtml(v)+')</span>' : '') + (absent ? ' <span class="abt">ausgefallen</span>' : '');
+    }
+  });
+  const merged = Object.assign({}, loadNames(), { [i]: val });
+  document.querySelectorAll('[data-team-name="'+i+'"]').forEach(el => {
+    el.innerHTML = teamListHtml(i, merged, absent);
+  });
   }
   function applyTeamNames(){
     const names = loadNames();
@@ -805,6 +859,9 @@
     else winner=null;
     return {aBalls,bBalls,aSets,bSets,winner};
   }
+  /* Wertung wie in allen anderen Bögen (Beach-Praxis): Sieg 2, Unentschieden 1. */
+  const WIN_PTS = 2, DRAW_PTS = 1;
+
   function fmt(n){ return (n>0?'+':'')+n; }
   /* Ball-Differenz je Team direkt neben dem Teamnamen (leer => nichts anzeigen). */
   function setTeamDiff(td, side, val, positive){
@@ -901,7 +958,7 @@
     const sideB = pnames ? pnames.querySelector('.pside-b') : null;
     if(sideA) sideA.classList.toggle('is-winner', side === 'a');
     if(sideB) sideB.classList.toggle('is-winner', side === 'b');
-    const noteEl = box ? box.querySelector('[data-note]') : null;
+    const noteEl = td ? td.querySelector('[data-note]') : null;
     if(noteEl) noteEl.innerHTML = note ? '<span class="mwin-note">' + note + '</span>' : '';
   }
   function setMatchScore(td, side, val){
@@ -914,7 +971,16 @@
     refreshScheduleView();
     const absent = loadAbsent();
     const st={}, cum={};
-    TEAMS.forEach(t=>{ st[t]={w:0,bd:0,sc:0}; cum[t]={pts:0,bd:0}; });
+    TEAMS.forEach(t=>{ st[t]={w:0,pts:0,bd:0,sc:0}; cum[t]={pts:0,bd:0}; });
+    /* Eine Runde gilt als begonnen, sobald in ihr eine Zahl steht. Solange das
+       nicht der Fall ist, bleibt auch ein Freilos ungewertet – sonst stuenden
+       fuer noch nicht gespielte Runden bereits Punkte in der Tabelle. */
+    const roundStarted = r => Array.from(document.querySelectorAll('td.match[data-round="'+r+'"]')).some(td => {
+      const a = parseInt(td.getAttribute('data-a'),10);
+      const b = parseInt(td.getAttribute('data-b'),10);
+      return gv(r,a)!=null || gv(r,b)!=null || gv2(r,a)!=null || gv2(r,b)!=null
+        || gv3(r,a)!=null || gv3(r,b)!=null;
+    });
     ROUNDS.forEach(r=>{
       document.querySelectorAll('td.match[data-round="'+r+'"]').forEach(td => {
         const a = parseInt(td.getAttribute('data-a'),10);
@@ -930,14 +996,14 @@
             setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
             setMatchScore(td,'a',''); setMatchScore(td,'b','');
           } else if(absentA){
-            st[b].w += 1; cum[b].pts += 1;
+            st[b].w += 1; st[b].pts += WIN_PTS; cum[b].pts += WIN_PTS;
             setCell(ptA,'-','byeauto'); setCell(bdA,'-','byeauto');
             setCell(ptB,cum[b].pts); setCell(bdB,fmt(cum[b].bd));
             setMatchWinner(td, b, '(kampflos)');
             setTeamDiff(td,'a','',null); setTeamDiff(td,'b','',null);
             setMatchScore(td,'a',''); setMatchScore(td,'b','');
           } else {
-            st[a].w += 1; cum[a].pts += 1;
+            st[a].w += 1; st[a].pts += WIN_PTS; cum[a].pts += WIN_PTS;
             setCell(ptA,cum[a].pts); setCell(bdA,fmt(cum[a].bd));
             setCell(ptB,'-','byeauto'); setCell(bdB,'-','byeauto');
             setMatchWinner(td, a, '(kampflos)');
@@ -949,8 +1015,9 @@
         const sa = gv(r,a), sb = gv(r,b);
         const res = resultOf(r,a,b);
         if(res){
-          if(res.winner==='a'){ st[a].w += 1; cum[a].pts += 1; }
-          else if(res.winner==='b'){ st[b].w += 1; cum[b].pts += 1; }
+          if(res.winner==='a'){ st[a].w += 1; st[a].pts += WIN_PTS; cum[a].pts += WIN_PTS; }
+          else if(res.winner==='b'){ st[b].w += 1; st[b].pts += WIN_PTS; cum[b].pts += WIN_PTS; }
+          else { st[a].pts += DRAW_PTS; st[b].pts += DRAW_PTS; cum[a].pts += DRAW_PTS; cum[b].pts += DRAW_PTS; }
           setMatchWinner(td, res.winner==='a' ? a : (res.winner==='b' ? b : null), res.winner ? '' : 'unentschieden');
           const da=res.aBalls-res.bBalls;
           st[a].bd += da; st[b].bd -= da;
@@ -975,18 +1042,20 @@
           setMatchScore(td,'a',''); setMatchScore(td,'b','');
         }
       });
-      /* Freilos bei ungerader Teamzahl: 1 Punkt, ohne Differenz – chronologisch in dieser Runde */
+      /* Freilos bei ungerader Teamzahl: 2 Punkte, ohne Differenz – chronologisch in dieser Runde */
       const rd = SCHEDULE[r-1];
-      if(rd && rd.bye != null){
+      if(rd && rd.bye != null && roundStarted(r)){
         const t = rd.bye;
         if(!absent[t]){
-          st[t].w += 1; cum[t].pts += 1;
+          st[t].w += 1; st[t].pts += WIN_PTS; cum[t].pts += WIN_PTS;
           setCell('pt_'+t+'_'+r, cum[t].pts, 'byeauto');
           setCell('bd_'+t+'_'+r, fmt(cum[t].bd), 'byeauto');
         } else {
           setCell('pt_'+t+'_'+r, '-', 'byeauto');
           setCell('bd_'+t+'_'+r, '-', 'byeauto');
         }
+      } else if(rd && rd.bye != null){
+        setCell('pt_'+rd.bye+'_'+r, ''); setCell('bd_'+rd.bye+'_'+r, '');
       }
     });
     const complete = ROUNDS.every(r => Array.from(document.querySelectorAll('td.match[data-round="'+r+'"]')).every(td => {
@@ -996,13 +1065,13 @@
       return resultOf(r,a,b) != null;
     }));
     const ranked=[...TEAMS].sort((a,b)=>{
-      if(st[b].w  !== st[a].w ) return st[b].w  - st[a].w;
+      if(st[b].pts !== st[a].pts) return st[b].pts - st[a].pts;
       if(st[b].bd !== st[a].bd) return st[b].bd - st[a].bd;
       if(st[b].sc !== st[a].sc) return st[b].sc - st[a].sc;
       const d=directResult(a,b); if(d!==0) return -d;
       return a-b;
     });
-    const sameW = (a,b)=> st[a].w===st[b].w && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
+    const sameW = (a,b)=> st[a].pts===st[b].pts && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
     const rankOf={};
     ranked.forEach((t,idx)=>{ rankOf[t] = (idx>0 && sameW(ranked[idx-1],t)) ? rankOf[ranked[idx-1]] : idx+1; });
     ranked.forEach((t,idx)=>{
@@ -1060,14 +1129,11 @@
 
   /* ================= Neues Turnier ================= */
   function resetTournament(){
-    if(!confirm('Neues Turnier starten? Alle Teamnamen, Ausfälle UND Ergebnisse werden gelöscht.')) return;
-    try{ localStorage.removeItem(SCORE_KEY); }catch(e){}
-    try{ localStorage.removeItem(ABSENT_KEY); }catch(e){}
-    saveNames({});
-    for(let i=1;i<=NTEAMS;i++){ const inp=document.getElementById('tn'+i); if(inp) inp.value=''; applyName(i,''); }
-    document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false);
-    document.querySelectorAll('input.score').forEach(inp=>inp.value='');
-    computeAll();
+    if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+    saveTitle();                         // noch nicht gespeicherten Titel mitsichern
+    const started = TArchive.startNew(archiveOpts());
+    try{ localStorage.setItem(TITLE_KEY, started.title); }catch(e){}
+    location.reload();
   }
 
   /* ================= Enter springt zum nächsten Feld ================= */
@@ -1244,7 +1310,7 @@
   function loadScheduleRoundFilter(){
     try{
       const v = localStorage.getItem(ROUND_FILTER_KEY);
-      if(/^\d+$/.test(v) && +v >= 1) SCHEDULE_ROUND_FILTER = v;
+      if(v === 'all' || (/^\d+$/.test(v) && +v >= 1)) SCHEDULE_ROUND_FILTER = v;
     }catch(e){}
   }
   function saveScheduleRoundFilter(){
@@ -1255,35 +1321,41 @@
   function fillScheduleRoundFilter(){
     const sel = document.getElementById('scheduleRoundFilter');
     if(!sel) return;
-    let html = '';
+    let html = '<option value="all">Alle Runden</option>';
     for(let r=1;r<=ROUNDS.length;r++) html += '<option value="'+r+'">Runde '+r+'</option>';
     sel.innerHTML = html;
-    const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
-    if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
+    const valid = SCHEDULE_ROUND_FILTER === 'all' || (+SCHEDULE_ROUND_FILTER >= 1 && +SCHEDULE_ROUND_FILTER <= ROUNDS.length);
+    if(!valid) SCHEDULE_ROUND_FILTER = '1';
     sel.value = SCHEDULE_ROUND_FILTER;
   }
   function applyScheduleRoundFilter(){
     const sel = document.getElementById('scheduleRoundFilter');
     const state = document.getElementById('scheduleFilterState');
-    const n = parseInt(SCHEDULE_ROUND_FILTER, 10);
-    if(Number.isNaN(n) || n < 1 || n > ROUNDS.length) SCHEDULE_ROUND_FILTER = '1';
+    const allBtn = document.getElementById('schedRoundAllBtn');
+    const isAll = SCHEDULE_ROUND_FILTER === 'all';
+    const n = isAll ? 1 : parseInt(SCHEDULE_ROUND_FILTER, 10);
+    if(!isAll && (Number.isNaN(n) || n < 1 || n > ROUNDS.length)) SCHEDULE_ROUND_FILTER = '1';
     if(sel) sel.value = SCHEDULE_ROUND_FILTER;
-     
-    // Both Desktop AND Mobile: show only selected round
     document.querySelectorAll('#schedBody tr[data-round]').forEach(tr => {
-      const show = String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
+      const show = isAll || String(tr.getAttribute('data-round')) === String(SCHEDULE_ROUND_FILTER);
       tr.classList.toggle('round-hidden', !show);
     });
-     
     if(state){
-      state.textContent = 'Runde ' + SCHEDULE_ROUND_FILTER + ' / ' + ROUNDS.length;
+      state.textContent = isAll
+        ? 'Alle ' + ROUNDS.length + ' Runden sichtbar'
+        : 'Runde ' + SCHEDULE_ROUND_FILTER + ' / ' + ROUNDS.length;
     }
     const prevBtn = document.getElementById('schedRoundPrevBtn');
     const nextBtn = document.getElementById('schedRoundNextBtn');
     if(prevBtn && nextBtn){
-      const r = parseInt(SCHEDULE_ROUND_FILTER, 10) || 1;
-      prevBtn.disabled = r <= 1;
-      nextBtn.disabled = r >= ROUNDS.length;
+      prevBtn.disabled = isAll || n <= 1;
+      nextBtn.disabled = isAll || n >= ROUNDS.length;
+    }
+    if(allBtn){
+      const ICON_LAYERS = '<svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>';
+      allBtn.classList.toggle('roundall-active', isAll);
+      allBtn.setAttribute('aria-pressed', String(isAll));
+      allBtn.innerHTML = ICON_LAYERS + (isAll ? ' Einzelne Runde' : ' Alle Runden');
     }
   }
   function onScheduleRoundFilterChange(){
@@ -1301,6 +1373,11 @@
     saveScheduleRoundFilter();
     const wrap = document.getElementById('scheduleSection');
     if(wrap) wrap.scrollLeft = 0;
+  }
+  function toggleAllRoundsView(){
+    SCHEDULE_ROUND_FILTER = SCHEDULE_ROUND_FILTER === 'all' ? '1' : 'all';
+    applyScheduleRoundFilter();
+    saveScheduleRoundFilter();
   }
   function updatePrintScheduleZoom(){
     // Zoom wird live via beforeprint-Event gesetzt (s.u.)
@@ -1326,13 +1403,20 @@
       + '<span class="sgrp">' + inputs + '</span>'
       + '</span>';
   }
-  /* Kurz-Erklaerung des Ergebnis-Formulars – identisch in beiden Turnierbogen. */
+  /* Kurz-Erklaerung des Ergebnis-Formulars – identisch in beiden Turnierbogen.
+     Bildschirm- und Druckfassung sind logisch getrennt: online rechnet der
+     Bogen mit, auf Papier passiert alles mit dem Stift. */
   function scoreFormLegend(){
     const setCnt = setCount();
     const cols = setCnt <= 1
       ? 'ein Kästchenpaar für das Ergebnis'
       : (setCnt === 2 ? 'je Satz ein Kästchenpaar' : 'je Satz ein Kästchenpaar, der Entscheidungssatz nur bei 1:1');
-    return 'So ausfüllen: ' + cols + ' – linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ springst du ins Nachbarkästchen. Der Sieger wird darunter angezeigt.';
+    return '<span class="only-screen">So trägst du ein: ' + cols + ' – linkes Kästchen = linkes Team,'
+      + ' rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ oder Enter springst du ins nächste Kästchen.'
+      + ' Der Sieger wird hervorgehoben, Tabelle und Platzierung rechnen automatisch mit.</span>'
+      + '<span class="only-print">So ausfüllen: ' + cols + ' – linkes Kästchen = linkes Team,'
+      + ' rechtes Kästchen = rechtes Team. Satzergebnis direkt nach dem Spiel mit dem Stift eintragen'
+      + ' und den Namen des Siegers einkreisen.</span>';
   }
   /* Ein Satz = eine Spalte: Beschriftung oben, darunter die beiden Kaestchen
      (links Team A, rechts Team B) nebeneinander. Tab-Reihenfolge A1 -> B1 -> A2 -> B2 ...
@@ -1361,8 +1445,10 @@
       +   '<span class="presult">'
       +     '<span class="mres mres-a"><span class="mscore" data-score="a"></span><span class="tdiff" data-diff="a"></span></span>'
       +     '<span class="mres mres-b"><span class="tdiff" data-diff="b"></span><span class="mscore" data-score="b"></span></span>'
-      +     '<span data-note></span>'
       +   '</span>'
+      /* Hinweiszeile ausserhalb von .presult (siehe turnier-ui.js): als drittes
+         Flex-Kind wuerde sie das rechte Team aus der rechten Kante schieben. */
+      +   '<span class="mnote-slot" data-note></span>'
       + '</span>'
       + '<span class="bye" hidden></span></td>';
   }
@@ -1444,7 +1530,7 @@
   }
   function buildTrackTable(){
     const k = ROUNDS.length;
-    const headHtml = '<tr><th class="tname">Team</th><th class="lbl">kumuliert</th>'
+    const headHtml = '<tr><th class="tname teamcol">Team / Name</th><th class="lbl">kumuliert</th>'
       + Array.from({length:k},(_,i)=>'<th>R'+(i+1)+'</th>').join('')
       + '<th class="pos">Platz</th></tr>';
     const headEl = document.getElementById('trackHead');
@@ -1453,15 +1539,18 @@
     /* Beispiel-Zeile */
     let ptsEx=[], bdEx=[], p=0, bd=0;
     for(let i=0;i<k;i++){ if(i%3!==1 || i===0) p++; ptsEx.push(p); bd += (i%4===1?-3:4); bdEx.push(bd); }
-    html += '<tr class="grp ex"><td class="tname" rowspan="2">Muster-Team</td><td class="lbl">Punkte (1 je Sieg)</td>';
+    html += '<tr class="grp ex ex-start"><td class="tname teamcol" rowspan="2">'
+      + '<span class="ex-badge">Beispiel</span>'
+      + '<span class="t-line">Team X</span><span class="tnm t-nm">(Teamname)</span>'
+      + '</td><td class="lbl">Punkte (2 je Sieg)</td>';
     ptsEx.forEach(v=> html += '<td>'+v+'</td>');
     html += '<td class="pos" rowspan="2">3.</td></tr>';
-    html += '<tr class="ex"><td class="lbl">Ball-Differenz</td>';
+    html += '<tr class="ex ex-end"><td class="lbl">Ball-Differenz</td>';
     bdEx.forEach(v=> html += '<td>'+(v>0?'+':'')+v+'</td>');
     html += '</tr>';
     /* Team-Zeilen */
     for(let t=1;t<=NTEAMS;t++){
-      html += '<tr class="grp"><td class="tname" rowspan="2" data-team="'+t+'">Team '+t+'</td><td class="lbl">Punkte (1 je Sieg)</td>';
+      html += '<tr class="grp"><td class="tname teamcol" rowspan="2" data-team="'+t+'" data-team-name="'+t+'"><span class="t-line">Team '+t+'</span></td><td class="lbl">Punkte (2 je Sieg)</td>';
       for(let r=1;r<=k;r++) html += '<td'+(r===1?' class="rcell"':'')+' id="pt_'+t+'_'+r+'"></td>';
       html += '<td class="pos" rowspan="2" id="pz_'+t+'"></td></tr>';
       html += '<tr><td class="lbl">Ball-Differenz</td>';
@@ -1473,10 +1562,12 @@
   function updateTexts(){
     const gamesPerTeam = NTEAMS - 1;
     const oddNote = (NTEAMS % 2 === 1) ? ' (pro Runde hat ein Team spielfrei)' : '';
-    document.getElementById('h-title').textContent = 'Turnierbogen – ' + NTEAMS + ' Teams · Jeder-gegen-jeden';
-    document.title = 'Turnierbogen – ' + NTEAMS + ' Teams, Jeder-gegen-jeden';
+    applyDocTitle();
     document.getElementById('h-sub').innerHTML =
-      NFIELDS + ' Felder · ' + ROUNDS.length + ' Runden · ' + gamesPerTeam + ' Spiele/Team · je <span class="rmode">' + modeDef().label + '</span> (2 Pkt. Vorsprung) · Sieg = 1 Pkt.';
+      NTEAMS + ' Teams · ' + NFIELDS + ' Felder · ' + ROUNDS.length + ' Runden · ' + gamesPerTeam + ' Spiele/Team · je <span class="rmode">' + modeDef().label + '</span> (2 Pkt. Vorsprung) · Sieg = 2 Pkt.';
+    /* Unentschieden ist nur ohne Entscheidungssatz moeglich. */
+    const wtDraw = document.getElementById('wt-draw');
+    if(wtDraw) wtDraw.hidden = !(isMulti() && !hasDecidingSet());
     document.getElementById('g-games').textContent =
       'jedes Team spielt ' + gamesPerTeam + ' Spiele (jeder gegen jeden)' + oddNote;
     const modeDesc = document.getElementById('g-mode-desc');
@@ -1492,7 +1583,7 @@
       }
     }
     document.getElementById('h-legend').innerHTML =
-      '<b>Modus:</b> Jeder gegen jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel ' + modeDef().label
+      '<b>Modus:</b> Jeder gegen Jeden · ' + NTEAMS + ' Teams · jedes Team ' + gamesPerTeam + ' Spiele · keine KO-Runde · pro Spiel ' + modeDef().label
       + (SET_MODE === '2x15tb' || SET_MODE === '2x21tb' ? ' (bei 1:1 entscheidet der dritte Satz)'
          : (isMulti() ? ' (bei 1:1 entscheidet die Ball-Differenz)' : ' mit 2 Punkten Vorsprung')) + '.';
     const schedTable = document.querySelector('table.sched');
@@ -1514,7 +1605,7 @@
       } else {
         ex = 'Beispiel: ' + POINT_TARGET + ':' + Math.max(0, POINT_TARGET - 2) + ' oder ' + POINT_TARGET + ':' + Math.max(0, POINT_TARGET - 8) + '.';
       }
-      inputExamples.textContent = scoreFormLegend() + ' ' + ex;
+      inputExamples.innerHTML = scoreFormLegend() + ' ' + ex;
     }
     const matchesPerRound = SCHEDULE.length ? SCHEDULE[0].matches.length : 0;
     const slotsPerRound = Math.max(1, Math.ceil(matchesPerRound / NFIELDS));
@@ -1587,7 +1678,7 @@
   function onPointTargetChange(v){ setSetMode(v); }
   function applyTimefitFields(){
     if(LAST_TIMEFIT_NEEDED_FIELDS == null){
-      alert('Im gewählten Zeitfenster ist das vollständige Jeder-gegen-jeden mit dieser Teamzahl nicht machbar. Bitte Teamzahl reduzieren, Zeitfenster erweitern oder kürzeren Modus wählen.');
+      alert('Im gewählten Zeitfenster ist das vollständige Jeder gegen Jeden mit dieser Teamzahl nicht machbar. Bitte Teamzahl reduzieren, Zeitfenster erweitern oder kürzeren Modus wählen.');
       return;
     }
     if(LAST_TIMEFIT_NEEDED_FIELDS === NFIELDS){
@@ -1646,6 +1737,8 @@
     loadTimes();
     loadScheduleRoundFilter();
     restoreTitle();
+    (function(){ const i = document.getElementById('session-title-input');
+      if(i && !i.dataset.titleWired){ i.dataset.titleWired = '1'; i.addEventListener('input', saveTitle); } })();
     rebuild();
 
     // Spielplan bei Druck automatisch skalieren, damit er auf A4 quer passt
@@ -1664,130 +1757,8 @@
   })();
 </script>
 
-<!-- BL_ENH_START · Bedienhilfen: offene Spiele, Ungültig-Tooltip, Speicher-Feedback, Pfeiltasten (nur Bildschirm) -->
-<script>
-(function(){
-  if(window.__BL_ENH__) return; window.__BL_ENH__ = true;
-
-  var INVALID_TITLE = 'Ungültiges Ergebnis: Zielpunktzahl nicht erreicht oder kein 2-Punkte-Vorsprung.';
-
-  // ── Styles (nur Bildschirm; Druck bleibt unverändert) ──
-  var css = ''
-    + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
-    +   'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
-    +   'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
-    + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
-    + '@media screen{'
-    +   'td.bl-open{box-shadow:inset 0 0 0 2px #f0a000}'
-    +   'td.bl-done{opacity:.62}'
-    + '}'
-    + '@media print{#bl-toast{display:none!important}'
-    +   'td.bl-open{box-shadow:none!important}td.bl-done{opacity:1!important}}';
-  var st = document.createElement('style'); st.textContent = css;
-  document.head.appendChild(st);
-
-  // ── Speicher-Feedback: echtes localStorage-Speichern anzeigen ──
-  var toast = document.createElement('div'); toast.id = 'bl-toast'; toast.textContent = '✓ gespeichert';
-  var toastT = null, saveT = null, armed = false;
-  function showToast(){ if(!toast.isConnected && document.body) document.body.appendChild(toast);
-    toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function(){ toast.classList.remove('show'); }, 1400); }
-  try{
-    var SP = window.Storage && window.Storage.prototype;
-    if(SP && !SP.__bl_wrapped){ var _set = SP.setItem; SP.__bl_wrapped = true;
-      SP.setItem = function(k,v){ _set.call(this,k,v);
-        if(armed){ clearTimeout(saveT); saveT = setTimeout(showToast, 450); } };
-    }
-  }catch(e){}
-
-  function num(v){ v = (v==null?'':String(v)).trim(); if(v==='') return null; if(!/^\d{1,3}$/.test(v)) return null; return parseInt(v,10); }
-
-  // ── Ergebnisfelder: nur Ziffern zulassen ──────────────────────────────
-  // Zusaetzlich komfortabel: "21:19" (auch eingefuegt) wird automatisch auf
-  // beide Kaestchen verteilt, und ":" / "-" / "/" springt ins Partnerfeld.
-  function scorePartner(inp){
-    var id = inp.id || '', m;
-    // "Alle gegen Alle": g|g2|g3 + Runde + "_" + Team (Gegner steht in data-op)
-    if(inp.dataset && inp.dataset.op != null && (m = /^(g[23]?)(\d+)_(\d+)$/.exec(id))){
-      return document.getElementById(m[1] + m[2] + '_' + inp.dataset.op);
-    }
-    // Schweizer System: s|s2|s3 + A|B + "_" + Runde + "_" + Feld
-    if((m = /^(s[23]?)(A|B)_(\d+)_(\d+)$/.exec(id))){
-      return document.getElementById(m[1] + (m[2] === 'A' ? 'B' : 'A') + '_' + m[3] + '_' + m[4]);
-    }
-    return null;
-  }
-  function sanitizeScore(inp){
-    var v = inp.value == null ? '' : String(inp.value);
-    var pair = /^\s*(\d{1,3})\s*[:\-\/]\s*(\d{1,3})\s*$/.exec(v);
-    if(pair){
-      inp.value = pair[1];
-      var partner = scorePartner(inp);
-      if(partner && !partner.disabled) partner.value = pair[2];
-      return;
-    }
-    var clean = v.replace(/\D+/g, '').slice(0, 3);
-    if(clean !== v) inp.value = clean;
-  }
-  document.addEventListener('input', function(e){
-    var el = e.target;
-    if(!el || !el.classList || !el.classList.contains('score')) return;
-    sanitizeScore(el);
-  }, true);
-  document.addEventListener('keydown', function(e){
-    if(e.key !== ':' && e.key !== '-' && e.key !== '/') return;
-    var el = e.target;
-    if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
-    var partner = scorePartner(el);
-    if(!partner || partner.disabled) return;
-    e.preventDefault();
-    partner.focus(); if(partner.select) partner.select();
-  }, true);
-  // ── Ungültig-Tooltip + offene/erledigte Spiele hervorheben ──
-  function update(){
-    document.querySelectorAll('input.score').forEach(function(inp){
-      if(inp.classList.contains('invalid')){ if(inp.title!==INVALID_TITLE) inp.title = INVALID_TITLE; }
-      else if(inp.title===INVALID_TITLE){ inp.removeAttribute('title'); }
-    });
-    document.querySelectorAll('td.bl-open,td.bl-done').forEach(function(td){ td.classList.remove('bl-open','bl-done'); });
-
-    document.querySelectorAll('td.match').forEach(function(td){
-      var round = parseInt(td.getAttribute('data-round'), 10);
-      var a = parseInt(td.getAttribute('data-a'), 10);
-      var b = parseInt(td.getAttribute('data-b'), 10);
-      if(!round || !a || !b) return;
-      var activeInputs = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(function(inp){ return !inp.disabled; });
-      if(!activeInputs.length) return;
-      var done = (typeof window.resultOf === 'function') ? !!window.resultOf(round, a, b) : false;
-      td.classList.add(done ? 'bl-done' : 'bl-open');
-    });
-  }
-
-  var scheduled = false;
-  function schedule(){ if(scheduled) return; scheduled = true;
-    (window.requestAnimationFrame||setTimeout)(function(){ scheduled=false; try{ update(); }catch(e){} }); }
-
-  ['computeAll','rebuild'].forEach(function(fn){
-    if(typeof window[fn]==='function'){ var orig = window[fn];
-      window[fn] = function(){ var r = orig.apply(this, arguments); schedule(); return r; }; }
-  });
-  document.addEventListener('input', function(){ armed = true; schedule(); }, true);
-
-  // ── Pfeiltasten ↑/↓ zwischen Ergebnisfeldern ──
-  document.addEventListener('keydown', function(e){
-    if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
-    var el = e.target; if(!el || !el.classList || !el.classList.contains('score')) return;
-    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
-    var idx = list.indexOf(el); if(idx<0) return;
-    var next = idx + (e.key==='ArrowDown' ? 1 : -1);
-    if(next>=0 && next<list.length){ e.preventDefault(); list[next].focus(); if(list[next].select) list[next].select(); }
-  }, true);
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(update,80); });
-  else setTimeout(update, 80);
-  window.addEventListener('load', function(){ setTimeout(update, 120); });
-})();
-</script>
-<!-- BL_ENH_END -->
+<!-- Bedienhilfen: gemeinsam fuer alle Boegen -->
+<script src="spielplan-enh.js"></script>
 
 <!-- BL_AUTOFILL · Gewinnerseite automatisch auf Zielpunktzahl setzen (nur Bildschirm-Eingabe) -->
 <script>

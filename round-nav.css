@@ -1,0 +1,88 @@
+/* ===========================================================================
+   round-nav.css – Nachrüstung für die festen Turnierbögen
+   ---------------------------------------------------------------------------
+   Ergänzt ausschließlich das, was `spielplan.css` und `app-skin.css` für die
+   Vorlagen „Schweizer System" und „Alle gegen Alle" bereits mitbringen, dort
+   aber an eine andere Spielplanstruktur gebunden ist:
+
+   - Die Vorlagen führen den kompletten Spielplan in EINER Tabelle und blenden
+     einzelne Zeilen aus (`.sched tr.round-hidden`).
+   - Die festen Bögen haben pro Runde eine EIGENE Tabelle in einem eigenen
+     `.table-scroll`-Block. Ausgeblendet wird deshalb der ganze Block.
+
+   Aussehen und Verhalten bleiben identisch – nur der Angriffspunkt ist ein
+   anderer. `spielplan.css` und `app-skin.css` werden dafür nicht angefasst.
+   =========================================================================== */
+
+/* Nur am Bildschirm ausblenden. Im Ausdruck muss immer der vollständige
+   Spielplan erscheinen – der Bogen soll ohne Gerät benutzbar bleiben. */
+@media screen {
+  .round-block-hidden { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile Sprungleiste
+   Die Vorlagen tragen diese Regeln in ihrem eigenen <style>-Block; es gibt sie
+   in keiner gemeinsamen Datei. Hier stehen sie unverändert, damit die festen
+   Bögen exakt dieselbe Leiste bekommen.
+   --------------------------------------------------------------------------- */
+.mobile-jumpbar { display: none; }
+
+@media screen and (max-width: 640px) {
+  .mobile-jumpbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255,255,255,.96);
+    border-top: 1px solid #cdd8e6;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .mobile-jumpbar .nbtn {
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    cursor: pointer;
+    border: 1px solid #1f4e79;
+    background: #1f4e79;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+    box-sizing: border-box;
+  }
+
+  /* Die Leiste liegt über dem Inhalt; damit der letzte Abschnitt nicht
+     darunter verschwindet, bekommt die Seite unten Luft.
+
+     Zugleich der wichtigste Layout-Unterschied: die Vorlagen setzen den
+     Seitenrand auf Mobilgeräten von 10 mm auf 10 px herunter – die festen
+     Bögen hatten bisher überhaupt keine Mobil-Regel und verschenkten damit
+     rund ein Viertel der Bildschirmbreite. Dadurch wurde die Rundenauswahl
+     bis zur Unbenutzbarkeit zusammengequetscht. Werte wie in der Vorlage.
+
+     Bewusst an `body.has-jumpbar` gebunden: die Klasse setzt round-nav.js nur
+     dort, wo es selbst nachgerüstet hat. Die Vorlagen bleiben unberührt. */
+  body.has-jumpbar {
+    padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media print {
+  .mobile-jumpbar { display: none !important; }
+}
+
+/* Der Rundennavigator selbst wird vollständig von `spielplan.css` gestylt
+   (`.schedule-roundbar`, `.nbtn-round`, `.chev`, `.state`). Hier steht nur,
+   was dort an die Einzeltabellen-Struktur gebunden ist. */
+.schedule-roundbar[hidden] { display: none !important; }

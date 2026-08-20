@@ -44,6 +44,7 @@
 
     /* ── App-Leiste (sticky, frosted) ── */
     .appbar {
+      position: -webkit-sticky; /* Safari < 13 */
       position: sticky;
       top: 0;
       z-index: 120;
@@ -141,6 +142,7 @@
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       align-items: center;
+      position: -webkit-sticky; /* Safari < 13 */
       position: sticky;
       top: 56px;
       z-index: 110;
@@ -238,10 +240,16 @@
       margin: 28px 0 12px;
     }
 
+    /* Vier Turnierbögen: am Desktop bewusst zwei Karten je Reihe (je 50 %),
+       darunter greift die automatische Verteilung ab 300 px Kartenbreite. */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 20px;
+    }
+
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     /* ── Card ── */
@@ -473,6 +481,10 @@
     }
     @media print { .noprint { display: none !important; } }
   </style>
+  <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
+       Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
 
@@ -496,28 +508,13 @@
 
 <div class="filterbar">
   <div class="mobile-filter-grid" aria-label="Mobile Filter">
-    <label class="mf-field">Teams
-      <select id="mobileTeamFilter" class="mf-select" onchange="applyMobileFilters()">
-        <option value="">Alle Teamgrößen</option>
-        <option value="4">4 Teams</option>
-        <option value="5">5 Teams</option>
-        <option value="6">6 Teams</option>
-        <option value="7">7 Teams</option>
-        <option value="8">8 Teams</option>
-        <option value="9">9 Teams</option>
-        <option value="10">10 Teams</option>
-        <option value="11">11 Teams</option>
-        <option value="12">12 Teams</option>
-        <option value="16">16–24 Teams</option>
-      </select>
-    </label>
     <label class="mf-field">Format
       <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
         <option value="">Alle Formate</option>
         <option value="rr">Jeder gegen Jeden</option>
-        <option value="group">Gruppen</option>
-        <option value="ko">KO-System</option>
+        <option value="gruppen">Gruppen</option>
         <option value="swiss">Schweizer System</option>
+        <option value="ko">KO-System</option>
       </select>
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()">Alle anzeigen</button>
@@ -525,23 +522,10 @@
   <div class="filterbar-desktop">
     <button class="filter-btn active" onclick="filter('all', this)">Alle</button>
     <div class="filter-sep"></div>
-    <span class="filter-label">Teams:</span>
-    <button class="filter-btn" onclick="filter('4', this)">4</button>
-    <button class="filter-btn" onclick="filter('5', this)">5</button>
-    <button class="filter-btn" onclick="filter('6', this)">6</button>
-    <button class="filter-btn" onclick="filter('7', this)">7</button>
-    <button class="filter-btn" onclick="filter('8', this)">8</button>
-    <button class="filter-btn" onclick="filter('9', this)">9</button>
-    <button class="filter-btn" onclick="filter('10', this)">10</button>
-    <button class="filter-btn" onclick="filter('11', this)">11</button>
-    <button class="filter-btn" onclick="filter('12', this)">12</button>
-    <button class="filter-btn" onclick="filter('16', this)">16–24</button>
-    <div class="filter-sep"></div>
-    <span class="filter-label">Format:</span>
     <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
-    <button class="filter-btn" onclick="filter('group', this)">Gruppen</button>
-    <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
+    <button class="filter-btn" onclick="filter('gruppen', this)">Gruppen</button>
     <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
+    <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
   </div>
 </div>
 
@@ -577,7 +561,7 @@
       </div>
     </div>
     <div class="info-box" style="margin:0;display:flex;flex-direction:column">
-      <h3>🏆 Gruppen + Überkreuz-Finalrunde</h3>
+      <h3>🏆 Gruppen + Finalrunde</h3>
       <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
       <div class="format-info-body">
         Gruppenphase sortiert die Teams, die Finalrunde kreuzt Gruppe A und B. Faire Paarungen, kein Ausscheiden – alle Plätze werden ermittelt.
@@ -596,7 +580,7 @@
       <h3>🥊 KO-System</h3>
       <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
       <div class="format-info-body">
-        Direktes Ausscheidungsturnier mit Trostrunde: Verlierer spielen weiter um die unteren Plätze. Ideal als Playoff-Phase nach einer Gruppenphase.
+        Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase.
         <a href="docs/format-ko-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
       </div>
     </div>
@@ -608,243 +592,114 @@
   </p>
   <div class="grid">
 
-    <!-- ── Card: Flexibel ── -->
-    <div class="card" data-tags="4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 rr">
+    <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
+    <div class="card" data-tags="gruppen ko platzierung hauptrunde">
       <div class="card-header">
-        <span class="format-tag">Jeder gegen Jeden</span>
-        <h2>Flexibel · 4–20 Teams</h2>
-        <div class="sub">Team- und Feldzahl frei wählbar · Plan wird live erzeugt</div>
+        <span class="format-tag">dynamisch · 4–24 Teams</span>
+        <h2>Gruppen + Finalrunde</h2>
+        <div class="sub">Gruppen, Platzierungsrunde, KO oder Hauptrunde – frei kombinierbar</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–20 Teams</span>
+          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
           <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> jeder gegen jeden</span>
-          <span class="stat"><span class="icon">⏱</span> variabel</span>
+          <span class="stat"><span class="icon">🎯</span> 2–6 Gruppen o. automatisch</span>
+          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
         </div>
         <div class="features">
-          <span class="feat">✓ ungerade Teamzahl (Freilos)</span>
-          <span class="feat">✓ Laufende Tabelle</span>
-          <span class="feat">✓ Spielmodus auto (15/21)</span>
+          <span class="feat">✓ 4 Finalmodi wählbar</span>
+          <span class="feat">✓ Über-Kreuz-Setzung</span>
+          <span class="feat">✓ Freilos &amp; Ausfall</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Flexibel_Alle_gegen_Alle.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
           Öffnen ↗
         </a>
       </div>
     </div>
 
-    <!-- ── Card 1 ── -->
-    <div class="card" data-tags="8 ko">
+    <!-- ── Card: Flexibel ── -->
+    <div class="card" data-tags="rr">
       <div class="card-header">
-        <span class="format-tag">KO-System · Playoff</span>
-        <h2>8 Teams · 4 Felder</h2>
-        <div class="sub">ideal als Playoff nach Gruppenturnier</div>
+        <span class="format-tag">dynamisch · 4–24 Teams</span>
+        <h2>Jeder gegen Jeden</h2>
+        <div class="sub">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 3 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~2–3 Std.</span>
+          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> Teams − 1 Spiele/Team</span>
+          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
         </div>
         <div class="features">
-          <span class="feat">✓ Visualisiertes Bracket</span>
-          <span class="feat">✓ Plätze 1–8 ausgespielt</span>
-          <span class="feat">✓ Setzung + Freilos</span>
+          <span class="feat">✓ Ungerade Teamzahl (Freilos)</span>
+          <span class="feat">✓ Laufende Tabelle je Runde</span>
+          <span class="feat">✓ Freilos &amp; Ausfall</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_KO_System.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank">
           Öffnen ↗
         </a>
       </div>
     </div>
 
-    <!-- ── Card: 8T Gruppen + KO ── -->
-    <div class="card" data-tags="8 ko group">
+    <!-- ── Card: Schweizer System ── -->
+    <div class="card" data-tags="swiss">
       <div class="card-header">
-        <span class="format-tag">Gruppen + KO-System</span>
-        <h2>8 Teams · 4 Felder</h2>
-        <div class="sub">Ganztages-Turnier · 5 Spiele/Team</div>
+        <span class="format-tag">dynamisch · 4–24 Teams</span>
+        <h2>Schweizer System</h2>
+        <div class="sub">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 5 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~5 Std.</span>
+          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> Rundenzahl wählbar</span>
+          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
         </div>
         <div class="features">
-          <span class="feat">✓ Gruppenphase + KO-Bracket</span>
-          <span class="feat">✓ Auto-Setzung aus Gruppen</span>
-          <span class="feat">✓ Plätze 1–8 ausgespielt</span>
+          <span class="feat">✓ Keine Paarung wiederholt sich</span>
+          <span class="feat">✓ Ungerade Teamzahl (Freilos)</span>
+          <span class="feat">✓ Freilos &amp; Ausfall</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_Gruppen_KO_System.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=swiss" target="_blank">
           Öffnen ↗
         </a>
       </div>
     </div>
 
-    <div class="card" data-tags="6 group">
-      <div class="card-header">
-        <span class="format-tag">Gruppen + Finalrunde</span>
-        <h2>6 Teams · 3 Felder</h2>
-        <div class="sub">Plätze 1–6 ausgespielt</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 6 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 3 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 3–4 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Auto-Setzung Finale</span>
-          <span class="feat">✓ Gruppenauslosung</span>
-          <span class="feat">✓ Laufende Gruppentabellen</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_6_Teams_Gruppen_Platzierungsrunde.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
 
-    <!-- ── Card 3 ── -->
-    <div class="card" data-tags="8 group">
+    <!-- ── Card: KO-System (Ausscheidungsturnier, deshalb am Ende) ── -->
+    <div class="card" data-tags="ko bracket turnierbaum">
       <div class="card-header">
-        <span class="format-tag">Gruppen + Finalrunde</span>
-        <h2>8 Teams · 4 Felder</h2>
-        <div class="sub">Plätze 1–8 ausgespielt</div>
+        <span class="format-tag">dynamisch · 4–32 Teams</span>
+        <h2>KO-System</h2>
+        <div class="sub">Turnierbaum mit Freilosen · ideal als Playoff</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 8 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 4 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 5 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
+          <span class="stat"><span class="icon">👥</span> 4–32 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> 2–5 Runden</span>
+          <span class="stat"><span class="icon">⏱</span> kurz · 1–5 Spiele/Team</span>
         </div>
         <div class="features">
-          <span class="feat">✓ Auto-Setzung Finale</span>
-          <span class="feat">✓ Gruppenauslosung</span>
-          <span class="feat">✓ Laufende Gruppentabellen</span>
+          <span class="feat">✓ Spiel um Platz 3 optional</span>
+          <span class="feat">✓ Setzliste &amp; Freilose</span>
+          <span class="feat">✓ Platzbereiche statt Rangliste</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_8_Teams_4_Felder_Gruppen_Platzierungsrunde.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
-
-    <!-- ── Card 4 ── -->
-    <div class="card" data-tags="12 group">
-      <div class="card-header">
-        <span class="format-tag">Gruppen + Finalrunde</span>
-        <h2>12 Teams · 6 Felder</h2>
-        <div class="sub">Plätze 1–12 ausgespielt</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 12 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 6 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Auto-Setzung Finale</span>
-          <span class="feat">✓ Gruppenauslosung</span>
-          <span class="feat">✓ Laufende Gruppentabellen</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_12_Teams_6_Felder_Gruppen_Platzierungsrunde.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
-
-    <!-- ── Card: 16T Gruppen + Platzierungsrunde ── -->
-    <div class="card" data-tags="16 group">
-      <div class="card-header">
-        <span class="format-tag">Gruppen + Finalrunde</span>
-        <h2>16 Teams · 8 Felder</h2>
-        <div class="sub">Plätze 1–16 ausgespielt</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 16 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 8 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 9 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Auto-Setzung Finale</span>
-          <span class="feat">✓ Gruppenauslosung</span>
-          <span class="feat">✓ Laufende Gruppentabellen</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_16_Teams_8_Felder_Gruppen_Platzierungsrunde.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
-
-    <!-- ── Card: 10T Gruppen ── -->
-    <div class="card" data-tags="10 group">
-      <div class="card-header">
-        <span class="format-tag">Gruppen + Finalrunde</span>
-        <h2>10 Teams · 5 Felder</h2>
-        <div class="sub">Plätze 1–10 ausgespielt</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 10 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 5 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 7 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Auto-Setzung Finale</span>
-          <span class="feat">✓ Gruppenauslosung</span>
-          <span class="feat">✓ Laufende Gruppentabellen</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_10_Teams_Gruppen_Platzierungsrunde.html" target="_blank">
-          Öffnen ↗
-        </a>
-      </div>
-    </div>
-
-    <!-- ── Card: Universal Schweizer System ── -->
-    <div class="card" data-tags="5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 swiss">
-      <div class="card-header">
-        <span class="format-tag">Schweizer System</span>
-        <h2>5–20 Teams · universell</h2>
-        <div class="sub">konfigurierbar · ungerade Teams möglich (Freilos) · dynamische Paarungen</div>
-      </div>
-      <div class="card-body">
-        <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 5–20 Teams</span>
-          <span class="stat"><span class="icon">🎯</span> 5–7 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> ~4 Std.</span>
-        </div>
-        <div class="features">
-          <span class="feat">✓ Ungerade Teamzahl (mit Freilos)</span>
-          <span class="feat">✓ Dynamische Paarungen</span>
-          <span class="feat">✓ Teamanzahl wählbar (5–20)</span>
-          <span class="feat">✓ Live-Tabelle</span>
-        </div>
-      </div>
-      <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Schweizer_System.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_KO_System.html" target="_blank">
           Öffnen ↗
         </a>
       </div>
@@ -877,24 +732,19 @@
     if (tag === 'all') {
       applyCardFilters('', '');
     } else {
-      const isFormat = ['rr', 'group', 'ko', 'swiss'].includes(tag);
-      applyCardFilters(isFormat ? '' : tag, isFormat ? tag : '');
+      applyCardFilters('', tag);
     }
   }
 
   function applyMobileFilters() {
-    const teamEl = document.getElementById('mobileTeamFilter');
     const formatEl = document.getElementById('mobileFormatFilter');
-    const team = (teamEl && teamEl.value) || '';
     const format = (formatEl && formatEl.value) || '';
-    applyCardFilters(team, format);
+    applyCardFilters('', format);
     document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
   }
 
   function resetMobileFilters() {
-    const team = document.getElementById('mobileTeamFilter');
     const format = document.getElementById('mobileFormatFilter');
-    if (team) team.value = '';
     if (format) format.value = '';
     applyCardFilters('', '');
   }
@@ -997,6 +847,9 @@
       let registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
       registry = registry.filter(s => s.key !== key);
       localStorage.setItem('beachl_sessions', JSON.stringify(registry));
+      /* Archivierte Turniere liegen unter ihrem eigenen Schlüssel,
+         Alt-Sessions unter "<key>_…". Beides entfernen. */
+      localStorage.removeItem(key);
       Object.keys(localStorage).filter(k => k.startsWith(key + '_')).forEach(k => localStorage.removeItem(k));
       btn.closest('.session-card').remove();
       const countEl = document.getElementById('sessions-count');
