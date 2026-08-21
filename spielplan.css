@@ -233,6 +233,25 @@ caption > .cap-sub {
   color:#1f4e79; letter-spacing:0; text-transform:none;
 }
 caption > .cap-sub:empty { display:none; }
+/* Werkzeugleiste "Tabelle korrigieren" – eigene Zeile im <caption>, damit sie
+   nicht mit Titel/Anleitung verschmilzt; wird beim Drucken ausgeblendet
+   (siehe .mstd-toolbar.noprint in core/turnier-base.css). */
+caption > .cap-toolbar {
+  display:block; float:right; margin:0 0 3px 12px;
+}
+caption > .cap-toolbar:empty { display:none; }
+/* Hinweis-Block über einer End-/Laufenden Tabelle: Button rechtsbündig, 
+   damit bei Schweizer System und Jeder-gegen-Jeden die Korrektur-Toolbar
+   wie eine rechte Spalte an der Tabelle ausgerichtet ist. */
+.input-hint {
+  display:flex; align-items:flex-start; flex-wrap:wrap; gap:8px;
+}
+.input-hint > * {
+  flex:1 1 auto; min-width:0;
+}
+.input-hint .mstd-toolbar {
+  flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:center; justify-content:flex-end;
+}
 @media print {
   caption > .cap-hint { font-size:7.5pt; color:#333; margin-top:0.8mm; }
 }
@@ -1104,6 +1123,7 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
 .central-table th, .central-table td { font-size: 6.2px; height: 8mm; padding: 1px 2px; }
 .central-table .teamcol { width: 40mm; }
 .central-table .rankcol { width: 10mm; }
+.central-table .ptscol, .central-table .diffcol { width: 9mm; }
 .central-table .round { width: 16mm; }
 .central-table .rplace { width: 6mm; }
 .central-table span { font-size: 6.5px; color: #444; }
@@ -1112,7 +1132,8 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
 .central-table .auto { background: #e7f6ec; }
 
 /* Platz-Spalten beider Tabellen identisch: zentriert und fett. */
-.track .pos, .central-table .rankcol, .central-table .rplace { text-align: center; font-weight: 700; }
+.track .pos, .central-table .rankcol, .central-table .rplace,
+.central-table .ptscol, .central-table .diffcol { text-align: center; font-weight: 700; }
 
 /* Beispielzeile der Schweizer Tabelle wie in der laufenden Tabelle. */
 .example-row td { background: #eef6ff; color: #15467a; font-style: italic; }
@@ -1131,6 +1152,7 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
   .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 12px; }
   .central-table .teamcol { width: auto; min-width: 140px; }
   .central-table .rankcol { width: auto; min-width: 46px; }
+  .central-table .ptscol, .central-table .diffcol { width: auto; min-width: 56px; }
   .central-table .round { width: auto; min-width: 82px; }
   .central-table .rplace { width: auto; min-width: 28px; }
   /* Rang-Badge direkt am Platz – der (End-)Platz muss nicht in der letzten,

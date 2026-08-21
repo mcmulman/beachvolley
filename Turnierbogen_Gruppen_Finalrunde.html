@@ -254,8 +254,8 @@
 
 <div id="mainTables"></div>
 
-<table class="stand placelist" id="placeTable">
-  <caption><span class="cap-title" id="capPlace">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-hint" id="hintRank"></span></caption>
+<table class="stand placelist" id="placeTable" data-mstd-key="final">
+  <caption><span class="cap-title" id="capPlace">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th class="src">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
@@ -308,6 +308,12 @@
 
   let S = TStore.load(SHEET, { teams:8, fields:4, groups:'auto', setMode:'21',
     finalMode:'placement', startTime:'10:00', endTime:'14:30' });
+  /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
+  const MSTD = TUI.initManualEditing(document, {
+    get: () => S,
+    save: t => TStore.save(t),
+    repaint: () => paint()
+  });
   if(S.config.finalSetMode === undefined) S.config.finalSetMode = '';
   /* Voreinstellung aus der URL – die abgelösten Altbögen leiten mit ihrer
      früheren festen Konfiguration hierher weiter (siehe TStore.applyUrlConfig). */
@@ -550,11 +556,15 @@
       const matches = B.groupMatches[g] || [];
       const hasResult = matches.some(m => m.result || m.bye != null);
       anyGroupResult = anyGroupResult || hasResult;
-      html += '<div class="grpbox"><table class="stand"><caption>Gruppe ' + g
+      const key = 'group-' + g;
+      const editable = MSTD.isEditing(key);
+      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Gruppe ' + g
         + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">(Wertung pro Spiel – ungleiche Spielzahl)</span>' : '')
+        + (hasResult ? MSTD.toolbarHtml(key) : '')
         + '</caption>'
         + (hasResult
-            ? TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw: showDraw })
+            ? TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw: showDraw,
+                editable, manual: TStore.getManualStandings(S, key) })
             : emptyGroupTableHtml(B.groups[g] || []))
         + '</table></div>';
     });
@@ -580,20 +590,22 @@
     let html = '<div class="grpwrap">';
     Object.keys(B.mainTables).forEach(n => {
       const t = B.mainTables[n];
-      html += '<div class="grpbox"><table class="stand"><caption>Hauptrunde ' + TUI.esc(n) + '</caption>'
-        + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw:true })
+      const key = 'main-' + n;
+      const editable = MSTD.isEditing(key);
+      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Hauptrunde ' + TUI.esc(n) + MSTD.toolbarHtml(key) + '</caption>'
+        + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw:true,
+            editable, manual: TStore.getManualStandings(S, key) })
         + '</table></div>';
     });
     $('mainTables').innerHTML = html + '</div>';
   }
 
   function paintPlacements(){
-    let html = '';
-    B.placements.forEach(p => {
-      html += '<tr><td class="pl">' + p.place + '.</td>'
-        + '<td class="nm">' + (p.team != null ? TUI.teamNameHtml(p.team, S.teamNames, S.absent.includes(p.team)) : '&nbsp;') + '</td>'
-        + '<td class="src">' + TUI.esc(p.source || '') + '</td></tr>';
-    });
+    const key = 'final';
+    const editable = MSTD.isEditing(key);
+    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
+    $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
+    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">Noch keine Platzierung – zuerst die Vorrunde eintragen.</td></tr>';
   }
 

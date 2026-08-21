@@ -212,8 +212,8 @@
 
 <h2>Auswertung</h2>
 
-<table class="stand placelist" id="placeTable">
-  <caption><span class="cap-title">Endstand</span><span class="cap-hint" id="hintRank"></span></caption>
+<table class="stand placelist" id="placeTable" data-mstd-key="final">
+  <caption><span class="cap-title">Endstand</span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th>entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
@@ -267,6 +267,12 @@
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
 
   let S = TStore.load(SHEET, DEFAULTS);
+  /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
+  const MSTD = TUI.initManualEditing(document, {
+    get: () => S,
+    save: t => TStore.save(t),
+    repaint: () => paint()
+  });
   if(S.config.thirdPlace === undefined) S.config.thirdPlace = true;
   S.config.groups = 0;                    // dieser Bogen kennt keine Gruppenphase
   S.config.finalMode = 'ko';
@@ -462,13 +468,11 @@
   }
 
   function paintPlacements(){
-    let html = '';
-    B.placements.forEach(p => {
-      const place = p.rangeLabel ? p.rangeLabel : (p.place + '.');
-      html += '<tr><td class="pl">' + TUI.esc(place) + '</td>'
-        + '<td class="nm">' + (p.team != null ? TUI.teamNameHtml(p.team, S.teamNames, S.absent.includes(p.team)) : '&nbsp;') + '</td>'
-        + '<td class="src">' + TUI.esc(p.source || '') + '</td></tr>';
-    });
+    const key = 'final';
+    const editable = MSTD.isEditing(key);
+    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
+    $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
+    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">Noch keine Platzierung – zuerst Ergebnisse eintragen.</td></tr>';
     const placeRule = 'Im KO-System gibt es für die ausgeschiedenen Teams keine Rangliste: '
       + 'Alle Verlierer derselben Runde teilen sich denselben Platzbereich. '

@@ -11,10 +11,13 @@
    ändert nur die Anzahl sichtbarer Satzspalten, nie die gespeicherten Daten.
    ========================================================================== */
 (function (root, factory) {
-  const api = factory(root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null));
+  const api = factory(
+    root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null),
+    root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null)
+  );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TUI = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC, TStore) {
   'use strict';
 
   /* ------------------------------------------------------------ Hilfsmittel */
@@ -297,36 +300,270 @@
 
   /* ============================================================ 5. TABELLE
      ranked: Ergebnis aus TC.rank(). "shared" wird als "=" markiert, damit auf
-     dem Papier sichtbar ist, dass hier das Los entscheiden muss.             */
+     dem Papier sichtbar ist, dass hier das Los entscheiden muss.
+
+     Manuelle Korrektur ("Tabelle korrigieren"): opts.manual ist die Map
+     { team: { place?, dPts?, dBd? } } aus TStore.getManualStandings(). Platz
+     überschreibt den berechneten Wert direkt (Zeilen sortieren sich neu);
+     dPts/dBd sind KORREKTUR-DELTAS, die auf den berechneten Wert addiert
+     werden – sie bleiben also gültig, auch wenn sich Ergebnisse später noch
+     ändern und neu gerechnet wird (siehe Rücksprache mit dem Nutzer).
+     opts.editable schaltet die Eingabefelder frei; opts.tableKey nur nötig,
+     wenn editable true ist (steht dann in data-mstd-key am <table>-Tag –
+     das übernimmt der aufrufende Bogen selbst, hier nur die Zellen).        */
   function standingsTableHtml(ranked, ctx, opts) {
     const o = opts || {};
     const per = !!o.perGame;
+    const editable = !!o.editable;
+    const manual = o.manual || {};
+    let rows = ranked.map((r, i) => {
+      const ov = manual[r.team] || {};
+      const dPts = Number(ov.dPts) || 0;
+      const dBd = Number(ov.dBd) || 0;
+      const hasPlace = ov.place != null && Number.isFinite(Number(ov.place));
+      const overridePlace = hasPlace ? Number(ov.place) : null;
+      const effPts = (per ? r.stat.ptsPer : r.stat.pts) + dPts;
+      const effBd = (per ? r.stat.bdPer : r.stat.bd) + dBd;
+      return { orig: r, i, team: r.team, dPts, dBd, hasPlace, overridePlace, effPts, effBd };
+    });
+    /* Zweistufige Sortierung:
+       1) Rein rechnerischer Rang nach den korrigierten Werten (effPts/effBd –
+          Punkte, dann Ball-Differenz, dieselbe Hauptkriterien-Reihenfolge wie
+          die Berechnung selbst). Eine Δ-Korrektur wirkt sich hier direkt aus:
+          zieht man einem Team Punkte ab, rutscht die Zeile automatisch
+          herunter. Ohne jede Δ-Korrektur bleibt exakt die ursprüngliche
+          Reihung (inkl. weiterer Tie-Break-Kriterien wie direkter Vergleich)
+          erhalten, weil dann effPts/effBd mit den Basiswerten übereinstimmen
+          und der stabile Index i als letzter Vergleich greift.
+       2) Ein manuell gesetzter Platz überschreibt diesen rechnerischen Rang
+          zusätzlich (fester Wert, siehe placeListHtml-Pendant); beide Werte
+          sind einfache Zahlen 1..n und lassen sich daher direkt mischen.     */
+    /* Zweistufige Sortierung:
+       1) Rein rechnerischer Rang nach den korrigierten Werten (effPts/effBd –
+          Punkte, dann Ball-Differenz, dieselbe Hauptkriterien-Reihenfolge wie
+          die Berechnung selbst). Eine Δ-Korrektur wirkt sich hier direkt aus:
+          zieht man einem Team Punkte ab, rutscht die Zeile automatisch
+          herunter. Ohne jede Δ-Korrektur bleibt exakt die ursprüngliche
+          Reihung (inkl. weiterer Tie-Break-Kriterien wie direkter Vergleich)
+          erhalten, weil dann effPts/effBd mit den Basiswerten übereinstimmen
+          und der stabile Index i als letzter Vergleich greift.
+       2) Ein manuell gesetzter Platz überschreibt diesen rechnerischen Rang
+          zusätzlich (fester Wert, siehe placeListHtml-Pendant); beide Werte
+          sind einfache Zahlen 1..n und lassen sich daher direkt mischen.
+       Solange die Tabelle im Bearbeiten-Modus ist, bleiben die ZEILEN in
+       ihrer ursprünglichen Reihenfolge stehen (nur der Platz-Wert wird schon
+       aktualisiert angezeigt) – die eigentliche Neusortierung passiert erst,
+       wenn "Fertig" geklickt wird. So springen Zeilen nicht schon während der
+       Eingabe hin und her. */
+    rows.forEach(row => { row.calcPlace = 0; });
+    rows.slice().sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i))
+      .forEach((row, i) => { row.calcPlace = i + 1; });
+    rows.forEach(row => { row.place = row.hasPlace ? row.overridePlace : row.calcPlace; });
+    const sortedRows = rows.slice().sort((a, b) => (a.place - b.place) || (a.i - b.i));
+    sortedRows.forEach((row, i) => {
+      const prev = sortedRows[i - 1], next = sortedRows[i + 1];
+      row.shared = !!((prev && prev.place === row.place) || (next && next.place === row.place));
+    });
+    if (!editable) rows = sortedRows;
+
     let html = '<thead><tr>'
       + '<th class="pl">Pl.</th><th class="nm">Team</th>'
       + '<th>Sp.</th><th>S</th>' + (o.showDraw ? '<th>U</th>' : '') + '<th>N</th>'
       + '<th>Pkt' + (per ? '/Sp' : '') + '</th>'
       + '<th>Bälle</th><th>Diff' + (per ? '/Sp' : '') + '</th>'
+      + (editable ? '<th class="mstd-actcol noprint"></th>' : '')
       + '</tr></thead><tbody>';
-    ranked.forEach(r => {
-      const s = r.stat;
-      const pts = per ? (Math.round(s.ptsPer * 100) / 100) : s.pts;
-      const bd = per ? (Math.round(s.bdPer * 100) / 100) : s.bd;
-      const placeBadge = '<span class="screen-place' + (r.shared ? ' pz-tie' : '') + '"'
-        + ' title="Aktueller Platz: ' + r.place + (r.shared ? ' (geteilt)' : '') + '">'
-        + r.place + '.' + (r.shared ? '=' : '') + '</span>';
+
+    rows.forEach(row => {
+      const r = row.orig, s = r.stat;
+      const basePts = per ? s.ptsPer : s.pts;
+      const baseBd = per ? s.bdPer : s.bd;
+      const effPts = basePts + row.dPts;
+      const effBd = baseBd + row.dBd;
+      const ptsDisp = per ? (Math.round(effPts * 100) / 100) : effPts;
+      const bdDisp = per ? (Math.round(effBd * 100) / 100) : effBd;
       const teamHtml = ctx.teamNameHtml ? ctx.teamNameHtml(r.team) : esc(ctx.teamLabel(r.team));
-      html += '<tr' + (r.shared ? ' class="is-tie"' : '') + ' data-team="' + r.team + '">'
-        + '<td class="pl' + (r.shared ? ' pz-tie' : '') + '">' + r.place + '.' + (r.shared ? '=' : '') + '</td>'
-        + '<td class="nm">' + teamHtml + placeBadge + '</td>'
-        + '<td>' + s.games + '</td><td>' + s.won + '</td>'
+
+      html += '<tr' + (row.shared ? ' class="is-tie"' : '') + ' data-team="' + r.team + '">';
+
+      if (editable) {
+        html += '<td class="pl mstd-cell' + (row.hasPlace ? ' is-manual' : '') + '">'
+          + '<input type="number" min="1" class="mstd-in" data-field="place" value="' + row.place + '"></td>'
+          + '<td class="nm">' + teamHtml + '</td>';
+      } else {
+        const placeBadge = '<span class="screen-place' + (row.shared ? ' pz-tie' : '') + '"'
+          + ' title="Aktueller Platz: ' + row.place + (row.shared ? ' (geteilt)' : '') + (row.hasPlace ? ' – manuell gesetzt' : '') + '">'
+          + row.place + '.' + (row.shared ? '=' : '') + '</span>';
+        html += '<td class="pl' + (row.shared ? ' pz-tie' : '') + (row.hasPlace ? ' is-manual' : '') + '">'
+          + row.place + '.' + (row.shared ? '=' : '') + '</td>'
+          + '<td class="nm">' + teamHtml + placeBadge + '</td>';
+      }
+
+      html += '<td>' + s.games + '</td><td>' + s.won + '</td>'
         + (o.showDraw ? '<td>' + s.drawn + '</td>' : '')
-        + '<td>' + s.lost + '</td>'
-        + '<td><b>' + pts + '</b></td>'
-        + '<td>' + s.ballsFor + ':' + s.ballsAgainst + '</td>'
-        + '<td class="' + (s.bd > 0 ? 'pos' : s.bd < 0 ? 'neg' : '') + '">' + fmtDiff(bd) + '</td>'
-        + '</tr>';
+        + '<td>' + s.lost + '</td>';
+
+      if (editable) {
+        html += '<td class="mstd-cell' + (row.dPts ? ' is-manual' : '') + '"><b>' + ptsDisp + '</b>'
+          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (row.dPts || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert"></td>';
+      } else {
+        html += '<td><b>' + ptsDisp + '</b>' + manualDeltaBadge('Punkte', row.dPts) + '</td>';
+      }
+
+      html += '<td>' + s.ballsFor + ':' + s.ballsAgainst + '</td>';
+
+      if (editable) {
+        html += '<td class="mstd-cell' + (row.dBd ? ' is-manual' : '') + '">' + fmtDiff(bdDisp)
+          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (row.dBd || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert"></td>';
+      } else {
+        html += '<td class="' + (effBd > 0 ? 'pos' : effBd < 0 ? 'neg' : '') + '">' + fmtDiff(bdDisp) + manualDeltaBadge('Ball-Differenz', row.dBd) + '</td>';
+      }
+
+      if (editable) {
+        const hasAny = row.hasPlace || row.dPts || row.dBd;
+        html += '<td class="mstd-actcol noprint">' + (hasAny
+          ? '<button type="button" class="mstd-reset-row" data-team="' + r.team + '" title="Korrektur für dieses Team zurücksetzen">↺</button>'
+          : '') + '</td>';
+      }
+      html += '</tr>';
     });
     return html + '</tbody>';
+  }
+
+  /* Kleines "Δ"-Zeichen mit Tooltip neben Pkt/Diff, wenn dort eine manuelle
+     Korrektur eingerechnet ist – auch im Ausdruck sichtbar (kein noprint),
+     damit auf dem Papierbogen erkennbar bleibt, dass hier korrigiert wurde. */
+  function manualDeltaBadge(label, delta) {
+    if (!delta) return '';
+    const sign = delta > 0 ? '+' : '';
+    return ' <sup class="mstd-badge" title="Manuelle Korrektur ' + label + ': ' + sign + delta + '">Δ</sup>';
+  }
+
+  /* ================================================ 5a. PLATZIERUNGSLISTE
+     Für Endstände, die nicht über Punkte/Bälle sondern direkt aus dem
+     Turnierverlauf abgeleitet werden (KO-System, Gesamt-Endstand Gruppen +
+     Finalrunde): Spalten Pl. / Team / "entschieden durch". Manuelle
+     Korrektur wie bei standingsTableHtml: place überschreibt (+Neusortierung
+     der Zeilen), source überschreibt den Text in "entschieden durch".       */
+  function placeListHtml(placements, ctx, opts) {
+    const o = opts || {};
+    const editable = !!o.editable;
+    const manual = o.manual || {};
+    let rows = (placements || []).map((p, i) => {
+      const ov = (p.team != null && manual[p.team]) || {};
+      const hasPlace = ov.place != null && Number.isFinite(Number(ov.place));
+      const place = hasPlace ? Number(ov.place) : p.place;
+      const hasSource = ov.source != null && ov.source !== '';
+      const source = hasSource ? ov.source : (p.source || '');
+      return { p, i, place, hasPlace, hasSource, source };
+    });
+    /* Im Bearbeiten-Modus bleibt die Zeilenreihenfolge stehen (nur der Platz-
+       Wert im Feld aktualisiert sich schon) – erst nach "Fertig" wird nach
+       dem (ggf. korrigierten) Platz neu sortiert, damit Zeilen nicht schon
+       waehrend der Eingabe springen. */
+    if (!editable) rows.sort((a, b) => (a.place - b.place) || (a.i - b.i));
+
+    let html = '';
+    rows.forEach(row => {
+      const p = row.p;
+      const placeLabel = row.hasPlace ? (row.place + '.') : (p.rangeLabel ? p.rangeLabel : (p.place + '.'));
+      const teamHtml = p.team != null
+        ? (ctx && ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : esc(ctx ? ctx.teamLabel(p.team) : String(p.team)))
+        : '&nbsp;';
+      html += '<tr' + (p.team != null ? ' data-team="' + p.team + '"' : '') + '>';
+      if (editable) {
+        html += '<td class="pl mstd-cell' + (row.hasPlace ? ' is-manual' : '') + '">'
+          + '<input type="number" min="1" class="mstd-in" data-field="place" value="' + row.place + '"></td>'
+          + '<td class="nm">' + teamHtml + '</td>'
+          + '<td class="src mstd-cell' + (row.hasSource ? ' is-manual' : '') + '">'
+          + '<input type="text" class="mstd-in mstd-text" data-field="source" value="' + esc(row.source) + '">'
+          + (p.team != null && (row.hasPlace || row.hasSource)
+              ? ' <button type="button" class="mstd-reset-row" data-team="' + p.team + '" title="Zurücksetzen">↺</button>'
+              : '')
+          + '</td>';
+      } else {
+        html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + '">' + esc(placeLabel) + '</td>'
+          + '<td class="nm">' + teamHtml + '</td>'
+          + '<td class="src' + (row.hasSource ? ' is-manual' : '') + '">' + esc(row.source) + '</td>';
+      }
+      html += '</tr>';
+    });
+    return html;
+  }
+
+  /* ===================================================== 5b. MANUELLE-
+     KORREKTUR-STEUERUNG. Verdrahtet die "Tabelle korrigieren"-Buttons und
+     Eingabefelder EINMAL pro Seite (Event-Delegation), unabhängig davon wie
+     oft/welche Tabellen anschließend neu gezeichnet werden. Tabellen werden
+     über das Attribut data-mstd-key="<tableKey>" am <table>-Element
+     identifiziert (das setzt der aufrufende Bogen beim Rendern selbst).
+     Der Bearbeiten-Status ist reine Laufzeit-UI (nicht persistiert) – nach
+     einem Reload starten alle Tabellen wieder im Anzeige-Modus.
+       store = { get(): Turnier, save(t): void, repaint(): void }           */
+  function initManualEditing(root, store) {
+    const editing = new Set();
+    const isEditing = key => editing.has(key);
+    const toolbarHtml = key => {
+      const on = editing.has(key);
+      return '<span class="mstd-toolbar noprint">'
+        + '<button type="button" class="mstd-toggle" data-mstd-toggle="' + esc(key) + '">'
+        + (on ? 'Fertig' : 'Tabelle korrigieren') + '</button>'
+        + (on ? ' <button type="button" class="mstd-reset-all" data-mstd-reset="' + esc(key) + '">Korrekturen zurücksetzen</button>' : '')
+        + '</span>';
+    };
+    root.addEventListener('click', e => {
+      const tog = e.target.closest('[data-mstd-toggle]');
+      if (tog) {
+        const key = tog.getAttribute('data-mstd-toggle');
+        if (editing.has(key)) editing.delete(key); else editing.add(key);
+        store.repaint();
+        return;
+      }
+      const rst = e.target.closest('[data-mstd-reset]');
+      if (rst) {
+        const key = rst.getAttribute('data-mstd-reset');
+        const t = store.get();
+        TStore.resetManualStandings(t, key);
+        TStore.resetManualPlacements(t, key);
+        store.save(t);
+        store.repaint();
+        return;
+      }
+      const rstRow = e.target.closest('.mstd-reset-row');
+      if (rstRow) {
+        const tbl = rstRow.closest('table[data-mstd-key]');
+        const key = tbl && tbl.getAttribute('data-mstd-key');
+        const team = rstRow.getAttribute('data-team');
+        if (key && team !== null && team !== '') {
+          const t = store.get();
+          TStore.resetManualStandingRow(t, key, +team);
+          TStore.resetManualPlacementRow(t, key, +team);
+          store.save(t);
+          store.repaint();
+        }
+      }
+    });
+    root.addEventListener('change', e => {
+      const inp = e.target.closest('.mstd-in');
+      if (!inp) return;
+      const tbl = inp.closest('table[data-mstd-key]');
+      const key = tbl && tbl.getAttribute('data-mstd-key');
+      const tr = inp.closest('tr[data-team]');
+      const team = tr && tr.getAttribute('data-team');
+      const field = inp.getAttribute('data-field');
+      if (!key || team == null || team === '' || !field) return;
+      const t = store.get();
+      if (field === 'source') {
+        TStore.setManualPlacement(t, key, +team, 'source', inp.value);
+      } else if (field === 'place' && tbl.classList.contains('placelist')) {
+        TStore.setManualPlacement(t, key, +team, 'place', inp.value);
+      } else {
+        TStore.setManualStanding(t, key, +team, field, inp.value);
+      }
+      store.save(t);
+      store.repaint();
+    });
+    return { isEditing, toolbarHtml };
   }
 
   /* ====================================================== 5b. ANLEITUNGEN
@@ -384,7 +621,8 @@
     const winPts = o.winPts || 1; // Punkte je Sieg (für Musterzeile)
     let html = '<thead><tr><th class="tname teamcol">Team / Name</th><th class="lbl">kumuliert</th>';
     for (let r = 1; r <= roundCount; r++) html += '<th>R' + r + '</th>';
-    html += '<th class="pos">Platz</th></tr></thead><tbody>';
+    html += '<th class="mstd-actcol noprint">Korr.</th><th class="pos">Platz</th>'
+      + '<th class="mstd-actcol noprint"></th></tr></thead><tbody>';
     /* Beispielzeile – zeigt wie man die Tabelle ausfüllt */
     let pEx = 0, bdEx = 0;
     const ptsEx = [], bdExArr = [];
@@ -397,20 +635,23 @@
       + '<span class="t-line">Team X</span><span class="tnm t-nm">(Teamname)</span>'
       + '</td><td class="lbl">' + ptsLabel + '</td>';
     ptsEx.forEach(v => html += '<td>' + v + '</td>');
-    html += '<td class="pos" rowspan="2">3.</td></tr>';
+    html += '<td class="mstd-actcol noprint"></td><td class="pos" rowspan="2">3.</td>'
+      + '<td class="mstd-actcol noprint" rowspan="2"></td></tr>';
     html += '<tr class="ex ex-end"><td class="lbl">Ball-Differenz</td>';
     bdExArr.forEach(v => html += '<td>' + (v > 0 ? '+' : '') + v + '</td>');
-    html += '</tr>';
+    html += '<td class="mstd-actcol noprint"></td></tr>';
     /* Team-Zeilen */
     teams.forEach(t => {
       html += '<tr class="grp" data-team="' + t + '" data-line="pts">'
         + '<td class="tname teamcol" rowspan="2" data-team-name="' + t + '"><span class="t-line">Team ' + esc(t) + '</span></td>'
         + '<td class="lbl">' + ptsLabel + '</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
-      html += '<td class="pos" rowspan="2" data-pos></td></tr>';
+      html += '<td class="mstd-cell noprint" data-corr="dPts"></td>'
+        + '<td class="pos" rowspan="2" data-pos></td>'
+        + '<td class="mstd-actcol noprint" rowspan="2" data-actcol></td></tr>';
       html += '<tr data-team="' + t + '" data-line="bd"><td class="lbl">Ball-Differenz</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
-      html += '</tr>';
+      html += '<td class="mstd-cell noprint" data-corr="dBd"></td></tr>';
     });
     return html + '</tbody>';
   }
@@ -882,7 +1123,7 @@
   return {
     esc, fmtTime, fmtDiff, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
-    standingsTableHtml, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    standingsTableHtml, placeListHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml,
     roundBarHtml, roundBarValue, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,

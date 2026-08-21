@@ -64,7 +64,19 @@
       /* eingefrorene, bereits generierte Paarungen (Schweizer System) */
       frozen: {},
       /* eingefrorener Satzmodus je Runde/Phase, sobald Ergebnisse vorliegen */
-      frozenModes: {}
+      frozenModes: {},
+      /* Manuelle Korrekturen der Punkte-Tabellen ("Tabelle korrigieren"):
+         manualStandings[tableKey][team] = { place?, dPts?, dBd? }
+         - place: überschreibt den berechneten Platz direkt (Zeilen sortieren
+           sich danach neu).
+         - dPts/dBd: Korrektur-DELTA, wird dauerhaft auf den jeweils frisch
+           berechneten Wert addiert – bleibt also auch erhalten, wenn sich
+           später noch Ergebnisse ändern und neu gerechnet wird.            */
+      manualStandings: {},
+      /* Manuelle Korrekturen der Endstand-/Platzierungslisten (Pl./Team/
+         "entschieden durch", z.B. KO-System oder Gesamt-Endstand):
+         manualPlacements[tableKey][team] = { place?, source? }             */
+      manualPlacements: {}
     };
   }
 
@@ -88,6 +100,8 @@
     out.results = t.results || {};
     out.frozen = t.frozen || {};
     out.frozenModes = t.frozenModes || {};
+    out.manualStandings = t.manualStandings || {};
+    out.manualPlacements = t.manualPlacements || {};
     return out;
   }
 
@@ -134,6 +148,62 @@
   }
   /* Löscht NUR die Ergebnisse, nicht Namen/Konfiguration. */
   function clearScores(t) { t.results = {}; return t; }
+
+  /* ----------------------------------------------- Manuelle Korrekturen
+     Punkte-Tabellen (Gruppen-/Haupt-/Endtabelle). field ∈ {place,dPts,dBd}.
+     value = null/'' löscht die Korrektur für genau dieses Feld wieder.       */
+  function setManualStanding(t, tableKey, team, field, value) {
+    t.manualStandings = t.manualStandings || {};
+    const tbl = t.manualStandings[tableKey] = t.manualStandings[tableKey] || {};
+    const row = tbl[team] = tbl[team] || {};
+    const v = (value === '' || value == null) ? null : Number(value);
+    if (v == null || !Number.isFinite(v) || (field !== 'place' && v === 0)) delete row[field];
+    else row[field] = v;
+    if (!Object.keys(row).length) delete tbl[team];
+    if (!Object.keys(tbl).length) delete t.manualStandings[tableKey];
+    return t;
+  }
+  function getManualStandings(t, tableKey) {
+    return (t.manualStandings && t.manualStandings[tableKey]) || {};
+  }
+  function resetManualStandingRow(t, tableKey, team) {
+    if (t.manualStandings && t.manualStandings[tableKey]) {
+      delete t.manualStandings[tableKey][team];
+      if (!Object.keys(t.manualStandings[tableKey]).length) delete t.manualStandings[tableKey];
+    }
+    return t;
+  }
+  function resetManualStandings(t, tableKey) {
+    if (t.manualStandings) delete t.manualStandings[tableKey];
+    return t;
+  }
+
+  /* ----------------------------------------------- Manuelle Korrekturen
+     Platzierungslisten (Pl./Team/"entschieden durch"). field ∈ {place,source}. */
+  function setManualPlacement(t, tableKey, team, field, value) {
+    t.manualPlacements = t.manualPlacements || {};
+    const tbl = t.manualPlacements[tableKey] = t.manualPlacements[tableKey] || {};
+    const row = tbl[team] = tbl[team] || {};
+    if (value === '' || value == null) delete row[field];
+    else row[field] = (field === 'place') ? Number(value) : String(value);
+    if (!Object.keys(row).length) delete tbl[team];
+    if (!Object.keys(tbl).length) delete t.manualPlacements[tableKey];
+    return t;
+  }
+  function getManualPlacements(t, tableKey) {
+    return (t.manualPlacements && t.manualPlacements[tableKey]) || {};
+  }
+  function resetManualPlacementRow(t, tableKey, team) {
+    if (t.manualPlacements && t.manualPlacements[tableKey]) {
+      delete t.manualPlacements[tableKey][team];
+      if (!Object.keys(t.manualPlacements[tableKey]).length) delete t.manualPlacements[tableKey];
+    }
+    return t;
+  }
+  function resetManualPlacements(t, tableKey) {
+    if (t.manualPlacements) delete t.manualPlacements[tableKey];
+    return t;
+  }
 
   /* ------------------------------------------------------------ Migration
      Liest die alten, bogenspezifischen Schlüssel und überführt sie in das
@@ -320,6 +390,8 @@
     SCHEMA, PREFIX, INDEX_KEY, LEGACY,
     emptyTournament, load, save, reset, normalize,
     setScore, getSets, clearScores,
+    setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,
+    setManualPlacement, getManualPlacements, resetManualPlacementRow, resetManualPlacements,
     applyUrlConfig, urlInt, urlOneOf, urlBool,
     index, updateIndex, hasLegacy, migrate, parseLegacyScoreId,
     _readJSON: readJSON, _writeJSON: writeJSON

@@ -34,6 +34,36 @@
   .stand .pl { width:34px; background:var(--bg); font-weight:bold; }
   .stand .nm { text-align:left; }
 
+  /* ===================================================== Manuelle Korrektur
+     "Tabelle korrigieren": Punkte/Ball-Differenz lassen sich als Delta (+/-)
+     anpassen und bleiben so auch beim Neuberechnen erhalten; der Platz kann
+     zusätzlich direkt überschrieben werden (Zeilen sortieren sich danach neu).
+     Die Bedienelemente (Buttons, Eingabefelder) sind reiner Bildschirm-
+     Bedienkomfort (noprint); der Δ-Hinweis bzw. die gelbe Markierung einer
+     bereits erfolgten Korrektur bleibt bewusst auch im Ausdruck sichtbar.    */
+  .mstd-toolbar { font-weight:normal; font-size:11px; margin-left:10px; }
+  .mstd-toolbar button {
+    font: inherit; font-size:11px; padding:2px 8px; margin-right:4px;
+    border:1px solid #1f4e79; border-radius:4px;
+    background:#eef4fb; color:#1f4e79; cursor:pointer;
+  }
+  .mstd-toolbar button:hover { background:#1f4e79; color:#fff; }
+  .mstd-cell { position:relative; }
+  .mstd-in {
+    width:44px; text-align:center; font:inherit; padding:2px;
+    border:1px solid #aaa; border-radius:3px; background:#fff;
+  }
+  .mstd-in.mstd-delta { width:42px; margin-left:4px; }
+  .mstd-in.mstd-text { width:100%; min-width:90px; text-align:left; }
+  .stand .mstd-actcol, .track .mstd-actcol { width:26px; padding:2px; }
+  .mstd-reset-row {
+    border:none; background:none; cursor:pointer; font-size:14px;
+    color:#888; line-height:1; padding:0 2px;
+  }
+  .mstd-reset-row:hover { color:#c33; }
+  td.is-manual, td.mstd-cell.is-manual { background:#fff6d8 !important; }
+  .mstd-badge { color:#b8860b; font-style:normal; cursor:help; }
+
   /* Running track table */
   .track th, .track td { padding:3px 4px; }
   .track .tnum { width:30px; background:var(--bg); font-weight:bold; font-size:15px; }
@@ -42,6 +72,7 @@
   .track .rcell { height:26px; }
   .track .sum { background:var(--bg); font-weight:bold; width:54px; }
   .track .pos { width:40px; font-weight:bold; }
+  .track .mstd-cell { width:52px; }
   .track .grp { border-top:2px solid var(--line); }
   /* Beispielzeile: deutlich vom echten Eintragebereich abgesetzt, damit sie
      auch im Ausdruck nicht mit einem Team verwechselt wird. */
@@ -153,6 +184,12 @@
       print-color-adjust: exact;
     }
     .noprint { display:none !important; }
+    .mstd-in {
+      border:none !important; background:transparent !important; padding:0 !important;
+      -moz-appearance:textfield;
+    }
+    .mstd-in::-webkit-outer-spin-button, .mstd-in::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    td.is-manual, td.mstd-cell.is-manual { background:#f0f0f0 !important; }
     #session-title-display { display: block !important; }
     h1 { font-size:15pt; margin:0 0 1.5mm; }
     .sub { margin:0 0 2mm; font-size:8.5pt; }
@@ -423,6 +460,7 @@
   .track .lbl { width:118px; text-align:left; font-size:11px; background:#fafafa; }
   .track .rcell { height:26px; }
   .track .pos { width:40px; font-weight:bold; }
+  .track .mstd-cell { width:52px; }
   .track .grp { border-top:2px solid var(--line, #cdd8e6); }
   /* Beispielzeile */
   /* Beispielzeile: deutlich vom echten Eintragebereich abgesetzt, damit sie

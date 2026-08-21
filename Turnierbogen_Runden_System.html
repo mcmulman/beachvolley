@@ -212,7 +212,7 @@
 </div>
 
 <div class="table-scroll is-track" id="trackWrap">
-  <table class="track" id="trackTable">
+  <table class="track" id="trackTable" data-mstd-key="final">
     <tbody id="trackBody"></tbody>
   </table>
 </div>
@@ -250,6 +250,14 @@
     return SHEET + '_' + (mode || 'rr');
   }
   let S = null;
+  /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing().
+     store.get()/save() arbeiten immer auf dem aktuellen S (auch nach einem
+     Moduswechsel, der S neu lädt), store.repaint() zeichnet die Seite neu. */
+  const MSTD = TUI.initManualEditing(document, {
+    get: () => S,
+    save: t => TStore.save(t),
+    repaint: () => paint()
+  });
   const urlMode = new URLSearchParams(location.search).get('mode');
   const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
   const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'rr';
@@ -500,15 +508,20 @@
         + '</span><span class="only-print">' + what + PRINT_TABLE_HINT + '</span>';
     }
     /* Nur EINE Tabelle je Modus: im Schweizer System die zentrale Tabelle,
-       bei Jeder-gegen-Jeden die laufende Tabelle mit Platz-Spalte. Zwei
-       Tabellen mit denselben Werten waren auf dem Papier nur verwirrend. */
+       bei Jeder-gegen-Jeden die laufende Tabelle mit Platz-Spalte (inkl.
+       Korrektur-Feldern, siehe paintTrack()). Zwei Tabellen mit denselben
+       Werten waren auf dem Papier nur verwirrend. */
     if (standWrap) standWrap.hidden = !isSwiss();
     if (trackWrap) trackWrap.hidden = isSwiss();
     if (standEl) {
       standEl.className = isSwiss() ? 'central-table' : 'stand';
       standEl.hidden = false;
     }
-    if(hintEl) hintEl.hidden = !isSwiss();
+    /* hintRank steht ueber beiden Tabellen und wird in BEIDEN Modi genutzt:
+       Schweizer System -> Kriterien-Hinweis + Korrektur-Toolbar (siehe
+       paintStandings()); Jeder-gegen-Jeden -> Ausfuellanleitung + Korrektur-
+       Toolbar fuer die laufende Tabelle (siehe paintTrack()). */
+    if (hintEl) hintEl.hidden = false;
     $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S.teamNames);
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
     $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx);
@@ -606,28 +619,17 @@
 
   function paintStandings(){
     const ctx = ctxFor(S.config.setMode);
-    const t = B.table;
     const standEl = $('standTable');
     const hintEl = $('hintRank');
     if (isSwiss()) {
       renderSwissCentralTable(standEl, ctx);
-      if (hintEl) hintEl.hidden = true;
-      return;
+      if (hintEl) {
+        hintEl.innerHTML = MSTD.toolbarHtml('final-swiss');
+      }
     }
-    if (standEl) {
-      standEl.className = 'stand';
-      standEl.innerHTML = '<caption>' + 'Tabelle'
-        + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">(Wertung pro Spiel – ungleiche Spielzahl)</span>' : '')
-        + '</caption>'
-        + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame,
-            showDraw: TC.isMulti(S.config.setMode) && !TC.hasDecidingSet(S.config.setMode) });
-    }
-    if (hintEl) {
-      hintEl.hidden = false;
-      hintEl.innerHTML = TUI.hintHtml(
-        TUI.criteriaHint(t.criteria),
-        'Plätze mit Punkt schreiben (1., 2., …). ' + TUI.criteriaHint(t.criteria));
-    }
+    /* Bei Jeder-gegen-Jeden bleibt standTable/standTableWrap unsichtbar
+       (siehe buildStructure) – dort korrigiert man nicht mehr direkt, das
+       uebernimmt jetzt paintTrack() fuer die laufende Tabelle. */
   }
 
   /* Kumulierte Punkte/Ball-Differenz je Runde.
@@ -641,6 +643,16 @@
     if (isSwiss()) return;
     const teams = allTeams();
     const tbody = document.getElementById('trackBody');
+    const hintEl = $('hintRank');
+    const editing = MSTD.isEditing('final');
+    const manual = TStore.getManualStandings(S, 'final');
+
+    if (hintEl) {
+      hintEl.innerHTML = TUI.hintHtml(
+        TUI.criteriaHint(B.table.criteria),
+        'Plätze mit Punkt schreiben (1., 2., …). ' + TUI.criteriaHint(B.table.criteria))
+        + MSTD.toolbarHtml('final');
+    }
 
     const hasEntry = m => {
       if(m.result) return true;
@@ -693,11 +705,56 @@
       });
     });
 
+    /* Korrektur-Spalte (Δ Punkte/Δ Ball-Differenz) je Team befüllen – im
+       Anzeige-Modus als kleiner Δ-Hinweis, im Bearbeiten-Modus als
+       Eingabefeld (siehe TUI.initManualEditing()). */
+    document.querySelectorAll('#trackBody tr[data-team]').forEach(tr => {
+      const t = +tr.getAttribute('data-team');
+      const field = tr.getAttribute('data-line') === 'pts' ? 'dPts' : 'dBd';
+      const td = tr.querySelector('td[data-corr]');
+      if (!td) return;
+      const ov = manual[t] || {};
+      const delta = Number(ov[field]) || 0;
+      td.classList.toggle('is-manual', !!delta);
+      if (editing) {
+        td.innerHTML = '<input type="number" step="1" class="mstd-in mstd-delta" data-field="' + field
+          + '" value="' + (delta || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert">';
+      } else {
+        td.textContent = delta ? ((delta > 0 ? '+' : '') + delta) : '';
+      }
+    });
+    document.querySelectorAll('#trackBody tr[data-line="pts"][data-team]').forEach(tr => {
+      const t = +tr.getAttribute('data-team');
+      const actTd = tr.querySelector('td[data-actcol]');
+      if (!actTd) return;
+      const ov = manual[t] || {};
+      const hasAny = !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
+      actTd.innerHTML = (editing && hasAny)
+        ? '<button type="button" class="mstd-reset-row" data-team="' + t + '" title="Korrektur für dieses Team zurücksetzen">↺</button>'
+        : '';
+    });
+
     /* Platz-Spalten – ohne Ergebnisse bleibt die Spalte leer, damit der
-       ausgedruckte Bogen nicht mit einem Schein-Platz "1.=" startet. */
-    const place = {};
-    B.table.ranked.forEach(e => place[e.team] = e);
+       ausgedruckte Bogen nicht mit einem Schein-Platz "1.=" startet.
+       Die Δ-Korrekturen fließen direkt in Rang & Sortierung ein (analog zur
+       Endtabelle / zum Schweizer System), ein zusätzlicher Platz-Override
+       wird hier nicht gebraucht (siehe Rücksprache mit dem Nutzer). */
     const anyResult = doneRounds.size > 0;
+    const rows = B.table.ranked.map((e, i) => {
+      const ov = manual[e.team] || {};
+      const dPts = Number(ov.dPts) || 0;
+      const dBd = Number(ov.dBd) || 0;
+      return { team: e.team, i, effPts: e.stat.pts + dPts, effBd: e.stat.bd + dBd };
+    });
+    rows.slice().sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i))
+      .forEach((row, i) => { row.place = i + 1; });
+    rows.sort((a, b) => (a.place - b.place) || (a.i - b.i));
+    rows.forEach((row, i) => {
+      const prev = rows[i - 1], next = rows[i + 1];
+      row.shared = !!((prev && prev.place === row.place) || (next && next.place === row.place));
+    });
+    const place = {};
+    rows.forEach(row => { place[row.team] = row; });
     document.querySelectorAll('#trackBody td[data-pos]').forEach(td => {
       const t = +td.closest('tr').getAttribute('data-team');
       const e = anyResult ? place[t] : null;
@@ -705,8 +762,11 @@
       td.classList.toggle('pz-tie', !!(e && e.shared));
     });
 
-    /* Zeilen nach aktuellem Platz sortieren (Musterzeile bleibt oben) */
-    TUI.sortTrackRows(tbody, B.table.ranked.map(e=>e.team));
+    /* Zeilen nach aktuellem (korrigiertem) Platz sortieren (Musterzeile
+       bleibt oben) – waehrend der Bearbeitung bleibt die Reihenfolge stehen,
+       damit Zeilen nicht schon waehrend der Eingabe springen; erst "Fertig"
+       sortiert final neu. */
+    if (!editing) TUI.sortTrackRows(tbody, rows.map(r => r.team));
   }
 
   function renderSwissCentralTable(standEl) {
@@ -714,22 +774,26 @@
     const rounds = B.rounds.length;
     /* Kein <caption>: Die Ueberschrift dieses Abschnitts ist die <h1>
        "Schweizer Tabelle" darueber - ein zweiter Titel waere doppelt. */
-    let html = '<thead><tr><th class="teamcol">Team / Name</th><th class="rankcol">Platz</th>';
+    let html = '<thead><tr><th class="teamcol">Team / Name</th><th class="rankcol">Platz</th>'
+      + '<th class="ptscol">Pkt</th><th class="diffcol">Diff</th>';
     for (let r = 1; r <= rounds; r++) html += '<th class="round">R' + r + '<br>Erg.+Σ<br>(Pkt/BD/+P)</th><th class="rplace">Pl.</th>';
     html += '</tr></thead><tbody>';
     html += '<tr class="example-row ex ex-start ex-end">'
       + '<td class="teamcol"><span class="ex-badge">Beispiel</span>'
       + '<span class="t-line">Team X</span><span class="tnm t-nm">(Teamname)</span></td>'
-      + '<td class="rankcol"><span class="rank-badge rank-1">1.</span></td>';
+      + '<td class="rankcol"><span class="rank-badge rank-1">1.</span></td>'
+      + '<td>8</td><td>+15</td>';
     for (let r = 1; r <= rounds; r++) html += (r === 1 ? '<td>15:11 S<br><span>Σ 2/+4/+15</span></td><td class="rplace">3.</td>' : '<td></td><td></td>');
     html += '</tr>';
     for (let t = 1; t <= S.config.teams; t++) {
-      html += '<tr id="ctr_' + t + '" data-team="' + t + '"><td class="teamcol" id="cteam_' + t + '">Team ' + t + '</td><td class="rankcol" id="crank_' + t + '"></td>';
+      html += '<tr id="ctr_' + t + '" data-team="' + t + '"><td class="teamcol" id="cteam_' + t + '">Team ' + t + '</td><td class="rankcol" id="crank_' + t + '"></td>'
+        + '<td class="mstd-cell" id="cpts_' + t + '"></td><td class="mstd-cell" id="cdiff_' + t + '"></td>';
       for (let r = 1; r <= rounds; r++) html += '<td id="ct_' + t + '_' + r + '"></td><td class="rplace" id="cp_' + t + '_' + r + '"></td>';
       html += '</tr>';
     }
     html += '</tbody>';
     standEl.className = 'central-table';
+    standEl.setAttribute('data-mstd-key', 'final-swiss');
     standEl.innerHTML = html;
 
     const fmt = n => (n > 0 ? '+' : '') + n;
@@ -759,6 +823,23 @@
     const order = B.table && B.table.ranked ? B.table.ranked.map(e => e.team) : allTeams();
     const placeMap = {};
     (B.table && B.table.ranked ? B.table.ranked : []).forEach(e => { placeMap[e.team] = e; });
+    const manualSwiss = TStore.getManualStandings(S, 'final-swiss');
+    const editableSwiss = MSTD.isEditing('final-swiss');
+    /* Die Zeilenreihenfolge richtet sich nach den korrigierten Werten: eine
+       Δ-Korrektur bei Punkte/Diff sortiert die Zeile automatisch mit neu ein
+       (Punkte, dann Ball-Differenz). Ohne jede Korrektur bleibt exakt die
+       ursprüngliche Berechnung erhalten (stabiler Index i als Tie-Break). */
+    const effOrder = order.map((t, i) => {
+      const e = placeMap[t];
+      const ov = manualSwiss[t] || {};
+      const dPts = Number(ov.dPts) || 0;
+      const dBd = Number(ov.dBd) || 0;
+      const effPts = (e ? e.stat.pts : -Infinity) + dPts;
+      const effBd = (e ? e.stat.bd : 0) + dBd;
+      return { team: t, effPts, effBd, i };
+    }).sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i)).map(e => e.team);
+    const effPlaceMap = {};
+    effOrder.forEach((t, i) => { effPlaceMap[t] = i + 1; });
 
     for (let r = 1; r <= rounds; r++) {
       const table = B.tableUpto(r);
@@ -809,31 +890,69 @@
     const anyResult = B.rounds.some(rd => rd.matches.some(m => m.result));
     allTeams().forEach(t => {
       const e = anyResult ? placeMap[t] : null;
+      const effPlace = e ? effPlaceMap[t] : null;
       let badge;
-      if (!e) {
+      if (effPlace == null) {
         badge = '<span class="rank-badge rank-none">–</span>';
       } else {
         /* Medaille erst, wenn der Endstand feststeht – vorher nur der Platz. */
         const isFinal = B.rounds.length > 0 && B.rounds.every(rd =>
           rd.matches.every(m => m.result || m.bye != null || m.dead));
-        const topCls = e.place <= 3 ? ' rank-top rank-' + e.place : '';
-        const medal = isFinal ? ({ 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' }[e.place] || '') : '';
+        const topCls = effPlace <= 3 ? ' rank-top rank-' + effPlace : '';
+        const medal = isFinal ? ({ 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' }[effPlace] || '') : '';
         badge = '<span class="rank-badge ' + (isFinal ? 'rank-final' : 'rank-live') + topCls + '" title="'
-          + (isFinal ? 'Endplatzierung' : 'Aktueller Platz (laufend)') + ': ' + e.place + '.">'
-          + (medal ? medal + ' ' : '') + e.place + '.</span>';
+          + (isFinal ? 'Endplatzierung' : 'Aktueller Platz (laufend)') + ': ' + effPlace + '.">'
+          + (medal ? medal + ' ' : '') + effPlace + '.</span>';
       }
       const nm = document.getElementById('cteam_' + t);
       if (nm) nm.innerHTML = TUI.teamNameHtml(t, S.teamNames, S.absent.includes(t));
       const rb = document.getElementById('crank_' + t);
       if (rb) rb.innerHTML = badge;
+
+      /* Δ-Korrektur Punkte/Diff – wie im Rundensystem: wird dauerhaft auf
+         den berechneten Endwert addiert, bleibt also auch bei neuen
+         Ergebnissen gültig. Wirkt NICHT auf die Zeilenreihenfolge (die
+         richtet sich immer nach dem berechneten Platz, siehe effOrder). */
+      const ov = manualSwiss[t] || {};
+      const dPts = Number(ov.dPts) || 0;
+      const dBd = Number(ov.dBd) || 0;
+      const basePts = e ? e.stat.pts : 0;
+      const baseBd = e ? e.stat.bd : 0;
+      const ptsCell = document.getElementById('cpts_' + t);
+      const diffCell = document.getElementById('cdiff_' + t);
+      if (ptsCell) {
+        ptsCell.classList.toggle('is-manual', !!dPts);
+        ptsCell.innerHTML = editableSwiss
+          ? '<b>' + (basePts + dPts) + '</b>'
+            + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (dPts || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert">'
+          : '<b>' + (basePts + dPts) + '</b>' + TUI.manualDeltaBadge('Punkte', dPts);
+      }
+      if (diffCell) {
+        diffCell.classList.toggle('is-manual', !!dBd);
+        const eff = baseBd + dBd;
+        const fmtd = (eff > 0 ? '+' : '') + eff;
+        diffCell.innerHTML = editableSwiss
+          ? fmtd + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (dBd || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert">'
+          : fmtd + TUI.manualDeltaBadge('Ball-Differenz', dBd);
+      }
+      if (editableSwiss && ptsCell && (dPts || dBd)) {
+        ptsCell.innerHTML += ' <button type="button" class="mstd-reset-row" data-team="' + t + '" title="Korrektur für dieses Team zurücksetzen">↺</button>';
+      }
     });
 
-    const tbody = standEl.querySelector('tbody');
-    if (tbody) {
-      order.forEach(t => {
-        const row = document.getElementById('ctr_' + t);
-        if (row) tbody.appendChild(row);
-      });
+    /* Die physische Zeilen-Reihenfolge wird erst beim Verlassen des
+       Bearbeiten-Modus ("Fertig") an effOrder angeglichen – waehrend der
+       Eingabe bleiben die Zeilen stehen, nur der Platz-Badge zeigt schon den
+       korrigierten Wert (siehe oben), damit nichts waehrend der Eingabe
+       herumspringt. */
+    if (!editableSwiss) {
+      const tbody = standEl.querySelector('tbody');
+      if (tbody) {
+        effOrder.forEach(t => {
+          const row = document.getElementById('ctr_' + t);
+          if (row) tbody.appendChild(row);
+        });
+      }
     }
   }
 
