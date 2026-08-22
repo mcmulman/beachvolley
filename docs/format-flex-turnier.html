@@ -17,6 +17,10 @@
     h2 { color: #1f4e79; border-bottom: 2px solid #e8edf3; padding-bottom: 6px; margin-top: 26px; }
     ul, ol { padding-left: 19px; }
     .note { background: #f7fafd; border-left: 4px solid #1f4e79; padding: 12px 14px; margin-top: 14px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+    th { background: #1f4e79; color: #fff; padding: 8px 10px; text-align: left; }
+    td { padding: 7px 10px; border-bottom: 1px solid #e0e6ef; vertical-align: top; }
+    tr:nth-child(even) td { background: #f0f4f9; }
     .back-link { display: inline-block; color: #1f4e79; text-decoration: none; font-weight: 700; margin-bottom: 18px; }
     @media print { body { background: #fff; } .wrap { box-shadow: none; } }
   </style>
@@ -34,16 +38,31 @@
       <p class="subtitle">Feste Teams · Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine gemeinsame Rangliste</p>
 
       <h2>Kurzübersicht</h2>
-      <p>Das <strong>Flex-Turnier</strong> ist ein <strong>custom Team-Event</strong> für Beachvolleyball, bei dem <strong>feste Teams</strong> beliebiger Geschlechter-Zusammensetzung – reine Herren-Teams, reine Damen-Teams oder Mixed-Teams – gemeinsam in <strong>einem</strong> Turnier antreten. Die Paarung erfolgt exakt wie beim Universalbogen: entweder als <strong>Jeder-gegen-Jeden</strong> oder als <strong>Schweizer System</strong>. Die Team-Art (♂/♀/⚥) wird direkt beim Teamnamen hinterlegt, als Badge angezeigt <strong>und</strong> bei der Startrunden-Auslosung im Schweizer System berücksichtigt: Teams unterschiedlicher Team-Art werden dabei bevorzugt gegeneinander gelost, damit z.B. nicht von vornherein alle Damen-Teams nur untereinander spielen. Am Ende gibt es <strong>eine gemeinsame Team-Rangliste</strong>, keine getrennten Geschlechter-Ranglisten.</p>
+      <p>Das <strong>Flex-Turnier</strong> ist ein <strong>custom Team-Event</strong> für Beachvolleyball, bei dem <strong>feste Teams</strong> beliebiger Geschlechter-Zusammensetzung – reine Herren-Teams, reine Damen-Teams oder Mixed-Teams – gemeinsam in <strong>einem</strong> Turnier antreten. Die Paarung erfolgt exakt wie beim Universalbogen: standardmäßig als <strong>Schweizer System</strong> oder alternativ als <strong>Jeder-gegen-Jeden</strong>. Die Team-Art (♂/♀/⚥) wird direkt beim Teamnamen hinterlegt, als Badge angezeigt <strong>und</strong> bei der Startrunden-Auslosung im Schweizer System berücksichtigt: Teams unterschiedlicher Team-Art werden dabei bevorzugt gegeneinander gelost, damit z.B. nicht von vornherein alle Damen-Teams nur untereinander spielen. Am Ende gibt es <strong>eine gemeinsame Team-Rangliste</strong>, keine getrennten Geschlechter-Ranglisten.</p>
 
       <h2>Prinzip</h2>
       <ol>
         <li>Es treten <strong>feste Teams</strong> an – wer im Team spielt, entscheidet die Turnierleitung/Anmeldung, nicht der Spielplan.</li>
         <li>Jedes Team kann optional als Herren-, Damen- oder Mixed-Team markiert werden – direkt im Panel „Teamnamen &amp; Team-Art“ neben dem Namen. Das erzeugt einen Badge neben dem Teamnamen.</li>
-        <li>Die Paarung läuft nach dem gewählten Modus: <strong>Jeder gegen Jeden</strong> (alle Teams spielen gegeneinander, Team-Art ohne Einfluss, da ohnehin jeder gegen jeden antritt) oder <strong>Schweizer System</strong> (Paarung nach aktuellem Punktestand, keine Wiederholungen; bei „Startrunde auslosen“ wird zusätzlich die Team-Art beachtet, um eine ausgewogene erste Runde zu erzeugen).</li>
+        <li>Die Paarung läuft nach dem gewählten Modus: <strong>Schweizer System</strong> (Standard-Voreinstellung; Paarung nach aktuellem Punktestand, keine Wiederholungen; bei „Startrunde auslosen“ wird zusätzlich die Team-Art beachtet, um eine ausgewogene erste Runde zu erzeugen) oder <strong>Jeder gegen Jeden</strong> (alle Teams spielen gegeneinander, Team-Art ohne Einfluss, da ohnehin jeder gegen jeden antritt).</li>
         <li>Gewertet wird wie im Universalbogen: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand entscheidet die Ball-Differenz, dann die Ballpunkte, dann der direkte Vergleich, zuletzt das Los.</li>
         <li>Es gibt <strong>eine</strong> Endtabelle für alle Teams – unabhängig von deren Team-Art.</li>
       </ol>
+
+      <h2>Warum Schweizer System als Standard?</h2>
+      <p>Bei einem <strong>breiten Spektrum an Team-Konstellationen</strong> – unterschiedliches Spielniveau und gemischte Team-Arten (Herren/Damen/Mixed) – ist das Schweizer System die fairere Wahl: Die Paarung passt sich runde für Runde dem aktuellen Punktestand an, sodass Begegnungen tendenziell rangnah bleiben statt zufällig auch deutliche Kantersiege zu erzeugen. Zusätzlich sorgt die Team-Art-bewusste Startrunden-Auslosung dafür, dass nicht von vornherein gleichartige Teams (z.B. nur Damen-Teams) gegeneinander gelost werden. Jeder-gegen-Jeden bleibt vollständig gleichwertig nutzbar – dort spielt ohnehin jedes Team gegen jedes, es braucht dafür aber mehr Runden und liefert bei kleinerer Rundenzahl kein ebenso aussagekräftiges Zwischenranking.</p>
+
+      <h2>Entscheidungshilfe: Schweizer System oder Jeder-gegen-Jeden?</h2>
+      <table class="decision-table">
+        <thead><tr><th>Situation</th><th>Empfehlung</th></tr></thead>
+        <tbody>
+          <tr><td>Größeres Feld (viele Teams) und/oder breites Spektrum an Spielniveau und Team-Art (Herren/Damen/Mixed gemischt)</td><td><strong>Schweizer System</strong> – rangnahe Paarungen, weniger einseitige Spiele, ausgewogene Startrunde per Team-Art-Losung</td></tr>
+          <tr><td>Kleine, ähnlich starke Gruppe (z.B. 4–6 Teams eines Vereinsabends)</td><td><strong>Jeder gegen Jeden</strong> – Rundenzahl ist ohnehin klein, Schweizer System bringt kaum Vorteile, dafür garantiert „jeder gegen jeden“</td></tr>
+          <tr><td>Reiner Offline-/Papierbetrieb ohne Zwischenauswertung zwischen den Runden</td><td><strong>Jeder gegen Jeden</strong> – der komplette Plan steht von Anfang an fest; Schweizer System braucht zwingend den Zwischenstand nach jeder Runde</td></tr>
+          <tr><td>Anspruch „jede/r hat garantiert gegen jede/n gespielt“ (nicht nur rangnah)</td><td><strong>Jeder gegen Jeden</strong></td></tr>
+          <tr><td>Turnier soll auch bei vorzeitigem Abbruch ein aussagekräftiges Ranking liefern</td><td><strong>Schweizer System</strong> – schon nach wenigen Runden ein belastbares Bild, da rangnah gepaart wird</td></tr>
+        </tbody>
+      </table>
 
       <h2>Abgrenzung zu King &amp; Queen</h2>
       <p>Das Flex-Turnier ist <strong>nicht</strong> mit <strong>King &amp; Queen</strong> zu verwechseln: Beim Flex-Turnier treten feste, vorab gebildete Teams an und es gibt eine gemeinsame Team-Rangliste. Bei King &amp; Queen treten <strong>Einzelpersonen</strong> an, die jede Runde neu zu 2er-Teams rotiert werden, und es gibt am Ende <strong>zwei getrennte Einzelranglisten</strong> (King = Herren, Queen = Damen). Wer Einzelpersonen fair rotieren und einzeln werten möchte, nutzt King &amp; Queen; wer feste, ggf. gemischte Teams gemeinsam antreten lassen möchte, nutzt das Flex-Turnier.</p>
@@ -51,18 +70,18 @@
       <h2>Wann geeignet</h2>
       <ul>
         <li>Vereins- oder Freizeitturniere, bei denen Herren-, Damen- und Mixed-Teams gemeinsam in einer Wertung spielen sollen</li>
-        <li>Turniere mit gemischtem Teilnehmerfeld, bei denen keine separate Geschlechter-Wertung gewünscht ist, aber die Startrunde im Schweizer System dennoch ausgewogen gelost werden soll</li>
+        <li>Turniere mit gemischtem Teilnehmerfeld und breitem Niveau-Spektrum, bei denen keine separate Geschlechter-Wertung gewünscht ist, aber rangnahe, faire Paarungen (Schweizer System) sowie eine ausgewogen geloste Startrunde wichtig sind</li>
         <li>Alle Konstellationen, die der Universalbogen (Jeder gegen Jeden/Schweizer System) ohnehin abdeckt – ergänzt um eine Team-Art-Kennzeichnung mit Einfluss auf die Startrunden-Auslosung</li>
       </ul>
 
       <div class="note">
-        Dieses Format ist bewusst kein offizieller FIVB-/Swiss-Volley-Standard. Es ist ein <strong>custom Event-Modus</strong>, der die bewährte, faire Paarungslogik des Universalbogens (Jeder gegen Jeden/Schweizer System) unverändert nutzt und um eine Team-Art-Kennzeichnung ergänzt, die bei der Startrunden-Auslosung im Schweizer System für eine ausgewogenere erste Runde sorgt.</div>
+        Dieses Format ist bewusst kein offizieller FIVB-/Swiss-Volley-Standard. Es ist ein <strong>custom Event-Modus</strong>, der die bewährte, faire Paarungslogik des Universalbogens (Jeder gegen Jeden/Schweizer System) unverändert nutzt und um eine Team-Art-Kennzeichnung ergänzt, die bei der Startrunden-Auslosung im Schweizer System für eine ausgewogenere erste Runde sorgt. Voreingestellt ist das Schweizer System, da es bei einem breiten Spektrum an Team-Konstellationen (Niveau und Team-Art) die fairere Paarungslogik liefert.</div>
 
       <h2>Wertung</h2>
       <p>Es gibt <strong>eine</strong> gemeinsame Endtabelle für alle Teams, unabhängig von deren Team-Art (Herren/Damen/Mixed). Die Wertung folgt exakt der Logik des Universalbogens: Punkte, Ball-Differenz, Ballpunkte, direkter Vergleich, Los. Die Team-Art selbst fliesst nicht in die Punktevergabe ein.</p>
 
       <h2>Praktische Spielweise</h2>
-      <p>Teams werden wie gewohnt im Panel „Teamnamen &amp; Team-Art“ angelegt und benannt; direkt daneben lässt sich optional je Team ♂ (Herren), ♀ (Damen) oder ⚥ (Mixed) hinterlegen – dies erscheint als kleiner Badge neben dem Teamnamen auf der Teams-Seite. Im Schweizer System berücksichtigt der Button „Startrunde auslosen“ die Team-Art: Teams unterschiedlicher Art werden bevorzugt gegeneinander gelost, gleiche Team-Arten nur, wenn eine Gruppe zu gross ist, um es anders aufzuteilen. Ab Runde 2 sowie im Modus Jeder-gegen-Jeden bleibt die Team-Art rein informativ. Danach läuft das Turnier identisch zum Universalbogen: Paarungen laut Plan aufrufen, Ergebnisse eintragen, laufende Tabelle führen.</p>
+      <p>Teams werden wie gewohnt im Panel „Teamnamen &amp; Team-Art“ angelegt und benannt; direkt daneben lässt sich optional je Team ♂ (Herren), ♀ (Damen) oder ⚥ (Mixed) hinterlegen – dies erscheint als kleiner Badge neben dem Teamnamen auf der Teams-Seite. Vorausgewählt ist das <strong>Schweizer System</strong>; im Bogen lässt sich jederzeit auf Jeder-gegen-Jeden umgeschaltet werden. Im Schweizer System berücksichtigt der Button „Startrunde auslosen“ die Team-Art: Teams unterschiedlicher Art werden bevorzugt gegeneinander gelost, gleiche Team-Arten nur, wenn eine Gruppe zu gross ist, um es anders aufzuteilen. Ab Runde 2 sowie im Modus Jeder-gegen-Jeden bleibt die Team-Art rein informativ. Danach läuft das Turnier identisch zum Universalbogen: Paarungen laut Plan aufrufen, Ergebnisse eintragen, laufende Tabelle führen.</p>
     </div>
   </div>
 </body>

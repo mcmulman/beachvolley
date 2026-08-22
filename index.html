@@ -474,6 +474,13 @@
       color: var(--muted);
       border-top: 1px solid var(--sand-dark);
     }
+    footer .footer-legal { margin-top: 6px; }
+    footer .footer-legal a { color: var(--muted); text-decoration: underline; }
+    footer .footer-contact-btn {
+      font-size: 11.5px; color: var(--muted); background: none; border: 1px solid var(--sand-dark);
+      border-radius: 999px; padding: 2px 10px; cursor: pointer;
+    }
+    footer .footer-contact-btn:hover { color: var(--ink, #1f2733); border-color: var(--muted); }
 
     /* Hidden cards */
     .card[hidden] { display: none; }
@@ -846,7 +853,7 @@
          faire Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
          Team-Rangliste – NICHT zu verwechseln mit King & Queen, das
          Einzelpersonen und getrennte Geschlechter-Ranglisten hat). ── -->
-    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-desc="Für feste Teams: Herren-, Damen- und Mixed-Teams treten gemeinsam in einer Rangliste an. Faire Paarungen per Schweizer-System- oder Jeder-gegen-jeden-Logik (identisch zum Universalbogen); Team-Art (♂/♀/Mixed) wird direkt bei den Teamnamen erfasst, als Badge angezeigt und bei der Startrunden-Auslosung im Schweizer System berücksichtigt, damit die erste Runde ausgewogen gemischt ist.">
+    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein.">
       <div class="card-header">
         <span class="format-tag">Custom Event · Team-Wertung</span>
         <h2>Flex-Turnier</h2>
@@ -856,14 +863,14 @@
         <div class="stats">
          <span class="stat"><span class="icon">👥</span> 4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span>
          <span class="stat"><span class="icon">🏖️</span> 1–8 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> Schweizer System oder Jeder-gegen-Jeden</span>
+         <span class="stat"><span class="icon">🎯</span> Schweizer System (Standard) oder Jeder-gegen-Jeden</span>
          <span class="stat"><span class="icon">⏱</span> Satzmodus wählbar</span>
         </div>
         <div class="features">
          <span class="feat">✓ Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
          <span class="feat">✓ faire Startrunden-Auslosung nach Team-Art</span>
+         <span class="feat">✓ Schweizer System bei breitem Niveau-Spektrum</span>
          <span class="feat">✓ eine gemeinsame Team-Rangliste</span>
-         <span class="feat">✓ eigenes Format, nicht King &amp; Queen</span>
         </div>
       </div>
       <div class="card-footer">
@@ -880,7 +887,43 @@
 
 <footer>
   Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser
+  <div class="footer-legal">
+    © <span id="cpYear"></span> ·
+    <button type="button" id="btnShowContact" class="footer-contact-btn">Kontakt anzeigen</button>
+    <span id="cpContact" hidden></span>
+  </div>
 </footer>
+
+<script>
+  /* Name UND E-Mail-Adresse stehen bewusst an KEINER Stelle als Klartext im
+     HTML-Quelltext oder im initial gerenderten DOM (kein "mailto:"-Link,
+     kein sichtbarer Name) - beides wird erst NACH einem echten Klick auf
+     "Kontakt anzeigen" aus zwei Base64-Teilstuecken zusammengesetzt und in
+     die Seite eingefuegt. Das schuetzt zusaetzlich vor Crawlern, die zwar
+     JavaScript ausfuehren und den gerenderten DOM auslesen, aber keine
+     echten Nutzerinteraktionen simulieren (die grosse Mehrheit automatischer
+     Adress-Harvester). Fuer echte Besucher:innen ist es ein normaler Klick. */
+  (function(){
+    document.getElementById('cpYear').textContent = new Date().getFullYear();
+    var btn = document.getElementById('btnShowContact');
+    var out = document.getElementById('cpContact');
+    if(!btn || !out) return;
+    var p1 = 'TS4gVWhsbWFubnxsZXRzc2VuZG1vcmVsZXR0ZXJz';
+    var p2 = 'QGdtYWlsLmNvbQ==';
+    btn.addEventListener('click', function(){
+      var parts = atob(p1 + p2).split('|');
+      var name = parts[0], mail = parts[1];
+      out.textContent = name + ' · ';
+      var a = document.createElement('a');
+      a.href = 'mailto:' + mail;
+      a.rel = 'nofollow noopener';
+      a.textContent = mail;
+      out.appendChild(a);
+      out.hidden = false;
+      btn.hidden = true;
+    }, { once: true });
+  })();
+</script>
 
 <script>
   function applyCardFilters(teamTag, formatTag) {

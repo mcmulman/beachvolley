@@ -15,6 +15,11 @@
   <link rel="stylesheet" href="spielplan.css">
   <link rel="stylesheet" href="app-skin.css">
   <style>
+    /* .row setzt display:flex und würde damit das UA-Standardverhalten von
+       [hidden] (display:none) überstimmen (Author- schlägt UA-Regeln immer,
+       unabhängig von der Spezifität) - #rosterSection bliebe sonst trotz
+       hidden-Attribut sichtbar. */
+    #rosterSection[hidden] { display:none; }
     .notebox { border-left:3px solid #1f4e79; background:#f5f8fc; padding:6px 12px; margin:10px 0; font-size:12px; }
     .notebox.is-warn { border-left-color:#b35c00; background:#fff6ec; }
     .notebox ul { margin:3px 0; padding-left:18px; }
@@ -136,6 +141,8 @@
 
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Namen &amp; Niveau</button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Person ausgefallen</button>
+    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
     <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
     <span class="spacer"></span>
@@ -145,7 +152,7 @@
 
 <div id="noticeBox"></div>
 
-<div class="row" id="rosterSection">
+<div class="row" id="rosterSection" hidden>
   <div style="flex:0 0 48%">
     <table class="roster" id="menRoster">
       <caption><span class="cap-title">Herren</span></caption>
@@ -161,6 +168,10 @@
     </table>
   </div>
 </div>
+<div class="nactions noprint" id="rosterActions" hidden>
+  <button type="button" class="nbtn" id="btnClearNames">Namen zurücksetzen</button>
+  <button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button>
+</div>
 
 <h2>Spielplan &amp; Ergebnisse</h2>
 <div id="roundsContainer"></div>
@@ -172,19 +183,25 @@
 <p class="sub">King (Herren) und Queen (Damen) werden getrennt gewertet – es gibt keine gemeinsame Mixed-Rangliste.</p>
 
 <div class="row" id="standingsTables">
-  <div class="table-scroll" style="flex:1 1 46%">
+  <div class="table-scroll" style="flex:1 1 40%">
     <table class="stand" id="menStandTable" data-mstd-key="kq-men">
       <caption><span class="cap-title">King – Herren</span></caption>
       <tbody></tbody>
     </table>
     <p class="input-hint" id="hintMen"></p>
   </div>
-  <div class="table-scroll" style="flex:1 1 46%">
+  <div class="table-scroll" style="flex:1 1 40%">
     <table class="stand" id="womenStandTable" data-mstd-key="kq-women">
       <caption><span class="cap-title">Queen – Damen</span></caption>
       <tbody></tbody>
     </table>
     <p class="input-hint" id="hintWomen"></p>
+  </div>
+  <div class="table-scroll" style="flex:0 0 200px; max-width:200px;">
+    <table class="stand" id="overallStandTable" style="font-size:11px; width:100%; min-width:0;">
+      <caption><span class="cap-title">Gesamtwertung</span></caption>
+      <tbody></tbody>
+    </table>
   </div>
 </div>
 
@@ -415,6 +432,13 @@
   }
 
   function paintRounds(){
+    B.rounds.forEach(rd => {
+      const block = $('roundsContainer').querySelector('[data-round-block="' + rd.round + '"]');
+      const byeEl = block && block.querySelector('.kq-round-title .kq-bye');
+      if(byeEl && rd.bye && rd.bye.length){
+        byeEl.textContent = 'Pause: ' + rd.bye.map(p => playerName(p)).join(', ');
+      }
+    });
     B.rounds.forEach(rd => rd.matches.forEach(m => {
       const td = $('roundsContainer').querySelector('[data-mid="' + m.id + '"]');
       if(!td) return;
@@ -453,6 +477,35 @@
     };
     paintOne('kq-men', B.men, 'menStandTable', 'King – Herren', 'hintMen');
     paintOne('kq-women', B.women, 'womenStandTable', 'Queen – Damen', 'hintWomen');
+
+    const all = [...(B.men || []), ...(B.women || [])]
+      .filter(item => item && item.team != null)
+      .map(item => ({
+        team: item.team,
+        gender: item.gender || (item.team <= getMenCount() ? 'm' : 'f'),
+        stat: item.stat || { games:0, pts:0, ballsFor:0, ballsAgainst:0, bd:0 }
+      }))
+      .sort((a, b) => (b.stat.pts || 0) - (a.stat.pts || 0)
+        || (b.stat.bd || 0) - (a.stat.bd || 0)
+        || (a.team - b.team));
+
+    const overallTable = $('overallStandTable');
+    if(overallTable){
+      overallTable.innerHTML = '<caption><span class="cap-title">Gesamtwertung</span></caption>'
+        + '<thead><tr><th class="pl">Pl.</th><th class="nm">Name</th><th>P</th><th>Diff</th></tr></thead><tbody>'
+        + all.map((row, idx) => {
+            const diff = Number(row.stat.bd || 0);
+            const diffHtml = diff > 0 ? '+' + diff : String(diff);
+            const badge = row.gender === 'm' ? 'H' : row.gender === 'f' ? 'D' : '—';
+            return '<tr data-team="' + row.team + '">'
+              + '<td class="pl">' + (idx + 1) + '.</td>'
+              + '<td class="nm"><span class="t-line">' + esc(playerName(row.team)) + '</span><span class="tnm"> ' + badge + '</span></td>'
+              + '<td><b>' + (row.stat.pts || 0) + '</b></td>'
+              + '<td class="' + (diff > 0 ? 'pos' : diff < 0 ? 'neg' : '') + '">' + diffHtml + '</td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody>';
+    }
   }
 
   function paintGuide(){
@@ -466,6 +519,9 @@
   function paintNotices(){
     const box = $('noticeBox');
     const msgs = (B.warnings || []).concat(B.notes || []);
+    if((S.absent || []).length){
+      msgs.push('Ausgefallen: ' + S.absent.map(playerName).join(', ') + '.');
+    }
     const overEnd = TC.toMin(S.config.endTime);
     let overflow = false;
     if(overEnd != null && B.endMin > overEnd){
@@ -543,9 +599,46 @@
       $(id).addEventListener('change', () => { readConfig(); save(); structureKey=''; rebuild(); });
     });
 
-    $('btnToggleNames').addEventListener('click', () => {
+    function setRosterVisible(visible){
       const box = $('rosterSection');
-      if(box) box.hidden = !box.hidden;
+      const actions = $('rosterActions');
+      if(box) box.hidden = !visible;
+      if(actions) actions.hidden = !visible;
+      $('btnToggleNames').classList.toggle('active', visible);
+      $('btnToggleAbsent').classList.toggle('active', visible);
+    }
+    $('btnToggleNames').addEventListener('click', () => {
+      setRosterVisible($('rosterSection').hidden);
+    });
+    $('btnToggleAbsent').addEventListener('click', () => {
+      const willShow = $('rosterSection').hidden;
+      setRosterVisible(willShow);
+      if(willShow){
+        const first = $('rosterSection').querySelector('[data-absent-input]');
+        if(first) first.focus();
+      }
+    });
+    $('btnTimefit').addEventListener('click', () => {
+      const win = TC.toMin(S.config.endTime) - TC.toMin(S.config.startTime);
+      const maxSelectable = Math.max.apply(null, Array.prototype.map.call($('fieldCount').options, o => +o.value));
+      const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[S.config.setMode], maxSelectable);
+      if(!need){
+        alert('Auch mit der maximal möglichen Feldzahl (' + maxSelectable + ') passt der Plan nicht in das '
+          + 'Zeitfenster. Kürzeren Satzmodus, weniger Runden oder mehr Teilnehmer:innen (schaltet mehr Felder frei) wählen.');
+        return;
+      }
+      S.config.fields = need; $('fieldCount').value = need;
+      save(); structureKey=''; rebuild();
+    });
+    $('btnClearNames').addEventListener('click', () => {
+      if(!confirm('Alle eingetragenen Namen zurücksetzen? Niveau, Ausfälle und Ergebnisse bleiben erhalten.')) return;
+      S.teamNames = {};
+      save(); structureKey=''; rebuild();
+    });
+    $('btnClearAbsent').addEventListener('click', () => {
+      if(!confirm('Alle Ausfälle zurücksetzen? Alle Personen gelten wieder als anwesend.')) return;
+      S.absent = [];
+      save(); structureKey=''; rebuild();
     });
     $('btnClearScores').addEventListener('click', () => {
       if(!confirm('Alle eingetragenen Ergebnisse löschen? Namen und Konfiguration bleiben erhalten.')) return;

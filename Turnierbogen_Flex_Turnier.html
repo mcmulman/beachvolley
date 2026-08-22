@@ -106,6 +106,14 @@
       in <b>einem</b> fairen Turnier an – Team-Art (♂/♀/⚥) lässt sich direkt unter „Teamnamen“ je Team
       hinterlegen und wird bei der Startrunden-Auslosung (Schweizer System) berücksichtigt, damit nicht
       z.B. alle Damen-Teams gleich gegeneinander antreten.</li>
+    <li><span class="hi">Paarungsmodus:</span> Standardmäßig <b>Schweizer System</b> – bei einem breiten
+      Spektrum an Team-Konstellationen (Spielniveau und Team-Art) sind die Begegnungen dadurch rangnah statt
+      zufällig, es gibt weniger einseitige Kantersiege und die Rangliste ist schon nach wenigen Runden
+      aussagekräftig. „Jeder gegen Jeden“ bleibt wählbar (jedes Team spielt gegen jedes, Team-Art ohne
+      Einfluss auf die Paarung).
+      <br><span class="hi">Entscheidungshilfe:</span> Schweizer System bei größeren oder gemischten Feldern
+      (unterschiedliches Niveau, Herren/Damen/Mixed) – Jeder gegen Jeden bei kleinen, ähnlich starken Gruppen
+      oder wenn der komplette Plan vorab feststehen und ohne Zwischenauswertung (rein auf Papier) ablaufen soll.</li>
     <li><span class="hi">Ablauf:</span> <span id="g-flow">–</span></li>
     <li><span class="hi">Pro Spiel:</span> <span id="g-mode">–</span></li>
     <li><span class="hi">Ablauf je Runde:</span> Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</li>
@@ -259,7 +267,13 @@
   /* Papier-Variante der Tabellen-Erklaerung: auf dem Ausdruck rechnet niemand
      automatisch mit, deshalb steht dort die Ausfuellanleitung. */
   const PRINT_TABLE_HINT = 'So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.';
-  const DEFAULTS = { mode:'rr', teams:8, fields:4, rounds:null, setMode:'21',
+  /* Default-Modus: Schweizer System. Bei einem breiten Spektrum an
+     Team-Konstellationen (Geschlecht/Team-Art, Spielniveau) sind die Paarungen
+     runden­weise nach aktuellem Stand fairer (rangnahe Begegnungen statt
+     zufällig verteilter Kantersiege) und die Startrunden-Auslosung
+     berücksichtigt zusätzlich die Team-Art. Jeder-gegen-Jeden bleibt wählbar,
+     ist aber bei größeren/ungleichen Feldern die aufwändigere Variante. */
+  const DEFAULTS = { mode:'swiss', teams:8, fields:4, rounds:null, setMode:'21',
     startTime:'10:00', endTime:'14:00' };
 
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
@@ -272,7 +286,7 @@
   const SHEET_TYPE = 'Flex-Turnier';
   const SHEET_TYPES = { rr: SHEET_TYPE, swiss: SHEET_TYPE + ' (Schweizer System)' };
   function storageSheetId(mode) {
-    return SHEET + '_' + (mode || 'rr');
+    return SHEET + '_' + (mode || 'swiss');
   }
   let S = null;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing().
@@ -285,7 +299,7 @@
   });
   const urlMode = new URLSearchParams(location.search).get('mode');
   const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
-  const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'rr';
+  const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'swiss';
   const sheetType = cfg => SHEET_TYPES[activeMode(cfg)] || SHEET_TYPE;
   /* Fenster-/Drucktitel: Turniertitel, Turniertyp und Turniergroesse. */
   function applyDocTitle(){
@@ -311,7 +325,7 @@
     return true;
   }
   function archiveOpts(){
-    const mode = MODE_HINT || ((S && S.config && S.config.mode) || 'rr');
+    const mode = MODE_HINT || ((S && S.config && S.config.mode) || 'swiss');
     const key = storageSheetId(mode);
     const cur = TStore.load(key, DEFAULTS);
     const names = cur.teamNames || {};
@@ -329,7 +343,7 @@
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
 
-  const initialMode = MODE_HINT || 'rr';
+  const initialMode = MODE_HINT || 'swiss';
   S = TStore.load(storageSheetId(initialMode), DEFAULTS);
   S.sheet = storageSheetId(initialMode);
   S.config.mode = initialMode;
@@ -1137,7 +1151,7 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    S.sheet = storageSheetId(S.config.mode || 'rr');
+    S.sheet = storageSheetId(S.config.mode || 'swiss');
     return TStore.save(S);
   }
   function onChange(){

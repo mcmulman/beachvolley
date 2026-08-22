@@ -987,8 +987,26 @@
     }
 
     const want = Math.max(1, c.rounds ? (c.rounds | 0) : defaultKqRounds(courtCount));
-    const cumPts = {}, roundsPlayed = {}, bestCourt = {};
-    active.forEach(t => { cumPts[t] = 0; roundsPlayed[t] = 0; bestCourt[t] = courtCount; });
+    const cumPts = {}, roundsPlayed = {}, bestCourt = {}, fieldByeCount = {};
+    active.forEach(t => { cumPts[t] = 0; roundsPlayed[t] = 0; bestCourt[t] = courtCount; fieldByeCount[t] = 0; });
+
+    /* Feld-Freilos-Fairness: bei 3/5 Teams auf einem Feld sitzt normalerweise
+       stur der (Setz-)Letzte der Liste aus. Ohne Zählung würde bei stabiler
+       Feldgröße (z.B. ungerade Gesamtteamzahl) IMMER dasselbe Team betroffen
+       sein. Deshalb wird - analog zur King&Queen-Pausenfairness - unter den
+       infrage kommenden Teams jenes mit den bisher WENIGSTEN Feld-Freilosen
+       gewählt; bei Gleichstand bleibt es beim ursprünglichen (schwächsten)
+       Team, damit die MPP-Setzlogik unverändert bleibt. */
+    function pickFieldBye(list) {
+      if (list.length !== 3 && list.length !== 5) return -1;
+      let bestIdx = list.length - 1;
+      let bestCount = fieldByeCount[list[bestIdx]] || 0;
+      for (let i = list.length - 2; i >= 0; i--) {
+        const cnt = fieldByeCount[list[i]] || 0;
+        if (cnt < bestCount) { bestIdx = i; bestCount = cnt; }
+      }
+      return bestIdx;
+    }
 
     const rounds = [];
     let courts = null; // Feldbesetzung zu Beginn der aktuellen Runde
@@ -1005,7 +1023,16 @@
 
       const courtsData = order.map((teamsOnCourt, idx) => {
         const idPrefix = 'koc_r' + r + '_c' + (idx + 1);
-        const built = TC.kqCourtMatches(teamsOnCourt, idPrefix);
+        const byeIdx = pickFieldBye(teamsOnCourt);
+        const listForMatches = teamsOnCourt.slice();
+        if (byeIdx >= 0 && byeIdx !== listForMatches.length - 1) {
+          const last = listForMatches.length - 1;
+          const tmp = listForMatches[byeIdx];
+          listForMatches[byeIdx] = listForMatches[last];
+          listForMatches[last] = tmp;
+        }
+        const built = TC.kqCourtMatches(listForMatches, idPrefix);
+        if (built.byeTeam != null) fieldByeCount[built.byeTeam] = (fieldByeCount[built.byeTeam] || 0) + 1;
         const matches = built.matches.map(m => {
           const raw = c.results[m.id];
           const result = (raw && raw.length === 2) ? TC.kqComputeRoundResult(raw[0], raw[1]) : null;
@@ -1283,6 +1310,37 @@
       return teamA.concat(teamB).slice().sort((x, y) => x - y).join('-');
     }
 
+    /* Faire Pausenverteilung: bei ungerader Personen-/Team-Zahl bekommt NICHT
+       immer dieselbe (schwaechste) Person/das schwaechste Team die Pause,
+       sondern - unter allen fuer die Pause infrage kommenden Kandidat:innen -
+       diejenige mit den bisher WENIGSTEN Pausen. Erst bei Gleichstand
+       entscheidet weiterhin die Ausgleichs-Reihenfolge (schwaechste zuletzt
+       in der sortierten Liste = zuerst Kandidat:in), damit die sportliche
+       Fairness (staerkste/schwaechste zuerst einteilen) erhalten bleibt. Ohne
+       dieses Zaehlwerk wuerde ueber viele Runden immer dieselbe Person
+       pausieren muessen (siehe Nutzer-Feedback: 3x Pause fuer eine Person).  */
+    const byeCount = {};
+    function byesOf(p) { return byeCount[p] || 0; }
+    function pickByeCandidate(list, keyOfList) {
+      // list: Array<T>, keyOfList(item) -> Array<playerId> (1 fuer Einzelperson, 2 fuer ein Team).
+      // Primaeres Kriterium: der bisher am WENIGSTEN pausierte Mensch in diesem
+      // Kandidaten darf nicht durch einen zweiten, oft pausierten Menschen
+      // "verdeckt" werden - deshalb zaehlt zuerst das Maximum der Pausenzahlen
+      // im Kandidaten (kleiner ist besser), erst danach die Summe als
+      // Tie-Breaker (ein Team mit 2x wenig Pausen schlaegt eines mit 0+viel).
+      let bestIdx = -1, bestMax = Infinity, bestSum = Infinity;
+      for (let i = list.length - 1; i >= 0; i--) {
+        const ids = keyOfList(list[i]);
+        const counts = ids.map(byesOf);
+        const max = Math.max.apply(null, counts);
+        const sum = counts.reduce((s, c) => s + c, 0);
+        if (max < bestMax || (max === bestMax && sum < bestSum)) {
+          bestMax = max; bestSum = sum; bestIdx = i;
+        }
+      }
+      return bestIdx;
+    }
+
     /* Team-Bildung: wie zuvor wird - beginnend bei der staerksten Person -
        eine Partnerschaft mit dem schwaechsten noch verfuegbaren Gegenstueck
        gesucht ("Ausgleichs-Prinzip"). NEU: dabei wird von der schwaechsten
@@ -1334,7 +1392,11 @@
     for (let r = 1; r <= want; r++) {
       const pool = order.slice();
       let byePlayer = null;
-      if (pool.length % 2 === 1) byePlayer = pool.pop();
+      if (pool.length % 2 === 1) {
+        const idx = pickByeCandidate(pool, p => [p]);
+        byePlayer = pool.splice(idx, 1)[0];
+        byeCount[byePlayer] = byesOf(byePlayer) + 1;
+      }
 
       const { teams: rawTeams, hadRepeat: teamRepeat } = formTeams(pool);
       const teams = rawTeams;
@@ -1344,7 +1406,11 @@
       }
 
       let byeTeam = null;
-      if (teams.length % 2 === 1) byeTeam = teams.pop();
+      if (teams.length % 2 === 1) {
+        const idx = pickByeCandidate(teams, t => t);
+        byeTeam = teams.splice(idx, 1)[0];
+        byeTeam.forEach(p => { byeCount[p] = byesOf(p) + 1; });
+      }
 
       const { pairs: matchedTeamPairs, hadRepeat: oppRepeat } = formMatches(teams);
       if (oppRepeat) {
