@@ -889,39 +889,59 @@
   Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser
   <div class="footer-legal">
     © <span id="cpYear"></span> ·
-    <button type="button" id="btnShowContact" class="footer-contact-btn">Kontakt anzeigen</button>
+    <button type="button" id="btnShowContact" class="footer-contact-btn">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
+    <span id="cpPrint" class="footer-print-only"></span>
   </div>
 </footer>
 
+<style>
+  .footer-print-only { display: none; }
+  @media print {
+    footer, footer * { font-size: 6px !important; line-height: 1.15 !important; }
+    footer { padding: 2px 0 !important; margin: 3px 0 0 !important; border-top: .5px solid #ccc !important; }
+    footer #btnShowContact, footer #cpContact { display: none !important; }
+    footer .footer-print-only { display: inline !important; }
+  }
+</style>
 <script>
-  /* Name UND E-Mail-Adresse stehen bewusst an KEINER Stelle als Klartext im
-     HTML-Quelltext oder im initial gerenderten DOM (kein "mailto:"-Link,
-     kein sichtbarer Name) - beides wird erst NACH einem echten Klick auf
-     "Kontakt anzeigen" aus zwei Base64-Teilstuecken zusammengesetzt und in
-     die Seite eingefuegt. Das schuetzt zusaetzlich vor Crawlern, die zwar
-     JavaScript ausfuehren und den gerenderten DOM auslesen, aber keine
-     echten Nutzerinteraktionen simulieren (die grosse Mehrheit automatischer
-     Adress-Harvester). Fuer echte Besucher:innen ist es ein normaler Klick. */
+  /* Bildschirm: Name/E-Mail bleiben Base64-codiert und werden erst nach einem
+     echten Klick auf "Kontakt anzeigen" im DOM sichtbar (Schutz vor
+     automatischen Adress-Harvestern ohne echte Nutzerinteraktion).
+     Druck: beim tatsaechlichen Druckvorgang (beforeprint) werden Name/E-Mail
+     zusaetzlich direkt (unverschluesselt, sehr klein) in die Fusszeile
+     geschrieben, damit ausgedruckte Boegen den Kontakt lesbar enthalten,
+     ohne die Seitenaufteilung zu stoeren. */
   (function(){
-    document.getElementById('cpYear').textContent = new Date().getFullYear();
+    var y = document.getElementById('cpYear');
+    if(y) y.textContent = new Date().getFullYear();
     var btn = document.getElementById('btnShowContact');
     var out = document.getElementById('cpContact');
-    if(!btn || !out) return;
+    var printOut = document.getElementById('cpPrint');
     var p1 = 'TS4gVWhsbWFubnxsZXRzc2VuZG1vcmVsZXR0ZXJz';
     var p2 = 'QGdtYWlsLmNvbQ==';
-    btn.addEventListener('click', function(){
-      var parts = atob(p1 + p2).split('|');
-      var name = parts[0], mail = parts[1];
-      out.textContent = name + ' · ';
-      var a = document.createElement('a');
-      a.href = 'mailto:' + mail;
-      a.rel = 'nofollow noopener';
-      a.textContent = mail;
-      out.appendChild(a);
-      out.hidden = false;
-      btn.hidden = true;
-    }, { once: true });
+    function decode(){ var parts = atob(p1 + p2).split('|'); return { name: parts[0], mail: parts[1] }; }
+    if(btn && out){
+      btn.addEventListener('click', function(){
+        var d = decode();
+        out.textContent = d.name + ' · ';
+        var a = document.createElement('a');
+        a.href = 'mailto:' + d.mail;
+        a.rel = 'nofollow noopener';
+        a.textContent = d.mail;
+        out.appendChild(a);
+        out.hidden = false;
+        btn.hidden = true;
+      }, { once: true });
+    }
+    if(printOut){
+      window.addEventListener('beforeprint', function(){
+        if(!printOut.textContent){
+          var d = decode();
+          printOut.textContent = '© ' + (y ? y.textContent : new Date().getFullYear()) + ' ' + d.name + ' · ' + d.mail;
+        }
+      });
+    }
   })();
 </script>
 
