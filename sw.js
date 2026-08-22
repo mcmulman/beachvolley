@@ -1,7 +1,7 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v64';
+const CACHE_VERSION = 'beachl-turniere-v67';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
@@ -34,7 +34,10 @@ const PRECACHE = [
   /* Dynamische Universalbögen und ihre gemeinsame Engine */
   './Turnierbogen_Gruppen_Finalrunde.html',
   './Turnierbogen_KO_System.html',
+  './Turnierbogen_Doppel_KO_System.html',
   './Turnierbogen_Runden_System.html',
+  './Turnierbogen_Modified_Pool_Play.html',
+  './Turnierbogen_King_Queen_of_the_Court.html',
   './core/turnier-base.css',
   './core/compat.js',
   './core/compat-flexgap.css',
@@ -46,7 +49,10 @@ const PRECACHE = [
   './docs/format-jeder-gegen-jeden.html',
   './docs/format-gruppen-platzierungsrunde.html',
   './docs/format-ko-system.html',
-  './docs/format-schweizer-system.html'
+  './docs/format-double-elimination.html',
+  './docs/format-schweizer-system.html',
+  './docs/format-modified-pool-play.html',
+  './docs/format-king-of-the-court.html'
 ];
 
 self.addEventListener('install', event => {

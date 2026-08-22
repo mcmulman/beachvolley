@@ -61,6 +61,46 @@
     return TC.refLabel(ref, ctx) || '–';
   }
 
+  /* Turnierbaum-Spalten (Gewinner-/Verlierer-Runde, Grand Final …) als
+     Spaltenraster – gemeinsames Markup fuer alle Bracket-Bögen (KO-System,
+     Doppel-KO-System). rounds: [{title|label, matches:[{id,name,places,reset}]}] */
+  function bracketColumnsHtml(rounds) {
+    let html = '';
+    (rounds || []).forEach(rd => {
+      html += '<div class="brcol"><div class="brhead">' + esc(rd.title || rd.label || '') + '</div>';
+      (rd.matches || []).forEach(m => {
+        const cls = 'brm' + (m.places ? ' is-p3' : '') + (m.reset ? ' is-reset' : '');
+        html += '<div class="' + cls + '" data-br="' + esc(m.id) + '">'
+          + '<div class="brname">' + esc(m.name || '') + '</div>'
+          + '<div class="brside" data-br-side="a"><span class="n"></span><span class="s"></span></div>'
+          + '<div class="brside" data-br-side="b"><span class="n"></span><span class="s"></span></div>'
+          + '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  /* Traegt Teamnamen/Ergebnisse in ein per bracketColumnsHtml() erzeugtes
+     Skelett ein. container: DOM-Element mit .brm-Kindern; matchById: {id:m}. */
+  function paintBracketColumns(container, matchById, ctx) {
+    if (!container) return;
+    container.querySelectorAll('.brm').forEach(box => {
+      const m = matchById[box.getAttribute('data-br')];
+      if (!m) return;
+      [['a', m.a, m.ta], ['b', m.b, m.tb]].forEach(pair => {
+        const side = pair[0], ref = pair[1], team = pair[2];
+        const el = box.querySelector('[data-br-side="' + side + '"]');
+        if (!el) return;
+        el.querySelector('.n').textContent = sideLabel(ref, team, ctx);
+        const r = m.result;
+        el.querySelector('.s').textContent = r ? String(side === 'a' ? r.aSets : r.bSets) : '';
+        const won = m.bye != null ? (m.bye === team) : !!(r && r.winner === side);
+        el.classList.toggle('is-win', won);
+      });
+    });
+  }
+
   /* Beschriftung IN der Spielkarte: immer "Team N" und darunter der
      eingetragene Name – so bleibt die Nummer auch mit Namen sichtbar
      (Vorbild: Bogen "Alle gegen Alle"). Steht das Team noch nicht fest,
@@ -1120,14 +1160,84 @@
       winMin < needMin);
   }
 
+  /* ============================================================ FELD-LEITER
+     King/Queen of the Court (AGENTS.md §1, core/turnier-core.js §3.7,
+     core/turnier-format.js buildKingOfCourt). Es gibt keinen Bracket und
+     keine feste Tabelle, sondern eine Feld-für-Feld-Leiter, die sich Runde
+     für Runde verschiebt - dafür ein eigenständiger Renderer statt
+     bracketColumnsHtml/standingsTableHtml wiederzuverwenden.
+
+     courtLadderHtml(courtsData, ctx): baut EIN Runden-Skelett (alle Felder
+     einer Runde, jedes Feld mit seinen Spielen). ctx wie bei den anderen
+     Renderern: { teamLabel, teamNameHtml }. Die Ergebnis-Kaestchen tragen
+     bewusst die STANDARD-Attribute data-mid/data-set/data-side (data-set
+     konstant "1", da King/Queen keine Saetze kennt), damit spielplan-enh.js
+     das ":"-Splitten und die Pfeiltasten-Navigation ohne Zusatzcode uebernimmt
+     (siehe spielplan-enh.js scorePartner()). Felder/Spiele selbst werden
+     ueber die eigenen Attribute data-kq-court/data-kq-match/data-kq-side
+     (am Kaestchen-Wrapper, nicht am <input>) adressiert.
+     paintCourtLadder(container, roundData, ctx): trägt Namen/Ergebnisse ein
+     und markiert Sieger sowie Auf-/Absteiger nach Abschluss der Runde.       */
+  function courtLadderHtml(courtsData, roundNo) {
+    let html = '';
+    (courtsData || []).forEach(cd => {
+      const crownCls = cd.level === 1 ? ' is-king' : '';
+      html += '<div class="kqcourt' + crownCls + '" data-kq-court="' + cd.level + '">'
+        + '<div class="kqcourt-head">' + (cd.level === 1 ? '👑 ' : '') + esc(cd.label) + '</div>'
+        + '<div class="kqcourt-matches">';
+      (cd.matches || []).forEach(m => {
+        html += '<div class="kqmatch" data-kq-match="' + esc(m.id) + '">'
+          + '<div class="kqside" data-kq-side="a"><span class="n"></span>'
+          + '<input class="score kqscore" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3"'
+          + ' data-mid="' + esc(m.id) + '" data-set="1" data-side="a" autocomplete="off"></div>'
+          + '<div class="kqvs">:</div>'
+          + '<div class="kqside" data-kq-side="b"><input class="score kqscore" type="text" inputmode="numeric"'
+          + ' pattern="[0-9]*" maxlength="3" data-mid="' + esc(m.id) + '" data-set="1" data-side="b" autocomplete="off">'
+          + '<span class="n"></span></div>'
+          + '</div>';
+      });
+      if (cd.bye != null) {
+        html += '<div class="kqbye" data-kq-bye="1"><span class="n"></span> <em>Feld-Freilos</em></div>';
+      }
+      html += '</div></div>';
+    });
+    return html;
+  }
+
+  /* Trägt Namen/Ergebnisse in ein per courtLadderHtml() erzeugtes Skelett ein.
+     roundData = ein Eintrag aus TFormat.buildKingOfCourt(...).rounds.        */
+  function paintCourtLadder(container, roundData, ctx) {
+    if (!container) return;
+    (roundData.courts || []).forEach(cd => {
+      const box = container.querySelector('[data-kq-court="' + cd.level + '"]');
+      if (!box) return;
+      cd.matches.forEach(m => {
+        const mbox = box.querySelector('[data-kq-match="' + m.id + '"]');
+        if (!mbox) return;
+        const aEl = mbox.querySelector('[data-kq-side="a"]'), bEl = mbox.querySelector('[data-kq-side="b"]');
+        if (aEl) aEl.querySelector('.n').textContent = ctx.teamLabel(m.a);
+        if (bEl) bEl.querySelector('.n').textContent = ctx.teamLabel(m.b);
+        const r = m.result;
+        aEl && aEl.classList.toggle('is-win', !!(r && r.winner === 'a'));
+        bEl && bEl.classList.toggle('is-win', !!(r && r.winner === 'b'));
+        mbox.classList.toggle('is-draw', !!(r && r.draw));
+      });
+      if (cd.bye != null) {
+        const byeEl = box.querySelector('[data-kq-bye]');
+        if (byeEl) byeEl.querySelector('.n').textContent = ctx.teamLabel(cd.bye);
+      }
+    });
+  }
+
   return {
     esc, fmtTime, fmtDiff, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
+    bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml,
     roundBarHtml, roundBarValue, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,
-    wireScoreInputs
+    wireScoreInputs, courtLadderHtml, paintCourtLadder
   };
 });

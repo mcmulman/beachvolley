@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modified Pool Play (MPP) – Turnierformat-Erklärung</title>
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.65; color: #222; background: #f5f7fa; }
+.page { max-width: 760px; margin: 0 auto; padding: 24px 20px 56px; }
+.back-link { display: inline-block; margin-bottom: 20px; color: #1f4e79; text-decoration: none; font-size: 13px; font-weight: 600; }
+.back-link:hover { text-decoration: underline; }
+h1 { font-size: 26px; color: #1f4e79; margin-bottom: 4px; }
+.subtitle { color: #666; font-size: 14px; margin-bottom: 28px; }
+h2 { font-size: 17px; color: #1f4e79; margin: 28px 0 10px; border-bottom: 2px solid #e8edf3; padding-bottom: 6px; }
+h3 { font-size: 14px; font-weight: 700; color: #333; margin: 18px 0 6px; }
+p { margin-bottom: 10px; }
+ul, ol { padding-left: 20px; margin-bottom: 10px; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: #1f4e79; color: #fff; padding: 8px 10px; text-align: left; }
+td { padding: 7px 10px; border-bottom: 1px solid #e0e6ef; }
+tr:nth-child(even) td { background: #f0f4f9; }
+.tag { display: inline-block; background: #e8edf3; color: #1f4e79; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin: 2px; }
+.noprint { }
+@media print {
+  @page { size: A4; margin: 15mm 15mm; }
+  .noprint { display: none !important; }
+  body { background: #fff; font-size: 11pt; }
+  h1 { font-size: 18pt; }
+  h2 { font-size: 13pt; }
+}
+
+
+.wrap { background:#fff; border-radius:10px; box-shadow:0 10px 30px rgba(31,78,121,0.08); }
+.topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px; }
+.top-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.print-btn { border:1px solid #1f4e79; background:#fff; color:#1f4e79; border-radius:4px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; }
+.print-btn:hover { background:#f0f4f9; }
+.intro { margin-bottom:16px; }
+.nav { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 24px; }
+.nav a { color:#1f4e79; text-decoration:none; border:1px solid #d8e1ec; background:#f8fbff; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+.nav a:hover { text-decoration:underline; }
+.note { background:#f7fafd; border-left:4px solid #1f4e79; padding:10px 12px; margin:12px 0 0; }
+
+  </style>
+</head>
+<body>
+  <div class="page wrap">
+    <div class="topbar noprint">
+      <div>
+        <a class="back-link" href="../index.html">← Zur Übersicht</a>
+      </div>
+      <div class="top-actions">
+        <button class="print-btn" type="button" onclick="window.print()">Drucken</button>
+      </div>
+    </div>
+    <header class="intro">
+      <div>
+        <span class="tag">Turnierformat</span>
+        <span class="tag">Beachvolleyball</span>
+        <span class="tag">Modified Pool Play</span>
+      </div>
+      <h1>Modified Pool Play (MPP)</h1>
+      <p class="subtitle">Turnierformat-Erklärung</p>
+    </header>
+    <nav class="nav noprint" aria-label="Inhaltsverzeichnis">
+      <a href="#ueberblick">Kurzübersicht</a><a href="#geeignet">Wann geeignet</a><a href="#ablauf">Ablauf</a><a href="#wertung">Wertung/Platzierung</a><a href="#vorteile">Vor- &amp; Nachteile</a>
+    </nav>
+
+<section id="ueberblick">
+  <h2>Kurzübersicht</h2>
+  <p><strong>Modified Pool Play</strong> (kurz „MPP") ist eine verkürzte Variante der Gruppenphase <strong>ohne
+  volles Round-Robin</strong>: Statt dass in einer 4er-Gruppe alle sechs möglichen Paarungen gespielt werden,
+  entscheidet ein kleiner Bracket <strong>innerhalb der Gruppe</strong> über die Platzierung – mit nur
+  <strong>4 statt 6 Spielen</strong>. In einer 3er-Gruppe bringt volles Round-Robin ohnehin nur 3 Spiele (mehr
+  lässt sich dort nicht einsparen); MPP übernimmt hier deshalb das normale Round-Robin, mit dem Erstgesetzten als
+  Freilos in Runde 1 (siehe <code>AGENTS.md</code> §1).</p>
+</section>
+<section id="geeignet">
+  <h2>Wann geeignet</h2>
+  <ul>
+    <li>Wenn die Zeit für ein komplettes Round-Robin in jeder Gruppe nicht reicht, aber ein reines
+      Einzel-K.-o.-Turnier (bei dem ein Team nach nur einem Spiel ausscheidet) zu hart wäre</li>
+    <li>Für Turniere mit straffem Zeitplan, die trotzdem sicherstellen wollen, dass <strong>jedes Team mindestens
+      zwei Spiele</strong> bekommt (im Gegensatz zu einer ersten Runde im reinen KO-System)</li>
+    <li>Häufig bei international ausgerichteten Turnieren mit Zeitdruck, bei denen die Gruppenphase möglichst
+      kompakt bleiben soll, ohne auf eine faire Platzierung innerhalb der Gruppe zu verzichten</li>
+    <li><strong>Nicht</strong> geeignet, wenn eine möglichst „gerechte" Gruppenphase mit jeder-gegen-jeden-Vergleich
+      gewünscht ist (dafür „Jeder gegen Jeden") oder wenn Gruppengrößen jenseits von 3–4 Teams nötig sind (dafür
+      „Gruppen + Finalrunde" mit vollem Round-Robin)</li>
+  </ul>
+</section>
+<section id="ablauf">
+  <h2>Ablauf</h2>
+  <h3>4er-Gruppe (der Regelfall)</h3>
+  <p>Die vier Teams einer Gruppe werden vorab <strong>innerhalb der Gruppe gesetzt</strong> (Setzplatz 1 = bester
+  Seed). Es werden genau vier Spiele ausgetragen:</p>
+  <ol>
+    <li><strong>Setzplatz 1 vs. 4</strong> und <strong>Setzplatz 2 vs. 3</strong> (beide Spiele parallel, Runde 1)</li>
+    <li><strong>Gewinnerspiel</strong> (Sieger vs. Sieger) um <strong>Platz 1/2</strong> der Gruppe</li>
+    <li><strong>Verliererspiel</strong> (Verlierer vs. Verlierer) um <strong>Platz 3/4</strong> der Gruppe</li>
+  </ol>
+  <p>Der Gruppenplatz steht damit unmittelbar durch die Bracket-Position fest – es ist <strong>keine
+  Punkte-/Ball-Differenz-Tabelle</strong> nötig, und ein Gleichstand ist strukturell ausgeschlossen.</p>
+  <h3>3er-Gruppe (Sonderfall)</h3>
+  <p>„Bei 3er-Gruppen hat der Erstgesetzte ein Freilos im 1. Spiel" (<code>AGENTS.md</code> §1). Ein Bracket wie bei
+  der 4er-Gruppe würde hier keine Spiele sparen – volles Round-Robin für 3 Teams braucht ohnehin nur 3 Spiele. MPP
+  spielt 3er-Gruppen deshalb komplett als Round-Robin, wobei der Erstgesetzte turnusgemäß das Freilos der ersten
+  Runde erhält; die Platzierung läuft danach wie gewohnt über Punkte/Ball-Differenz/Tie-Breaker
+  (<code>AGENTS.md</code> §7/§8).</p>
+  <h3>Andere Gruppengrößen</h3>
+  <p>Dieser Turnierbogen unterstützt für Modified Pool Play <strong>ausschließlich Gruppen mit 3 oder 4 Teams</strong>
+  – das entspricht der realen Wettkampfpraxis (größere Gruppen bräuchten einen eigenen, nicht standardisierten
+  Bracket, kleinere ergäben kein sinnvolles Gewinner-/Verliererspiel). Die Teamzahl wird deshalb automatisch in
+  reine 3er-/4er-Gruppen zerlegt (möglichst viele 4er-Gruppen, 3er-Gruppen nur für den Rest); sollte eine manuell
+  gewählte Gruppenzahl eine andere Größe ergeben, weist der Bogen deutlich darauf hin und spielt diese Gruppe
+  stattdessen komplett als Round-Robin (keine Spielabbrüche, nur kein Effizienzgewinn für diese eine Gruppe).</p>
+  <p><strong>Empfohlene Teamzahl:</strong> 6–24 Teams (in reinen 4er- oder gemischten 3er-/4er-Gruppen). Eine
+  Gesamtzahl von genau 5 Teams lässt sich nicht in reine 3er-/4er-Gruppen zerlegen.</p>
+  <p>Die anschließende <strong>Finalrunde</strong> (Über-Kreuz-Platzierungsrunde, KO-Runde, Hauptrunde oder gar
+  keine) funktioniert exakt wie beim Bogen „Gruppen + Finalrunde" – MPP ersetzt nur die Art, wie der Gruppenplatz
+  ermittelt wird, nicht wie er danach weiterverwendet wird.</p>
+</section>
+<section id="wertung">
+  <h2>Wertung / Platzierung</h2>
+  <p>In einer <strong>4er-Gruppe</strong> ergibt sich der Platz direkt aus dem Bracket, ganz ohne Tabelle:</p>
+  <ul>
+    <li><strong>Platz 1:</strong> Sieger des Gewinnerspiels</li>
+    <li><strong>Platz 2:</strong> Verlierer des Gewinnerspiels</li>
+    <li><strong>Platz 3:</strong> Sieger des Verliererspiels</li>
+    <li><strong>Platz 4:</strong> Verlierer des Verliererspiels</li>
+  </ul>
+  <p>In einer <strong>3er-Gruppe</strong> gilt die normale Round-Robin-Wertung: Sieg = 2 Punkte, Unentschieden = 1,
+  Niederlage = 0; bei Gleichstand entscheiden Ball-Differenz, dann Ballpunkte, dann direkter Vergleich, zuletzt das
+  Los (<code>AGENTS.md</code> §7/§8).</p>
+  <p>Fällt ein Team im Setzplatz-Spiel einer 4er-Gruppe aus, zieht der Gegner kampflos ins Gewinner-/Verliererspiel
+  weiter (Freilos) – genau wie beim KO-System. Fallen beide Setzplatz-Spiele einer Gruppe gleichzeitig auf ein
+  ausgefallenes Team, bleiben die Plätze 3/4 dieser Gruppe offen, bis mindestens ein reales Ergebnis eingetragen
+  wird; dieses Verhalten ist identisch zu einem beidseitigen Ausfall in einer klassischen Round-Robin-Gruppe.</p>
+</section>
+<section id="vorteile">
+  <h2>Vorteile / Nachteile</h2>
+  <table>
+    <thead>
+      <tr><th>Vorteile</th><th>Nachteile</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Deutlich weniger Spiele als volles Round-Robin (4 statt 6 in der 4er-Gruppe)</td><td>Jedes Team hat nur 2 Gruppenspiele – weniger Vergleichsmöglichkeiten als beim vollen Round-Robin</td></tr>
+      <tr><td>Jedes Team spielt mindestens 2 Spiele – fairer als ein reines Einzel-K.-o.-Turnier</td><td>Nur für 3er-/4er-Gruppen definiert – bei anderen Gruppengrößen kein Effizienzgewinn</td></tr>
+      <tr><td>Der Gruppenplatz steht in 4er-Gruppen ohne Tabelle/Tie-Breaker eindeutig fest</td><td>Ein einzelnes schwaches Spiel in Runde 1 legt bereits fest, ob ein Team um Platz 1/2 oder nur um Platz 3/4 spielt</td></tr>
+    </tbody>
+  </table>
+</section>
+
+  </div>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){});});}
+</script>
+</body>
+</html>

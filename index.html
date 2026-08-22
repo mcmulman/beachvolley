@@ -249,7 +249,7 @@
     }
 
     @media (min-width: 900px) {
-      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
     /* ── Card ── */
@@ -262,6 +262,33 @@
       display: flex;
       flex-direction: column;
       transition: transform .18s, box-shadow .18s;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .card-doc-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue-dark);
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      text-decoration: none;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .card-doc-link:hover {
+      border-color: var(--blue);
+      background: var(--blue-light);
     }
 
     .card:hover {
@@ -315,6 +342,22 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .card-details {
+      margin: 0 20px 12px;
+      padding: 10px 12px 9px;
+      border: 1px solid #d9e8f5;
+      border-left: 3px solid var(--blue);
+      border-radius: 10px;
+      background: #f5faff;
+      color: var(--text);
+      font-size: 12.25px;
+      line-height: 1.5;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    .card-details p {
+      margin: 0;
     }
 
     /* Stats chips */
@@ -400,9 +443,10 @@
       color: var(--blue-dark);
       margin-bottom: 6px;
     }
-    .format-info-body { display: block; }
+    .info-box .format-info-body { display: none; }
+    .info-box.is-open .format-info-body { display: block; }
     .format-toggle {
-      display: none;
+      display: block;
       margin-top: 8px;
       width: 100%;
       border: 1px solid var(--border);
@@ -468,16 +512,16 @@
       .info-box h3 {
         margin-bottom: 0;
       }
-      .format-toggle {
-        display: block;
-      }
-      .info-box:not(.is-open) .format-info-body {
-        display: none;
-      }
       .info-box.is-open .format-info-body {
         display: block;
         margin-top: 8px;
       }
+    }
+    .info-box:not(.is-open) {
+      min-height: auto;
+    }
+    .info-box .format-toggle {
+      margin-top: 8px;
     }
     @media print { .noprint { display: none !important; } }
   </style>
@@ -515,6 +559,11 @@
         <option value="gruppen">Gruppen</option>
         <option value="swiss">Schweizer System</option>
         <option value="ko">KO-System</option>
+        <option value="de">Doppel-K.-o.</option>
+        <option value="mpp">Modified Pool Play</option>
+        <option value="koc">King/Queen of the Court</option>
+        <option value="kingqueen">King &amp; Queen</option>
+        <option value="flex">Flex-Turnier</option>
       </select>
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()">Alle anzeigen</button>
@@ -526,6 +575,11 @@
     <button class="filter-btn" onclick="filter('gruppen', this)">Gruppen</button>
     <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
     <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
+    <button class="filter-btn" onclick="filter('de', this)">Doppel-K.-o.</button>
+    <button class="filter-btn" onclick="filter('mpp', this)">Modified Pool Play</button>
+    <button class="filter-btn" onclick="filter('koc', this)">King/Queen of the Court</button>
+    <button class="filter-btn" onclick="filter('kingqueen', this)">King &amp; Queen</button>
+    <button class="filter-btn" onclick="filter('flex', this)">Flex-Turnier</button>
   </div>
 </div>
 
@@ -549,43 +603,6 @@
     </div>
   </div>
 
-  <!-- Format-Überblick -->
-  <div class="section-label">Turnierformat</div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:40px">
-    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
-      <h3>🔁 Jeder gegen Jeden</h3>
-      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
-      <div class="format-info-body">
-        Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus.
-        <a href="docs/format-jeder-gegen-jeden.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
-      </div>
-    </div>
-    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
-      <h3>🏆 Gruppen + Finalrunde</h3>
-      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
-      <div class="format-info-body">
-        Gruppenphase sortiert die Teams, die Finalrunde kreuzt Gruppe A und B. Faire Paarungen, kein Ausscheiden – alle Plätze werden ermittelt.
-        <a href="docs/format-gruppen-platzierungsrunde.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
-      </div>
-    </div>
-    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
-      <h3>🇨🇭 Schweizer System</h3>
-      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
-      <div class="format-info-body">
-        Dynamisch ohne festen Spielplan: nach jeder Runde spielen Gleichrangige gegeneinander. Optimal für viele Teams auf wenigen Feldern.
-        <a href="docs/format-schweizer-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
-      </div>
-    </div>
-    <div class="info-box" style="margin:0;display:flex;flex-direction:column">
-      <h3>🥊 KO-System</h3>
-      <button class="format-toggle" type="button" aria-expanded="false" onclick="toggleFormatInfo(this)">Details anzeigen</button>
-      <div class="format-info-body">
-        Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase.
-        <a href="docs/format-ko-system.html" style="display:block;margin-top:auto;padding-top:10px;font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none">Mehr erfahren →</a>
-      </div>
-    </div>
-  </div>
-
   <div class="section-label">Turnierbögen</div>
   <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em">
     Alle Bögen: Teamnamen · Feldnamen · Zeiten konfigurierbar · Freilos/Ausfall · Druckvorlage A4 quer · Ergebnisse im Browser gespeichert
@@ -593,7 +610,7 @@
   <div class="grid">
 
     <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
-    <div class="card" data-tags="gruppen ko platzierung hauptrunde">
+    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht.">
       <div class="card-header">
         <span class="format-tag">dynamisch · 4–24 Teams</span>
         <h2>Gruppen + Finalrunde</h2>
@@ -621,7 +638,7 @@
     </div>
 
     <!-- ── Card: Flexibel ── -->
-    <div class="card" data-tags="rr">
+    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen.">
       <div class="card-header">
         <span class="format-tag">dynamisch · 4–24 Teams</span>
         <h2>Jeder gegen Jeden</h2>
@@ -649,7 +666,7 @@
     </div>
 
     <!-- ── Card: Schweizer System ── -->
-    <div class="card" data-tags="swiss">
+    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden.">
       <div class="card-header">
         <span class="format-tag">dynamisch · 4–24 Teams</span>
         <h2>Schweizer System</h2>
@@ -678,7 +695,7 @@
 
 
     <!-- ── Card: KO-System (Ausscheidungsturnier, deshalb am Ende) ── -->
-    <div class="card" data-tags="ko bracket turnierbaum">
+    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag.">
       <div class="card-header">
         <span class="format-tag">dynamisch · 4–32 Teams</span>
         <h2>KO-System</h2>
@@ -701,6 +718,157 @@
       <div class="card-footer">
         <a class="btn-open" href="Turnierbogen_KO_System.html" target="_blank">
           Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Doppel-KO-System (eigener Filter-Tag "de", zusaetzlich
+         "ko"/"bracket"/"turnierbaum", damit der Bogen auch beim generischen
+         KO-Filter auftaucht – siehe applyCardFilters() weiter unten). ── -->
+    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance. Fairer als das einfache KO-System, braucht dafür deutlich mehr Spiele und eignet sich besonders für größere Turniere mit ernsthafter Qualifikationslogik.">
+      <div class="card-header">
+        <span class="format-tag">dynamisch · 4–16 Teams</span>
+        <h2>Doppel-K.-o.-System</h2>
+        <div class="sub">Turnierbaum mit Verlierer-Runde · erst die 2. Niederlage scheidet aus</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 4–16 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–8 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> bis zu 2× so viele Runden wie beim KO-System</span>
+          <span class="stat"><span class="icon">⏱</span> länger · 2–7 Spiele/Team</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Gewinner- &amp; Verlierer-Runde</span>
+          <span class="feat">✓ Grand Final mit Entscheidungsspiel (Reset)</span>
+          <span class="feat">✓ Setzliste &amp; Freilose</span>
+          <span class="feat">✓ Platzbereiche statt Rangliste</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Doppel_KO_System.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Modified Pool Play (eigener Filter-Tag "mpp", zusaetzlich
+         "gruppen", damit der Bogen auch beim generischen Gruppen-Filter
+         auftaucht – analog zur "de"/"ko"-Doppelverschlagwortung oben). ── -->
+    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand.">
+      <div class="card-header">
+        <span class="format-tag">dynamisch · 6–24 Teams</span>
+        <h2>Modified Pool Play</h2>
+        <div class="sub">4er-Gruppen als Mini-Bracket · nur 4 statt 6 Gruppenspiele</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 6–24 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> reine 3er-/4er-Gruppen</span>
+          <span class="stat"><span class="icon">⏱</span> kürzer · mind. 2 Spiele/Team</span>
+        </div>
+        <div class="features">
+          <span class="feat">✓ Setzplatz 1 vs. 4, 2 vs. 3</span>
+          <span class="feat">✓ Gewinner-/Verliererspiel je Gruppe</span>
+          <span class="feat">✓ 4 Finalmodi wählbar</span>
+          <span class="feat">✓ Freilos &amp; Ausfall</span>
+          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Modified_Pool_Play.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: King/Queen of the Court (eigener Filter-Tag "koc",
+         KEINE Doppelverschlagwortung mit rr/gruppen/swiss/ko/de/mpp, da diese
+         Sonderform strukturell zu keinem der anderen Formate passt – siehe
+         AGENTS.md §1 "Eigene Spielregeln – nicht mit Gruppen/KO vermischen"). ── -->
+    <div class="card" data-tags="koc" data-doc="docs/format-king-of-the-court.html" data-desc="Klassische Feld-Leiter mit zeitlimitierten Runden, Auf-/Abstiegen und einer klaren Leistungsabfolge. Das ist kein custom mixed Event, sondern ein eigener Court-Ladder-Modus mit offenem Feld-Aufstieg und klarer Reihenfolge über mehrere Runden.">
+      <div class="card-header">
+        <span class="format-tag">Sonderform · 6–24 Teams</span>
+        <h2>King/Queen of the Court</h2>
+        <div class="sub">Feld-Leiter · Auf-/Abstieg je Runde · keine feste Partnerrotation</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon">👥</span> 6–24 Teams</span>
+          <span class="stat"><span class="icon">🏖️</span> 1–5 Felder</span>
+          <span class="stat"><span class="icon">🎯</span> Rundenzahl wählbar/automatisch</span>
+          <span class="stat"><span class="icon">⏱</span> Zeitlimit statt Zielpunktzahl</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ Königs-/Königinnenfeld</span>
+         <span class="feat">✓ Feld-Leiter mit Auf-/Abstieg</span>
+         <span class="feat">✓ Kumulierte Punktwertung</span>
+         <span class="feat">✓ eigenes Format, nicht King &amp; Queen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_King_Queen_of_the_Court.html" target="_blank">
+          Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <div class="card" data-tags="kingqueen" data-doc="docs/format-king-queen.html" data-desc="Eigenes Mixed-Event für Einzelpersonen: Pro Runde werden faire 2er-Teams (stärkste/r + schwächste/r der aktuellen Rangliste) neu gebildet und treten 2 gegen 2 an. Es zählt die reine Einzelleistung – am Ende stehen getrennte King- (Herren) und Queen- (Damen) Ranglisten, keine gemeinsame Mixed-Wertung.">
+      <div class="card-header">
+        <span class="format-tag">Custom Event · Einzelwertung</span>
+        <h2>King &amp; Queen</h2>
+        <div class="sub">Mixed Event · 2 gegen 2 · rotierende Team-Partner:innen · getrennte Herren-/Damen-Rangliste</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> ab 4 Personen, Herren/Damen frei wählbar</span>
+         <span class="stat"><span class="icon">🏖️</span> 1–5 Felder</span>
+         <span class="stat"><span class="icon">🎯</span> Faire 2er-Team-Rotation</span>
+         <span class="stat"><span class="icon">⏱</span> Anpassbar</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ 2 gegen 2 pro Match</span>
+         <span class="feat">✓ Team-Score zählt für beide Mitglieder</span>
+         <span class="feat">✓ King-/Queen-Einzelwertung getrennt (kein Mixed-Ranking)</span>
+         <span class="feat">✓ custom Event, nicht K.-o.-C.</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_King_Queen.html" target="_blank">
+         Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Flex-Turnier (feste Teams, Herren/Damen/Mixed getaggt,
+         faire Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
+         Team-Rangliste – NICHT zu verwechseln mit King & Queen, das
+         Einzelpersonen und getrennte Geschlechter-Ranglisten hat). ── -->
+    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-desc="Für feste Teams: Herren-, Damen- und Mixed-Teams treten gemeinsam in einer Rangliste an. Faire Paarungen per Schweizer-System- oder Jeder-gegen-jeden-Logik (identisch zum Universalbogen); Team-Art (♂/♀/Mixed) wird direkt bei den Teamnamen erfasst, als Badge angezeigt und bei der Startrunden-Auslosung im Schweizer System berücksichtigt, damit die erste Runde ausgewogen gemischt ist.">
+      <div class="card-header">
+        <span class="format-tag">Custom Event · Team-Wertung</span>
+        <h2>Flex-Turnier</h2>
+        <div class="sub">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> 4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span>
+         <span class="stat"><span class="icon">🏖️</span> 1–8 Felder</span>
+         <span class="stat"><span class="icon">🎯</span> Schweizer System oder Jeder-gegen-Jeden</span>
+         <span class="stat"><span class="icon">⏱</span> Satzmodus wählbar</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
+         <span class="feat">✓ faire Startrunden-Auslosung nach Team-Art</span>
+         <span class="feat">✓ eine gemeinsame Team-Rangliste</span>
+         <span class="feat">✓ eigenes Format, nicht King &amp; Queen</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Flex_Turnier.html" target="_blank">
+         Öffnen ↗
         </a>
       </div>
     </div>
@@ -749,13 +917,32 @@
     applyCardFilters('', '');
   }
 
-  function toggleFormatInfo(btn) {
-    const box = btn.closest('.info-box');
-    if (!box) return;
-    const open = box.classList.toggle('is-open');
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.textContent = open ? 'Details ausblenden' : 'Details anzeigen';
+  function initCardDetails() {
+    document.querySelectorAll('.card').forEach(card => {
+      const desc = card.dataset.desc;
+      const docUrl = card.dataset.doc;
+      const footer = card.querySelector('.card-footer');
+      if (docUrl && footer && !footer.querySelector('.card-doc-link')) {
+        const docLink = document.createElement('a');
+        docLink.className = 'card-doc-link';
+        docLink.href = docUrl;
+        docLink.target = '_blank';
+        docLink.rel = 'noopener';
+        docLink.textContent = '📖 Doku';
+        footer.insertBefore(docLink, footer.firstChild);
+      }
+
+      if (!desc || card.querySelector('.card-details')) return;
+
+      const details = document.createElement('div');
+      details.className = 'card-details';
+      details.innerHTML = '<p>' + desc.replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch] || ch)) + '</p>';
+
+      if (footer) card.insertBefore(details, footer);
+    });
   }
+
+  initCardDetails();
 
   const SESSIONS_PREVIEW = 1;
   let sessionsExpanded = false;

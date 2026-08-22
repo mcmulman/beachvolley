@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnierbogen – King/Queen of the Court</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="core/turnier-base.css">
+  <link rel="stylesheet" href="spielplan.css">
+  <link rel="stylesheet" href="app-skin.css">
+  <style>
+    .notebox { border-left:3px solid #1f4e79; background:#f5f8fc; padding:6px 12px; margin:10px 0; font-size:12px; }
+    .notebox.is-warn { border-left-color:#b35c00; background:#fff6ec; }
+    .notebox ul { margin:3px 0; padding-left:18px; }
+
+    /* Primäre Schaltflächen dunkelblau, destruktive rot – wie in den anderen
+       Boegen (app-skin.css triggert ueber [onclick*="..."], hier per ID). */
+    #btnToggleNames { background: var(--app-blue-dark, #1f4e79) !important; color:#fff !important;
+      border-color: var(--app-blue-dark, #1f4e79) !important; box-shadow:0 2px 8px rgba(26,58,92,.22) !important; }
+    #btnToggleNames:hover { background: var(--app-blue, #163a5c) !important; border-color: var(--app-blue, #163a5c) !important; }
+    #btnClearScores, #btnReset { background:#fdecec !important; color:#c02626 !important;
+      border-color:#f3c9c9 !important; box-shadow:none !important; }
+    #btnClearScores:hover, #btnReset:hover { background:#f8d7d7 !important; }
+
+    /* ===================================================== FELD-LEITER
+       Eigenes Markup (keine Bracket-/Tabellen-Wiederverwendung, siehe
+       core/turnier-ui.js courtLadderHtml/paintCourtLadder): pro Runde ein
+       Block, darin ein Kaestchen je Feld (Koenigsfeld zuerst), darin die
+       Spiele und ggf. das Feld-Freilos. */
+    .kq-round { margin:0 0 14px; }
+    .kq-round-head { font-weight:bold; font-size:14px; color:#1f4e79; margin:10px 0 6px;
+      border-bottom:2px solid #e8edf3; padding-bottom:4px; break-after:avoid; }
+    .kq-courts { display:flex; flex-wrap:wrap; gap:8px; }
+    .kqcourt { flex:1 1 200px; min-width:190px; border:1px solid #ccd6e2; border-radius:6px;
+      padding:6px 8px; background:#fbfcfe; break-inside:avoid; }
+    .kqcourt.is-king { border-color:#c99a1f; background:#fffaf0; }
+    .kqcourt-head { font-size:11px; font-weight:bold; text-transform:uppercase; color:#555;
+      margin-bottom:5px; letter-spacing:.02em; }
+    .kqcourt.is-king .kqcourt-head { color:#8a6400; }
+    .kqcourt-matches { display:flex; flex-direction:column; gap:4px; }
+    .kqmatch { display:flex; align-items:center; gap:4px; border:1px solid #dde4ee; border-radius:4px;
+      padding:3px 5px; background:#fff; }
+    .kqmatch.is-draw { background:#fff6ec; }
+    .kqside { flex:1 1 0; display:flex; align-items:center; gap:4px; min-width:0; }
+    .kqside .n { flex:1 1 auto; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .kqside.is-win .n { font-weight:bold; color:#0a7d2c; }
+    .kqside[data-kq-side="b"] { flex-direction:row-reverse; }
+    .kqvs { font-size:11px; color:#888; flex:0 0 auto; }
+    .kqscore { width:38px; height:30px; font-size:14px; text-align:center; }
+    .kqbye { font-size:11px; color:#666; padding:2px 5px; border-top:1px dashed #ddd; margin-top:2px; }
+    .kqbye .n { font-weight:600; }
+    @media print {
+      .kq-courts { display:flex; }
+      .kqside.is-win .n { color:#0a7d2c !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .kqcourt.is-king { background:#fffaf0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+    @media screen and (max-width:700px) {
+      .kqcourt { flex:1 1 100%; }
+    }
+    .kq-final-table .pts { font-weight:bold; }
+    .kq-final-table .sub { font-size:11px; color:#666; }
+  </style>
+  <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
+       Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
+</head>
+<body>
+
+<div class="noprint" style="margin:0 0 8px">
+  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a>
+  <a href="docs/format-king-of-the-court.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a>
+</div>
+
+<h1 id="h-title">King/Queen of the Court</h1>
+<p class="sub" id="h-sub">Feld-Leiter mit Auf-/Abstieg · Zeitlimit statt fester Satzlänge</p>
+
+<!-- ======================= SEITE 1 ======================= -->
+<div class="guide" id="guideContainer">
+  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <ol>
+    <li><span class="hi">Prinzip:</span> Alle Teams stehen auf einer Feld-Leiter. Feld 1 ist das
+      <b>King &amp; Queen Court</b>. Auf jedem Feld spielen (im Normalfall 4 Teams je Feld) zwei
+      Spiele gleichzeitig – Setzplatz 1 gegen 4, Setzplatz 2 gegen 3.</li>
+    <li><span class="hi">Zeitlimit statt Zielpunktzahl:</span> Jede Runde dauert <span id="g-roundmin">–</span> Min.
+      Gespielt wird auf Zeit – es zählen die Punkte, die in dieser Zeit erzielt werden (kein fester
+      Zielwert, kein 2-Punkte-Zwang). Ein Unentschieden ist möglich.</li>
+    <li><span class="hi">Aufsteiger/Absteiger:</span> Auf dem King-&amp;-Queen-Feld bleiben die Sieger, die Verlierer
+      steigen ab. Auf dem untersten Feld steigen die Sieger auf, die Verlierer bleiben. Auf den Feldern
+      dazwischen steigen Sieger eine Stufe auf, Verlierer eine Stufe ab.</li>
+    <li><span class="hi">Feld-Freilos:</span> Ist die Teamzahl kein glattes Vielfaches von 4 je Feld,
+      hat auf dem betroffenen Feld ein Team pro Runde ein Freilos (bleibt stehen, ohne Punkte).</li>
+    <li><span class="hi">Endwertung:</span> <span id="g-final">–</span></li>
+  </ol>
+</div>
+
+<div class="noprint cfgcard" id="configSection">
+  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-grid">
+    <label class="cfgfield cfgfield--wide">📝 Turniertitel
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="cfgfield-row">
+      <label class="cfgfield">👥 Teams
+        <select id="teamCount"></select>
+      </label>
+      <label class="cfgfield">🏖️ Felder
+        <select id="courtCount"></select>
+      </label>
+      <label class="cfgfield">🔁 Runden
+        <select id="roundCount"></select>
+      </label>
+    </div>
+    <label class="cfgfield cfgfield--mode">⏱ Min./Runde
+      <select id="roundMinutes">
+        <option value="10">10 Min</option>
+        <option value="12">12 Min</option>
+        <option value="15" selected>15 Min</option>
+        <option value="20">20 Min</option>
+      </select>
+    </label>
+    <label class="cfgfield cfgfield--start">🕘 Start
+      <input type="time" id="startTime" value="10:00">
+    </label>
+  </div>
+
+  <div class="cfgresult" id="cfgResult">
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-courts">–</span><span class="cfgres-lbl">Felder</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perCourt">–</span><span class="cfgres-lbl">Teams/Feld</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (alle Runden)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-end">–</span><span class="cfgres-lbl">Voraussichtliches Ende</span></div>
+  </div>
+
+  <div class="cfgcard-actions">
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen</button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Team ausgefallen</button>
+    <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <span class="spacer"></span>
+    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
+  </div>
+
+  <div id="namepanel" class="noprint namepanel" hidden>
+    <div class="ngrid" id="nameGrid"></div>
+    <div class="nactions">
+      <button type="button" class="nbtn" id="btnShuffle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> Teams mischen</button>
+      <button type="button" class="nbtn" id="btnClearNames">Namen leeren</button>
+    </div>
+  </div>
+  <div id="absentpanel" class="noprint namepanel" hidden>
+    <div class="panel-checks" id="absentGrid"></div>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
+    <p class="nhint">ℹ️ Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
+      betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.</p>
+  </div>
+</div>
+
+<div id="noticeBox"></div>
+
+<table class="teams">
+  <caption>Teams (Namen eintragen)</caption>
+  <tbody id="teamsBody"></tbody>
+</table>
+
+<div class="noprint schedule-roundbar" id="roundbarKq"></div>
+<div id="ladderSection"></div>
+
+<p class="input-hint" id="inputHint">Ergebnis = Punkte, die in der Rundenzeit erzielt wurden (kein
+  Zielwert, kein 2-Punkte-Zwang). Unentschieden ist zulässig.</p>
+
+<!-- ======================= SEITE 2 ======================= -->
+<div class="page-break"></div>
+
+<h1 id="standingsSection">Endwertung</h1>
+<p class="sub">Nach jeder Runde: Ergebnisse auf Seite 1 eintragen, hier die kumulierten Punkte kontrollieren.</p>
+
+<table class="stand kq-final-table" id="placeTable">
+  <caption><span class="cap-title">Endstand – kumulierte Punkte je Team</span><span class="cap-hint" id="hintFinal"></span></caption>
+  <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th class="pts">Punkte gesamt</th><th class="sub">Runden gespielt</th><th class="sub">Ø Punkte/Runde</th><th class="sub">Bestes Feld</th></tr></thead>
+  <tbody id="placeBody"></tbody>
+</table>
+
+<div class="legend" id="h-legend">
+  <b>Wertung:</b> Primär entscheiden die <b>kumulierten Punkte</b> aus allen Runden (klassische
+  King-of-the-Court-Regel). Haben nicht alle Teams gleich viele Runden gespielt (Feld-Freilos), wird
+  auf <b>Punkte pro gespielter Runde</b> umgeschaltet – analog zur „ungleiche Spielanzahl"-Regel bei den
+  übrigen Formaten (AGENTS.md §4.2). Bei weiterhin gleichem Wert entscheidet das <b>höchste je erreichte
+  Feld</b>, zuletzt das Los.
+</div>
+
+<div class="mobile-jumpbar noprint" id="jumpbar"></div>
+
+<script src="core/turnier-core.js"></script>
+<script src="core/turnier-format.js"></script>
+<script src="core/turnier-store.js"></script>
+<script src="core/turnier-archive.js"></script>
+<script src="core/turnier-ui.js"></script>
+<script>
+(function(){
+  'use strict';
+  const SHEET = 'koc';
+  const $ = id => document.getElementById(id);
+  const SHEET_FILE = 'Turnierbogen_King_Queen_of_the_Court.html';
+  const SHEET_TYPE = 'King/Queen of the Court';
+
+  function applyDocTitle(){
+    const info = TArchive.sizeInfo(S && S.config && S.config.teams, S && S.config && S.config.courts);
+    document.title = TArchive.docTitle(S && S.title, SHEET_TYPE, info);
+    const h = $('h-title');
+    if(h) h.innerHTML = TArchive.headTitleHtml(S && S.title, SHEET_TYPE);
+    document.body.setAttribute('data-bar-title', TArchive.barTitle(SHEET_TYPE,
+      S && S.config && S.config.teams, S && S.config && S.config.courts));
+  }
+  function archiveOpts(){
+    const cur = TStore.load(SHEET);
+    const names = cur.teamNames || {};
+    const max = Math.min(4, +cur.config.teams || 0);
+    const teams = [];
+    for(let i=1;i<=max;i++) teams.push(names[i] || ('Team ' + i));
+    const empty = !Object.keys(cur.results || {}).length
+      && !Object.keys(cur.teamNames || {}).length
+      && !(cur.absent || []).length;
+    return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
+             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams };
+  }
+  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+
+  /* Empfohlene Teamzahlen: glattes Vielfaches von 4 (Regelfall), plus ein
+     paar Nachbarwerte, damit die Feld-Freilos-Regel demonstrierbar bleibt,
+     ohne dass die Auswahl unuebersichtlich wird (AGENTS.md §1: "oft 5" Teams
+     je Spiel – hier als 4±1 je Feld abgebildet). */
+  const TEAM_OPTIONS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24];
+
+  let S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
+  let B = null;
+  let structureKey = '';
+  let roundFilter = 'all';
+
+  function labeler(){ return TUI.makeLabeler(S.teamNames); }
+  function ctxFor(){
+    return { teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, (S.absent||[]).includes(n)) };
+  }
+  function activeTeams(){ const out=[]; for(let i=1;i<=S.config.teams;i++) out.push(i); return out; }
+
+  /* Die Feld-Leiter besteht aus <div data-round> statt Tabellenzeilen, daher
+     ein eigener Rundenfilter statt TUI.applyRoundFilter (das gezielt
+     tr[data-round] anspricht). */
+  function applyKqRoundFilter(filterVal){
+    document.querySelectorAll('#ladderSection .kq-round[data-round]').forEach(box => {
+      const r = box.getAttribute('data-round');
+      box.hidden = !(filterVal === 'all' || String(r) === String(filterVal));
+    });
+  }
+
+  function fillSelects(){
+    const t = $('teamCount');
+    if(!t.options.length){
+      TEAM_OPTIONS.forEach(n => t.add(new Option(n + ' Teams', n)));
+      const c = $('courtCount');
+      for(let n=1;n<=5;n++) c.add(new Option(n + (n===1?' Feld':' Felder'), n));
+      const r = $('roundCount');
+      r.add(new Option('automatisch', ''));
+      for(let n=3;n<=10;n++) r.add(new Option(n + ' Runden', n));
+    }
+    t.value = TEAM_OPTIONS.includes(+S.config.teams) ? S.config.teams : 12;
+    $('courtCount').value = String(Math.max(1, Math.min(5, +S.config.courts || 3)));
+    $('roundCount').value = S.config.rounds ? String(S.config.rounds) : '';
+    $('roundMinutes').value = String(S.config.roundMinutes || 15);
+    $('startTime').value = S.config.startTime || '10:00';
+    $('session-title-input').value = S.title || '';
+  }
+
+  function readConfig(){
+    S.config.teams = +$('teamCount').value;
+    S.config.courts = +$('courtCount').value;
+    S.config.rounds = $('roundCount').value ? +$('roundCount').value : null;
+    S.config.roundMinutes = +$('roundMinutes').value;
+    S.config.startTime = $('startTime').value || '10:00';
+  }
+
+  function compute(){
+    B = TFormat.buildKingOfCourt({
+      teams: S.config.teams, courts: S.config.courts, rounds: S.config.rounds,
+      roundMinutes: S.config.roundMinutes, startTime: S.config.startTime,
+      absent: S.absent, results: S.results, fixedCourts: S.frozen || {}
+    });
+    /* fixedCourts einfrieren: sobald eine Runde ein Ergebnis hat, wird ihre
+       Feldbesetzung dauerhaft gespeichert - exakt das Prinzip von
+       "fixedPairs" im Schweizer System (AGENTS.md §7a). */
+    let changed = false;
+    B.rounds.forEach(rd => {
+      if(rd.frozen && !(S.frozen && S.frozen[rd.round])){
+        S.frozen = S.frozen || {};
+        S.frozen[rd.round] = rd.courts.map(c => c.teams.slice());
+        changed = true;
+      }
+    });
+    if(changed) TStore.save(S);
+    return B;
+  }
+  function keyOf(){
+    const c = S.config;
+    return [c.teams, c.courts, c.rounds, c.roundMinutes, c.startTime].join('|');
+  }
+
+  function rebuild(){
+    compute();
+    const k = keyOf();
+    if(k !== structureKey){ structureKey = k; buildStructure(); }
+    paint();
+  }
+
+  function buildStructure(){
+    buildTeamsTable();
+    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames);
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor());
+    buildLadder();
+    if(window.AppBar && AppBar.refresh) AppBar.refresh();
+  }
+
+  function buildTeamsTable(){
+    const n = S.config.teams, half = Math.ceil(n/2);
+    let html = '';
+    for(let r=0;r<half;r++){
+      const l = r+1, rr = r+1+half;
+      html += '<tr><td class="num">'+l+'</td><td class="name" data-team-name="'+l+'"></td>';
+      if(rr<=n) html += '<td class="num">'+rr+'</td><td class="name" data-team-name="'+rr+'"></td>';
+      else html += '<td class="num" style="background:#f7f7f7"></td><td class="name"></td>';
+      html += '</tr>';
+    }
+    $('teamsBody').innerHTML = html;
+  }
+
+  /* Feld-Leiter: ein Block je Runde (Rundennavigator blendet auf Mobil nur
+     die aktuelle Runde ein, siehe AGENTS.md §11.1). */
+  function buildLadder(){
+    let html = '';
+    B.rounds.forEach(rd => {
+      html += '<div class="kq-round round-block" data-round="' + rd.round + '">'
+        + '<div class="kq-round-head">Runde ' + rd.round + ' <span style="font-weight:normal;color:#888;font-size:12px">('
+        + TUI.fmtTime(B.slots[rd.round-1] ? B.slots[rd.round-1].startMin : B.startMin) + ' Uhr)</span></div>'
+        + '<div class="kq-courts">' + TUI.courtLadderHtml(rd.courts, rd.round) + '</div>'
+        + '</div>';
+    });
+    $('ladderSection').innerHTML = html;
+    const slotsLike = B.rounds.map(rd => ({ round: rd.round, title: 'Runde ' + rd.round }));
+    $('roundbarKq').innerHTML = TUI.roundBarHtml(slotsLike, roundFilter);
+    applyKqRoundFilter(roundFilter);
+  }
+
+  function paint(){
+    const lbl = labeler();
+    document.querySelectorAll('[data-team-name]').forEach(td => {
+      const n = +td.getAttribute('data-team-name');
+      if(!Number.isFinite(n)) return;
+      td.innerHTML = TUI.teamNameHtml(n, S.teamNames, (S.absent||[]).includes(n));
+    });
+
+    const ctx = ctxFor();
+    B.rounds.forEach(rd => {
+      const box = document.querySelector('.kq-round[data-round="' + rd.round + '"]');
+      if(box) TUI.paintCourtLadder(box, rd, ctx);
+    });
+
+    // Scores aus S.results in die Kaestchen schreiben
+    document.querySelectorAll('.kqscore').forEach(inp => {
+      const mid = inp.getAttribute('data-mid'), side = inp.getAttribute('data-side');
+      const raw = S.results[mid];
+      const v = raw && raw.length === 2 ? (side === 'a' ? raw[0] : raw[1]) : null;
+      inp.value = (v == null) ? '' : String(v);
+    });
+
+    // Konfigurations-Badges
+    $('rv-courts').textContent = B.courtCount;
+    const sizes = B.rounds[0] ? B.rounds[0].courts.map(c => c.teams.length) : [];
+    $('rv-perCourt').textContent = sizes.length ? Array.from(new Set(sizes)).sort((a,b)=>a-b).join('/') : '–';
+    $('rv-rounds').textContent = B.rounds.length;
+    const totalMin = B.rounds.length * B.perRound;
+    $('rv-duration').textContent = Math.floor(totalMin/60) + ':' + String(totalMin%60).padStart(2,'0') + ' h';
+    $('rv-end').textContent = TUI.fmtTime(B.endMin);
+    $('g-roundmin').textContent = String(B.perRound);
+    $('g-final').textContent = 'Primär entscheiden die kumulierten Punkte aus allen Runden; bei ungleicher '
+      + 'Rundenzahl (Feld-Freilos) zählen die Punkte pro gespielter Runde, danach das höchste je erreichte Feld, '
+      + 'zuletzt das Los.';
+
+    // Endstand
+    const rows = B.placements.map(p => {
+      return '<tr' + (p.team!=null?' data-team="'+p.team+'"':'') + '>'
+        + '<td class="pl">' + p.place + (p.shared?'=':'') + '.</td>'
+        + '<td class="nm">' + (ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : TUI.esc(ctx.teamLabel(p.team))) + '</td>'
+        + '<td class="pts">' + p.points + '</td>'
+        + '<td class="sub">' + p.roundsPlayed + '</td>'
+        + '<td class="sub">' + p.pointsPerRound.toFixed(1) + '</td>'
+        + '<td class="sub">Feld ' + p.bestCourt + '</td>'
+        + '</tr>';
+    });
+    $('placeBody').innerHTML = rows.join('');
+
+    // Hinweise/Warnungen
+    let notice = '';
+    (B.warnings||[]).forEach(w => { notice += '<div class="notebox is-warn">⚠️ ' + TUI.esc(w) + '</div>'; });
+    (B.notes||[]).forEach(n => { notice += '<div class="notebox">ℹ️ ' + TUI.esc(n) + '</div>'; });
+    $('noticeBox').innerHTML = notice;
+
+    TStore.save(S);
+  }
+
+  /* -------------------------------------------------------------- Eingabe */
+  function wire(){
+    $('teamCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    $('courtCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    $('roundCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    $('roundMinutes').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    $('startTime').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    $('session-title-input').addEventListener('input', e => {
+      S.title = e.target.value; TStore.save(S);
+      applyDocTitle();
+    });
+
+    $('btnToggleNames').addEventListener('click', () => { $('namepanel').hidden = !$('namepanel').hidden; $('absentpanel').hidden = true; });
+    $('btnToggleAbsent').addEventListener('click', () => { $('absentpanel').hidden = !$('absentpanel').hidden; $('namepanel').hidden = true; });
+    $('btnClearScores').addEventListener('click', () => {
+      if(!confirm('Alle Ergebnisse löschen?')) return;
+      S.results = {}; S.frozen = {}; TStore.save(S); rebuild();
+    });
+    $('btnReset').addEventListener('click', () => {
+      if(!confirm('Neues Turnier starten? Der bisherige Stand wird im Archiv gesichert.')) return;
+      const started = TArchive.startNew(archiveOpts());
+      TStore.reset(SHEET);
+      S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
+      S.absent = []; S.frozen = {};
+      S.title = started.title;
+      TStore.save(S);
+      fillSelects(); structureKey=''; rebuild(); applyDocTitle();
+    });
+    $('btnSave').addEventListener('click', () => {
+      const ok = TStore.save(S); applyDocTitle();
+      const b = $('btnSave'); const old = b.innerHTML;
+      b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
+      setTimeout(()=>{ b.innerHTML = old; }, 1500);
+    });
+
+    document.addEventListener('input', e => {
+      const el = e.target;
+      if(!el.classList || !el.classList.contains('kqscore')) return;
+      const mid = el.getAttribute('data-mid'), side = el.getAttribute('data-side');
+      const v = el.value.trim();
+      const n = v === '' ? null : parseInt(v, 10);
+      const cur = S.results[mid] || [null, null];
+      const next = side === 'a' ? [n, cur[1]] : [cur[0], n];
+      S.results[mid] = next;
+      TStore.save(S);
+      // Nur neu rechnen, wenn beide Seiten ausgefuellt sind (Bewegregel braucht volle Runde).
+      if(next[0] != null && next[1] != null) rebuild();
+    });
+
+    document.getElementById('nameGrid').addEventListener('input', e => {
+      const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
+      if(!n) return;
+      const v = e.target.value.trim();
+      if(v) S.teamNames[n] = v; else delete S.teamNames[n];
+      TStore.save(S); paint();
+    });
+    $('btnShuffle').addEventListener('click', () => {
+      const names = activeTeams().map(t => S.teamNames[t] || '');
+      for(let i=names.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
+      S.teamNames = {};
+      names.forEach((v,i) => { if(v) S.teamNames[i+1] = v; });
+      TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames); paint();
+    });
+    $('btnClearNames').addEventListener('click', () => {
+      if(!confirm('Alle Teamnamen löschen?')) return;
+      S.teamNames = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames); paint();
+    });
+    document.getElementById('absentGrid').addEventListener('change', e => {
+      const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
+      if(!n) return;
+      const t = +n;
+      const idx = S.absent.indexOf(t);
+      if(e.target.checked && idx < 0) S.absent.push(t);
+      if(!e.target.checked && idx >= 0) S.absent.splice(idx, 1);
+      TStore.save(S); rebuild();
+    });
+    $('btnClearAbsent').addEventListener('click', () => { S.absent = []; TStore.save(S); rebuild(); });
+
+    // Rundennavigator (mobil): identisches Verhalten wie in den anderen
+    // Universalboegen (roundBarHtml/roundBarValue). Die Feld-Leiter besteht
+    // aus <div data-round> statt Tabellenzeilen, daher applyKqRoundFilter()
+    // statt TUI.applyRoundFilter (das gezielt tr[data-round] anspricht).
+    const onRoundNav = e => {
+      const f = TUI.roundBarValue(e, B.rounds.map(rd => ({ round: rd.round })), roundFilter);
+      if(f == null) return;
+      roundFilter = f;
+      $('roundbarKq').innerHTML = TUI.roundBarHtml(B.rounds.map(rd => ({ round: rd.round })), roundFilter);
+      applyKqRoundFilter(roundFilter);
+    };
+    $('roundbarKq').addEventListener('click', onRoundNav);
+    $('roundbarKq').addEventListener('change', onRoundNav);
+  }
+
+  S.absent = S.absent || [];
+  S.frozen = S.frozen || {};
+  fillSelects();
+  wire();
+  rebuild();
+  applyDocTitle();
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+<script src="appbar.js" defer></script>
+<script src="spielplan-enh.js"></script>
+</body>
+</html>

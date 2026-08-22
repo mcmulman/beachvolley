@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnierbogen – King &amp; Queen</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="core/turnier-base.css">
+  <link rel="stylesheet" href="spielplan.css">
+  <link rel="stylesheet" href="app-skin.css">
+  <style>
+    .notebox { border-left:3px solid #1f4e79; background:#f5f8fc; padding:6px 12px; margin:10px 0; font-size:12px; }
+    .notebox.is-warn { border-left-color:#b35c00; background:#fff6ec; }
+    .notebox ul { margin:3px 0; padding-left:18px; }
+    .stand .nm { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .stand .screen-place {
+      display:inline-block; min-width:26px; padding:2px 6px; border-radius:999px;
+      background:#eef2f7; color:#33455e; font-weight:800; text-align:center; flex:0 0 auto;
+    }
+    @media print { .stand .screen-place { display:none !important; } }
+    @media screen { .stand .pl { display:none; } }
+
+    /* Primäre/destruktive Schaltflächen – wie in den übrigen Bögen. */
+    #btnToggleNames, #btnToggleLevels { background: var(--app-blue-dark, #1f4e79) !important; color:#fff !important;
+      border-color: var(--app-blue-dark, #1f4e79) !important; box-shadow: 0 2px 8px rgba(26,58,92,.22) !important; }
+    #btnToggleNames:hover, #btnToggleLevels:hover { background: var(--app-blue, #163a5c) !important; border-color: var(--app-blue, #163a5c) !important; }
+    #btnClearScores, #btnReset { background:#fdecec !important; color:#c02626 !important; border-color:#f3c9c9 !important; box-shadow:none !important; }
+    #btnClearScores:hover, #btnReset:hover { background:#f8d7d7 !important; }
+
+    /* Niveau-Badge (N2-N5): rein informativ, kein Kern-Bibliotheks-Element. */
+    .lvbadge { display:inline-block; margin-left:5px; font-size:11px; font-weight:700;
+      border-radius:999px; padding:1px 6px; vertical-align:middle; background:#eef2f7; color:#33455e; }
+    .lvpanel-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 14px; }
+    .lvrow { display:flex; align-items:center; gap:8px; font-size:12px; }
+    .lvrow select { padding:3px 5px; font-size:12px; border:1px solid #aab8cc; border-radius:4px; }
+    /* Roster-Tabellen (Herren/Damen): Name + Niveau + Ausgefallen in einer Zeile. */
+    table.roster { width:100%; border-collapse:collapse; margin:8px 0 4px; }
+    table.roster th, table.roster td { padding:5px 8px; border-bottom:1px solid #e1eaf4; text-align:left; font-size:12.5px; }
+    table.roster th { background:#ecf3fb; font-weight:700; }
+    table.roster td.num { width:34px; color:#66788f; font-weight:700; }
+    table.roster td.rname input { width:100%; box-sizing:border-box; padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
+    table.roster td.rlevel select { padding:4px 5px; font-size:12.5px; border:1px solid #aab8cc; border-radius:4px; }
+    table.roster td.rabsent { text-align:center; width:44px; }
+    table.roster tr.is-absent td.rname input { text-decoration:line-through; color:#9aa6b5; }
+    .kq-round { margin: 16px 0; }
+    .kq-round-title { font-size:13px; font-weight:700; color:#1f4e79; margin:0 0 6px; display:flex; align-items:center; gap:8px; }
+    .kq-round-title .kq-bye { font-size:11px; font-weight:500; color:#8a6d1a; background:#fff6df; border-radius:6px; padding:2px 8px; }
+    table.kq-cards { width:100%; border-collapse:separate; border-spacing:8px; table-layout:fixed; }
+    table.kq-cards td.match { border:1px solid #d5deea; border-radius:10px; background:#f9fbff; vertical-align:top; }
+    .amp { color:#8393a8; font-weight:400; padding:0 3px; }
+    @media print { table.kq-cards { border-spacing:2mm; } }
+  </style>
+  <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
+       Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
+</head>
+<body>
+
+<div class="noprint" style="margin:0 0 8px">
+  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a>
+  <a id="formatDoc" href="docs/format-king-queen.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a>
+</div>
+
+<h1 id="h-title">King &amp; Queen</h1>
+<p class="sub" id="h-sub">Mixed-Event · Einzelpersonen · 2 gegen 2 mit rotierenden Team-Partner:innen · getrennte Herren-/Damen-Rangliste</p>
+
+<!-- ======================= SEITE 1 ======================= -->
+<div class="guide" id="guideContainer">
+  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <ol>
+    <li><span class="hi">Prinzip:</span> Alle Personen treten <b>einzeln</b> an. Jede Runde bilden sich neue
+      2er-Teams: die aktuell stärkste Person spielt mit der aktuell schwächsten zusammen (Ausgleichs-Team),
+      Herren, Damen und Niveaustufen werden dabei gemeinsam berücksichtigt.</li>
+    <li><span class="hi">Niveau:</span> <span id="g-level">–</span></li>
+    <li><span class="hi">Pro Spiel:</span> <span id="g-mode">–</span></li>
+    <li><span class="hi">Ablauf je Runde:</span> Paarungen laut Plan aufrufen, alle Spiele gleichzeitig
+      austragen, danach das Ergebnis in die Kästchen eintragen.</li>
+    <li><span class="hi">Wertung je Person:</span> Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0
+      (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei Gleichstand entscheidet die Ball-Differenz.
+      Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</li>
+    <li><span class="hi">Freilos:</span> <span id="g-bye">–</span></li>
+  </ol>
+</div>
+
+<div class="noprint cfgcard" id="configSection">
+  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-grid">
+    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span>
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="cfgfield-row">
+      <label class="cfgfield"><span class="cfg-lbl">♂ Herren</span><select id="menCount"></select></label>
+      <label class="cfgfield"><span class="cfg-lbl">♀ Damen</span><select id="womenCount"></select></label>
+      <label class="cfgfield" id="roundCountField"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> Runden</span>
+        <select id="roundCount"></select>
+      </label>
+      <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder</span>
+        <select id="fieldCount"></select>
+      </label>
+    </div>
+    <label class="cfgfield cfgfield--mode"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> Satzmodus</span>
+      <select id="setMode"></select>
+    </label>
+    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Start</span>
+      <input type="time" id="startTime" value="10:00">
+    </label>
+    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> Ende</span>
+      <input type="time" id="endTime" value="14:00">
+    </label>
+  </div>
+
+  <div class="cfgresult" id="cfgResult">
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-participants">–</span><span class="cfgres-lbl">Teilnehmer:innen</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl">Spiele gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perPerson">–</span><span class="cfgres-lbl">Spiele pro Person (ca.)</span></div>
+    <div class="cfgres-item">
+      <span class="cfgres-val" id="rv-fields">–</span>
+      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
+      <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+    </div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
+  </div>
+
+  <div class="cfgcard-actions">
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Namen &amp; Niveau</button>
+    <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <span class="spacer"></span>
+    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
+  </div>
+</div>
+
+<div id="noticeBox"></div>
+
+<div class="row" id="rosterSection">
+  <div style="flex:0 0 48%">
+    <table class="roster" id="menRoster">
+      <caption><span class="cap-title">Herren</span></caption>
+      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th></tr></thead>
+      <tbody id="menRosterBody"></tbody>
+    </table>
+  </div>
+  <div style="flex:0 0 48%">
+    <table class="roster" id="womenRoster">
+      <caption><span class="cap-title">Damen</span></caption>
+      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th></tr></thead>
+      <tbody id="womenRosterBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<h2>Spielplan &amp; Ergebnisse</h2>
+<div id="roundsContainer"></div>
+
+<!-- ======================= SEITE 2 ======================= -->
+<div class="page-break"></div>
+
+<h1 id="standingsSection">Endwertung</h1>
+<p class="sub">King (Herren) und Queen (Damen) werden getrennt gewertet – es gibt keine gemeinsame Mixed-Rangliste.</p>
+
+<div class="row" id="standingsTables">
+  <div class="table-scroll" style="flex:1 1 46%">
+    <table class="stand" id="menStandTable" data-mstd-key="kq-men">
+      <caption><span class="cap-title">King – Herren</span></caption>
+      <tbody></tbody>
+    </table>
+    <p class="input-hint" id="hintMen"></p>
+  </div>
+  <div class="table-scroll" style="flex:1 1 46%">
+    <table class="stand" id="womenStandTable" data-mstd-key="kq-women">
+      <caption><span class="cap-title">Queen – Damen</span></caption>
+      <tbody></tbody>
+    </table>
+    <p class="input-hint" id="hintWomen"></p>
+  </div>
+</div>
+
+<div class="legend" id="h-legend"></div>
+
+<script src="core/turnier-core.js"></script>
+<script src="core/turnier-format.js"></script>
+<script src="core/turnier-store.js"></script>
+<script src="core/turnier-archive.js"></script>
+<script src="core/turnier-ui.js"></script>
+<script>
+(function(){
+  'use strict';
+  const SHEET = 'kingqueen';
+  const $ = id => document.getElementById(id);
+
+  const DEFAULTS = { men:4, women:4, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', setMode:'21', levels:{} };
+  const SHEET_FILE = 'Turnierbogen_King_Queen.html';
+  const SHEET_TYPE = 'King & Queen';
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+    ));
+  }
+
+  /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
+  function archiveOpts(){
+    const cur = TStore.load(SHEET, DEFAULTS);
+    const names = cur.teamNames || {};
+    const men = +cur.config.men || 0, women = +cur.config.women || 0;
+    const roster = [];
+    for(let i=1;i<=Math.min(4, men+women);i++) roster.push(names[i] || ('Person ' + i));
+    const empty = !Object.keys(cur.results || {}).length
+      && !Object.keys(cur.teamNames || {}).length
+      && !(cur.absent || []).length;
+    return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
+             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:roster };
+  }
+  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+
+  let S = TStore.load(SHEET, DEFAULTS);
+  S.config.levels = S.config.levels || {};
+
+  const MSTD = TUI.initManualEditing(document, {
+    get: () => S,
+    save: t => TStore.save(t),
+    repaint: () => paint()
+  });
+
+  function applyDocTitle(){
+    const total = getMenCount() + getWomenCount();
+    const info = total + ' Pers.';
+    document.title = TArchive.docTitle(S.title, SHEET_TYPE, info);
+    const h = $('h-title');
+    if(h) h.innerHTML = TArchive.headTitleHtml(S.title, SHEET_TYPE);
+    document.body.setAttribute('data-bar-title', SHEET_TYPE + ' · ' + info);
+  }
+  const AUTO_TITLE_RE = /^King & Queen – (\d{2}\.\d{2}\.\d{4})$/;
+  function syncAutoTitle(){
+    if(!S.title) return false;
+    return false; // ein einziger Turniertyp - kein Wechsel noetig, den der Titel nachziehen muesste
+  }
+
+  let B = null;
+  let structureKey = '';
+
+  function getMenCount(){ return +$('menCount').value; }
+  function getWomenCount(){ return +$('womenCount').value; }
+  function playerName(id){ return (S.teamNames && S.teamNames[id]) || (id <= getMenCount() ? 'Herr ' + id : 'Dame ' + (id - getMenCount())); }
+  function playerLevel(id){ return (S.config.levels && S.config.levels[id]) || TFormat.KQ_LEVEL_DEFAULT; }
+  function playerLabel(id){ return playerName(id) + ' (N' + playerLevel(id) + ')'; }
+  function playerNameHtml(id){
+    const abs = (S.absent || []).includes(id);
+    return '<span class="t-line">' + esc(playerName(id)) + '</span>'
+      + '<span class="lvbadge">N' + playerLevel(id) + '</span>'
+      + (abs ? ' <span class="abt">ausgefallen</span>' : '');
+  }
+  function ctxFor(setMode){
+    return {
+      setMode: setMode,
+      playerNameHtml: playerNameHtml,
+      teamNameHtml: playerNameHtml,
+      teamLabel: playerName
+    };
+  }
+
+  /* -------------------------------------------------------- Konfiguration */
+  function fillSelects(){
+    const m = $('menCount'), w = $('womenCount'), rc = $('roundCount'), sm = $('setMode');
+    if(!m.options.length){
+      for(let n=0;n<=16;n++) m.add(new Option(n + (n===1?' Herr':' Herren'), n));
+      for(let n=0;n<=16;n++) w.add(new Option(n + (n===1?' Dame':' Damen'), n));
+      for(let n=1;n<=10;n++) rc.add(new Option(n + (n===1?' Runde':' Runden'), n));
+      TC.SET_MODES.forEach(md => sm.add(new Option(md.label, md.id)));
+    }
+    m.value = String(S.config.men);
+    w.value = String(S.config.women);
+    rc.value = String(S.config.rounds);
+    /* Feldauswahl richtet sich nach der maximal moeglichen Zahl gleichzeitiger
+       Spiele (= Anzahl 2er-Teams / 2) - genau wie bei den anderen Boegen. */
+    const teamsForFields = Math.floor((getMenCount() + getWomenCount()) / 2);
+    S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
+    sm.value = S.config.setMode;
+    $('startTime').value = S.config.startTime || '10:00';
+    $('endTime').value = S.config.endTime || '14:00';
+    $('session-title-input').value = S.title || '';
+  }
+
+  function readConfig(){
+    S.config.men = getMenCount();
+    S.config.women = getWomenCount();
+    S.config.rounds = +$('roundCount').value;
+    S.config.fields = +$('fieldCount').value;
+    S.config.setMode = $('setMode').value;
+    S.config.startTime = $('startTime').value || '10:00';
+    S.config.endTime = $('endTime').value || '14:00';
+    syncAutoTitle();
+  }
+
+  function compute(){
+    B = TFormat.buildKingQueen({
+      men: getMenCount(), women: getWomenCount(),
+      rounds: S.config.rounds, fields: S.config.fields,
+      startTime: S.config.startTime, setMode: S.config.setMode,
+      levels: S.config.levels, absent: S.absent, results: S.results
+    });
+    return B;
+  }
+
+  function keyOf(){
+    if(!B) return '';
+    return B.rounds.map(r => r.round + ':'
+      + r.matches.map(m => m.id + '@' + m.teamA.join('-') + '_' + m.teamB.join('-')).join(',')
+      + '/' + (r.bye || []).join('-')).join('|');
+  }
+
+  function valueOf(mid, set, side){
+    const r = S.results[mid];
+    const v = r && r[set-1] ? r[set-1][side === 'a' ? 0 : 1] : null;
+    return v == null ? '' : String(v);
+  }
+
+  function rebuild(){
+    compute();
+    const k = keyOf();
+    if(k !== structureKey){
+      structureKey = k;
+      const a = document.activeElement;
+      const keep = (a && a.classList && a.classList.contains('score'))
+        ? { mid:a.getAttribute('data-mid'), set:a.getAttribute('data-set'),
+            side:a.getAttribute('data-side'), start:a.selectionStart } : null;
+      buildStructure();
+      if(keep){
+        const el = $('roundsContainer').querySelector('input.score[data-mid="'+keep.mid
+          + '"][data-set="'+keep.set+'"][data-side="'+keep.side+'"]');
+        if(el && !el.disabled){
+          el.value = valueOf(keep.mid, +keep.set, keep.side);
+          el.focus();
+          try { el.setSelectionRange(keep.start, keep.start); } catch(e){}
+        }
+      }
+    }
+    paint();
+  }
+
+  function kqCellHtml(m, ctx){
+    const setCnt = TC.modeDef(ctx.setMode).sets;
+    const deciding = TC.hasDecidingSet(ctx.setMode);
+    const names = { a: m.teamA.map(playerName).join(' & '), b: m.teamB.map(playerName).join(' & ') };
+    let sets = TUI.setColumnHtml(m.id, 1, setCnt <= 1 ? 'Punkte' : 'Satz 1', null, names);
+    if(setCnt >= 2) sets += TUI.setColumnHtml(m.id, 2, 'Satz 2', null, names);
+    if(deciding) sets += TUI.setColumnHtml(m.id, 3, 'Entsch.', 'TB', names);
+
+    const side = (cls, players) => '<span class="pside ' + cls + '">'
+      + '<span class="t ' + (cls === 'pside-a' ? 't-a' : 't-b') + '">'
+      + players.map(p => ctx.playerNameHtml(p)).join('<span class="amp">&amp;</span>')
+      + '</span></span>';
+
+    return '<td class="match" data-mid="' + esc(m.id) + '" data-round="' + m.round + '">'
+      + '<span class="pair">'
+      + '<span class="pnames">' + side('pside-a', m.teamA) + side('pside-b', m.teamB) + '</span>'
+      + '<span class="psets">' + sets + '</span>'
+      + '<span class="presult">'
+      + '<span class="mres mres-a"><span class="mscore" data-score="a"></span><span class="tdiff" data-diff="a"></span></span>'
+      + '<span class="mres mres-b"><span class="tdiff" data-diff="b"></span><span class="mscore" data-score="b"></span></span>'
+      + '</span>'
+      + '<span class="mnote-slot" data-note></span>'
+      + '</span></td>';
+  }
+
+  function buildStructure(){
+    const ctx = ctxFor(S.config.setMode);
+    let html = '';
+    B.rounds.forEach(rd => {
+      const byeNote = (rd.bye && rd.bye.length)
+        ? '<span class="kq-bye">Pause: ' + rd.bye.map(p => esc(playerName(p))).join(', ') + '</span>' : '';
+      html += '<div class="kq-round" data-round-block="' + rd.round + '">'
+        + '<div class="kq-round-title">Runde ' + rd.round + byeNote + '</div>'
+        + '<table class="kq-cards"><tbody><tr>'
+        + rd.matches.map(m => kqCellHtml(m, ctx)).join('')
+        + '</tr></tbody></table></div>';
+    });
+    $('roundsContainer').innerHTML = html || '<p class="notebox">Zu wenige Teilnehmer:innen für ein Match.</p>';
+    buildRoster();
+  }
+
+  function buildRoster(){
+    const men = getMenCount(), women = getWomenCount();
+    const absentSet = new Set(S.absent || []);
+    const row = (id, label) => {
+      const lvl = playerLevel(id);
+      let opts = '';
+      TFormat.KQ_LEVELS.forEach(l => { opts += '<option value="' + l + '"' + (l === lvl ? ' selected' : '') + '>N' + l + '</option>'; });
+      return '<tr data-player-row="' + id + '"' + (absentSet.has(id) ? ' class="is-absent"' : '') + '>'
+        + '<td class="num">' + label + '</td>'
+        + '<td class="rname"><input data-name-input="' + id + '" value="' + esc((S.teamNames && S.teamNames[id]) || '') + '" placeholder="' + (id <= men ? 'Herr ' : 'Dame ') + label + '" autocomplete="off" spellcheck="false"></td>'
+        + '<td class="rlevel"><select data-level-input="' + id + '">' + opts + '</select></td>'
+        + '<td class="rabsent"><input type="checkbox" data-absent-input="' + id + '"' + (absentSet.has(id) ? ' checked' : '') + '></td>'
+        + '</tr>';
+    };
+    let menHtml = '';
+    for(let i=1;i<=men;i++) menHtml += row(i, i);
+    $('menRosterBody').innerHTML = menHtml;
+    let womenHtml = '';
+    for(let i=1;i<=women;i++) womenHtml += row(men + i, i);
+    $('womenRosterBody').innerHTML = womenHtml;
+  }
+
+  function paintRounds(){
+    B.rounds.forEach(rd => rd.matches.forEach(m => {
+      const td = $('roundsContainer').querySelector('[data-mid="' + m.id + '"]');
+      if(!td) return;
+      const ctx = ctxFor(S.config.setMode);
+      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
+      if(a) a.innerHTML = m.teamA.map(p => playerNameHtml(p)).join('<span class="amp">&amp;</span>');
+      if(b) b.innerHTML = m.teamB.map(p => playerNameHtml(p)).join('<span class="amp">&amp;</span>');
+      td.querySelectorAll('input.score').forEach(inp => {
+        const set = +inp.getAttribute('data-set');
+        const side = inp.getAttribute('data-side');
+        const v = valueOf(m.id, set, side);
+        if(document.activeElement !== inp) inp.value = v;
+      });
+      TUI.paintMatch(td, m.result, ctx);
+      TUI.markScoreInputs(td, ctx.setMode);
+    }));
+  }
+
+  function paintRoster(){
+    document.querySelectorAll('[data-player-row]').forEach(tr => {
+      const id = +tr.getAttribute('data-player-row');
+      tr.classList.toggle('is-absent', (S.absent || []).includes(id));
+    });
+  }
+
+  function paintStandings(){
+    const ctx = ctxFor(S.config.setMode);
+    const paintOne = (tableKey, ranked, tblId, captionText, hintId) => {
+      const tbl = $(tblId);
+      const manual = TStore.getManualStandings(S, tableKey);
+      const editable = MSTD.isEditing(tableKey);
+      tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span></caption>'
+        + TUI.standingsTableHtml(ranked, ctx, { manual, editable });
+      const hint = $(hintId);
+      if(hint) hint.innerHTML = MSTD.toolbarHtml(tableKey);
+    };
+    paintOne('kq-men', B.men, 'menStandTable', 'King – Herren', 'hintMen');
+    paintOne('kq-women', B.women, 'womenStandTable', 'Queen – Damen', 'hintWomen');
+  }
+
+  function paintGuide(){
+    $('g-level').textContent = 'Jede Person hat ein Niveau (N2 schwächste bis N5 stärkste). Die '
+      + 'Ausgleichs-Teams berücksichtigen Punktestand, Ball-Differenz und Niveau, damit jedes Team '
+      + 'im Schnitt ähnlich stark ist.';
+    $('g-mode').textContent = TC.modeDef(S.config.setMode).label + '.';
+    $('g-bye').textContent = 'Bei ungerader Teilnehmerzahl pausiert automatisch eine Person bzw. ein Team.';
+  }
+
+  function paintNotices(){
+    const box = $('noticeBox');
+    const msgs = (B.warnings || []).concat(B.notes || []);
+    const overEnd = TC.toMin(S.config.endTime);
+    let overflow = false;
+    if(overEnd != null && B.endMin > overEnd){
+      overflow = true;
+      msgs.push('Der Zeitplan endet um ' + TC.fromMin(B.endMin) + ' und überschreitet damit die geplante Endzeit '
+        + S.config.endTime + '. Mehr Felder wählen oder einen kürzeren Satzmodus.');
+    }
+    if(!msgs.length){ box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="notebox noprint' + ((B.warnings || []).length || overflow ? ' is-warn' : '') + '"><ul>'
+      + msgs.map(m => '<li>' + esc(m) + '</li>').join('') + '</ul></div>';
+  }
+
+  function paintLegend(){
+    $('h-legend').innerHTML = '<strong>Regel:</strong> jede Runde bilden Ausgleichs-Teams aus 2 Personen '
+      + '(stärkste/r + schwächste/r der aktuellen Rangliste – Niveau fließt als zusätzliches Kriterium ein), '
+      + 'Teams treten 2 gegen 2 gegeneinander an. Punkte des Team-Ergebnisses zählen für <em>beide</em> '
+      + 'Team-Mitglieder einzeln (Sieg = 2, Unentschieden = 1, Niederlage = 0; bei Gleichstand entscheidet '
+      + 'die Ball-Differenz). Es gibt <strong>getrennte Einzel-Ranglisten</strong> (King = Herren, Queen = Damen) '
+      + '– keine gemeinsame Mixed-Wertung. Bei ungerader Teilnehmerzahl pausiert je Runde automatisch eine '
+      + 'Person bzw. ein Team.';
+  }
+
+  function paintCfgResult(){
+    const menCnt = getMenCount(), womenCnt = getWomenCount();
+    const total = menCnt + womenCnt;
+    const c = S.config;
+    $('rv-mode').textContent = TC.modeDef(c.setMode).label;
+    $('rv-participants').textContent = '♂' + menCnt + ' · ♀' + womenCnt + ' (' + total + ')';
+    $('rv-rounds').textContent = String(B.rounds.length);
+    const gamesTotal = B.rounds.reduce((n, r) => n + r.matches.length, 0);
+    $('rv-games').textContent = String(gamesTotal);
+    const activeCount = (B.activePlayers || []).length || 1;
+    const perPerson = Math.round((gamesTotal * 4 / activeCount) * 10) / 10;
+    $('rv-perPerson').textContent = Number.isFinite(perPerson) ? String(perPerson) : '–';
+    $('rv-fields').textContent = c.fields;
+    const win = TC.toMin(c.endTime) - TC.toMin(c.startTime);
+    const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[c.setMode], 10);
+    $('rv-fitFields').textContent = need ? ('mind. ' + need) : 'passt nicht';
+    TUI.fillTimeKpis({
+      slots: B.slots, startMin: B.startMin, needEndMin: B.endMin,
+      windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
+      setMode: c.setMode, games: gamesTotal, modeLabel: TC.modeDef(c.setMode).label
+    });
+  }
+
+  function paint(){
+    paintRounds();
+    paintRoster();
+    paintStandings();
+    paintGuide();
+    paintNotices();
+    paintLegend();
+    paintCfgResult();
+    if($('session-title-input').value !== (S.title || '')) $('session-title-input').value = S.title || '';
+    applyDocTitle();
+  }
+
+  function save(){ TStore.save(S); }
+
+  function wire(){
+    $('session-title-input').addEventListener('input', e => {
+      S.title = e.target.value; save(); applyDocTitle();
+    });
+    ['menCount','womenCount'].forEach(id => {
+      $(id).addEventListener('change', () => {
+        readConfig();
+        /* Feldauswahl an die neue Teilnehmerzahl anpassen (max. Teams/2 Spiele parallel). */
+        const teamsForFields = Math.floor((getMenCount() + getWomenCount()) / 2);
+        S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
+        S.config.fields = +$('fieldCount').value;
+        save(); structureKey=''; rebuild();
+      });
+    });
+    ['roundCount','fieldCount','setMode','startTime','endTime'].forEach(id => {
+      $(id).addEventListener('change', () => { readConfig(); save(); structureKey=''; rebuild(); });
+    });
+
+    $('btnToggleNames').addEventListener('click', () => {
+      const box = $('rosterSection');
+      if(box) box.hidden = !box.hidden;
+    });
+    $('btnClearScores').addEventListener('click', () => {
+      if(!confirm('Alle eingetragenen Ergebnisse löschen? Namen und Konfiguration bleiben erhalten.')) return;
+      TStore.clearScores(S); save(); structureKey=''; rebuild();
+    });
+    $('btnReset').addEventListener('click', () => {
+      if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+      const started = TArchive.startNew(archiveOpts());
+      TStore.reset(SHEET);
+      S = TStore.load(SHEET, DEFAULTS);
+      S.title = started.title;
+      save();
+      fillSelects(); structureKey=''; rebuild();
+    });
+    $('btnSave').addEventListener('click', () => {
+      const ok = save();
+      const b = $('btnSave'); const old = b.textContent;
+      b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
+      setTimeout(()=>{ b.textContent = old; }, 1500);
+    });
+
+    document.addEventListener('input', e => {
+      if(e.target.matches('[data-name-input]')){
+        const id = +e.target.getAttribute('data-name-input');
+        S.teamNames = S.teamNames || {};
+        const v = e.target.value.trim();
+        if(v) S.teamNames[id] = v; else delete S.teamNames[id];
+        save(); paintRounds(); paintStandings();
+      }
+    });
+    document.addEventListener('change', e => {
+      if(e.target.matches('[data-level-input]')){
+        const id = +e.target.getAttribute('data-level-input');
+        S.config.levels = S.config.levels || {};
+        S.config.levels[id] = +e.target.value;
+        save(); structureKey=''; rebuild();
+      }
+      if(e.target.matches('[data-absent-input]')){
+        const id = +e.target.getAttribute('data-absent-input');
+        S.absent = S.absent || [];
+        const i = S.absent.indexOf(id);
+        if(e.target.checked){ if(i < 0) S.absent.push(id); }
+        else if(i >= 0) S.absent.splice(i, 1);
+        save(); structureKey=''; rebuild();
+      }
+    });
+
+    const onScore = (mid, set, side, val) => {
+      TStore.setScore(S, mid, set, side, val);
+      save();
+      rebuild();
+    };
+    onScore.setMode = () => S.config.setMode;
+    TUI.wireScoreInputs($('roundsContainer'), onScore);
+  }
+
+  fillSelects();
+  readConfig();
+  wire();
+  rebuild();
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+<script src="appbar.js" defer></script>
+<script src="spielplan-enh.js"></script>
+</body>
+</html>

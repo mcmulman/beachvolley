@@ -358,6 +358,206 @@
     return 'Runde ' + r;
   }
 
+  /* --- 3.4b Doppel-K.-o.-Baum (Double Elimination) --------------------------
+     Zusaetzlich zum reinen Single-Elimination-Baum (genBracket) eine
+     Gewinner-Runde (WB) + Verlierer-Runde (LB) + Grand Final mit
+     Bracket-Reset. Ein Team scheidet erst nach der ZWEITEN Niederlage aus:
+       - Verliert ein Team in der Gewinner-Runde, faellt es in die
+         Verlierer-Runde (statt auszuscheiden).
+       - Verliert ein Team dort ein zweites Mal, scheidet es aus.
+       - Im Grand Final trifft der Gewinner-Runden-Champion (0 Niederlagen)
+         auf den Verlierer-Runden-Champion (1 Niederlage). Gewinnt der
+         Gewinner-Runden-Champion, ist das Turnier entschieden. Gewinnt der
+         Verlierer-Runden-Champion, hat nun auch der bisherige Sieger erst
+         EINE Niederlage - ein zweites, entscheidendes Spiel (Reset) ist dann
+         zwingend (Standard-DE-Regel, siehe docs/format-double-elimination.html).
+     Freilose in Runde 1 der Gewinner-Runde haben keinen echten Verlierer -
+     dafuer traegt die Verlierer-Runde denselben {k:'bye'}-Platzhalter wie der
+     Gewinner-Baum (siehe genBracket), damit ein Freilos nie ein Phantom-Spiel
+     in der Verlierer-Runde erzwingt.
+     Rueckgabe: { size, byes, wbRounds, lbRounds, grandFinal:{m1,m2}, rounds }
+     rounds ist die Spielreihenfolge (WB/LB verschraenkt) fuer Zeitplan/Druck. */
+  function pairRefs(refs, idPrefix, round) {
+    const matches = [];
+    for (let i = 0; i < refs.length; i += 2) {
+      matches.push({ id: idPrefix + '_' + (matches.length + 1), round, a: refs[i], b: refs[i + 1] });
+    }
+    return matches;
+  }
+  function zipRefs(a, b, idPrefix, round) {
+    const matches = [];
+    for (let i = 0; i < a.length; i++) {
+      matches.push({ id: idPrefix + '_' + (matches.length + 1), round, a: a[i], b: b[i] });
+    }
+    return matches;
+  }
+  /* Haengt bei ungerader Laenge ein {k:'bye'} an, damit pairRefs() paarweise
+     aufgeht (die Verlierer-Runde erlaubt ungerade Teilnehmerzahlen je Runde,
+     anders als der reine Zweierpotenz-Gewinnerbaum). */
+  function padEven(refs) {
+    const list = refs.slice();
+    if (list.length % 2 === 1) list.push({ k: 'bye' });
+    return list;
+  }
+  /* Gleicht zwei Listen vor dem Zippen auf dieselbe Laenge aus (mit Freilos
+     aufgefuellt). Noetig, weil Freilose in Gewinner-Runde 1 dazu fuehren
+     koennen, dass die Verlierer-Runde nicht bei jedem Schritt exakt halb so
+     viele Teilnehmer hat wie im freilosfreien Standardfall. */
+  function padTo(refs, len) {
+    const list = refs.slice();
+    while (list.length < len) list.push({ k: 'bye' });
+    return list;
+  }
+
+  function genDoubleBracket(seeds, opts) {
+    const o = opts || {};
+    const n = seeds.length;
+    let size = 1;
+    while (size < n) size *= 2;
+    const order = bracketSeedOrder(size);
+    const prefix = o.idPrefix || 'de';
+    const roundCount = Math.log2(size);
+
+    // --- Gewinner-Runde (WB): baugleich zu genBracket, ohne Spiel um Platz 3 */
+    const wbRounds = [];
+    let first = [];
+    for (let i = 0; i < size; i += 2) {
+      const sa = order[i], sb = order[i + 1];
+      first.push({
+        id: prefix + '_wb_r1_' + (first.length + 1),
+        round: 1,
+        a: sa <= n ? seeds[sa - 1] : { k: 'bye' },
+        b: sb <= n ? seeds[sb - 1] : { k: 'bye' },
+        seedA: sa, seedB: sb
+      });
+    }
+    wbRounds.push({ round: 1, label: roundLabel(roundCount, 1), matches: first });
+    for (let r = 2; r <= roundCount; r++) {
+      const prev = wbRounds[r - 2].matches;
+      const matches = [];
+      for (let i = 0; i < prev.length; i += 2) {
+        matches.push({
+          id: prefix + '_wb_r' + r + '_' + (matches.length + 1),
+          round: r,
+          a: { k: 'win', match: prev[i].id },
+          b: { k: 'win', match: prev[i + 1].id }
+        });
+      }
+      wbRounds.push({ round: r, label: roundLabel(roundCount, r), matches });
+    }
+
+    if (roundCount < 2) {
+      // Unter 4 Teams gibt es keine sinnvolle Verlierer-Runde (siehe build()).
+      return { size, byes: size - n, wbRounds, lbRounds: [], grandFinal: null, rounds: wbRounds.slice() };
+    }
+
+    // --- Verlierer-Runde (LB) ------------------------------------------
+    const lbRounds = [];
+    let lbRoundNo = 0;
+    let prevWinners = null; // TeamRef[] – Ueberlebende der Verlierer-Runde
+    for (let i = 1; i <= roundCount - 1; i++) {
+      const wbMatches = wbRounds[i - 1].matches;
+      /* NUR echte Verlierer faellt in die Verlierer-Runde. Ein Freilos-Spiel
+         (moeglich ausschliesslich in Gewinner-Runde 1) hat keinen Verlierer
+         und erzeugt deshalb GAR KEINEN Eintrag – nicht einmal einen
+         Freilos-Platzhalter, sonst koennten zwei Freilose direkt
+         aufeinandertreffen (Phantom-Spiel ohne jedes Team). */
+      const realLosers = wbMatches
+        .filter(m => !((m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye')))
+        .map(m => ({ k: 'lose', match: m.id }));
+
+      if (prevWinners === null) {
+        lbRoundNo++;
+        const matches = pairRefs(padEven(realLosers), prefix + '_lb_r' + lbRoundNo, lbRoundNo);
+        lbRounds.push({ round: lbRoundNo, label: 'Verlierer-Runde ' + lbRoundNo, matches });
+        prevWinners = matches.map(m => ({ k: 'win', match: m.id }));
+      } else {
+        lbRoundNo++;
+        /* Die neuen Verlierer werden umgekehrt gegen die bisherigen
+           Verlierer-Runden-Sieger gesetzt - reduziert sofortige
+           Rueckspiele derselben Gewinner-Runde (uebliche DE-Konvention,
+           kein FIVB-Standard – siehe docs/format-double-elimination.html).
+           Bei ungleicher Anzahl (durch Freilose in Runde 1 moeglich) wird
+           die kuerzere Seite mit Freilosen aufgefuellt. */
+        const mixLen = Math.max(prevWinners.length, realLosers.length);
+        const aSide = padTo(prevWinners, mixLen);
+        const bSide = padTo(realLosers.slice().reverse(), mixLen);
+        const mixed = zipRefs(aSide, bSide, prefix + '_lb_r' + lbRoundNo, lbRoundNo);
+        lbRounds.push({ round: lbRoundNo, label: 'Verlierer-Runde ' + lbRoundNo, matches: mixed });
+        prevWinners = mixed.map(m => ({ k: 'win', match: m.id }));
+
+        if (prevWinners.length > 1) {
+          lbRoundNo++;
+          const reduced = pairRefs(padEven(prevWinners), prefix + '_lb_r' + lbRoundNo, lbRoundNo);
+          lbRounds.push({ round: lbRoundNo, label: 'Verlierer-Runde ' + lbRoundNo, matches: reduced });
+          prevWinners = reduced.map(m => ({ k: 'win', match: m.id }));
+        }
+      }
+    }
+    /* Sicherheitsnetz fuer ungewoehnliche Freilos-Verteilungen: im
+       freilosfreien Standardfall ist prevWinners hier bereits auf 1 Team
+       reduziert. Bleiben durch Freilose mehrere Ueberlebende uebrig, werden
+       sie vor dem Verlierer-Finale zusaetzlich zusammengefuehrt. */
+    while (prevWinners.length > 1) {
+      lbRoundNo++;
+      const reduced = pairRefs(padEven(prevWinners), prefix + '_lb_r' + lbRoundNo, lbRoundNo);
+      lbRounds.push({ round: lbRoundNo, label: 'Verlierer-Runde ' + lbRoundNo, matches: reduced });
+      prevWinners = reduced.map(m => ({ k: 'win', match: m.id }));
+    }
+
+    // Verlierer-Finale: letzter Verlierer-Runden-Ueberlebende gegen den
+    // Verlierer des Gewinner-Finales (das WB-Finale hat immer einen echten
+    // Verlierer, da dort kein Freilos mehr moeglich ist).
+    const wbFinal = wbRounds[roundCount - 1].matches[0];
+    lbRoundNo++;
+    const lbFinalMatch = {
+      id: prefix + '_lb_r' + lbRoundNo, round: lbRoundNo,
+      a: prevWinners[0], b: { k: 'lose', match: wbFinal.id }
+    };
+    lbRounds.push({ round: lbRoundNo, label: 'Verlierer-Finale', matches: [lbFinalMatch] });
+
+    // --- Grand Final (inkl. Reset-Regel) --------------------------------
+    const gf1 = {
+      id: prefix + '_gf1', round: roundCount + 1, label: 'Grand Final',
+      a: { k: 'win', match: wbFinal.id }, b: { k: 'win', match: lbFinalMatch.id }
+    };
+    const gf2 = {
+      id: prefix + '_gf2', round: roundCount + 2, label: 'Grand Final – Entscheidungsspiel (Reset)',
+      a: { k: 'win', match: wbFinal.id }, b: { k: 'win', match: lbFinalMatch.id },
+      reset: true, resetOf: gf1.id
+    };
+
+    // Sequentielle Spielreihenfolge fuer Zeitplan/Druck: WB-Runde, dann die
+    // dazugehoerige(n) LB-Runde(n) (Mix + ggf. Minor-Reduktion), am Ende
+    // Grand Final (+ Reset).
+    const rounds = [];
+    let rn = 0;
+    let lbCursor = 0;
+    for (let i = 0; i < wbRounds.length; i++) {
+      rn++;
+      rounds.push({ round: rn, label: wbRounds[i].label, matches: wbRounds[i].matches, phase: 'wb' });
+      if (i === 0) {
+        // Nach WB-Runde 1: die erste LB-Runde (reine Verlierer-Paarung)
+        if (lbRounds[lbCursor]) { rn++; rounds.push({ round: rn, label: lbRounds[lbCursor].label, matches: lbRounds[lbCursor].matches, phase: 'lb' }); lbCursor++; }
+      } else if (i < wbRounds.length - 1) {
+        // Mix-Runde + Minor-Reduktionsrunde (falls vorhanden)
+        if (lbRounds[lbCursor]) { rn++; rounds.push({ round: rn, label: lbRounds[lbCursor].label, matches: lbRounds[lbCursor].matches, phase: 'lb' }); lbCursor++; }
+        if (lbRounds[lbCursor] && lbRounds[lbCursor].label !== 'Verlierer-Finale') { rn++; rounds.push({ round: rn, label: lbRounds[lbCursor].label, matches: lbRounds[lbCursor].matches, phase: 'lb' }); lbCursor++; }
+      }
+    }
+    // Verlierer-Finale (letzte verbleibende LB-Runde)
+    while (lbCursor < lbRounds.length) {
+      rn++; rounds.push({ round: rn, label: lbRounds[lbCursor].label, matches: lbRounds[lbCursor].matches, phase: 'lb' }); lbCursor++;
+    }
+    rn++; rounds.push({ round: rn, label: gf1.label, matches: [gf1], phase: 'gf' });
+    rn++; rounds.push({ round: rn, label: gf2.label, matches: [gf2], phase: 'gf' });
+
+    return {
+      size, byes: size - n, wbRounds, lbRounds,
+      grandFinal: { m1: gf1, m2: gf2 }, rounds
+    };
+  }
+
   /* --- 3.5 Über-Kreuz-Platzierungsrunde -----------------------------------
      Standard-No-KO-Modus des Repos (AGENTS.md §5):
      Block k = A(2k-1) / A(2k) / B(2k-1) / B(2k), darin Über-Kreuz:
@@ -421,6 +621,225 @@
       }
     }
     return { blocks };
+  }
+
+  /* --- 3.6 Modified Pool Play (MPP) ----------------------------------------
+     AGENTS.md §1 „Modified Pool Play": Variante der Gruppenphase ohne volles
+     Round-Robin. In einer 4er-Gruppe spielt Setzplatz 1 gegen 4 und 2 gegen 3;
+     danach die Sieger gegeneinander um den Gruppensieg (Platz 1/2) und die
+     Verlierer gegeneinander um den Verbleib (Platz 3/4) - 4 Spiele statt 6.
+     Der Bracket ist strukturell dasselbe Muster wie der 4er-Block der
+     Über-Kreuz-Platzierungsrunde (§3.5 genPlacement, dort m1/m2/mw/ml) - hier
+     jedoch INNERHALB einer einzelnen Gruppe statt über Gruppen hinweg.
+
+     3er-Gruppen ("Bei 3er-Gruppen hat der Erstgesetzte ein Freilos im 1.
+     Spiel"): das volle Round-Robin für 3 Teams braucht ohnehin nur 3 Spiele
+     (mehr lässt sich nicht einsparen) UND genRoundRobin() gibt dem zuerst in
+     der Liste stehenden Team (= Setzplatz 1) bereits von selbst das Freilos
+     der ersten Runde (Circle-Methode: das erste Element bleibt fix, das
+     letzte trifft in Runde 1 auf Platzhalter 0). Für 3er-Gruppen wird deshalb
+     bewusst KEIN eigener Bracket gebaut, sondern genRoundRobin() wiederver-
+     wendet - identisch zur bestehenden Gruppenphase, nur mit dieser
+     Bye-Reihenfolge als Nebeneffekt. Die Platzierung läuft dann über die
+     normale Tabellen-/Tie-Breaker-Kette (§7/§8), nicht über Bracket-Position.
+
+     Andere Gruppengrößen (weder 3 noch 4) sind für "echtes" MPP nicht
+     vorgesehen (siehe docs/format-modified-pool-play.html) - damit ein
+     Turnier trotzdem nie abstürzt, degradiert genModifiedPoolPlay() für sie
+     ebenfalls auf volles Round-Robin (spart dann nichts, bleibt aber korrekt
+     und zeigt lediglich keinen Effizienzgewinn).
+
+     Rückgabe: { rounds, meta }
+       rounds – wie genGroupPhase(): [{round, matches, byes, bye}]
+       meta   – { [groupName]: { size, mode:'bracket'|'rr', matchIds? } }       */
+  function genModifiedPoolPlay(groups, opts) {
+    const o = opts || {};
+    const names = Object.keys(groups);
+    const perGroup = {};
+    const meta = {};
+    let maxRounds = 0;
+    names.forEach(n => {
+      const list = groups[n];
+      const prefix = (o.idPrefix || 'mpp') + n;
+      if (list.length === 4) {
+        const m1 = { id: prefix + '_x1', round: 1, a: list[0], b: list[3], stage: 'cross', label: 'Setzplatz 1 vs. 4' };
+        const m2 = { id: prefix + '_x2', round: 1, a: list[1], b: list[2], stage: 'cross', label: 'Setzplatz 2 vs. 3' };
+        const mw = {
+          id: prefix + '_w', round: 2, stage: 'final', label: 'Gewinnerspiel – Platz 1/2', places: [1, 2],
+          a: { k: 'win', match: m1.id }, b: { k: 'win', match: m2.id }
+        };
+        const ml = {
+          id: prefix + '_l', round: 2, stage: 'final', label: 'Verliererspiel – Platz 3/4', places: [3, 4],
+          a: { k: 'lose', match: m1.id }, b: { k: 'lose', match: m2.id }, mppLoserAware: true
+        };
+        perGroup[n] = [
+          { round: 1, matches: [m1, m2], bye: null },
+          { round: 2, matches: [mw, ml], bye: null }
+        ];
+        meta[n] = { size: 4, mode: 'bracket', matchIds: { m1: m1.id, m2: m2.id, mw: mw.id, ml: ml.id } };
+        if (2 > maxRounds) maxRounds = 2;
+      } else {
+        const rr = genRoundRobin(list, { idPrefix: prefix });
+        perGroup[n] = rr.map(rd => ({ round: rd.round, bye: rd.bye, matches: rd.matches }));
+        meta[n] = { size: list.length, mode: 'rr' };
+        if (rr.length > maxRounds) maxRounds = rr.length;
+      }
+    });
+    const rounds = [];
+    for (let r = 0; r < maxRounds; r++) {
+      const matches = [];
+      const byes = [];
+      names.forEach(n => {
+        const rd = perGroup[n][r];
+        if (!rd) return;
+        rd.matches.forEach(m => matches.push(Object.assign({}, m, { round: r + 1, group: n })));
+        if (rd.bye != null) byes.push(rd.bye);
+      });
+      rounds.push({ round: r + 1, matches, byes, bye: byes.length === 1 ? byes[0] : null });
+    }
+    return { rounds, meta };
+  }
+
+  /* --- 3.7 King/Queen of the Court -------------------------------------------
+     AGENTS.md §1 „King/Queen of the Court": Sonderform mit zeitlimitierten
+     Runden (meist 15 Min/Runde) statt Satz-Zielscore. Bewusst NICHT in
+     SET_MODES/setValid (Abschnitte 1+2 oben) integriert und diese Funktionen
+     bleiben unverändert - eine zeitlimitierte Runde kennt weder Zielpunktzahl
+     noch 2-Punkte-Vorsprung-Pflicht und kann UNENTSCHIEDEN enden (die Zeit
+     läuft einfach ab). Eigene, klar abgegrenzte Wertungsfunktionen:
+
+       kqValidScore(a,b)         – zwei nicht-negative Ganzzahlen, sonst nichts.
+       kqComputeRoundResult(a,b) – {aPts,bPts,winner:'a'|'b'|null,draw}
+                                   (winner null ⇔ draw true ⇔ Punktegleichstand)
+
+     FELD-/LEITER-MODELL (dokumentierte Design-Entscheidung, siehe auch
+     docs/format-king-of-the-court.html):
+     Jedes Feld (Feld 1 = Königs-/Königinnenfeld, Feld C = unterstes Feld) ist
+     im Normalfall mit GENAU 4 Teams besetzt (2 Beach-Doppel-Teams je Spiel,
+     2 Spiele je Feld) - Teamzahl also idealerweise 4 × Feldzahl (8/12/16/20
+     Teams bei 2/3/4/5 Feldern). Paarung innerhalb eines Feldes wie bei
+     Modified Pool Play (§3.6 genModifiedPoolPlay): Setzplatz 1 gegen 4,
+     Setzplatz 2 gegen 3.
+
+     Bewegregel nach jeder Runde - generalisiert die klassische Regel für
+     EIN Team pro Sieg/Niederlage (aus der Aufgabenstellung: "Sieger bleibt
+     oben, Verlierer steigt ab; unten Sieger steigt auf, Verlierer bleibt;
+     dazwischen Sieger auf, Verlierer ab") auf JE 2 Sieger/2 Verlierer, weil
+     hier 2 Spiele gleichzeitig auf einem Feld laufen:
+       - Königsfeld (Feld 1): beide Sieger BLEIBEN, beide Verlierer steigen
+         auf Feld 2 AB.
+       - unterstes Feld: beide Sieger steigen AUF (Feld C-1), beide Verlierer
+         BLEIBEN.
+       - Felder dazwischen: beide Sieger steigen eine Stufe AUF, beide
+         Verlierer steigen eine Stufe AB.
+       - Sonderfall genau 1 Feld: keine Leiter möglich - alle Teams bleiben
+         auf dem einen Feld, werden aber nach Rundenpunkten neu gesetzt
+         (Sieger vor Verlierer), damit sich die Paarungen ändern.
+
+     Nicht durch 4 teilbare Teamzahlen (z.B. weil die Gesamtzahl kein glattes
+     Vielfaches von 4×Feldzahl ist) werden NICHT abgelehnt, sondern fallen
+     auf ein "Feld-Freilos" zurück, damit nie ein Turnier abstürzt:
+       - 3 Teams auf einem Feld: 2 spielen gegeneinander (Sieger/Verlierer
+         nach obiger Regel), das dritte Team hat in dieser Runde Feld-Freilos
+         und bleibt unverändert auf seinem Feld stehen (zählt weder als Sieg
+         noch als Niederlage, keine Punkte).
+       - 5 Teams auf einem Feld: 4 spielen im MPP-Muster, das fünfte Team hat
+         analog Feld-Freilos.
+       - jede andere Größe (praktisch nur bei sehr ungewöhnlicher Konfigura-
+         tion/mehreren Ausfällen möglich): volles Rundenspiel aller Paare auf
+         diesem Feld, Bewegregel nutzt dann die Feld-interne Tabelle (obere
+         Hälfte = "Sieger", untere Hälfte = "Verlierer").
+     ========================================================================== */
+  function kqValidScore(a, b) {
+    return Number.isInteger(a) && Number.isInteger(b) && a >= 0 && b >= 0;
+  }
+  function kqComputeRoundResult(a, b) {
+    if (!kqValidScore(a, b)) return null;
+    return { aPts: a, bPts: b, winner: a > b ? 'a' : (b > a ? 'b' : null), draw: a === b };
+  }
+
+  /* Baut die Spiele EINES Feldes für eine Runde aus der aktuellen Setzung
+     (order = Teams auf diesem Feld, beste Setzung zuerst). Liefert
+     { matches:[{id,a,b}], byeTeam } - byeTeam nur bei 3/5 (oder ungerader
+     Restgröße) besetzt.                                                     */
+  function kqCourtMatches(order, idPrefix) {
+    const list = (order || []).slice();
+    const matches = [];
+    let byeTeam = null;
+    if (list.length === 2) {
+      matches.push({ id: idPrefix + '_m1', a: list[0], b: list[1] });
+    } else if (list.length === 4) {
+      matches.push({ id: idPrefix + '_m1', a: list[0], b: list[3] });
+      matches.push({ id: idPrefix + '_m2', a: list[1], b: list[2] });
+    } else if (list.length === 3) {
+      byeTeam = list[2];
+      matches.push({ id: idPrefix + '_m1', a: list[0], b: list[1] });
+    } else if (list.length === 5) {
+      byeTeam = list[4];
+      matches.push({ id: idPrefix + '_m1', a: list[0], b: list[3] });
+      matches.push({ id: idPrefix + '_m2', a: list[1], b: list[2] });
+    } else if (list.length === 1) {
+      byeTeam = list[0];
+    } else if (list.length > 0) {
+      /* Sonderfall (siehe Kommentar oben): volles Rundenspiel auf dem Feld. */
+      for (let i = 0; i < list.length; i++)
+        for (let j = i + 1; j < list.length; j++)
+          matches.push({ id: idPrefix + '_m' + (matches.length + 1), a: list[i], b: list[j] });
+    }
+    return { matches, byeTeam };
+  }
+
+  /* Ermittelt aus Sieger/Verlierer/Freilos JEDES Feldes einer Runde die neue
+     Feldbesetzung der Folgerunde (siehe Bewegregel oben).
+       winnersOf(courtIdx) → Team[]   (Reihenfolge irrelevant)
+       losersOf(courtIdx)  → Team[]
+       byeOf(courtIdx)     → Team|null (bleibt auf demselben Feld stehen)
+     Rückgabe: Team[][] mit courtCount Einträgen, Sieger/Freilos jeweils vor
+     den (neu ankommenden) Verlierern einsortiert, damit die nächste Runde
+     wieder im MPP-Muster (1v4/2v3) gepaart werden kann.                     */
+  function kqNextCourts(winnersOf, losersOf, byeOf, courtCount) {
+    const n = Math.max(1, courtCount | 0);
+    const next = [];
+    for (let k = 0; k < n; k++) next.push([]);
+    for (let k = 0; k < n; k++) {
+      const winners = winnersOf(k) || [];
+      const losers = losersOf(k) || [];
+      const bye = byeOf ? byeOf(k) : null;
+      if (bye != null) next[k].push(bye);
+      if (n === 1) {
+        next[0] = next[0].concat(winners, losers);
+      } else if (k === 0) {
+        next[0] = next[0].concat(winners);
+        next[1] = next[1].concat(losers);
+      } else if (k === n - 1) {
+        next[k - 1] = next[k - 1].concat(winners);
+        next[k] = next[k].concat(losers);
+      } else {
+        next[k - 1] = next[k - 1].concat(winners);
+        next[k + 1] = next[k + 1].concat(losers);
+      }
+    }
+    return next;
+  }
+
+  /* Erst-Setzung: verteilt Teams (in Setzlisten-Reihenfolge, Nr. 1 = Feld 1)
+     der Reihe nach auf die Felder (Feld 1 = beste Setzplätze = Königsfeld),
+     Restteams (falls Teamzahl kein glattes Vielfaches der Feldzahl ist)
+     wandern auf die UNTEREN Felder, damit das Königsfeld nie größer wird als
+     geplant.                                                                */
+  function kqInitialCourts(teams, courtCount) {
+    const list = normalizeTeamList(teams);
+    const n = Math.max(1, courtCount | 0);
+    const base = Math.floor(list.length / n);
+    const extra = list.length % n;
+    const courts = [];
+    let i = 0;
+    for (let k = 0; k < n; k++) {
+      const size = base + (k >= n - extra ? 1 : 0);
+      courts.push(list.slice(i, i + size));
+      i += size;
+    }
+    return courts;
   }
 
   /* ==========================================================================
@@ -835,7 +1254,9 @@
     SET_MODES, MODE_MIN, WIN_PTS, DRAW_PTS, LOSS_PTS,
     modeDef, isMulti, hasDecidingSet, targetForSet,
     setValid, computeResult,
-    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genPlacement,
+    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genDoubleBracket, genPlacement,
+    genModifiedPoolPlay,
+    kqValidScore, kqComputeRoundResult, kqCourtMatches, kqNextCourts, kqInitialCourts,
     bracketSeedOrder, pairKey, roundLabel,
     refLabel, resolveRef,
     assignSlots, computeSchedule, neededFields,

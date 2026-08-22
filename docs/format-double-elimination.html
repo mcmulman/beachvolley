@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doppel-K.-o.-System (Double Elimination) – Turnierformat-Erklärung</title>
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.65; color: #222; background: #f5f7fa; }
+.page { max-width: 760px; margin: 0 auto; padding: 24px 20px 56px; }
+.back-link { display: inline-block; margin-bottom: 20px; color: #1f4e79; text-decoration: none; font-size: 13px; font-weight: 600; }
+.back-link:hover { text-decoration: underline; }
+h1 { font-size: 26px; color: #1f4e79; margin-bottom: 4px; }
+.subtitle { color: #666; font-size: 14px; margin-bottom: 28px; }
+h2 { font-size: 17px; color: #1f4e79; margin: 28px 0 10px; border-bottom: 2px solid #e8edf3; padding-bottom: 6px; }
+h3 { font-size: 14px; font-weight: 700; color: #333; margin: 18px 0 6px; }
+p { margin-bottom: 10px; }
+ul, ol { padding-left: 20px; margin-bottom: 10px; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: #1f4e79; color: #fff; padding: 8px 10px; text-align: left; }
+td { padding: 7px 10px; border-bottom: 1px solid #e0e6ef; }
+tr:nth-child(even) td { background: #f0f4f9; }
+.tag { display: inline-block; background: #e8edf3; color: #1f4e79; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin: 2px; }
+.noprint { }
+@media print {
+  @page { size: A4; margin: 15mm 15mm; }
+  .noprint { display: none !important; }
+  body { background: #fff; font-size: 11pt; }
+  h1 { font-size: 18pt; }
+  h2 { font-size: 13pt; }
+}
+
+
+.wrap { background:#fff; border-radius:10px; box-shadow:0 10px 30px rgba(31,78,121,0.08); }
+.topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px; }
+.top-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.print-btn { border:1px solid #1f4e79; background:#fff; color:#1f4e79; border-radius:4px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; }
+.print-btn:hover { background:#f0f4f9; }
+.intro { margin-bottom:16px; }
+.nav { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 24px; }
+.nav a { color:#1f4e79; text-decoration:none; border:1px solid #d8e1ec; background:#f8fbff; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+.nav a:hover { text-decoration:underline; }
+.note { background:#f7fafd; border-left:4px solid #1f4e79; padding:10px 12px; margin:12px 0 0; }
+
+  </style>
+</head>
+<body>
+  <div class="page wrap">
+    <div class="topbar noprint">
+      <div>
+        <a class="back-link" href="../index.html">← Zur Übersicht</a>
+      </div>
+      <div class="top-actions">
+        <button class="print-btn" type="button" onclick="window.print()">Drucken</button>
+      </div>
+    </div>
+    <header class="intro">
+      <div>
+        <span class="tag">Turnierformat</span>
+        <span class="tag">Beachvolleyball</span>
+        <span class="tag">Double Elimination</span>
+      </div>
+      <h1>Doppel-K.-o.-System (Double Elimination)</h1>
+      <p class="subtitle">Turnierformat-Erklärung</p>
+    </header>
+    <nav class="nav noprint" aria-label="Inhaltsverzeichnis">
+      <a href="#ueberblick">Kurzübersicht</a><a href="#geeignet">Wann geeignet</a><a href="#ablauf">Ablauf</a><a href="#reset">Grand Final &amp; Reset</a><a href="#wertung">Wertung/Platzierung</a><a href="#vorteile">Vor- &amp; Nachteile</a>
+    </nav>
+
+<section id="ueberblick">
+  <h2>Kurzübersicht</h2>
+  <p>Beim Doppel-K.-o.-System (englisch <em>Double Elimination</em>, „Double-Out") scheidet ein Team erst nach der
+  <strong>zweiten Niederlage</strong> aus – nicht schon nach der ersten wie beim reinen KO-System. Wer in der
+  <strong>Gewinner-Runde</strong> verliert, fällt in die <strong>Verlierer-Runde</strong> und spielt dort weiter.
+  Erst eine zweite Niederlage (in der Verlierer-Runde) bedeutet das endgültige Ausscheiden. Am Ende trifft der
+  ungeschlagene Gewinner-Runden-Champion im <strong>Grand Final</strong> auf den Verlierer-Runden-Champion.</p>
+</section>
+<section id="geeignet">
+  <h2>Wann geeignet</h2>
+  <ul>
+    <li>Wenn ein einzelnes schlechtes Spiel nicht sofort das Turnier-Aus bedeuten soll</li>
+    <li>Bei überschaubarer Teamzahl (4–16 Teams, siehe „Ablauf") und ausreichend Zeit – ein Doppel-K.-o.-Baum
+      braucht deutlich mehr Spiele als ein einfacher KO-Baum</li>
+    <li>Für Turniere mit Wettkampfcharakter, bei denen Fairness gegenüber einem Ausrutscher wichtiger ist als
+      ein kurzer Zeitplan</li>
+    <li><strong>Nicht</strong> geeignet bei sehr engem Zeitfenster oder sehr vielen Teams – dort ist das reine
+      KO-System (<a href="format-ko-system.html">Turnierbogen KO-System</a>) oder eine Gruppenphase mit
+      anschließendem KO die bessere Wahl.</li>
+  </ul>
+</section>
+<section id="ablauf">
+  <h2>Ablauf</h2>
+  <p>Der Bogen unterscheidet drei Turnierteile:</p>
+  <ul>
+    <li><strong>Gewinner-Runde:</strong> ein normaler Einfach-K.-o.-Baum (wie beim reinen KO-System). Die
+      Setzliste (Teamnummer) wird auf die nächste Zweierpotenz mit Freilosen aufgefüllt; die Freilose gehen an
+      die bestgesetzten Teams.</li>
+    <li><strong>Verlierer-Runde:</strong> jedes Team, das in der Gewinner-Runde verliert, fällt hierher. Die
+      Verlierer-Runde besteht aus mehreren Runden, in denen abwechselnd (a) die bisherigen Verlierer-Runden-Sieger
+      untereinander spielen und (b) neu hinzukommende Verlierer aus der jeweils nächsten Gewinner-Runde
+      dazustoßen. Wer hier verliert, hat zwei Niederlagen und scheidet aus.</li>
+    <li><strong>Grand Final:</strong> der Sieger der Gewinner-Runde (0 Niederlagen) trifft auf den Sieger der
+      Verlierer-Runde (1 Niederlage). Siehe „Grand Final &amp; Reset" für die Entscheidungsregel.</li>
+  </ul>
+  <p>Ein Freilos in Runde 1 der Gewinner-Runde erzeugt keinen „Verlierer" – das entsprechende Team zieht kampflos
+  weiter und taucht nicht in der Verlierer-Runde auf (kein Phantom-Gegner).</p>
+  <p><strong>Empfohlene Teamzahl:</strong> 4–16 Teams. Ein Doppel-K.-o.-Baum benötigt etwa doppelt so viele
+  Spiele wie ein einfacher KO-Baum (2n-2 statt n-1 Spiele) – bei mehr als 16 Teams wird der Zeitbedarf selbst mit
+  mehreren Feldern schnell unrealistisch (vgl. Tableau-Richtwerte nach Feldanzahl in <code>AGENTS.md</code> §2).
+  Unter 4 Teams gäbe es keine sinnvolle Verlierer-Runde (schon im „Halbfinale" stünde ein Freilos).</p>
+</section>
+<section id="reset">
+  <h2>Grand Final &amp; Bracket-Reset</h2>
+  <p>Das Grand Final ist der einzige Programmpunkt, an dem die klassische Double-Elimination-Regel eine
+  Besonderheit kennt: Da der Gewinner-Runden-Champion bis hierhin <strong>noch keine</strong> Niederlage hat,
+  reicht ein einzelner Sieg des Verlierer-Runden-Champions <strong>nicht</strong> aus, um das Turnier zu
+  entscheiden – erst nach zwei Niederlagen scheidet ein Team endgültig aus.</p>
+  <ul>
+    <li>Gewinnt der <strong>Gewinner-Runden-Champion</strong> das Grand Final, ist das Turnier entschieden
+      (der Verlierer-Runden-Champion hat jetzt seine zweite Niederlage).</li>
+    <li>Gewinnt der <strong>Verlierer-Runden-Champion</strong>, hat der bisher ungeschlagene Gegner nun ebenfalls
+      erst eine Niederlage – es ist ein <strong>zweites, entscheidendes Spiel</strong> nötig
+      (der „Bracket-Reset" bzw. das „Entscheidungsspiel").</li>
+  </ul>
+  <p>Dieser Bogen setzt die vollständige Standard-Regel mit Reset-Spiel um (statt einer vereinfachten Variante
+  ohne Reset), weil das die etablierte, in Wettkampfregeln übliche Fassung von Double Elimination ist. Das
+  Reset-Spiel ist im Bogen immer als eigene Zeile angelegt, wird aber nur benötigt und gewertet, wenn genau dieser
+  Fall eintritt – der Bogen weist das deutlich aus.</p>
+</section>
+<section id="wertung">
+  <h2>Wertung / Platzierung</h2>
+  <p>Wie beim reinen KO-System (siehe <code>AGENTS.md</code> §7) gibt es für ausgeschiedene Teams
+  <strong>keine feste Rangliste</strong>, sondern Platzbereiche:</p>
+  <ul>
+    <li><strong>Platz 1/2:</strong> Sieger/Verlierer des entscheidenden Spiels im Grand Final (mit oder ohne Reset).</li>
+    <li><strong>Platz 3:</strong> Verlierer des Verlierer-Finales (der letzten Runde der Verlierer-Runde).</li>
+    <li><strong>ab Platz 4:</strong> alle Teams, die in derselben Runde der Verlierer-Runde ihre zweite
+      Niederlage kassiert haben, teilen sich denselben Platzbereich (z. B. „4.–5.").</li>
+  </ul>
+  <p>Diese Regel ist die direkte Übertragung der KO-Platzierungsregel auf Double Elimination: entscheidend ist
+  nicht die Runde der ERSTEN, sondern der ZWEITEN Niederlage – denn erst die beendet die Teilnahme.</p>
+</section>
+<section id="vorteile">
+  <h2>Vorteile / Nachteile</h2>
+  <table>
+    <thead>
+      <tr><th>Vorteile</th><th>Nachteile</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Ein einzelnes schwaches Spiel wirft ein Team nicht sofort raus</td><td>Deutlich mehr Spiele als beim einfachen KO-System (2n-2 statt n-1)</td></tr>
+      <tr><td>Faireres Gesamtergebnis, da Pech in einem Spiel ausgleichbar ist</td><td>Komplexerer, weniger auf den ersten Blick verständlicher Turnierbaum</td></tr>
+      <tr><td>Spannender Showdown im Grand Final (inkl. möglichem Reset-Spiel)</td><td>Zeitplan schwerer kalkulierbar, da ein Reset-Spiel optional dazukommen kann</td></tr>
+    </tbody>
+  </table>
+</section>
+
+  </div>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
