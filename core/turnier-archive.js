@@ -139,6 +139,13 @@
     return key;
   }
 
+  /* Schreibt einen rohen Schlüssel/Wert-Schnappschuss (siehe snapshot()) direkt
+     in den localStorage zurück. Wird von TShare beim Import eines geteilten
+     Turnier-Links genutzt – dieselbe Datenform wie beim Archivieren/Restore. */
+  function writeSnapshot(data) {
+    Object.keys(data || {}).forEach(k => writeRaw(k, data[k]));
+  }
+
   function meta(key) {
     if (!key) return null;
     try {
@@ -213,7 +220,7 @@
 
   return {
     ARCHIVE_PREFIX, REGISTRY_KEY,
-    newTitle, isAutoTitle, docTitle, headTitle, headTitleHtml, barTitle, sizeInfo, snapshot, save, meta, restore, remove, clearLive,
+    newTitle, isAutoTitle, docTitle, headTitle, headTitleHtml, barTitle, sizeInfo, snapshot, writeSnapshot, save, meta, restore, remove, clearLive,
     pendingRestore, clearPendingParam, applyPendingRestore, startNew,
     _readRegistry: readRegistry, _writeRegistry: writeRegistry
   };

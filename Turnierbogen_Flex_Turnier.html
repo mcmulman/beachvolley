@@ -181,6 +181,7 @@
     <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
     <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Teilen</button>
     <span class="spacer"></span>
     <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
   </div>
@@ -257,6 +258,7 @@
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
 <script src="core/turnier-archive.js"></script>
+<script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
 (function(){
@@ -342,6 +344,7 @@
              keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
   const initialMode = MODE_HINT || 'swiss';
   S = TStore.load(storageSheetId(initialMode), DEFAULTS);
@@ -1267,6 +1270,9 @@
       TStore.clearScores(S);
       S.frozen = {}; S.frozenModes = {};
       save(); structureKey=''; rebuild();
+    });
+    if($('btnShare')) $('btnShare').addEventListener('click', () => {
+      if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
     $('btnReset').addEventListener('click', () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
