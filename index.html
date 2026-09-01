@@ -119,6 +119,109 @@
       line-height: 1.5;
     }
 
+    /* ── Wizard: kompakte Format-Empfehlung für Einsteiger ── */
+    .wizard-wrap { max-width: 1080px; margin: 20px auto 24px; padding: 0 20px; }
+    .wizard {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: box-shadow .18s;
+    }
+    .wizard:hover { box-shadow: 0 8px 28px rgba(31,111,168,.2); }
+    .wizard-summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 14px 20px;
+      font-weight: 700;
+      font-size: 14.5px;
+      color: var(--blue-dark);
+      background: var(--blue-light);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+      transition: background .15s;
+    }
+    .wizard-summary:hover { background: #ddeefa; }
+    .wizard-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--blue-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    .wizard-icon-badge svg { width: 18px; height: 18px; }
+    .wizard-summary-title { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
+    .wizard-chevron {
+      flex: 0 0 auto;
+      display: inline-flex;
+      color: var(--blue-dark);
+      transition: transform .2s;
+    }
+    .wizard-chevron svg { width: 24px; height: 24px; }
+    .wizard[open] .wizard-chevron { transform: rotate(180deg); }
+    .wizard-summary-sub { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+    .wizard-summary::-webkit-details-marker { display: none; }
+    .wizard-summary::marker { content: ''; }
+    .wizard-body {
+      padding: 4px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .wizard-row { display: flex; flex-direction: column; gap: 6px; }
+    .wizard-row[hidden] { display: none; }
+    .wizard-q { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .wizard-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+    .wizard-opt {
+      padding: 6px 12px;
+      font-size: 12.5px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--muted);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .wizard-opt:hover { border-color: var(--blue); color: var(--blue-dark); }
+    .wizard-opt.selected {
+      background: var(--blue-dark);
+      border-color: var(--blue-dark);
+      color: var(--white);
+    }
+    .wizard-result {
+      margin-top: 4px;
+      padding: 12px 14px;
+      background: var(--blue-light);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .wizard-result-text { font-size: 12.5px; color: var(--text); flex: 1 1 260px; }
+    .wizard-result-btn { flex: 0 0 auto; }
+    .wizard-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .wizard-hint a { color: var(--blue-dark); font-weight: 600; }
+    .card.wizard-highlight { animation: wizardPulse 1.6s ease; }
+    @keyframes wizardPulse {
+      0%, 100% { box-shadow: var(--shadow); }
+      30% { box-shadow: 0 0 0 4px var(--blue), 0 8px 28px rgba(31,111,168,.3); }
+    }
+    @media (max-width: 640px) {
+      .wizard-summary { font-size: 13px; }
+    }
+
     /* ── Filter bar ── */
     .filterbar {
       background: var(--white);
@@ -556,6 +659,81 @@
   <h1>Beach-Volleyball Turniervorlagen</h1>
   <p>Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
 </header>
+
+<div class="wizard-wrap noprint">
+  <details class="wizard" id="wizard">
+    <summary class="wizard-summary">
+      <span class="wizard-icon-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </svg>
+      </span>
+      <span class="wizard-summary-title">
+        <span>Nicht sicher, welches Format passt?</span>
+        <span class="wizard-summary-sub">Kurzer Wizard – wenige Klicks zur Empfehlung</span>
+      </span>
+      <span class="wizard-chevron" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    </summary>
+    <div class="wizard-body">
+      <div class="wizard-row" data-q="participants">
+        <span class="wizard-q">Wer spielt?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="teams">Feste Zweier-Teams</button>
+          <button type="button" class="wizard-opt" data-val="individuals">Einzelpersonen (Partner wechselt)</button>
+        </div>
+      </div>
+      <div class="wizard-row" data-q="count">
+        <span class="wizard-q">Wie viele Teams/Personen?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="klein">bis 8</button>
+          <button type="button" class="wizard-opt" data-val="mittel">8–16</button>
+          <button type="button" class="wizard-opt" data-val="gross">über 16</button>
+        </div>
+      </div>
+      <div class="wizard-row" data-q="niveau">
+        <span class="wizard-q">Spielniveau im Feld?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="gleich">Ähnlich stark</button>
+          <button type="button" class="wizard-opt" data-val="gemischt">Unterschiedlich / gemischt</button>
+        </div>
+      </div>
+      <div class="wizard-row" data-q="repeats">
+        <span class="wizard-q">Sollen sich Begegnungen wiederholen dürfen?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="nein">Nein, jede Begegnung nur einmal</button>
+          <button type="button" class="wizard-opt" data-val="egal">Ist mir egal</button>
+        </div>
+      </div>
+      <div class="wizard-row" data-q="goal">
+        <span class="wizard-q">Was ist wichtiger?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="alle">Alle spielen viel, keiner scheidet aus</button>
+          <button type="button" class="wizard-opt" data-val="sieger">Klarer Sieger/Playoff, Ausscheiden ok</button>
+        </div>
+      </div>
+      <div class="wizard-row" data-q="time" id="wizardTimeRow" hidden>
+        <span class="wizard-q">Ist die Zeit knapp?</span>
+        <div class="wizard-opts">
+          <button type="button" class="wizard-opt" data-val="knapp">Ja, eher knapp</button>
+          <button type="button" class="wizard-opt" data-val="viel">Nein, genug Zeit</button>
+        </div>
+      </div>
+      <div class="wizard-result" id="wizardResult" hidden>
+        <div class="wizard-result-text" id="wizardResultText"></div>
+        <button type="button" class="btn-open wizard-result-btn" id="wizardResultBtn">Bogen anzeigen ↓</button>
+      </div>
+      <p class="wizard-hint">Herren-, Damen- und Mixed-Teams gemeinsam in einer Rangliste? → <a href="#" onclick="wizardJumpToTag('flex');return false;">Flex-Turnier</a></p>
+      <p class="wizard-hint">Feld-Leiter mit Auf-/Abstieg statt Rangliste, Runden nach Zeitlimit? → <a href="#" onclick="wizardJumpToTag('koc');return false;">King/Queen of the Court</a></p>
+      <p class="wizard-hint">Playoff mit bekannt unterschiedlich starken Teams? Setzliste in KO/Doppel-K.-o. nutzen, um Favoriten gezielt zu verteilen.</p>
+      <p class="wizard-hint">Genaue Rundenzahl/Zeitplanung: Jeder Bogen berechnet sie automatisch über Start-/Endzeit + „Zeit optimieren".</p>
+    </div>
+  </details>
+</div>
 
 <div class="filterbar">
   <div class="mobile-filter-grid" aria-label="Mobile Filter">
@@ -1109,6 +1287,154 @@
   }
 
   loadSessions();
+</script>
+
+<script>
+  /* ── Wizard: 4 kompakte Fragen → deterministische Format-Empfehlung.
+     Deckt die typischen Einsteiger-Kriterien ab: Teamzahl, Fairness bei
+     unterschiedlichem Niveau, und ob sich Paarungen/Partner wiederholen
+     dürfen (Schweizer System / King & Queen vermeiden das gezielt). ── */
+  (function () {
+    const wizard = document.getElementById('wizard');
+    if (!wizard) return;
+
+    const answers = {};
+    wizard.querySelectorAll('.wizard-row').forEach(row => {
+      const q = row.dataset.q;
+      row.querySelectorAll('.wizard-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.wizard-opt').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          answers[q] = btn.dataset.val;
+          updateTimeRowVisibility();
+          updateWizardResult();
+        });
+      });
+    });
+
+    const FORMAT_LABELS = {
+      kingqueen: 'King & Queen',
+      de: 'Doppel-K.-o.-System',
+      ko: 'KO-System',
+      swiss: 'Schweizer System',
+      rr: 'Jeder gegen Jeden',
+      gruppen: 'Gruppen + Finalrunde',
+      koc: 'King/Queen of the Court',
+      mpp: 'Modified Pool Play'
+    };
+
+    /* Die Zeit-Frage ist nur relevant, wenn die Empfehlung sonst auf
+       "Gruppen + Finalrunde" hinausliefe – bei knapper Zeit ist
+       "Modified Pool Play" (4 statt 6 Gruppenspiele) die bessere Wahl.
+       In allen anderen Fällen bleibt die Frage ausgeblendet, damit der
+       Wizard so kurz wie möglich bleibt. */
+    function timeQuestionRelevant(a) {
+      return a.participants === 'teams' && a.goal === 'alle' && a.repeats === 'egal' &&
+        a.niveau === 'gleich' && a.count && a.count !== 'klein';
+    }
+
+    function updateTimeRowVisibility() {
+      const row = document.getElementById('wizardTimeRow');
+      if (!row) return;
+      row.hidden = !timeQuestionRelevant(answers);
+    }
+
+    function computeRecommendation() {
+      const a = answers;
+      if (!a.participants) return null;
+
+      if (a.participants === 'individuals') {
+        return {
+          tag: 'kingqueen',
+          reason: 'Einzelpersonen mit wechselnden, fair gelosten 2er-Teams – niemand spielt dauerhaft mit derselben Person, Stärken gleichen sich pro Runde neu aus.'
+        };
+      }
+
+      if (!a.count || !a.niveau || !a.repeats || !a.goal) return null;
+
+      if (a.goal === 'sieger') {
+        if (a.niveau === 'gemischt') {
+          return {
+            tag: 'de',
+            reason: 'Playoff mit klarem Sieger – dank Verlierer-Runde entscheidet bei gemischtem Niveau nicht gleich die erste Niederlage über das Aus. Setzliste vor dem Start nutzen, um Favoriten zu verteilen.'
+          };
+        }
+        return {
+          tag: 'ko',
+          reason: 'Ähnlich starke Teams, klarer Sieger gewünscht: das klassische KO-System liefert das schnell und einfach. Setzliste vor dem Start nutzen, um Favoriten zu verteilen.'
+        };
+      }
+
+      // a.goal === 'alle': jeder soll viel spielen, keiner scheidet aus
+      if (a.repeats === 'nein') {
+        if (a.count === 'klein') {
+          return {
+            tag: 'rr',
+            reason: 'Bis zu 8 Teams, keine Wiederholung gewünscht: Im Jeder-gegen-Jeden trifft jedes Team automatisch jedes andere genau einmal.'
+          };
+        }
+        return {
+          tag: 'swiss',
+          reason: 'Mehr Teams, keine Wiederholung gewünscht: Das Schweizer System verfolgt bereits gespielte Paarungen und vermeidet gezielt jede Wiederholung, während es nach Leistung ausgleicht.'
+        };
+      }
+
+      if (a.niveau === 'gemischt') {
+        return {
+          tag: 'swiss',
+          reason: 'Gemischtes Niveau, alle sollen viel spielen: Das Schweizer System gleicht laufend aus und sorgt zusätzlich dafür, dass sich Paarungen nicht wiederholen.'
+        };
+      }
+
+      if (a.count === 'klein') {
+        return {
+          tag: 'rr',
+          reason: 'Bis zu 8 ähnlich starke Teams: Im Jeder-gegen-Jeden spielt wirklich jede/r gegen jede/n – einfach, fair, vollständige Rangliste.'
+        };
+      }
+
+      if (!a.time) return null;
+      if (a.time === 'knapp') {
+        return {
+          tag: 'mpp',
+          reason: 'Größeres Feld, ähnliches Niveau, wenig Zeit: Modified Pool Play liefert die gleiche faire Gruppenstruktur mit nur 4 statt 6 Spielen je Gruppe.'
+        };
+      }
+
+      return {
+        tag: 'gruppen',
+        reason: 'Mehr Teams, ähnliches Niveau, genug Zeit: Gruppen + Finalrunde gibt jedem viele Spiele und am Ende trotzdem eine klare Platzierung.'
+      };
+    }
+
+    function updateWizardResult() {
+      const rec = computeRecommendation();
+      const box = document.getElementById('wizardResult');
+      const text = document.getElementById('wizardResultText');
+      const btn = document.getElementById('wizardResultBtn');
+      if (!rec) { box.hidden = true; return; }
+      box.hidden = false;
+      const label = FORMAT_LABELS[rec.tag] || rec.tag;
+      text.innerHTML = '<strong>Empfehlung: ' + label + '</strong><br>' + rec.reason;
+      btn.onclick = function () { wizardJumpToTag(rec.tag); };
+    }
+
+    window.wizardJumpToTag = function (tag) {
+      applyCardFilters('', tag);
+      document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('onclick') === "filter('" + tag + "', this)");
+      });
+      const mobileSel = document.getElementById('mobileFormatFilter');
+      if (mobileSel) mobileSel.value = tag;
+      const card = document.querySelector('.card[data-tags~="' + tag + '"]');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('wizard-highlight');
+        void card.offsetWidth; /* Reflow erzwingen, damit die Animation erneut startet */
+        card.classList.add('wizard-highlight');
+      }
+    };
+  })();
 </script>
 
 <script>
