@@ -531,6 +531,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
     <span id="cpPrint" class="footer-print-only"></span>
+    <span class="footer-amazon">· Unterstütze das Projekt: <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
 <style>
@@ -538,7 +539,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   @media print {
     footer, footer * { font-size: 6px !important; line-height: 1.15 !important; }
     footer { padding: 2px 0 !important; margin: 3px 0 0 !important; border-top: .5px solid #ccc !important; }
-    footer #btnShowContact, footer #cpContact { display: none !important; }
+    footer #btnShowContact, footer #cpContact, footer .footer-amazon { display: none !important; }
     footer .footer-print-only { display: inline !important; }
   }
 </style>
