@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meisterschaften – Multi-Disziplin</title>
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f5f7fa; color: #1f2733; line-height: 1.7; }
+    .page { max-width: 820px; margin: 0 auto; padding: 24px 18px 60px; }
+    .wrap { background: #fff; border-radius: 16px; box-shadow: 0 14px 36px rgba(31,78,121,0.08); padding: 28px 24px; }
+    h1 { color: #1f4e79; margin: 0 0 6px; font-size: 30px; }
+    .subtitle { color: #5a6375; margin-bottom: 22px; }
+    .tag { display: inline-block; background: #e8edf3; color: #1f4e79; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 10px; margin-right: 6px; }
+    h2 { color: #1f4e79; border-bottom: 2px solid #e8edf3; padding-bottom: 6px; margin-top: 26px; }
+    ul, ol { padding-left: 19px; }
+    .note { background: #f7fafd; border-left: 4px solid #1f4e79; padding: 12px 14px; margin-top: 14px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+    th { background: #1f4e79; color: #fff; padding: 8px 10px; text-align: left; }
+    td { padding: 7px 10px; border-bottom: 1px solid #e0e6ef; vertical-align: top; }
+    tr:nth-child(even) td { background: #f0f4f9; }
+    .back-link { display: inline-block; color: #1f4e79; text-decoration: none; font-weight: 700; margin-bottom: 18px; }
+    @media print { body { background: #fff; } .wrap { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="wrap">
+      <a class="back-link" href="../index.html">← Zur Übersicht</a>
+      <div>
+        <span class="tag">Team Event</span>
+        <span class="tag">Multi-Disziplin</span>
+        <span class="tag">Kombiwertung</span>
+      </div>
+      <h1>BeachL-Meisterschaften</h1>
+      <p class="subtitle">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · das vielseitigste Team gewinnt</p>
+
+      <h2>Kurzübersicht</h2>
+      <p>Bei den <strong>BeachL-Meisterschaften</strong> geht es nicht nur um Beachvolleyball – gesucht wird das <strong>vielseitigste Team</strong>. Neben einem Beachvolleyballturnier laufen <strong>parallel</strong> Turnierformate in weiteren Disziplinen. Welche Disziplinen das im Einzelnen sind, <strong>kann von Event zu Event variieren</strong> – als Beispiele haben sich zuletzt <strong>Spikeball</strong>, <strong>Wikingerschach</strong> und <strong>Mini-Tischtennis</strong> etabliert (früher z.B. auch Beerpong). Mit der Anmeldung bestätigt jedes Team seine Teilnahme an <strong>allen</strong> parallel stattfindenden Turnieren/Disziplinen des jeweiligen Events. Es zählen die <strong>besten Turnierergebnisse</strong> (üblicherweise 3 von 4) für die Gesamtwertung des Sieger-Teams; zusätzlich werden auch Preise <strong>pro Disziplin</strong> vergeben.</p>
+
+      <h2>Anmeldung</h2>
+      <p>Angemeldet wird als <strong>Team aus 2 Personen</strong> – egal ob männlich, weiblich oder Mixed. Es gibt keine Niveau- oder Geschlechtervorgabe wie beim Tandem-Format.</p>
+
+      <h2>Ablauf</h2>
+      <ol>
+        <li>Jedes Team tritt in <strong>mehreren Disziplinen</strong> an: einem Beachvolleyballturnier sowie üblicherweise drei weiteren Disziplinen nach Wahl der Turnierleitung (z.B. Spikeball, Wikingerschach, Mini-Tischtennis).</li>
+        <li>Die Disziplinen laufen <strong>parallel</strong> zueinander, d.h. jedes Team wechselt im Laufe der Veranstaltung zwischen den Stationen.</li>
+        <li>Jede Disziplin hat ihr <strong>eigenes Mini-Turnier</strong> mit eigener Platzierung/Punktevergabe.</li>
+        <li>Für die <strong>Gesamtwertung</strong> zählen üblicherweise nur die <strong>drei besten</strong> Einzelergebnisse eines Teams (bei anderer Disziplin-Anzahl entsprechend angepasst) – das schwächste Ergebnis wird gestrichen.</li>
+        <li>Zusätzlich zur Gesamtwertung gibt es <strong>Einzelpreise pro Disziplin</strong>.</li>
+      </ol>
+
+      <h2>Empfohlener Spielbogen je Disziplin</h2>
+      <table>
+        <thead><tr><th>Disziplin</th><th>Empfehlung</th></tr></thead>
+        <tbody>
+          <tr><td>Beachvolleyball</td><td><strong>Gruppen + Finalrunde</strong> – der klassische Universalbogen dieses Repos, skaliert von 4–24 Teams und liefert am Ende eine klare Platzierung je Team.</td></tr>
+          <tr><td>Weitere Disziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis)</td><td>Da diese Disziplinen meist kleine Felder und kurze Zeitfenster haben, eignen sich am ehesten <strong>„Jeder gegen Jeden“</strong> (feste, kurze Rundenpläne bei kleinen Gruppen) oder ein einfaches <strong>KO-System</strong>, wenn die Zeit knapp ist bzw. viele Teams antreten.</td></tr>
+        </tbody>
+      </table>
+      <p>Die konkrete Auswahl der Zusatzdisziplinen liegt bei der Turnierleitung und kann sich von Veranstaltung zu Veranstaltung unterscheiden – die obige Tabelle ist daher als Orientierung zu verstehen, nicht als feste Vorgabe. Dieses Repo bildet aktuell keinen eigenen „Kombi-Bogen“ ab, der beliebig viele Disziplinen automatisch zu einer Gesamtwertung zusammenrechnet. Die Turnierleitung trägt dazu am einfachsten die Platzierung/Punktzahl jedes Teams aus den Einzelbögen der jeweiligen Disziplinen in eine gemeinsame Auswertungstabelle ein und streicht dort je Team das schwächste Ergebnis.</p>
+
+      <h2>Wann geeignet</h2>
+      <ul>
+        <li>Vereinsevents mit mehreren Stationen/Disziplinen, bei denen Vielseitigkeit statt reiner Beachvolleyball-Stärke im Vordergrund steht</li>
+        <li>Veranstaltungen, die sowohl eine Gesamtwertung als auch separate Disziplin-Preise vergeben möchten</li>
+      </ul>
+
+      <div class="note">Dieses Format ist bewusst kein offizieller FIVB-/Swiss-Volley-Standard, sondern ein <strong>custom Multi-Disziplin-Event</strong> dieses Vereins. Jede Disziplin nutzt einen der bestehenden Universalbögen dieses Repos; welche Zusatzdisziplinen neben Beachvolleyball stattfinden, entscheidet die Turnierleitung für das jeweilige Event. Die Gesamtwertung über die besten Einzelergebnisse erfolgt separat außerhalb der Bögen.</div>
+
+      <h2>Wertung</h2>
+      <p>Jede Disziplin liefert ein eigenes Ergebnis/eine eigene Platzierung je Team. Für die Gesamtwertung zählen die <strong>besten Ergebnisse</strong> (üblicherweise 3 von 4, je nach tatsächlicher Anzahl der Disziplinen entsprechend angepasst); das schlechteste Ergebnis wird gestrichen. Zusätzlich werden <strong>Preise pro Disziplin</strong> unabhängig von der Gesamtwertung vergeben.</p>
+    </div>
+  </div>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){});});}
+</script>
+<footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">
+  <div class="footer-legal" style="margin-top:4px;">
+    © <span id="cpYear"></span> ·
+    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;">Copyright/Kontakt</button>
+    <span id="cpContact" hidden></span>
+    <span id="cpPrint" class="footer-print-only"></span>
+  </div>
+</footer>
+<style>
+  .footer-print-only { display: none; }
+  @media print {
+    footer, footer * { font-size: 6px !important; line-height: 1.15 !important; }
+    footer { padding: 2px 0 !important; margin: 3px 0 0 !important; border-top: .5px solid #ccc !important; }
+    footer #btnShowContact, footer #cpContact { display: none !important; }
+    footer .footer-print-only { display: inline !important; }
+  }
+</style>
+<script>
+  (function(){
+    var y = document.getElementById('cpYear');
+    if(y) y.textContent = new Date().getFullYear();
+    var btn = document.getElementById('btnShowContact');
+    var out = document.getElementById('cpContact');
+    var printOut = document.getElementById('cpPrint');
+    var p1 = 'TS4gVWhsbWFubnxsZXRzc2VuZG1vcmVsZXR0ZXJz';
+    var p2 = 'QGdtYWlsLmNvbQ==';
+    function decode(){ var parts = atob(p1 + p2).split('|'); return { name: parts[0], mail: parts[1] }; }
+    if(btn && out){
+      btn.addEventListener('click', function(){
+        var d = decode();
+        out.textContent = d.name + ' · ';
+        var a = document.createElement('a');
+        a.href = 'mailto:' + d.mail;
+        a.rel = 'nofollow noopener';
+        a.textContent = d.mail;
+        out.appendChild(a);
+        out.hidden = false;
+        btn.hidden = true;
+      }, { once: true });
+    }
+    if(printOut){
+      window.addEventListener('beforeprint', function(){
+        if(!printOut.textContent){
+          var d = decode();
+          printOut.textContent = '© ' + (y ? y.textContent : new Date().getFullYear()) + ' ' + d.name + ' · ' + d.mail;
+        }
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

@@ -749,6 +749,10 @@
         <option value="koc">King/Queen of the Court</option>
         <option value="kingqueen">King &amp; Queen</option>
         <option value="flex">Flex-Turnier</option>
+        <option value="tandem">Tandem</option>
+        <option value="elternkind">Eltern-Kind-Turnier</option>
+        <option value="meisterschaften">Meisterschaften</option>
+        <option value="daviscup">Davis Cup</option>
       </select>
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()">Alle anzeigen</button>
@@ -765,6 +769,10 @@
     <button class="filter-btn" onclick="filter('koc', this)">King/Queen of the Court</button>
     <button class="filter-btn" onclick="filter('kingqueen', this)">King &amp; Queen</button>
     <button class="filter-btn" onclick="filter('flex', this)">Flex-Turnier</button>
+    <button class="filter-btn" onclick="filter('tandem', this)">Tandem</button>
+    <button class="filter-btn" onclick="filter('elternkind', this)">Eltern-Kind-Turnier</button>
+    <button class="filter-btn" onclick="filter('meisterschaften', this)">Meisterschaften</button>
+    <button class="filter-btn" onclick="filter('daviscup', this)">Davis Cup</button>
   </div>
 </div>
 
@@ -1053,6 +1061,129 @@
       </div>
       <div class="card-footer">
         <a class="btn-open" href="Turnierbogen_Flex_Turnier.html" target="_blank">
+         Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Tandem (eigener Filter-Tag "tandem"; nutzt den bestehenden
+         Universalbogen "Gruppen + Finalrunde" – Tandem ändert nur die
+         Team-Bildung bei der Anmeldung, nicht den Spielmodus). ── -->
+    <div class="card" data-tags="tandem" data-doc="docs/format-tandem.html" data-desc="Tandem-Turnier für alle Niveaus, Anmeldung als Team zu zweit: Ein Tandem besteht entweder aus einem fortgeschrittenen Spieler (N4/N5) und einem Anfänger (N1/N2) oder aus zwei N3-Spielern. Erlaubt sind ausschließlich die Konstellationen N5+N1, N5+N2, N4+N1, N4+N2 sowie N3+N3, damit die Teams untereinander möglichst homogen und die Spiele ausgeglichen sind. Gespielt wird danach mit dem gewohnten Gruppen- oder Rundenmodus.">
+      <div class="card-header">
+        <span class="format-tag">Sonderform · Team-Anmeldung</span>
+        <h2>Tandem</h2>
+        <div class="sub">Team-Anmeldung zu zweit · feste Niveau-Konstellationen für ausgeglichene Teams</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team, alle Niveaus</span>
+         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+         <span class="stat"><span class="icon">🎯</span> 5 erlaubte Konstellationen (N5+N1 … N3+N3)</span>
+         <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ homogene Teamstärke durch feste Niveau-Paarung</span>
+         <span class="feat">✓ läuft auf Basis von „Gruppen + Finalrunde“</span>
+         <span class="feat">✓ Freilos &amp; Ausfall</span>
+         <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
+         Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Eltern-Kind-Turnier (eigener Filter-Tag "elternkind"; nutzt
+         den Universalbogen "Gruppen + Finalrunde" mit finalMode=none, da
+         explizit im reinen Gruppenmodus (ohne Finalrunde) gespielt wird). ── -->
+    <div class="card" data-tags="elternkind" data-doc="docs/format-eltern-kind.html" data-desc="Eltern-Kind-Turnier, Anmeldung als Team: Ein Team besteht aus einem Kind (u15 bzw. 10–14 Jahre, Niveau 1–3) und einer erwachsenen Person. Die erwachsene Person sollte fortgeschritten sein (Niveau 3–5) und muss nicht zwangsläufig Elternteil sein. Es können sich Mixed-, Damen- und Herrenteams anmelden. Gespielt wird im reinen Gruppenmodus, ohne anschließende Finalrunde.">
+      <div class="card-header">
+        <span class="format-tag">Sonderform · Team-Anmeldung</span>
+        <h2>Eltern-Kind-Turnier</h2>
+        <div class="sub">Team aus Kind (10–14 J., N1–3) + erwachsener Person (N3–5) · reiner Gruppenmodus</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team, Mixed/Damen/Herren</span>
+         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+         <span class="stat"><span class="icon">🎯</span> Kind (N1–3) + fortgeschrittene Person (N3–5)</span>
+         <span class="stat"><span class="icon">⏱</span> nur Gruppenphase, keine Finalrunde</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ homogene Teamstärke durch Kind-Erwachsenen-Paarung</span>
+         <span class="feat">✓ läuft auf Basis von „Gruppen + Finalrunde“ (Finalmodus: keine Finalrunde)</span>
+         <span class="feat">✓ Freilos &amp; Ausfall</span>
+         <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html?finalMode=none" target="_blank">
+         Öffnen ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: BeachL-Meisterschaften (eigener Filter-Tag "meisterschaften";
+         Beachvolleyball-Teil läuft auf dem Universalbogen "Gruppen +
+         Finalrunde", die parallelen Zusatzdisziplinen (z.B. Spikeball,
+         Wikingerschach, Mini-Tischtennis – austauschbare Beispiele) werden
+         getrennt erfasst und in der Doku erklärt). ── -->
+    <div class="card" data-tags="meisterschaften" data-doc="docs/format-meisterschaften.html" data-desc="Bei den BeachL-Meisterschaften wird das vielseitigste Team gesucht: Parallel zum Beachvolleyball-Turnier laufen weitere Turnierformate in zusätzlichen Disziplinen (z.B. Spikeball, Wikingerschach oder Mini-Tischtennis – die konkrete Auswahl kann von Event zu Event variieren). Mit der Anmeldung als 2er-Team (Herren, Damen oder Mixed) bestätigt ihr die Teilnahme an allen parallel stattfindenden Disziplinen. Die besten Turnierergebnisse (i.d.R. 3 von 4) zählen für die Gesamtwertung, zusätzlich gibt es Preise pro Disziplin.">
+      <div class="card-header">
+        <span class="format-tag">Sonderform · Multi-Disziplin</span>
+        <h2>Meisterschaften</h2>
+        <div class="sub">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · beste Ergebnisse zählen</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team (Herren/Damen/Mixed)</span>
+         <span class="stat"><span class="icon">🏖️</span> mehrere parallele Disziplinen (Auswahl variabel)</span>
+         <span class="stat"><span class="icon">🎯</span> beste Ergebnisse zählen (i.d.R. 3 von 4)</span>
+         <span class="stat"><span class="icon">⏱</span> paralleler Zeitplan über alle Disziplinen</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ Beachvolleyball-Teil per „Gruppen + Finalrunde“</span>
+         <span class="feat">✓ eigene Einzelwertung je Disziplin</span>
+         <span class="feat">✓ Gesamtwertung aus den besten Einzelergebnissen</span>
+         <span class="feat">✓ Preise pro Disziplin + Gesamtsieger</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
+         Öffnen ↗ (Beachvolleyball-Teil)
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card: Davis Cup (eigener Filter-Tag "daviscup"; nutzt den
+         bestehenden Universalbogen "Jeder gegen Jeden" – eine Begegnung
+         fasst die 3 Teilspiele (2× 2vs2 + 1× 4vs4) zu einem Match-Ergebnis
+         zusammen, siehe Doku). ── -->
+    <div class="card" data-tags="daviscup" data-doc="docs/format-davis-cup.html" data-desc="Anmeldung erfolgt als Einzelperson. Vor Ort werden die Spieler nach Niveau eingeteilt und den Teams (je vier Spieler) zugelost. Jede Begegnung zwischen zwei Teams besteht aus drei Teilspielen: zwei Spielen 2 gegen 2 und einem Spiel 4 gegen 4. Das Team mit den meisten gewonnenen Teilspielen gewinnt die Begegnung.">
+      <div class="card-header">
+        <span class="format-tag">Sonderform · Team-Auslosung</span>
+        <h2>Davis Cup</h2>
+        <div class="sub">Einzelanmeldung · Auslosung zu 4er-Teams nach Niveau · 2× 2vs2 + 1× 4vs4</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+         <span class="stat"><span class="icon">👥</span> Einzelanmeldung, 4er-Teams vor Ort gelost</span>
+         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
+         <span class="stat"><span class="icon">🎯</span> 3 Teilspiele je Begegnung</span>
+         <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+        </div>
+        <div class="features">
+         <span class="feat">✓ niveaubasierte Auslosung der Teams vor Ort</span>
+         <span class="feat">✓ 3 Teilspiele je Begegnung (2× 2vs2 + 1× 4vs4)</span>
+         <span class="feat">✓ Begegnung entscheidet die Mehrheit der Teilspiele</span>
+         <span class="feat">✓ läuft auf Basis von „Jeder gegen Jeden“</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank">
          Öffnen ↗
         </a>
       </div>
