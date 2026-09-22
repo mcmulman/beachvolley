@@ -39,8 +39,11 @@
      daher auch komplett ohne Internet (z. B. wenn kein Backend erreichbar
      ist oder rein clientseitig geteilt werden soll).
 
-   Nur Text-/Fetch-Utilities + drei native Dialoge (prompt/confirm/alert) –
-   passend zum Rest der App, die ebenfalls ohne eigenes Modal-System auskommt.
+   Nutzeroberfläche: Ein eigenes, in dieser Datei selbst injiziertes
+   Overlay/Modal (Styles + Markup werden bei Bedarf per JS erzeugt) - bewusst
+   kein Rückgriff auf Browser-native prompt()/confirm()-Popups, damit sich
+   das Teilen wie ein normaler Teil der App anfühlt (Passwortfeld, Radio-
+   Auswahl, Kopieren-Button, Fehler mit "Erneut versuchen" direkt im Dialog).
    ========================================================================== */
 (function (root, factory) {
   const api = factory();
@@ -224,34 +227,212 @@
     } catch (e) { }
   }
 
+  /* ============================================================ Overlay-UI
+     Minimales, selbst-injiziertes Modal (kein externes Modal-System nötig).
+     Wird bei jedem Öffnen neu aufgebaut (bestehendes Overlay wird vorher
+     entfernt), damit kein Zustand zwischen den Schritten hängen bleibt. */
+  const MODAL_ID = 'tshare-overlay-root';
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function ensureShareStyles() {
+    if (document.getElementById('tshare-style')) return;
+    const style = document.createElement('style');
+    style.id = 'tshare-style';
+    style.textContent =
+      '.tshare-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(20,30,45,.55);' +
+        'display:flex;align-items:center;justify-content:center;padding:16px;' +
+        '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
+      '@media print{.tshare-backdrop{display:none !important;}}' +
+      '.tshare-panel{background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
+        'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:90vh;overflow:auto;' +
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}' +
+      '.tshare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;' +
+        'padding:16px 18px;border-bottom:1px solid #e2e8f0;}' +
+      '.tshare-head h3{margin:0;font-size:16px;font-weight:800;color:#1a3a5c;}' +
+      '.tshare-x{border:none;background:none;font-size:22px;line-height:1;color:#5a6375;cursor:pointer;padding:2px 6px;border-radius:6px;}' +
+      '.tshare-x:hover{background:#eef2f7;}' +
+      '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;}' +
+      '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
+      '.tshare-hint{font-size:12.5px;color:#5a6375;}' +
+      '.tshare-error{color:#b3261e;font-weight:600;}' +
+      '.tshare-options{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}' +
+      '.tshare-opt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid #ccd8e8;' +
+        'border-radius:10px;padding:10px 12px;cursor:pointer;}' +
+      '.tshare-opt:has(input:checked){border-color:#1f6fa8;background:#e8f3fb;}' +
+      '.tshare-opt input{margin-top:3px;flex:0 0 auto;}' +
+      '.tshare-opt strong{display:block;font-size:13.5px;color:#1a1a2e;}' +
+      '.tshare-opt em{font-style:normal;color:#0a7d2c;font-size:11.5px;font-weight:700;margin-left:4px;}' +
+      '.tshare-opt small{display:block;color:#5a6375;font-size:12px;margin-top:2px;}' +
+      '.tshare-field{display:block;font-size:12.5px;font-weight:700;color:#3a4356;margin-bottom:14px;}' +
+      '.tshare-field input{display:block;width:100%;margin-top:6px;padding:10px 12px;font-size:14px;' +
+        'border:1.5px solid #ccd8e8;border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
+      '.tshare-field input:focus{outline:none;border-color:#1f6fa8;background:#fff;}' +
+      '.tshare-linkrow{display:flex;gap:8px;margin-bottom:8px;}' +
+      '.tshare-linkrow input{flex:1;min-width:0;padding:9px 10px;font-size:12.5px;border:1.5px solid #ccd8e8;' +
+        'border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
+      '.tshare-copied{color:#0a7d2c;font-size:12.5px;font-weight:600;margin:0;}' +
+      '.tshare-loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0 6px;color:#3a4356;}' +
+      '.tshare-spinner{width:30px;height:30px;border-radius:50%;border:3px solid #ccd8e8;' +
+        'border-top-color:#1f6fa8;animation:tshare-spin .8s linear infinite;}' +
+      '@keyframes tshare-spin{to{transform:rotate(360deg);}}' +
+      '.tshare-foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;' +
+        'padding:14px 18px;border-top:1px solid #e2e8f0;}' +
+      '.tshare-btn{border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:700;' +
+        'cursor:pointer;white-space:nowrap;}' +
+      '.tshare-btn-primary{background:#1a3a5c;color:#fff;}' +
+      '.tshare-btn-primary:hover{background:#1f6fa8;}' +
+      '.tshare-btn-ghost{background:none;color:#1a3a5c;border:1.5px solid #ccd8e8;}' +
+      '.tshare-btn-ghost:hover{border-color:#1f6fa8;}';
+    document.head.appendChild(style);
+  }
+
+  function onShareEscKey(e) { if (e.key === 'Escape') closeShareModal(); }
+
+  function closeShareModal() {
+    const el = document.getElementById(MODAL_ID);
+    if (el) el.remove();
+    document.removeEventListener('keydown', onShareEscKey);
+  }
+
+  /* Baut/ersetzt das Overlay-Grundgerüst und liefert das Root-Element zum
+     Anhängen von Event-Handlern durch die jeweilige "Seite" (Formular,
+     Ladeanzeige, Ergebnis, Fehler). */
+  function openShareModalShell(title, bodyHtml, footerHtml) {
+    closeShareModal();
+    ensureShareStyles();
+    const root = document.createElement('div');
+    root.id = MODAL_ID;
+    root.className = 'tshare-backdrop';
+    root.innerHTML =
+      '<div class="tshare-panel" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '">' +
+      '<div class="tshare-head"><h3>' + escapeHtml(title) + '</h3>' +
+      '<button type="button" class="tshare-x" aria-label="Schließen">&times;</button></div>' +
+      '<div class="tshare-body">' + bodyHtml + '</div>' +
+      (footerHtml ? '<div class="tshare-foot">' + footerHtml + '</div>' : '') +
+      '</div>';
+    document.body.appendChild(root);
+    root.addEventListener('mousedown', function (e) { if (e.target === root) closeShareModal(); });
+    root.querySelector('.tshare-x').addEventListener('click', closeShareModal);
+    document.addEventListener('keydown', onShareEscKey);
+    return root;
+  }
+
+  function renderShareForm(o) {
+    const root = openShareModalShell(
+      'Turnier teilen',
+      '<div class="tshare-options">' +
+        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="server" checked>' +
+        '<span><strong>Server-Link <em>Empfohlen</em></strong>' +
+        '<small>Kurzer Link über den eigenen Server. Zum Erstellen &amp; Öffnen ist Internet nötig.</small></span>' +
+        '</label>' +
+        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
+        '<span><strong>Offline-Link</strong>' +
+        '<small>Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.</small></span>' +
+        '</label>' +
+        '</div>' +
+      '<label class="tshare-field">Passwort (optional)' +
+        '<input type="password" id="tshare-pw" placeholder="Leer lassen für keinen Passwortschutz" autocomplete="new-password"></label>',
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">Abbrechen</button>' +
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">Link erstellen</button>'
+    );
+    root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
+    root.querySelector('[data-act="create"]').addEventListener('click', function () {
+      const mode = root.querySelector('input[name="tshare-mode"]:checked').value;
+      const pw = root.querySelector('#tshare-pw').value || '';
+      if (mode === 'server') {
+        renderShareLoading();
+        createServerShare(o, pw);
+      } else {
+        createOfflineShare(o, pw);
+      }
+    });
+  }
+
+  function renderShareLoading() {
+    openShareModalShell('Turnier teilen',
+      '<div class="tshare-loading"><div class="tshare-spinner"></div><p style="margin:0">Link wird erstellt…</p></div>', '');
+  }
+
+  function renderShareResult(url, pw, longWarnLen, code) {
+    const root = openShareModalShell(
+      'Link zum Teilen',
+      '<p class="tshare-hint">Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
+        'Spätere Änderungen sind erst in einem neuen Link sichtbar.' +
+        (pw ? ' Mit Passwort geschützt – bitte separat mitteilen.' : '') + '</p>' +
+        (longWarnLen ? '<p class="tshare-error">Hinweis: Der Link ist sehr lang (' + longWarnLen + ' Zeichen) und wird evtl. '
+          + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
+          + 'oder den kürzeren Server-Link verwenden.</p>' : '') +
+      '<label class="tshare-field" style="margin-bottom:8px">Link' +
+      '<div class="tshare-linkrow"><input type="text" id="tshare-url" readonly>' +
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">Kopieren</button></div></label>' +
+      (code
+        ? '<label class="tshare-field">Code <small style="font-weight:400;color:#5a6375">(zum Eingeben auf der Startseite, statt den Link zu öffnen)</small>' +
+          '<div class="tshare-linkrow"><input type="text" id="tshare-code" readonly>' +
+          '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">Kopieren</button></div></label>'
+        : '') +
+      '<p class="tshare-copied" id="tshare-copied-msg" hidden>In die Zwischenablage kopiert ✓</p>',
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="done">Fertig</button>'
+    );
+    const urlInput = root.querySelector('#tshare-url');
+    urlInput.value = url; // per JS statt HTML-Attribut, um Escaping-Probleme bei Sonderzeichen zu vermeiden
+    const copiedMsg = root.querySelector('#tshare-copied-msg');
+    function showCopied() { copiedMsg.hidden = false; }
+    function copyText(text, fallbackEl) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showCopied).catch(function () { fallbackCopy(fallbackEl); });
+      } else {
+        fallbackCopy(fallbackEl);
+      }
+    }
+    function fallbackCopy(inputEl) {
+      inputEl.focus(); inputEl.select();
+      try { if (document.execCommand('copy')) showCopied(); } catch (e) { /* ignore */ }
+    }
+    root.querySelector('[data-act="copy"]').addEventListener('click', function () { copyText(url, urlInput); });
+    if (code) {
+      const codeInput = root.querySelector('#tshare-code');
+      codeInput.value = code;
+      root.querySelector('[data-act="copy-code"]').addEventListener('click', function () { copyText(code, codeInput); });
+    }
+    root.querySelector('[data-act="done"]').addEventListener('click', closeShareModal);
+    copyText(url, urlInput); // gleich beim Öffnen automatisch den Link in die Zwischenablage legen (wie zuvor)
+    urlInput.focus(); urlInput.select();
+  }
+
+  function renderShareError(message, cfg) {
+    const c = cfg || {};
+    const root = openShareModalShell(
+      'Link konnte nicht erstellt werden',
+      '<p class="tshare-error">' + escapeHtml(message) + '</p>' +
+      '<p class="tshare-hint">Dein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.</p>',
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">Abbrechen</button>' +
+      (c.showOfflineFallback ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="offline">Offline-Link stattdessen</button>' : '') +
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="retry">Erneut versuchen</button>'
+    );
+    root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
+    root.querySelector('[data-act="retry"]').addEventListener('click', c.onRetry);
+    if (c.showOfflineFallback) root.querySelector('[data-act="offline"]').addEventListener('click', c.onOfflineFallback);
+  }
+
   /* ================================================================ Teilen
-     Fragt Passwort und gewünschte Link-Art ab und erstellt den Link.
+     Öffnet das Overlay zur Auswahl von Link-Art und Passwort.
      opts: dieselbe Form wie archiveOpts() in den Bögen
            ({ sheet, file, type, keys, title, teams, empty }). */
   function openShareDialog(opts) {
     const o = opts || {};
     if (o.empty) { alert('Dieses Turnier ist noch leer – es gibt noch nichts zu teilen.'); return; }
-
-    const useServerLink = confirm(
-      'Link zum Teilen erstellen.\n\n' +
-      'OK = kurzer Link über den Server (empfohlen; zum Öffnen ist Internet nötig).\n' +
-      'Abbrechen = Offline-Link, der den kompletten Turnierstand direkt im Link\n' +
-      'enthält (kein Server/Internet nötig, dafür ein sehr langer Link).'
-    );
-
-    const pw = prompt(
-      'Passwort für den Link (leer lassen für keinen Passwortschutz):', ''
-    );
-    if (pw === null) return; // abgebrochen
-
-    if (useServerLink) createServerShare(o, pw);
-    else createOfflineShare(o, pw);
+    renderShareForm(o);
   }
 
   /* -------------------------------------------------------- Server-Variante
-     Wird bei einem Netzwerkfehler mit "Erneut versuchen" erneut aufgerufen,
-     ohne das Passwort nochmal abzufragen - der Nutzer muss bei wackliger
-     Verbindung nicht von vorn anfangen. */
+     Wird bei einem Netzwerkfehler über den "Erneut versuchen"-Button im
+     Overlay erneut aufgerufen, ohne das Passwort nochmal abzufragen - der
+     Nutzer muss bei wackliger Verbindung nicht von vorn anfangen. */
   function createServerShare(o, pw) {
     // Der Snapshot wird bei jedem Versuch frisch gelesen, damit auch ein
     // "Erneut versuchen" nach längerem Warten den aktuellsten Stand teilt.
@@ -262,18 +443,17 @@
       title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
       snapshot: snapshot, password: pw || ''
     }).then(function (data) {
-      showShareResult(buildServerShareUrl(data.id), pw);
+      renderShareResult(buildServerShareUrl(data.id), pw, null, data.id);
     }).catch(function (err) {
       // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
-      const retry = confirm(
-        (err.network
-          ? 'Der Link konnte nicht erstellt werden: ' + err.message
-          : 'Der Link konnte nicht erstellt werden (Serverfehler):\n' + err.message)
-        + '\n\nDein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.'
-        + '\n\nJetzt erneut versuchen? (Abbrechen, um stattdessen einen Offline-Link zu erstellen.)'
-      );
-      if (retry) createServerShare(o, pw);
-      else createOfflineShare(o, pw);
+      const msg = err.network
+        ? ('Der Link konnte nicht erstellt werden: ' + err.message)
+        : ('Der Link konnte nicht erstellt werden (Serverfehler): ' + err.message);
+      renderShareError(msg, {
+        showOfflineFallback: true,
+        onRetry: function () { renderShareLoading(); createServerShare(o, pw); },
+        onOfflineFallback: function () { createOfflineShare(o, pw); }
+      });
     });
   }
 
@@ -284,25 +464,7 @@
     const url = buildOfflineShareUrl({
       sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
     }, pw || null);
-
-    if (url.length > LONG_URL_WARN) {
-      alert('Hinweis: Der Offline-Link ist sehr lang (' + url.length + ' Zeichen) und wird evtl.\n'
-        + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen:\n'
-        + 'über den PC teilen oder den (kürzeren) Server-Link verwenden.');
-    }
-    showShareResult(url, pw);
-  }
-
-  function showShareResult(url, pw) {
-    const note = pw
-      ? '\n\nGeschützt mit Passwort – bitte separat mitteilen.'
-      : '';
-    const snapshotInfo = '\n\nHinweis: Der Link enthält einen Snapshot des aktuellen Turnierstands zu diesem Zeitpunkt.\n'
-      + 'Spätere Änderungen sind erst in einem neuen Link sichtbar.';
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).catch(function () { });
-    }
-    prompt('Link zum Teilen (in die Zwischenablage kopiert – hier auch manuell kopierbar):' + snapshotInfo + note, url);
+    renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null);
   }
 
   /* ========================================================== Übernehmen
@@ -434,7 +596,48 @@
     location.reload();
   }
 
+  /* ============================================================ Code-Eingabe
+     Für die Startseite: Nutzer kann statt (oder zusätzlich zu) dem Klick auf
+     einen Link auch nur die kurze Server-ID eingeben ("Code"), z. B. wenn der
+     Link per Telefon durchgegeben wurde. Akzeptiert wahlweise den nackten
+     Code oder einen kompletten eingefügten Link/Hash - beides wird auf die
+     reine ID reduziert. Löst dann über die Vorschau (GET, ohne Passwort) auf,
+     zu welcher Bogen-Datei der Code gehört, und leitet dorthin weiter; die
+     eigentliche Übernahme (inkl. Passwortabfrage/Bestätigung) übernimmt danach
+     ganz normal applyPendingShare() auf der Zielseite. */
+  function extractServerCode(input) {
+    let s = String(input || '').trim();
+    if (!s) return '';
+    const idx = s.indexOf(SERVER_PREFIX);
+    if (idx !== -1) s = s.slice(idx + SERVER_PREFIX.length);
+    s = s.replace(/^#/, '');
+    try { s = decodeURIComponent(s); } catch (e) { /* schon dekodiert */ }
+    return s.trim();
+  }
+
+  function openByCode(input) {
+    const id = extractServerCode(input);
+    if (!id) { alert('Bitte einen gültigen Code oder Link eingeben.'); return; }
+
+    apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
+      const file = env && env.file;
+      if (!file) {
+        alert('Zu diesem Code konnte keine passende Turnierseite gefunden werden.');
+        return;
+      }
+      location.href = file + SERVER_PREFIX + encodeURIComponent(id);
+    }).catch(function (err) {
+      if (err.network) {
+        alert('Der Code konnte gerade nicht überprüft werden:\n' + err.message
+          + '\n\nBitte Internetverbindung prüfen und erneut versuchen.');
+        return;
+      }
+      if (err.status === 404) alert('Dieser Code ist ungültig oder das Turnier wurde bereits gelöscht.');
+      else alert('Der Code konnte nicht geladen werden (Serverfehler):\n' + err.message);
+    });
+  }
+
   return {
-    buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare
+    buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare, openByCode
   };
 });

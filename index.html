@@ -348,6 +348,48 @@
       margin: 28px 0 12px;
     }
 
+    /* ── Geteiltes Turnier per Code öffnen ── */
+    .code-open-box {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+    .code-open-box input[type="text"] {
+      flex: 1 1 220px;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--sand);
+    }
+    .code-open-box input[type="text"]:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: var(--white);
+    }
+    .code-open-box button {
+      flex: 0 0 auto;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      background: var(--blue-dark);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .code-open-box button:hover { background: var(--blue); }
+    .code-open-box button:active { transform: scale(.97); }
+
     /* Vier Turnierbögen: am Desktop bewusst zwei Karten je Reihe (je 50 %),
        darunter greift die automatische Verteilung ab 300 px Kartenbreite. */
     .grid {
@@ -643,6 +685,7 @@
   <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
+  <script src="core/turnier-share.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
@@ -782,6 +825,14 @@
 </div>
 
 <main>
+
+  <!-- ── Geteiltes Turnier per Code öffnen ── -->
+  <div class="section-label noprint">Geteiltes Turnier öffnen</div>
+  <form class="code-open-box noprint" id="code-open-form" onsubmit="return handleOpenByCode(event)">
+    <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" autocomplete="off"
+           autocapitalize="off" spellcheck="false" inputmode="text">
+    <button type="submit">Öffnen</button>
+  </form>
 
   <!-- ── Gespeicherte Turniere ── -->
   <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleSessions()" id="sessions-label">
@@ -1332,6 +1383,21 @@
     sessionsCollapsed = !sessionsCollapsed;
     container.style.display = sessionsCollapsed ? 'none' : '';
     icon.style.transform = sessionsCollapsed ? 'rotate(-90deg)' : '';
+  }
+
+  /* Code-Eingabe: löst die Bogen-Datei über TShare.openByCode() auf und
+     leitet dorthin weiter (Passwortabfrage/Übernahme läuft dann dort). */
+  function handleOpenByCode(e) {
+    e.preventDefault();
+    const input = document.getElementById('code-open-input');
+    const value = input ? input.value : '';
+    if (!value || !value.trim()) return false;
+    if (typeof TShare !== 'undefined' && TShare.openByCode) {
+      TShare.openByCode(value);
+    } else {
+      alert('Diese Funktion ist gerade nicht verfügbar.');
+    }
+    return false;
   }
 
   function expandSessions(e) {
