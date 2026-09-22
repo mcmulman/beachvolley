@@ -159,6 +159,18 @@
       var invalid = active.some(function (inp) { return inp.classList.contains('invalid'); });
       td.classList.add(filled && !invalid ? 'bl-done' : 'bl-open');
     });
+
+    /* OK-Knopf (.score-ok, siehe unten): grün statt grau, sobald BEIDE
+       Kaestchen des zugehoerigen Kaestchenpaars (.sbox) ausgefuellt UND
+       gueltig sind - reine Bestaetigung/Weiterspringen bleibt grau, bis
+       ein echtes Ergebnis feststeht. */
+    document.querySelectorAll('.sbox').forEach(function (box) {
+      var ins = Array.prototype.slice.call(box.querySelectorAll('input.score'))
+        .filter(function (inp) { return !inp.disabled; });
+      var filled = ins.length > 0 && ins.every(function (inp) { return String(inp.value || '').trim() !== ''; });
+      var invalid = ins.some(function (inp) { return inp.classList.contains('invalid'); });
+      box.classList.toggle('sbox-valid', filled && !invalid);
+    });
   }
 
   var scheduled = false;

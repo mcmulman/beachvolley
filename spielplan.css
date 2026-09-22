@@ -141,8 +141,8 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
-  background: #2e8b2e;
-  border-color: #2e8b2e;
+  background: #1f6fa8;
+  border-color: #1f6fa8;
   color: #fff;
   box-shadow: none;
   vertical-align: middle;
@@ -180,12 +180,18 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
    informell "im Fluss" der Kaestchen platziert - aendert deren Hoehe nicht. */
 .score-ok {
   width:22px; height:22px; margin-left:2px; padding:0; border-radius:50%;
-  border:1px solid #8fae4f; background:#eef6df; color:#3c6b1e;
+  border:1px solid #b7bfc9; background:#eef1f4; color:#4a5560;
   font-size:12px; line-height:1; font-weight:700; cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
 }
-.score-ok:hover, .score-ok:focus { background:#dcecc4; outline:none; }
-.score-ok:active { background:#cde3ab; }
+.score-ok:hover, .score-ok:focus { background:#e0e5eb; outline:none; }
+.score-ok:active { background:#d0d7e0; }
+/* Sobald beide Kaestchen ausgefuellt UND gueltig sind (siehe
+   spielplan-enh.js, Klasse "sbox-valid"), wird der OK-Knopf gruen - als
+   Bestaetigung eines fertigen Ergebnisses, nicht als reine Aktion. */
+.sbox-valid .score-ok { border-color:#8fae4f; background:#eef6df; color:#3c6b1e; }
+.sbox-valid .score-ok:hover, .sbox-valid .score-ok:focus { background:#dcecc4; }
+.sbox-valid .score-ok:active { background:#cde3ab; }
 .pside { display:flex; align-items:center; gap:4px; min-width:0; border-radius:5px; flex:1 1 0; padding:1px 4px; margin:0 -2px; }
 .pside-a { justify-content:flex-start; }
 .pside-b { justify-content:flex-end; }
