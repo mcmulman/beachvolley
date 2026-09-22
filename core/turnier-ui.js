@@ -124,7 +124,10 @@
        (iPad) den Fokus aus dem Feld und springt weiter - siehe
        spielplan-enh.js ([data-score-ok]-Handler, gilt fuer ALLE Turnierbogen).
        Nur am Bildschirm sichtbar (.noprint). */
-    const okBtn = '<button type="button" class="score-ok noprint" data-score-ok'
+    /* tabindex="-1": der Knopf soll NIE in der Tab-Reihenfolge auftauchen -
+       Tab muss immer direkt vom linken ins rechte Kaestchen und von dort ins
+       naechste Spiel springen, ohne hier "haengenzubleiben". */
+    const okBtn = '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
       + ' aria-label="Eingabe bestätigen und weiter">✓</button>';
     return '<span class="sset" data-set="' + setNo + '">'
       + '<span class="slbl">' + esc(label) + '</span>'
@@ -1017,8 +1020,13 @@
       }
     });
     /* Komfort: Wird nur der Verlierer-Wert eingetragen, füllt sich die
-       Gegenseite mit dem Satzziel. Nie überschreibend – ein bereits
-       eingetragener Wert bleibt stehen. Ersetzt die ID-basierte Logik aus
+       Gegenseite mit dem Satzziel. Ein manuell eingetragener Wert bleibt
+       stehen – erkennbar am fehlenden data-bl-auto-Attribut (wird bei jeder
+       echten Nutzereingabe in spielplan-enh.js entfernt). Wird das
+       Verlierer-Feld wieder geleert/ungültig, nehmen wir eine rein
+       automatisch gesetzte Gegenseite auch wieder zurück – sonst bleibt ein
+       "Geisterergebnis" stehen und blockiert die nächste
+       Autovervollständigung dauerhaft. Ersetzt die ID-basierte Logik aus
        form-flow.js, die mit data-Attributen nicht greift.                    */
     rootEl.addEventListener('change', e => {
       const el = e.target;
@@ -1026,16 +1034,25 @@
       if (!onChange.setMode) return;
       const setNo = +el.getAttribute('data-set');
       const target = TC.targetForSet(onChange.setMode(), setNo);
-      const raw = String(el.value || '').trim();
-      if (!/^\d+$/.test(raw)) return;
-      const v = parseInt(raw, 10);
-      if (v < 0 || v > target - 2) return;
       const other = el.getAttribute('data-side') === 'a' ? 'b' : 'a';
       const p = rootEl.querySelector('input.score[data-mid="' + el.getAttribute('data-mid')
         + '"][data-set="' + setNo + '"][data-side="' + other + '"]');
-      if (!p || p.disabled || String(p.value || '').trim() !== '') return;
-      p.value = String(target);
-      onChange(p.getAttribute('data-mid'), setNo, other, p.value);
+      if (!p || p.disabled) return;
+      const raw = String(el.value || '').trim();
+      const v = parseInt(raw, 10);
+      const isLoserValue = /^\d+$/.test(raw) && v >= 0 && v <= target - 2;
+      if (isLoserValue) {
+        if (String(p.value || '').trim() !== '' && p.getAttribute('data-bl-auto') !== '1') return;
+        if (p.value !== String(target)) {
+          p.value = String(target);
+          onChange(p.getAttribute('data-mid'), setNo, other, p.value);
+        }
+        p.setAttribute('data-bl-auto', '1');
+      } else if (p.getAttribute('data-bl-auto') === '1' && String(p.value || '').trim() !== '') {
+        p.value = '';
+        p.removeAttribute('data-bl-auto');
+        onChange(p.getAttribute('data-mid'), setNo, other, p.value);
+      }
     });
     rootEl.addEventListener('click', e => {
       const roundBtn = e.target && e.target.closest
@@ -1227,8 +1244,9 @@
           + '<span class="n"></span></div>'
           /* OK-Knopf (siehe setColumnHtml/spielplan-enh.js [data-score-ok]):
              die zusaetzliche Klasse "sbox" laesst den universellen Handler
-             auch hier das Kaestchenpaar finden, ohne KQ-Sonderfall im JS. */
-          + '<button type="button" class="score-ok noprint" data-score-ok'
+             auch hier das Kaestchenpaar finden, ohne KQ-Sonderfall im JS.
+             tabindex="-1": nicht Teil der Tab-Reihenfolge (siehe oben). */
+          + '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
           + ' aria-label="Eingabe bestätigen und weiter">✓</button>'
           + '</div>';
       });

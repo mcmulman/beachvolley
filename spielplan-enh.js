@@ -95,6 +95,15 @@
   document.addEventListener('input', function (e) {
     var el = e.target;
     if (!el || !el.classList || !el.classList.contains('score')) return;
+    /* Jede ECHTE Eingabe (auch Loeschen) hebt eine evtl. vorher automatisch
+       gesetzte Gewinner-Zahl (siehe Autovervollstaendigung in den einzelnen
+       Boegen bzw. wireScoreInputs()) wieder auf "manuell" - sonst haelt der
+       naechste "Wert schon vorhanden"-Check faelschlich einen laengst
+       ueberholten Auto-Wert fest und die Autovervollstaendigung wirkt danach
+       "kaputt". Das Autofill selbst setzt dieses Attribut immer ERST NACH
+       dem eigenen dispatchEvent('input', ...), wird also hier nie sofort
+       wieder entfernt. */
+    el.removeAttribute('data-bl-auto');
     sanitizeScore(el);
   }, true);
 
@@ -118,13 +127,34 @@
      Fokus entfernt (blur), was das Auto-Ausfuellen (change-Event) ausloest.
      Funktioniert unabhaengig vom Attribut-Schema (data-mid/-side oder die
      aelteren IDs), weil rein auf DOM-Reihenfolge innerhalb "sbox" geschaut
-     wird - so ist ein einziger Handler fuer alle Turnierbogen ausreichend. */
+     wird - so ist ein einziger Handler fuer alle Turnierbogen ausreichend.
+
+     Validierung vor dem Sprung: Ist das Kaestchenpaar unvollstaendig (noch
+     leer) oder bereits als ungueltig markiert (siehe markScores()/
+     markScoreInputs() der jeweiligen Bogen - die setzen "invalid" bei jeder
+     Eingabe live neu), springt der Knopf NICHT weiter, sondern markiert
+     beide Kaestchen rot (gleiche Klasse/Optik wie eine echte Falscheingabe)
+     und fokussiert das erste noch leere bzw. erste Kaestchen. Sobald wieder
+     getippt wird, raeumt die Bogen-eigene Logik die Markierung ohnehin neu
+     auf (sie entfernt "invalid" bei jeder Eingabe zuerst global). */
   document.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
     if (!btn) return;
     e.preventDefault();
     var box = btn.closest('.sbox');
     var boxInputs = box ? Array.prototype.slice.call(box.querySelectorAll('input.score')) : [];
+    var active = boxInputs.filter(function (inp) { return !inp.disabled; });
+    if (!active.length) return;
+    var empty = active.filter(function (inp) { return String(inp.value || '').trim() === ''; });
+    var invalid = active.some(function (inp) { return inp.classList.contains('invalid'); });
+    if (empty.length || invalid) {
+      active.forEach(function (inp) { inp.classList.add('invalid'); });
+      var focusTarget = empty[0] || active[0];
+      focusTarget.focus();
+      if (focusTarget.select) focusTarget.select();
+      schedule();
+      return;
+    }
     var anchor = boxInputs.length ? boxInputs[boxInputs.length - 1] : null;
     if (!anchor) return;
     var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));

@@ -1479,8 +1479,10 @@
       +   '<span class="vs">:</span>'
       +   scoreInputHtml(prefix, round, b, a, ph || '')
       /* OK-Knopf: nimmt auf Geraeten ohne Tab-Taste (iPad) den Fokus aus dem
-         Feld und springt weiter - siehe spielplan-enh.js [data-score-ok]. */
-      +   '<button type="button" class="score-ok noprint" data-score-ok'
+         Feld und springt weiter - siehe spielplan-enh.js [data-score-ok].
+         tabindex="-1": nicht Teil der Tab-Reihenfolge - Tab soll immer direkt
+         ins naechste Kaestchen springen, nicht auf diesen Knopf. */
+      +   '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
       +   ' aria-label="Eingabe bestätigen und weiter">✓</button>'
       + '</span></span>';
   }
@@ -1849,15 +1851,23 @@
     var el = e.target;
     if(!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
     var t = target(el); if(t == null) return;
-    var raw = String(el.value || '').trim();
-    if(!/^\d+$/.test(raw)) return;
-    var v = parseInt(raw, 10);
-    if(v < 0 || v > t - 2) return;                         // nur Verlierer-Werte (0…Ziel-2) füllen die Gegenseite
     var p = partnerOf(el);
     if(!p || p.disabled) return;
-    if(String(p.value || '').trim() !== '') return;        // vorhandenen Wert nie überschreiben
-    p.value = String(t);
-    p.dispatchEvent(new Event('input', {bubbles:true}));   // Speichern + Neuberechnung auslösen
+    var raw = String(el.value || '').trim();
+    var v = parseInt(raw, 10);
+    var isLoser = /^\d+$/.test(raw) && v >= 0 && v <= t - 2;    // Verlierer-Werte (0…Ziel-2) füllen die Gegenseite
+    if(isLoser){
+      if(String(p.value || '').trim() !== '' && p.getAttribute('data-bl-auto') !== '1') return; // manuellen Wert nie überschreiben
+      if(p.value !== String(t)){
+        p.value = String(t);
+        p.dispatchEvent(new Event('input', {bubbles:true}));   // Speichern + Neuberechnung auslösen
+      }
+      p.setAttribute('data-bl-auto', '1');
+    } else if(p.getAttribute('data-bl-auto') === '1' && String(p.value || '').trim() !== ''){
+      p.value = '';                                            // Geisterergebnis zurücknehmen, sonst blockiert es die nächste Autovervollständigung
+      p.removeAttribute('data-bl-auto');
+      p.dispatchEvent(new Event('input', {bubbles:true}));
+    }
   });
 })();
 </script>

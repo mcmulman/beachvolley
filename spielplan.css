@@ -181,7 +181,7 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
    (iPad) den Fokus aus dem Feld nehmen und weiterspringen koennen. Rein
    informell "im Fluss" der Kaestchen platziert - aendert deren Hoehe nicht. */
 .score-ok {
-  width:22px; height:22px; margin-left:2px; padding:0; border-radius:50%;
+  width:22px; height:22px; margin-left:8px; padding:0; border-radius:50%;
   border:1px solid #b7bfc9; background:#eef1f4; color:#4a5560;
   font-size:12px; line-height:1; font-weight:700; cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
