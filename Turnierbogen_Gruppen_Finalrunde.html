@@ -158,6 +158,7 @@
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen</button>
     <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
     <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Team ausgefallen</button>
+    <button type="button" class="nbtn" id="btnToggleRankImport"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> Rangliste importieren</button>
     <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
     <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
@@ -181,6 +182,17 @@
     <div class="panel-checks" id="absentGrid"></div>
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
     <p class="nhint">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.</p>
+  </div>
+  <div id="rankimportpanel" class="noprint namepanel" hidden>
+    <p class="nhint">🏅 Für eine <b>Finalrunde nach einer bereits gespielten Rangliste</b> (z. B. aus „Jeder gegen Jeden“): Teamnamen in Platzierungsreihenfolge einfügen (Platz 1 zuerst, ein Name pro Zeile). Die Teams werden dann in aufeinanderfolgende Blöcke eingeteilt – Block 1 spielt um die vorderen Plätze, Block 2 um die nächsten usw. Die Blockanzahl lässt sich danach über „Gruppen“ oben anpassen.</p>
+    <textarea id="rankImportInput" rows="10" style="width:100%;box-sizing:border-box;font:inherit" placeholder="1. Team A
+2. Team B
+3. Team C
+…"></textarea>
+    <div class="nactions">
+      <button type="button" class="nbtn" id="btnRankImportApply">Rangliste übernehmen &amp; Finalrunde bilden</button>
+    </div>
+    <p class="nhint" id="rankImportHint"></p>
   </div>
 </div>
 
@@ -382,6 +394,64 @@
     S.config.endTime = $('endTime').value || '14:00';
   }
 
+  /* Sinnvolle Blockanzahl für eine importierte Rangliste vorschlagen: Ziel
+     sind Blöcke von 3-4 Teams (typische Größe für eine Platzierungsrunde/
+     Medal Round), am liebsten ohne Rest. Der Vorschlag ist nur ein Startwert –
+     über die vorhandene "Gruppen"-Auswahl kann er jederzeit angepasst werden. */
+  function suggestRankBlocks(n){
+    let best = 2, bestScore = Infinity;
+    for(let g = 2; g <= 6 && g <= n; g++){
+      const size = n / g;
+      const score = Math.abs(size - 3.5) - (Number.isInteger(size) ? 0.4 : 0);
+      if(score < bestScore){ bestScore = score; best = g; }
+    }
+    return best;
+  }
+
+  /* Übernimmt eine von außen importierte Rangliste (Namen in Platzierungs-
+     reihenfolge) als Grundlage für eine Finalrunde: Teams werden in
+     aufeinanderfolgende Blöcke geteilt (finalMode 'blocks'), jeder Block
+     spielt nur um seine eigenen Plätze - siehe TFormat computePlacements(). */
+  function applyRankImport(names){
+    const capped = names.slice(0, 24);
+    if(names.length > 24){
+      alert('Es werden nur die ersten 24 Teams übernommen (Maximum dieses Bogens).');
+    }
+    S.config.teams = capped.length;
+    S.config.groups = suggestRankBlocks(capped.length);
+    S.config.finalMode = 'blocks';
+    S.results = {};
+    S.absent = [];
+    S.frozen = {};
+    S.frozenModes = {};
+    S.teamNames = {};
+    capped.forEach((nm, i) => { S.teamNames[i+1] = nm; });
+    S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
+    save();
+    fillSelects();
+    structureKey = '';
+    rebuild();
+  }
+
+  /* Übergabe aus einem anderen Bogen (z. B. "Jeder gegen Jeden"): Der Link
+     enthält die fertige Rangliste als #rankimport=<Base64-JSON-Array>. Wird
+     nur automatisch übernommen, wenn dieser Bogen noch leer ist - sonst erst
+     nach Rückfrage, damit kein laufendes Turnier überschrieben wird.        */
+  function applyPendingRankImportFromHash(){
+    const m = /rankimport=([^&]+)/.exec(location.hash || '');
+    if(!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    let names;
+    try {
+      names = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+    } catch(e) { return; }
+    if(!Array.isArray(names) || names.length < 2) return;
+    const empty = !Object.keys(S.results || {}).length && !Object.keys(S.teamNames || {}).length;
+    if(!empty && !confirm('Rangliste aus einem anderen Turnier übernehmen? Das bisherige Turnier auf diesem Bogen wird dabei überschrieben.')) return;
+    applyRankImport(names);
+  }
+
+
   /* ----------------------------------------------------------- Aufbau */
   function compute(){
     B = TFormat.build({
@@ -554,6 +624,8 @@
 
     let html = '';
     let anyGroupResult = false;
+    const isBlocks = S.config.finalMode === 'blocks';
+    let blockStart = 1;
     B.groupNames.forEach(g => {
       const t = B.groupTables[g];
       const matches = B.groupMatches[g] || [];
@@ -561,7 +633,13 @@
       anyGroupResult = anyGroupResult || hasResult;
       const key = 'group-' + g;
       const editable = MSTD.isEditing(key);
-      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Gruppe ' + g
+      const size = (B.groups[g] || []).length;
+      const blockEnd = blockStart + size - 1;
+      const caption = isBlocks
+        ? 'Platzierungsblock ' + g + ' (Platz ' + blockStart + (blockEnd > blockStart ? '–' + blockEnd : '') + ')'
+        : 'Gruppe ' + g;
+      blockStart = blockEnd + 1;
+      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>' + caption
         + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">(Wertung pro Spiel – ungleiche Spielzahl)</span>' : '')
         + (hasResult ? MSTD.toolbarHtml(key) : '')
         + '</caption>'
@@ -802,9 +880,12 @@
       + ' mit 2 Punkten Vorsprung.';
 
     const noFinal = c.finalMode === 'none';
+    const isBlocks = c.finalMode === 'blocks';
     const fsSub   = $('finalStandingsSub');
     const capPlace = $('capPlace');
-    if (fsSub) fsSub.textContent = noFinal
+    if (fsSub) fsSub.textContent = isBlocks
+      ? 'Endstand nach den Platzierungsblöcken (jeder Block spielt nur um seine eigenen Plätze):'
+      : noFinal
       ? 'Endstand nach der Gruppenphase (keine Finalrunde):'
       : 'Endstand – aus den Ergebnissen der Finalrunde (Seite 1) ableiten:';
     if (capPlace) capPlace.textContent = 'Endstand';
@@ -813,7 +894,10 @@
   }
 
   function paintGuide(){
-    $('g-groups').textContent = B.groupNames.length + ' Gruppen zu '
+    const isBlocks = S.config.finalMode === 'blocks';
+    $('g-groups').textContent = (isBlocks
+      ? B.groupNames.length + ' Platzierungsblöcke (importierte Rangliste) zu '
+      : B.groupNames.length + ' Gruppen zu ')
       + B.groupNames.map(g=>B.groups[g].length).join('/') + ' Teams.';
     $('g-mode').textContent = TC.modeDef(S.config.setMode).label
       + ', Sieg nur mit 2 Punkten Vorsprung (z. B. ' + (TC.modeDef(S.config.setMode).target+1)
@@ -827,6 +911,9 @@
       txt += ' – Gruppensieger treffen erst im Finale aufeinander.';
     } else if(S.config.finalMode === 'main'){
       txt += ' – die obere Hälfte spielt um die Plätze 1 ff., die untere um die hinteren Plätze.';
+    } else if(isBlocks){
+      txt = 'Jeder Block spielt nur um seine eigenen Plätze (Block 1 z. B. um Platz 1–3, Block 2 um '
+        + 'Platz 4–6 usw.) – die importierte Rangliste bestimmt die Einteilung, es gibt keine weitere Finalrunde.';
     }
     $('g-final').textContent = txt;
     $('g-games').textContent = perTeamGames().text.replace('Spiele pro Team: ', '');
@@ -861,6 +948,20 @@
     $('btnToggleNames').addEventListener('click', e => toggle('namepanel', e.target));
     $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.target));
     $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.target));
+    $('btnToggleRankImport').addEventListener('click', e => toggle('rankimportpanel', e.target));
+    $('btnRankImportApply').addEventListener('click', () => {
+      const names = $('rankImportInput').value.split('\n')
+        .map(s => s.replace(/^\s*\d+[.)]\s*/, '').trim())
+        .filter(Boolean);
+      const hint = $('rankImportHint');
+      if(names.length < 2){
+        hint.textContent = 'Bitte mindestens 2 Teams (ein Name pro Zeile, in Platzierungsreihenfolge) einfügen.';
+        return;
+      }
+      applyRankImport(names);
+      hint.textContent = '';
+      toggle('rankimportpanel', $('btnToggleRankImport'));
+    });
 
     $('nameGrid').addEventListener('input', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
@@ -971,6 +1072,7 @@
 
   fillSelects();
   wire();
+  applyPendingRankImportFromHash();
   rebuild();
   offerLegacy();
 })();

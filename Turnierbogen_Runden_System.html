@@ -218,6 +218,10 @@
   </table>
 </div>
 
+<div class="noprint" style="text-align:center;margin:14px 0 22px;">
+  <button type="button" class="nbtn" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> Finalrunde spielen</button>
+</div>
+
 <div class="row" id="scoringTables"></div>
 
 <div class="legend" id="h-legend"></div>
@@ -1155,6 +1159,40 @@
       S.frozen = {}; S.frozenModes = {};
       save(); structureKey=''; rebuild();
     });
+    function exportRankingToFinal(){
+      const teams = allTeams().filter(t => !S.absent.includes(t));
+      if(teams.length < 2){ alert('Es müssen mindestens 2 Teams aktiv sein.'); return; }
+      const table = B.table;
+      /* B.table hat kein eigenes "complete"-Flag (TFormat.buildRounds liefert
+         nur ranked/stat/criteria/played) - vollständig ist der Stand, wenn
+         KEIN Spiel mehr offen ist (kein Ergebnis, kein Freilos, nicht tot). */
+      const openMatches = (B.rounds || []).reduce((sum, rd) =>
+        sum + rd.matches.filter(m => !m.result && m.bye == null && !m.dead).length, 0);
+      const complete = openMatches === 0 && table && table.ranked && table.ranked.length === teams.length;
+      const doExport = () => {
+        if(!complete && !confirm('Es sind noch nicht alle Ergebnisse eingetragen. Trotzdem die aktuelle Zwischenrangliste für die Finalrunde übernehmen?')) return;
+        const rankedOrder = (table && table.ranked && table.ranked.length)
+          ? table.ranked.map(e => e.team)
+          : teams;
+        const names = rankedOrder.map(t => (S.teamNames && S.teamNames[t]) ? String(S.teamNames[t]).trim() || ('Team ' + t) : ('Team ' + t));
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(names)))));
+        window.open('Turnierbogen_Gruppen_Finalrunde.html#rankimport=' + encoded, '_blank');
+      };
+      if(typeof TShare !== 'undefined' && TShare.openInfoDialog){
+        TShare.openInfoDialog({
+          title: 'Finalrunde spielen',
+          bodyHtml: '<p>Die aktuelle Rangliste wird als neuer Bogen <strong>„Gruppen + Finalrunde“</strong> in einem neuen Tab geöffnet und dort automatisch in Platzierungsblöcke aufgeteilt.</p>' +
+            '<p>Block 1 spielt dann z.\u202fB. um Platz 1\u20133, Block 2 um Platz 4\u20136 usw. Anzahl und Größe der Blöcke lassen sich dort noch anpassen, bevor es losgeht.</p>' +
+            '<p class="tshare-hint">Dieser Bogen hier bleibt unverändert erhalten.</p>',
+          confirmLabel: 'Finalrunde öffnen',
+          cancelLabel: 'Abbrechen',
+          onConfirm: doExport
+        });
+      } else {
+        doExport();
+      }
+    }
+    $('btnExportFinal').addEventListener('click', exportRankingToFinal);
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });

@@ -54,7 +54,8 @@
     { id: 'placement', label: 'Über-Kreuz-Platzierungsrunde (jedes Team spielt weiter)' },
     { id: 'ko', label: 'KO-Runde mit Spiel um Platz 3' },
     { id: 'main', label: 'Hauptrunde (zweite Gruppenphase über Kreuz)' },
-    { id: 'none', label: 'Keine Finalrunde – nur Gruppenphase' }
+    { id: 'none', label: 'Keine Finalrunde – nur Gruppenphase' },
+    { id: 'blocks', label: 'Platzierungsblöcke (Rangliste in Blöcke geteilt, jeder Block spielt um seine Plätze)' }
   ];
 
   /* ==========================================================================
@@ -610,6 +611,19 @@
         Object.keys(mainTables).forEach(n => {
           mainTables[n].ranked.forEach(e => out.push({ place: p++, team: e.team, source: 'Hauptrunde ' + n }));
         });
+      } else if (finalMode === 'blocks') {
+        /* Platzierungsblöcke: anders als bei 'none' (Gesamtreihung über Kreuz,
+           A1,B1,A2,B2…) werden die Gruppen hier NACHEINANDER durchnummeriert
+           (Block A komplett, dann Block B, …). Das passt zu einer bereits
+           importierten Rangliste: Block A enthält die Plätze 1..n, Block B
+           die Plätze n+1..2n usw. – jeder Block spielt nur um SEINE Plätze. */
+        let p = 1;
+        names.forEach(n => {
+          groupTables[n].ranked.forEach(e => out.push({
+            place: p++, team: e.team, shared: e.shared,
+            source: 'Platzierungsblock ' + n
+          }));
+        });
       } else {
         // Nur Gruppenphase: A1,B1,A2,B2 … als Gesamtreihung
         let p = 1;
@@ -626,7 +640,7 @@
       warnings.push('Ein Spiel der Finalrunde endete unentschieden – hier muss ein '
         + 'Entscheidungssatz gespielt oder der Satzmodus mit Entscheidungssatz gewählt werden.');
     }
-    if (finalMode !== 'none' && names.some(n => !groupTables[n].complete)) {
+    if (finalMode !== 'none' && finalMode !== 'blocks' && names.some(n => !groupTables[n].complete)) {
       warnings.push('Die Finalpaarungen stehen erst fest, wenn alle Gruppenspiele eingetragen sind.');
     }
     names.forEach(n => {
