@@ -1187,7 +1187,7 @@
     });
 
     const onRoundNav = e => {
-      const f = TUI.roundBarValue(e, B.slots, roundFilter);
+      const f = TUI.roundBarValue(e, B.slots, roundFilter, TUI.lastFilledRound(B.slots, S.results));
       if(f == null) return;
       roundFilter = f;
       $('roundbar').innerHTML = TUI.roundBarHtml(B.slots, roundFilter);

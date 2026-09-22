@@ -78,7 +78,7 @@
   .guide .hi { font-weight:bold; }
   .auto { background:#e7f6ec; color:#0a3d20; font-weight:bold; }
   .byeauto { background:#fff3d6; color:#7a5a00; font-weight:bold; }
-  .tnm { font-weight:normal; font-size:0.82em; color:#0a7d2c; }
+  .tnm { font-weight:normal; font-size:0.82em; color:#0a6222; }
   .abt { color:#c00; font-size:0.8em; font-weight:600; }
   input[type=checkbox].ab-check { margin-right: 4px; }
   .panel-checks { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:6px 12px; }
@@ -1435,6 +1435,10 @@
       +   scoreInputHtml(prefix, round, a, b, ph || '')
       +   '<span class="vs">:</span>'
       +   scoreInputHtml(prefix, round, b, a, ph || '')
+      /* OK-Knopf: nimmt auf Geraeten ohne Tab-Taste (iPad) den Fokus aus dem
+         Feld und springt weiter - siehe spielplan-enh.js [data-score-ok]. */
+      +   '<button type="button" class="score-ok noprint" data-score-ok'
+      +   ' aria-label="Eingabe bestätigen und weiter">✓</button>'
       + '</span></span>';
   }
   function matchCellHtml(round, a, b, fieldIdx, fieldLabel){

@@ -109,6 +109,35 @@
     if (partner.select) partner.select();
   }, true);
 
+  /* ------------------------------------------------------- OK-Knopf (iPad)
+     Geraete ohne Tab-Taste (iPad) koennen ein Ergebnis nicht per Tab
+     verlassen/bestaetigen. Ein kleiner OK-Knopf neben dem Kaestchenpaar
+     (siehe *.setColumnHtml()/courtLadderHtml() - Klasse "sbox", Attribut
+     [data-score-ok]) nimmt den Fokus und springt - wie sonst Enter/Tab -
+     zum naechsten aktiven Ergebnisfeld. Gibt es keins mehr, wird nur der
+     Fokus entfernt (blur), was das Auto-Ausfuellen (change-Event) ausloest.
+     Funktioniert unabhaengig vom Attribut-Schema (data-mid/-side oder die
+     aelteren IDs), weil rein auf DOM-Reihenfolge innerhalb "sbox" geschaut
+     wird - so ist ein einziger Handler fuer alle Turnierbogen ausreichend. */
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    var box = btn.closest('.sbox');
+    var boxInputs = box ? Array.prototype.slice.call(box.querySelectorAll('input.score')) : [];
+    var anchor = boxInputs.length ? boxInputs[boxInputs.length - 1] : null;
+    if (!anchor) return;
+    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
+    var idx = list.indexOf(anchor);
+    var next = idx >= 0 ? list[idx + 1] : null;
+    if (next) {
+      next.focus();
+      if (next.select) next.select();
+    } else if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+  }, true);
+
   /* -------------------------------------- offene/erledigte Spiele markieren
      Bewusst rein am Markup entschieden: ein Spiel gilt als erledigt, wenn
      alle aktiven Kaestchen der Zelle gefuellt und keines ungueltig ist.    */

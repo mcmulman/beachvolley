@@ -49,15 +49,15 @@
     .kqmatch.is-draw { background:#fff6ec; }
     .kqside { flex:1 1 0; display:flex; align-items:center; gap:4px; min-width:0; }
     .kqside .n { flex:1 1 auto; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .kqside.is-win .n { font-weight:bold; color:#0a7d2c; }
+    .kqside.is-win .n { font-weight:bold; color:#0a6222; }
     .kqside[data-kq-side="b"] { flex-direction:row-reverse; }
-    .kqvs { font-size:11px; color:#888; flex:0 0 auto; }
+    .kqvs { font-size:11px; color:#5c5c5c; flex:0 0 auto; }
     .kqscore { width:38px; height:30px; font-size:14px; text-align:center; }
-    .kqbye { font-size:11px; color:#666; padding:2px 5px; border-top:1px dashed #ddd; margin-top:2px; }
+    .kqbye { font-size:11px; color:#4d4d4d; padding:2px 5px; border-top:1px dashed #ddd; margin-top:2px; }
     .kqbye .n { font-weight:600; }
     @media print {
       .kq-courts { display:flex; }
-      .kqside.is-win .n { color:#0a7d2c !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .kqside.is-win .n { color:#0a6222 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .kqcourt.is-king { background:#fffaf0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     }
     @media screen and (max-width:700px) {
@@ -347,7 +347,7 @@
     let html = '';
     B.rounds.forEach(rd => {
       html += '<div class="kq-round round-block" data-round="' + rd.round + '">'
-        + '<div class="kq-round-head">Runde ' + rd.round + ' <span style="font-weight:normal;color:#888;font-size:12px">('
+        + '<div class="kq-round-head">Runde ' + rd.round + ' <span style="font-weight:normal;color:#5c5c5c;font-size:12px">('
         + TUI.fmtTime(B.slots[rd.round-1] ? B.slots[rd.round-1].startMin : B.startMin) + ' Uhr)</span></div>'
         + '<div class="kq-courts">' + TUI.courtLadderHtml(rd.courts, rd.round) + '</div>'
         + '</div>';
@@ -500,8 +500,21 @@
     // Universalboegen (roundBarHtml/roundBarValue). Die Feld-Leiter besteht
     // aus <div data-round> statt Tabellenzeilen, daher applyKqRoundFilter()
     // statt TUI.applyRoundFilter (das gezielt tr[data-round] anspricht).
+    // lastFilledRound() nutzt hier nicht TUI.lastFilledRound(), da Ergebnisse
+    // pro Match als [a,b]-Paar (statt Satz-Array) unter S.results[mid] liegen.
+    const lastFilledRound = () => {
+      let best = null;
+      B.rounds.forEach(rd => {
+        const filled = (rd.courts || []).some(cd => (cd.matches || []).some(m => {
+          const r = S.results[m.id];
+          return !!(r && (r[0] != null || r[1] != null));
+        }));
+        if (filled && (best == null || rd.round > best)) best = rd.round;
+      });
+      return best;
+    };
     const onRoundNav = e => {
-      const f = TUI.roundBarValue(e, B.rounds.map(rd => ({ round: rd.round })), roundFilter);
+      const f = TUI.roundBarValue(e, B.rounds.map(rd => ({ round: rd.round })), roundFilter, lastFilledRound());
       if(f == null) return;
       roundFilter = f;
       $('roundbarKq').innerHTML = TUI.roundBarHtml(B.rounds.map(rd => ({ round: rd.round })), roundFilter);

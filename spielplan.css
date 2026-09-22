@@ -164,13 +164,28 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
 .pair .t, .bye .t { display:flex; flex-direction:column; min-width:0; flex:1 1 0; }
 .pair .t .dropped-team { display:flex; flex-direction:column; min-width:0; }
 .t-line { font-weight:bold; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.t-nm { font-weight:normal; font-size:11px; color:#0a7d2c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Dunkler als das urspruengliche #0a7d2c - im hellen Sonnenlicht (iPad
+   drausen am Feld) verwaschen mittelhelle Farben staerker als auf einem
+   Monitor; Kontrastwerte gegen Weiss wurden per WCAG-Formel geprueft. */
+.t-nm { font-weight:normal; font-size:11px; color:#0a6222; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pnames .t-a { text-align:left; }
 .pnames .t-b { text-align:right; }
 .psets { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
 .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
-.slbl { font-size:10px; font-weight:700; color:#5a6b80; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
+.slbl { font-size:10px; font-weight:700; color:#3d4a5c; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
 .sbox { display:inline-flex; align-items:center; gap:2px; }
+/* OK-Knopf neben dem Kaestchenpaar (siehe setColumnHtml/courtLadderHtml,
+   Attribut [data-score-ok]): nur am Bildschirm, damit Geraete ohne Tab-Taste
+   (iPad) den Fokus aus dem Feld nehmen und weiterspringen koennen. Rein
+   informell "im Fluss" der Kaestchen platziert - aendert deren Hoehe nicht. */
+.score-ok {
+  width:22px; height:22px; margin-left:2px; padding:0; border-radius:50%;
+  border:1px solid #8fae4f; background:#eef6df; color:#3c6b1e;
+  font-size:12px; line-height:1; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
+}
+.score-ok:hover, .score-ok:focus { background:#dcecc4; outline:none; }
+.score-ok:active { background:#cde3ab; }
 .pside { display:flex; align-items:center; gap:4px; min-width:0; border-radius:5px; flex:1 1 0; padding:1px 4px; margin:0 -2px; }
 .pside-a { justify-content:flex-start; }
 .pside-b { justify-content:flex-end; }
@@ -185,12 +200,12 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
 .mres-b { justify-content:flex-end; text-align:right; margin-left:auto; }
 .mscore { font-weight:700; font-size:12px; color:#333; }
 .mscore:empty { display:none; }
-.tdiff { font-weight:800; font-size:11px; color:#888; white-space:nowrap; flex:0 0 auto;
+.tdiff { font-weight:800; font-size:11px; color:#5c5c5c; white-space:nowrap; flex:0 0 auto;
   background:#eef0f3; padding:1px 6px; border-radius:999px; line-height:1.4; }
-.tdiff.pos { color:#1b7a1b; background:#e0f3e0; }
-.tdiff.neg { color:#a33131; background:#fae3e3; }
+.tdiff.pos { color:#146b18; background:#e0f3e0; }
+.tdiff.neg { color:#8f2323; background:#fae3e3; }
 .tdiff:empty { display:none; padding:0; }
-.mwin-note { font-weight:normal; color:#777; font-size:10px; }
+.mwin-note { font-weight:normal; color:#595959; font-size:10px; }
 .mnote-slot { display:block; text-align:center; }
 .mnote-slot:empty { display:none; }
 .sched.compact .bye { gap:4px; }
@@ -279,7 +294,7 @@ body.round-showall .round-grid {
                 -webkit-appearance:none; appearance:none; }
 input.score::-webkit-outer-spin-button, input.score::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 /* Platzhalter (z. B. "TB" im Entscheidungssatz) dezent ausgegraut. */
-input.score::placeholder { color:#aab4c2; font-weight:600; opacity:1; }
+input.score::placeholder { color:#8895a8; font-weight:600; opacity:1; }
 input.score:focus { outline:2px solid #1f4e79; outline-offset:-1px; background:#fffce8; }
 input.score.win { background:#d6f5d6 !important; border-color:#2e8b2e; }
 input.score.invalid { background:#ffe0e0 !important; border-color:#cc3333; }
@@ -628,7 +643,7 @@ input.score:disabled { background:#f7f7f7; color:#999; }
       word-break: break-word;
     }
 .sched td { padding:0.8mm 1mm; }
-.sched tr.rhead > td.rhead-cell { padding:1mm 1.5mm; background:#eef3fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-bottom:0.4pt solid #9bb0c8; border-top:1.6mm solid transparent; }
+.sched tr.rhead > td.rhead-cell { padding:1mm 1.5mm; background:#eef3fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-bottom:0.4pt solid #9bb0c8; border-top:1.6mm solid #b9c9dc; }
 .sched > tbody > tr.rhead:first-child > td.rhead-cell { border-top-width:0; }
 .sched tr.rhead .rlabel { font-size:8.2pt; font-weight:800; color:#000; }
 .sched tr.rhead .rtime { font-size:7.6pt; font-weight:700; color:#000; }
@@ -758,7 +773,10 @@ input.score.invalid {
 .sched tr.rhead > td.rhead-cell {
         background: #eef3fb;
         border: 1px solid #d6e1ef;
-        border-top: 12px solid transparent;
+        /* Farbiger (statt transparenter) Balken trennt die Runden optisch klar
+           voneinander - ohne ihn war nicht erkennbar, ob z. B. das
+           "spielfrei"-Label zur Runde darueber oder darunter gehoert. */
+        border-top: 12px solid #c3d3e6;
         padding: 7px 10px;
       }
 .sched > tbody > tr.rhead:first-child > td.rhead-cell { border-top-width: 0; }
@@ -923,15 +941,20 @@ input.score { font-size:16px; }
         display: block;
         width: 100%;
         border: 0;
+        /* border-top uebernimmt 4px vom bisherigen 12px-Abstand (margin-top
+           entsprechend reduziert) - Gesamthoehe/Layout bleibt unveraendert,
+           nur ein Teil des Abstands wird jetzt sichtbar als Trennlinie. */
+        border-top: 4px solid #c3d3e6;
         border-bottom: 2px solid #9bb0c8;
         border-radius: 0;
         background: #eef3fb;
         background-clip: padding-box;
         padding: 8px 10px;
-        margin-top: 12px;
+        margin-top: 8px;
       }
 .table-scroll.is-wide table.sched > tbody > tr.rhead:first-child > td.rhead-cell {
         margin-top: 0;
+        border-top: 0;
       }
 .table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
         display: none;
@@ -1140,7 +1163,7 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
 .example-row .teamcol, .example-row .lbl { background: #dceaf7; font-style: normal; }
 
 .rank-badge { display: inline-block; font-weight: 800; }
-.rank-badge.rank-none { color: #999; font-weight: 400; }
+.rank-badge.rank-none { color: #6b7280; font-weight: 400; }
 .rank-badge.rank-top.rank-1 { color: #8a6d00; }
 .rank-badge.rank-top.rank-2 { color: #55606b; }
 .rank-badge.rank-top.rank-3 { color: #8a4b1f; }
@@ -1168,7 +1191,7 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
     font-size: 12px;
     text-align: center;
   }
-  .rank-badge.rank-none { background: none; color: #99a3b1; font-weight: 500; min-width: 0; padding: 0; }
+  .rank-badge.rank-none { background: none; color: #6b7280; font-weight: 500; min-width: 0; padding: 0; }
   .rank-badge.rank-live { background: #e4ecf7; color: #1f4e79; }
   .rank-badge.rank-final.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
   .rank-badge.rank-final.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
@@ -1217,11 +1240,11 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
    Inhalt der ersten Spalte (Team-Nummer + freier Teamname) in JEDEM Bogen
    identisch – auch in den Bögen ohne core/turnier-base.css.
    ========================================================================== */
-.tnm { font-weight: 400; font-size: 0.82em; color: #0a7d2c; }
+.tnm { font-weight: 400; font-size: 0.82em; color: #0a6222; }
 .track .tname .t-line, .central-table .teamcol .t-line,
 .stand .nm .t-line, .teams .name .t-line { font-size: 13px; font-weight: 700; color: inherit; }
 .track .tname .t-nm, .central-table .teamcol .t-nm,
-.stand .nm .t-nm, .teams .name .t-nm { font-size: 11px; font-weight: 400; color: #0a7d2c; }
+.stand .nm .t-nm, .teams .name .t-nm { font-size: 11px; font-weight: 400; color: #0a6222; }
 
 @media screen {
   /* Gleiche Spaltenbreite in laufender Tabelle und Schweizer Tabelle. */

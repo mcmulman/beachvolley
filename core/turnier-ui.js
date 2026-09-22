@@ -120,9 +120,15 @@
         ' data-mid="' + esc(matchId) + '" data-set="' + setNo + '" data-side="' + side + '"' +
         ' autocomplete="off"' + (nm ? ' aria-label="' + esc(nm) + '"' : '') + ph + '>';
     };
+    /* OK-Knopf neben den beiden Kaestchen: nimmt auf Geraeten ohne Tab-Taste
+       (iPad) den Fokus aus dem Feld und springt weiter - siehe
+       spielplan-enh.js ([data-score-ok]-Handler, gilt fuer ALLE Turnierbogen).
+       Nur am Bildschirm sichtbar (.noprint). */
+    const okBtn = '<button type="button" class="score-ok noprint" data-score-ok'
+      + ' aria-label="Eingabe bestätigen und weiter">✓</button>';
     return '<span class="sset" data-set="' + setNo + '">'
       + '<span class="slbl">' + esc(label) + '</span>'
-      + '<span class="sbox">' + inp('a') + '<span class="vs">:</span>' + inp('b') + '</span>'
+      + '<span class="sbox">' + inp('a') + '<span class="vs">:</span>' + inp('b') + okBtn + '</span>'
       + '</span>';
   }
 
@@ -784,9 +790,32 @@
       + '<span class="state" aria-live="polite">' + esc(state) + '</span>';
   }
 
+  /* Ermittelt die letzte Runde mit mindestens einem eingetragenen Ergebnis
+     (Standard-Form: slots[].matches[].id + results[id] = Array von Saetzen
+     [[a,b],...]). Wird beim Wechsel von "Alle Runden" in die Einzelansicht
+     genutzt, damit dort fortgesetzt wird, wo zuletzt eingetragen wurde,
+     statt immer bei Runde 1 zu beginnen. Liefert null, wenn nichts
+     eingetragen ist (dann bleibt es beim bisherigen Sprung zu Runde 1).      */
+  function lastFilledRound(slots, results) {
+    if (!results) return null;
+    let best = null;
+    (slots || []).forEach(s => {
+      const filled = (s.matches || []).some(m => {
+        if (!m || m.id == null) return false;
+        const sets = results[m.id];
+        return !!(sets && sets.some(set => set && (set[0] != null || set[1] != null)));
+      });
+      if (filled && (best == null || s.round > best)) best = s.round;
+    });
+    return best;
+  }
+
   /* Liefert den Filterwert, der sich aus einem Klick/Wechsel im Navigator
-     ergibt – oder null, wenn das Ereignis den Navigator nicht betrifft.      */
-  function roundBarValue(ev, slots, active) {
+     ergibt – oder null, wenn das Ereignis den Navigator nicht betrifft.
+     lastFilled (optional): Rundennummer, zu der beim Verlassen von "Alle
+     Runden" gesprungen werden soll (siehe lastFilledRound()); ohne Angabe
+     bzw. ohne Treffer bleibt es bei Runde 1.                                 */
+  function roundBarValue(ev, slots, active, lastFilled) {
     const el = ev.target;
     if (!el || !el.getAttribute) return null;
     if (el.hasAttribute('data-round-select')) {
@@ -795,8 +824,10 @@
       return el.value;
     }
     const allBtn = el.closest ? el.closest('[data-round-all]') : null;
-    if (allBtn && (allBtn.hasAttribute ? allBtn.hasAttribute('data-round-all') : false))
-      return String(active) === 'all' ? '1' : 'all';
+    if (allBtn && (allBtn.hasAttribute ? allBtn.hasAttribute('data-round-all') : false)) {
+      if (String(active) !== 'all') return 'all';
+      return String(lastFilled != null ? lastFilled : 1);
+    }
     const fromBtn = el.closest ? el.closest('[data-round-next-from]') : null;
     if (fromBtn && (fromBtn.hasAttribute ? fromBtn.hasAttribute('data-round-next-from') : false)) {
       const roundsFrom = [];
@@ -1186,7 +1217,7 @@
         + '<div class="kqcourt-head">' + (cd.level === 1 ? '👑 ' : '') + esc(cd.label) + '</div>'
         + '<div class="kqcourt-matches">';
       (cd.matches || []).forEach(m => {
-        html += '<div class="kqmatch" data-kq-match="' + esc(m.id) + '">'
+        html += '<div class="kqmatch sbox" data-kq-match="' + esc(m.id) + '">'
           + '<div class="kqside" data-kq-side="a"><span class="n"></span>'
           + '<input class="score kqscore" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3"'
           + ' data-mid="' + esc(m.id) + '" data-set="1" data-side="a" autocomplete="off"></div>'
@@ -1194,6 +1225,11 @@
           + '<div class="kqside" data-kq-side="b"><input class="score kqscore" type="text" inputmode="numeric"'
           + ' pattern="[0-9]*" maxlength="3" data-mid="' + esc(m.id) + '" data-set="1" data-side="b" autocomplete="off">'
           + '<span class="n"></span></div>'
+          /* OK-Knopf (siehe setColumnHtml/spielplan-enh.js [data-score-ok]):
+             die zusaetzliche Klasse "sbox" laesst den universellen Handler
+             auch hier das Kaestchenpaar finden, ohne KQ-Sonderfall im JS. */
+          + '<button type="button" class="score-ok noprint" data-score-ok'
+          + ' aria-label="Eingabe bestätigen und weiter">✓</button>'
           + '</div>';
       });
       if (cd.bye != null) {
@@ -1235,7 +1271,7 @@
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml,
-    roundBarHtml, roundBarValue, applyRoundFilter,
+    roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,
     wireScoreInputs, courtLadderHtml, paintCourtLadder

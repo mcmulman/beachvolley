@@ -40,7 +40,7 @@
     .team-legend { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px 6px; border: 1px solid #555; padding: 2px 4px; margin-top: 3px; font-size: 7.1px; line-height: 1.1; justify-content: start; }
     .team-legend span { white-space: nowrap; }
     .team-legend strong { font-weight: 800; }
-    .tnm { font-weight: normal; font-size: 0.85em; color: #0a7d2c; }
+    .tnm { font-weight: normal; font-size: 0.85em; color: #0a6222; }
     .topbar { margin:0 0 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .digbar { margin:0 0 12px; padding:8px 12px; border:1px solid #bfe0c8; border-radius:6px; background:#eefaf1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
     .digbar .nbtn { background: #0a7d2c; border-color: #0a7d2c; }
@@ -998,6 +998,10 @@
         +   scoreInputHtml(prefix + 'A_' + r + '_' + i, 'Team A ' + label, ph)
         +   '<span class="vs">:</span>'
         +   scoreInputHtml(prefix + 'B_' + r + '_' + i, 'Team B ' + label, ph)
+        /* OK-Knopf: nimmt auf Geraeten ohne Tab-Taste (iPad) den Fokus aus dem
+           Feld und springt weiter - siehe spielplan-enh.js [data-score-ok]. */
+        +   '<button type="button" class="score-ok noprint" data-score-ok'
+        +   ' aria-label="Eingabe bestätigen und weiter">✓</button>'
         + '</span></span>';
     }
     /* Runden-Tabelle: exakt derselbe Aufbau wie im Turnierbogen "Alle gegen Alle"
@@ -2162,11 +2166,28 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
   window.toggleAllRounds = function() {
     if(showAll) {
-      filterToRound(currentRound);
+      filterToRound(lastFilledRoundOrCurrent());
     } else {
       showAllRounds();
     }
   };
+
+  // Letzte Runde mit mindestens einem ausgefuellten Ergebnis-Kaestchen -
+  // beim Verlassen von "Alle Runden" wird dorthin gesprungen statt immer zu
+  // "currentRound" (die beim Betreten von "Alle Runden" nicht mehr aktuell
+  // gehalten wird). Ohne Eintraege bleibt es bei der zuletzt gewaehlten Runde.
+  function lastFilledRoundOrCurrent() {
+    let best = null;
+    document.querySelectorAll('[data-round-num]').forEach(function(el) {
+      const rNum = parseInt(el.getAttribute('data-round-num'), 10);
+      if(isNaN(rNum)) return;
+      const filled = Array.prototype.some.call(el.querySelectorAll('input.score'), function(inp) {
+        return inp.value != null && String(inp.value).trim() !== '';
+      });
+      if(filled && (best == null || rNum > best)) best = rNum;
+    });
+    return best != null ? best : currentRound;
+  }
 
   // Initialize navigator with all available rounds
   function initNavigator() {
