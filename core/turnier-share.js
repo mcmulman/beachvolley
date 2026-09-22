@@ -1,23 +1,46 @@
 /* ============================================================================
-   turnier-share.js – Turnier per Link teilen (ohne eigenen Server)
+   turnier-share.js – Turnier per Link teilen (zwei Varianten)
 
-   GitHub Pages liefert nur statische Dateien, es gibt keinen Server, der
-   Turnierdaten speichern könnte. Deshalb steckt der komplette Turnierstand
-   (dieselbe Datenform wie beim Archivieren, siehe turnier-archive.js
-   snapshot()/writeSnapshot()) im Link selbst, hinter dem #-Zeichen:
+   1) SERVER-LINK (Standard, empfohlen): Der Turnierstand wird an ein eigenes
+      PHP/MySQL-Backend gesendet (siehe backend/README.md) und dort
+      verschlüsselt gespeichert. Der Link enthält nur eine kurze ID:
+        Turnierbogen_XY.html#share=<kurze ID>
+      Vorteil: kurzer Link, Admin kann Passwort/Zugriff zentral verwalten.
+      Nachteil: zum Erstellen UND zum Öffnen ist Internet nötig.
 
-     Turnierbogen_XY.html#share=<Kopfdaten+Nutzdaten, Base64>
+   2) OFFLINE-LINK (optional, wie früher): Der komplette Turnierstand steckt
+      Base64-kodiert direkt im Link selbst, hinter einem eigenen Präfix:
+        Turnierbogen_XY.html#shareoffline=<Kopfdaten+Nutzdaten, Base64>
+      Ein optionales Passwort verschlüsselt die Nutzdaten mit einem simplen,
+      passwortabhängigen XOR-Bytestrom (deterministisch aus dem Passwort
+      abgeleitet). WICHTIG: Das ist bewusst KEINE kryptografisch sichere
+      Verschlüsselung, sondern nur eine Verschleierung – sie verhindert das
+      zufällige Mitlesen des Links, schützt aber nicht vor gezieltem Knacken.
+      Vorteil: funktioniert komplett ohne Server/Internet, auch unter file://.
+      Nachteil: sehr lange Links, die manche Messenger/Browser kappen können.
 
-   Ein optionales Passwort verschlüsselt die Nutzdaten mit einem simplen,
-   passwortabhängigen XOR-Bytestrom (deterministisch aus dem Passwort
-   abgeleitet). WICHTIG: Das ist bewusst KEINE kryptografisch sichere
-   Verschlüsselung, sondern nur eine Verschleierung – sie verhindert das
-   zufällige Mitlesen des Links, schützt aber nicht vor gezieltem Knacken.
-   Dafür läuft sie überall synchron, auch offline/unter file://, ohne
-   Web-Crypto-Abhängigkeit und ohne zusätzliche Bibliothek.
+   Der Nutzer wählt beim Teilen zwischen beiden Varianten. Empfangene Links
+   werden anhand ihres Präfixes automatisch der richtigen Variante zugeordnet.
 
-   Nur Text-Utilities + drei native Dialoge (prompt/confirm/alert) – passend
-   zum Rest der App, die ebenfalls ohne eigenes Modal-System auskommt.
+   Offline-/Datenverlust-Sicherheit (wichtig, bewusst so gebaut):
+   - Das laufende Turnier lebt immer im localStorage (siehe turnier-store.js)
+     und wird davon völlig unabhängig ganz normal weiter automatisch
+     gespeichert - das Teilen ist rein "on top" und rührt den lokalen Stand
+     NIE an, außer der Nutzer bestätigt aktiv die Übernahme eines *fremden*
+     geteilten Turniers (und selbst dann wird der bisherige Stand vorher
+     automatisch archiviert, siehe unlockLoop()/applyOfflineShare()).
+   - Netzwerkfehler beim Erstellen/Öffnen eines SERVER-Links führen zu keinem
+     Verlust: Es wird nichts geschrieben, bevor der Server erfolgreich
+     geantwortet hat; ein per Link empfangener, aber (noch) nicht ladbarer
+     Server-Link bleibt in der Adresszeile stehen (statt verworfen zu
+     werden), damit ein erneutes Laden - z. B. sobald wieder Internet
+     verfügbar ist - automatisch einen neuen Versuch startet.
+   - Der OFFLINE-Link braucht dagegen gar keine Verbindung und funktioniert
+     daher auch komplett ohne Internet (z. B. wenn kein Backend erreichbar
+     ist oder rein clientseitig geteilt werden soll).
+
+   Nur Text-/Fetch-Utilities + drei native Dialoge (prompt/confirm/alert) –
+   passend zum Rest der App, die ebenfalls ohne eigenes Modal-System auskommt.
    ========================================================================== */
 (function (root, factory) {
   const api = factory();
@@ -26,11 +49,68 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const HASH_PREFIX = '#share=';
-  const MAX_PW_TRIES = 3;
-  const LONG_URL_WARN = 6000; // Warnschwelle, ab der Messenger/Browser den Link kappen könnten
+  /* Adresse des eigenen Backends (siehe backend/README.md für das Deployment).
+     Muss https:// sein - hier laufen Passwörter/Turnierdaten durch. */
+  const API_BASE = 'https://beachvolley.klickdienst-server.de/api';
 
-  /* ------------------------------------------------------------- Bytes/Text */
+  const SERVER_PREFIX = '#share=';
+  const OFFLINE_PREFIX = '#shareoffline=';
+  const MAX_PW_TRIES = 3;
+  const REQUEST_TIMEOUT_MS = 10000; // vermeidet endloses "Hängen" bei totem Netz
+  const LONG_URL_WARN = 6000; // Warnschwelle beim Offline-Link (Messenger/Browser könnten kappen)
+
+  /* ============================================================ Server-API
+     network:true markiert Fehler, bei denen der Server gar nicht erreicht
+     wurde (offline, Timeout, DNS, CORS) - im Unterschied zu einer regulären
+     Fehlerantwort vom Server (z. B. 404/401). Wird genutzt, um zu
+     entscheiden, ob ein empfangener Link verworfen werden darf oder ob er
+     für einen späteren, erneuten Versuch erhalten bleiben soll. */
+  async function request(path, opts) {
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
+    let res;
+    try {
+      res = await fetch(API_BASE + path, Object.assign({}, opts, ctrl ? { signal: ctrl.signal } : {}));
+    } catch (e) {
+      const err = new Error(
+        (e && e.name === 'AbortError')
+          ? 'Zeitüberschreitung - der Server hat nicht rechtzeitig geantwortet.'
+          : 'Keine Verbindung zum Server (offline oder nicht erreichbar).'
+      );
+      err.network = true;
+      throw err;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* leere/kaputte Antwort */ }
+    if (!res.ok) {
+      const err = new Error((data && data.message) || ('Serverfehler (' + res.status + ')'));
+      err.code = data && data.error;
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+  function apiGet(path) { return request(path, { method: 'GET' }); }
+  function apiPost(path, body) {
+    return request(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+  }
+
+  function buildServerShareUrl(id) {
+    const url = new URL(location.href);
+    url.hash = '';
+    return url.toString() + SERVER_PREFIX + encodeURIComponent(id);
+  }
+
+  /* =================================================== Offline-Kodierung
+     Bytes/Text-Helfer + Passwort-Bytestrom (XOR): FNV-1a als Startwert,
+     mulberry32 als schneller, deterministischer PRNG - beide bewusst simpel
+     gehalten (siehe Kopfkommentar: nur Verschleierung, keine echte Krypto). */
   function strToBytes(s) { return new TextEncoder().encode(s); }
   function bytesToStr(b) { return new TextDecoder().decode(b); }
   function bytesToBase64Url(bytes) {
@@ -46,10 +126,6 @@
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
   }
-
-  /* --------------------------------------------- Passwort-Bytestrom (XOR)
-     FNV-1a als Startwert, mulberry32 als schneller, deterministischer PRNG –
-     beide bewusst simpel gehalten, siehe Kopfkommentar (nur Verschleierung). */
   function seedFromPassword(pw) {
     let h = 0x811c9dc5;
     const s = String(pw || '');
@@ -72,10 +148,9 @@
     return out;
   }
 
-  /* ------------------------------------------------------------- Kodierung
-     Envelope = Klartext-Kopf (Titel/Typ/Teams für die Vorschau) + payload:
+  /* Envelope = Klartext-Kopf (Titel/Typ/Teams für die Vorschau) + payload:
      unverschlüsseltes oder XOR-verschleiertes JSON des Snapshots. */
-  function encode(opts, password) {
+  function offlineEncode(opts, password) {
     const snapshotJson = JSON.stringify(opts.snapshot || {});
     let payload, enc;
     if (password) {
@@ -98,7 +173,7 @@
     return bytesToBase64Url(strToBytes(JSON.stringify(envelope)));
   }
 
-  function decodeEnvelope(hashValue) {
+  function offlineDecodeEnvelope(hashValue) {
     try {
       const json = bytesToStr(base64UrlToBytes(hashValue));
       const env = JSON.parse(json);
@@ -107,9 +182,9 @@
     } catch (e) { return null; }
   }
 
-  /* Entschlüsselt/parst die Nutzdaten eines Envelopes. Wirft bei falschem
-     Passwort oder beschädigten Daten (JSON.parse schlägt fehl). */
-  function resolveSnapshot(env, password) {
+  /* Entschlüsselt/parst die Nutzdaten eines Offline-Envelopes. Wirft bei
+     falschem Passwort oder beschädigten Daten (JSON.parse schlägt fehl). */
+  function offlineResolveSnapshot(env, password) {
     let json;
     if (env.enc) {
       const bytes = xorWithPassword(base64UrlToBytes(env.payload), password || '');
@@ -120,44 +195,108 @@
     return JSON.parse(json); // wirft bei falschem Passwort/kaputten Daten
   }
 
-  /* --------------------------------------------------------------- Link-URL */
-  function buildShareUrl(opts, password) {
-    const hash = HASH_PREFIX + encode(opts, password);
+  function buildOfflineShareUrl(opts, password) {
+    const hash = OFFLINE_PREFIX + offlineEncode(opts, password);
     const url = new URL(location.href);
     url.hash = '';
     return url.toString() + hash;
   }
 
-  /* ------------------------------------------------------------------- API */
+  /* ================================================================== Hash
+     Erkennt, welche der beiden Linkvarianten (falls überhaupt eine) in der
+     aktuellen Adresszeile steckt. */
+  function readPendingHash() {
+    const raw = String(location.hash || '');
+    if (raw.indexOf(SERVER_PREFIX) === 0) {
+      return { kind: 'server', value: decodeURIComponent(raw.slice(SERVER_PREFIX.length)) };
+    }
+    if (raw.indexOf(OFFLINE_PREFIX) === 0) {
+      return { kind: 'offline', value: raw.slice(OFFLINE_PREFIX.length) };
+    }
+    return null;
+  }
 
-  /* Erstellt den Link für das aktuelle Turnier und bietet ihn zum Kopieren an.
+  function clearHash() {
+    try {
+      const url = new URL(location.href);
+      url.hash = '';
+      history.replaceState(null, '', url.pathname + (url.search || ''));
+    } catch (e) { }
+  }
+
+  /* ================================================================ Teilen
+     Fragt Passwort und gewünschte Link-Art ab und erstellt den Link.
      opts: dieselbe Form wie archiveOpts() in den Bögen
            ({ sheet, file, type, keys, title, teams, empty }). */
   function openShareDialog(opts) {
     const o = opts || {};
     if (o.empty) { alert('Dieses Turnier ist noch leer – es gibt noch nichts zu teilen.'); return; }
 
-    const pw = prompt(
+    const useServerLink = confirm(
       'Link zum Teilen erstellen.\n\n' +
+      'OK = kurzer Link über den Server (empfohlen; zum Öffnen ist Internet nötig).\n' +
+      'Abbrechen = Offline-Link, der den kompletten Turnierstand direkt im Link\n' +
+      'enthält (kein Server/Internet nötig, dafür ein sehr langer Link).'
+    );
+
+    const pw = prompt(
       'Passwort für den Link (leer lassen für keinen Passwortschutz):', ''
     );
     if (pw === null) return; // abgebrochen
 
+    if (useServerLink) createServerShare(o, pw);
+    else createOfflineShare(o, pw);
+  }
+
+  /* -------------------------------------------------------- Server-Variante
+     Wird bei einem Netzwerkfehler mit "Erneut versuchen" erneut aufgerufen,
+     ohne das Passwort nochmal abzufragen - der Nutzer muss bei wackliger
+     Verbindung nicht von vorn anfangen. */
+  function createServerShare(o, pw) {
+    // Der Snapshot wird bei jedem Versuch frisch gelesen, damit auch ein
+    // "Erneut versuchen" nach längerem Warten den aktuellsten Stand teilt.
     const snapshot = (typeof TArchive !== 'undefined') ? TArchive.snapshot(o.keys) : {};
-    const url = buildShareUrl({
+
+    apiPost('/share.php?action=create', {
+      sheet: o.sheet || '', file: o.file || '', type: o.type || '',
+      title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
+      snapshot: snapshot, password: pw || ''
+    }).then(function (data) {
+      showShareResult(buildServerShareUrl(data.id), pw);
+    }).catch(function (err) {
+      // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
+      const retry = confirm(
+        (err.network
+          ? 'Der Link konnte nicht erstellt werden: ' + err.message
+          : 'Der Link konnte nicht erstellt werden (Serverfehler):\n' + err.message)
+        + '\n\nDein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.'
+        + '\n\nJetzt erneut versuchen? (Abbrechen, um stattdessen einen Offline-Link zu erstellen.)'
+      );
+      if (retry) createServerShare(o, pw);
+      else createOfflineShare(o, pw);
+    });
+  }
+
+  /* ------------------------------------------------------- Offline-Variante
+     Rein clientseitig, funktioniert ohne Server/Internet. */
+  function createOfflineShare(o, pw) {
+    const snapshot = (typeof TArchive !== 'undefined') ? TArchive.snapshot(o.keys) : {};
+    const url = buildOfflineShareUrl({
       sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
     }, pw || null);
 
     if (url.length > LONG_URL_WARN) {
-      alert('Hinweis: Der Link ist sehr lang (' + url.length + ' Zeichen) und wird evtl. nicht\n'
-        + 'von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den\n'
-        + 'PC teilen oder erst nach dem Turnier (weniger laufende Änderungen) verlinken.');
+      alert('Hinweis: Der Offline-Link ist sehr lang (' + url.length + ' Zeichen) und wird evtl.\n'
+        + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen:\n'
+        + 'über den PC teilen oder den (kürzeren) Server-Link verwenden.');
     }
+    showShareResult(url, pw);
+  }
 
+  function showShareResult(url, pw) {
     const note = pw
-      ? '\n\nGeschützt mit Passwort – bitte separat mitteilen. Achtung: Das ist nur eine\n'
-        + 'Verschleierung, kein echter Verschlüsselungsschutz.'
-      : ''; 
+      ? '\n\nGeschützt mit Passwort – bitte separat mitteilen.'
+      : '';
     const snapshotInfo = '\n\nHinweis: Der Link enthält einen Snapshot des aktuellen Turnierstands zu diesem Zeitpunkt.\n'
       + 'Spätere Änderungen sind erst in einem neuen Link sichtbar.';
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -166,15 +305,84 @@
     prompt('Link zum Teilen (in die Zwischenablage kopiert – hier auch manuell kopierbar):' + snapshotInfo + note, url);
   }
 
-  /* Prüft/übernimmt einen per Link empfangenen Turnierstand, falls die
-     Adresszeile #share=… enthält. Analog zu TArchive.applyPendingRestore():
-     archiviert zuerst den aktuellen Stand, schreibt dann den Snapshot in den
-     laufenden Speicherplatz und lädt neu.
+  /* ========================================================== Übernehmen
+     Prüft/übernimmt einen per Link empfangenen Turnierstand, falls die
+     Adresszeile #share=… oder #shareoffline=… enthält. Analog zu
+     TArchive.applyPendingRestore(): archiviert zuerst den aktuellen Stand,
+     schreibt dann den Snapshot in den laufenden Speicherplatz und lädt neu.
      opts: archiveOpts() des Bogens (für das Sichern des bisherigen Standes). */
   function applyPendingShare(opts) {
-    const raw = String(location.hash || '');
-    if (raw.indexOf(HASH_PREFIX) !== 0) return false;
-    const env = decodeEnvelope(raw.slice(HASH_PREFIX.length));
+    const pending = readPendingHash();
+    if (!pending) return false;
+
+    if (pending.kind === 'offline') return applyOfflineShare(pending.value, opts);
+    return applyServerShare(pending.value, opts);
+  }
+
+  function applyServerShare(id, opts) {
+    apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
+      if (opts && opts.sheet && env.sheet && env.sheet !== opts.sheet) {
+        clearHash();
+        alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
+        return;
+      }
+      const info = (env.title || env.type || 'Turnier')
+        + (env.teams && env.teams.length ? ' (' + env.teams.join(', ') + ')' : '');
+      serverUnlockLoop(id, env, info, opts, 0);
+    }).catch(function (err) {
+      if (err.network) {
+        // Link bleibt bewusst stehen: Dein Turnier auf diesem Gerät bleibt
+        // unverändert; ein Neuladen der Seite versucht es automatisch
+        // erneut, z. B. sobald wieder eine Internetverbindung besteht.
+        alert(
+          'Der geteilte Turnierlink konnte gerade nicht geladen werden:\n' + err.message
+          + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
+          + ' Bitte Internetverbindung prüfen und die Seite neu laden, um es erneut zu versuchen.'
+        );
+        return;
+      }
+      clearHash();
+      if (err.status === 404) alert('Der Link enthält keine gültigen Turnierdaten (oder wurde bereits gelöscht).');
+      else alert('Das geteilte Turnier konnte nicht geladen werden (Serverfehler):\n' + err.message);
+    });
+    return true;
+  }
+
+  function serverUnlockLoop(id, env, info, opts, tries) {
+    let pw = '';
+    if (env.protected) {
+      pw = prompt('Geteiltes Turnier "' + info + '" ist passwortgeschützt.\nBitte Passwort eingeben:', '');
+      if (pw === null) { clearHash(); return; } // abgebrochen
+    }
+
+    apiPost('/share.php?action=unlock', { id: id, password: pw }).then(function (full) {
+      confirmAndApplySnapshot(info, full.snapshot, opts);
+    }).catch(function (err) {
+      if (err.network) {
+        // Link bleibt stehen, kein lokaler Datenverlust - siehe Kommentar
+        // in applyServerShare(). Der Nutzer kann die Seite neu laden,
+        // sobald wieder eine Verbindung besteht.
+        alert(
+          'Konnte den Server gerade nicht erreichen:\n' + err.message
+          + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
+          + ' Bitte Internetverbindung prüfen und die Seite neu laden.'
+        );
+        return;
+      }
+      if (err.code === 'wrong_password' && tries + 1 < MAX_PW_TRIES) {
+        alert('Falsches Passwort, bitte erneut versuchen.');
+        serverUnlockLoop(id, env, info, opts, tries + 1);
+        return;
+      }
+      clearHash();
+      if (err.code === 'wrong_password') alert('Falsches Passwort – Übernahme abgebrochen.');
+      else if (err.code === 'too_many_attempts') alert('Zu viele Versuche – bitte später erneut versuchen.');
+      else alert('Das geteilte Turnier konnte nicht geladen werden:\n' + err.message);
+    });
+  }
+
+  function applyOfflineShare(hashValue, opts) {
+    const env = offlineDecodeEnvelope(hashValue);
     if (!env) { clearHash(); alert('Der Link enthält keine gültigen Turnierdaten.'); return false; }
     if (opts && opts.sheet && env.sheet && env.sheet !== opts.sheet) {
       clearHash();
@@ -192,7 +400,7 @@
         pw = prompt('Geteiltes Turnier "' + info + '" ist passwortgeschützt.\nBitte Passwort eingeben:', '');
         if (pw === null) { clearHash(); return false; } // abgebrochen
       }
-      try { snapshot = resolveSnapshot(env, pw); }
+      try { snapshot = offlineResolveSnapshot(env, pw); }
       catch (e) {
         tries++;
         if (!env.enc || tries >= MAX_PW_TRIES) {
@@ -204,32 +412,29 @@
       }
     }
 
+    confirmAndApplySnapshot(info, snapshot, opts);
+    return true;
+  }
+
+  /* Gemeinsamer letzter Schritt beider Varianten: Nutzer bestätigen lassen,
+     bisherigen Stand sichern, geteilten Snapshot übernehmen, neu laden. */
+  function confirmAndApplySnapshot(info, snapshot, opts) {
     const ok = confirm(
       'Geteiltes Turnier gefunden: "' + info + '".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
       + 'gesichert und bleibt über die Startseite abrufbar.'
     );
-    if (!ok) { clearHash(); return false; }
+    if (!ok) { clearHash(); return; }
 
     if (typeof TArchive !== 'undefined') {
       TArchive.save(opts);              // bisherigen Stand sichern (No-op, falls leer)
-      TArchive.writeSnapshot(snapshot); // geteilten Stand in den laufenden Speicherplatz schreiben
+      TArchive.writeSnapshot(snapshot);  // geteilten Stand in den laufenden Speicherplatz schreiben
     }
     clearHash();
     location.reload();
-    return true;
-  }
-
-  function clearHash() {
-    try {
-      const url = new URL(location.href);
-      url.hash = '';
-      history.replaceState(null, '', url.pathname + (url.search || ''));
-    } catch (e) { }
   }
 
   return {
-    buildShareUrl, openShareDialog, applyPendingShare,
-    _encode: encode, _decodeEnvelope: decodeEnvelope, _resolveSnapshot: resolveSnapshot
+    buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare
   };
 });
