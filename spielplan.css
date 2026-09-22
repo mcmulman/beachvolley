@@ -167,7 +167,9 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
 /* Dunkler als das urspruengliche #0a7d2c - im hellen Sonnenlicht (iPad
    drausen am Feld) verwaschen mittelhelle Farben staerker als auf einem
    Monitor; Kontrastwerte gegen Weiss wurden per WCAG-Formel geprueft. */
-.t-nm { font-weight:normal; font-size:11px; color:#0a6222; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Dunkler + fetter als vorher: bei Sonneneinstrahlung (Aussenanlage, iPad)
+   war der duenne, hellere Gruenton kaum lesbar. Groesse/Layout unveraendert. */
+.t-nm { font-weight:600; font-size:11px; color:#053e15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pnames .t-a { text-align:left; }
 .pnames .t-b { text-align:right; }
 .psets { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
@@ -1246,11 +1248,13 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
    Inhalt der ersten Spalte (Team-Nummer + freier Teamname) in JEDEM Bogen
    identisch – auch in den Bögen ohne core/turnier-base.css.
    ========================================================================== */
-.tnm { font-weight: 400; font-size: 0.82em; color: #0a6222; }
+/* Dunkler + fetter (Lesbarkeit bei Sonnenlicht auf dem Tablet), Groesse
+   und Layout unveraendert - siehe .t-nm oben fuer denselben Hintergrund. */
+.tnm { font-weight: 600; font-size: 0.82em; color: #053e15; }
 .track .tname .t-line, .central-table .teamcol .t-line,
 .stand .nm .t-line, .teams .name .t-line { font-size: 13px; font-weight: 700; color: inherit; }
 .track .tname .t-nm, .central-table .teamcol .t-nm,
-.stand .nm .t-nm, .teams .name .t-nm { font-size: 11px; font-weight: 400; color: #0a6222; }
+.stand .nm .t-nm, .teams .name .t-nm { font-size: 11px; font-weight: 600; color: #053e15; }
 
 @media screen {
   /* Gleiche Spaltenbreite in laufender Tabelle und Schweizer Tabelle. */
