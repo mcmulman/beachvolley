@@ -304,7 +304,19 @@
      && !Object.keys(cur.fieldNames || {}).length
      && !Object.keys(cur.frozen || {}).length
      && !(cur.absent || []).length;
-    return { sheet:key, file:SHEET_FILE, type:sheetType(cur.config), empty:empty,
+    /* Dieser Bogen deckt zwei Modi ab (?mode=swiss schaltet auf Schweizer
+       System um, siehe MODE_HINT oben) - beide haben eigene, getrennte
+       Speicherplätze/IDs (storageSheetId()). Ein Teilen-Link/Code muss beim
+       erneuten Öffnen im GLEICHEN Modus landen, sonst weicht "sheet" beim
+       Laden vom beim Erstellen gespeicherten Wert ab und der Link wird als
+       "falscher Turnierbogen" abgelehnt (siehe TShare.applyPendingShare).
+       Ohne ?mode= in der URL ist "rr" der Default - daher muss "file" den
+       Modus nur für "swiss" explizit mitgeben; sowohl die direkt aus der
+       App erzeugten Links (die schon die volle URL inkl. Query verwenden)
+       als auch von Admin-Panel/Code-Eingabe rekonstruierte Links (die NUR
+       aus "file" + "#share=…" bestehen) funktionieren so gleichermaßen. */
+    const file = SHEET_FILE + (mode === 'swiss' ? '?mode=swiss' : '');
+    return { sheet:key, file:file, type:sheetType(cur.config), empty:empty,
              keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
