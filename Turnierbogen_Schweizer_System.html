@@ -578,19 +578,38 @@
     </div>
   </div>
 
+  <script src="core/turnier-resume-picker.js"></script>
   <script src="core/turnier-archive.js"></script>
   <script src="core/turnier-share.js"></script>
   <script>
-    const CFG_KEY = 'sw_univ_cfg';
-    const NAMES_KEY = 'sw_univ_names';
-    const SCORES_KEY = 'sw_univ_scores';
-    const ROUND1_KEY = 'sw_univ_round1';
-    const MATCHES_KEY = 'sw_univ_matches';
-    const FIELDS_KEY = 'sw_univ_fields';
-    const DROPOUT_KEY = 'sw_univ_dropout';
-    const ROUND_MODE_KEY = 'sw_univ_roundmode';
-    const START_KEY = 'sw_univ_start';
-    const END_KEY = 'sw_univ_end';
+    /* Erlaubt mehrere unabhängige Turniere dieses Bogens parallel in
+       verschiedenen Tabs, siehe core/turnier-resume-picker.js. ?id=xyz an die
+       URL anhängen → eigener Satz Keys "..._xyz" statt der geteilten
+       Standard-Keys. id=BASE_ID meint bewusst den alten, unverzweigten Slot.
+       Reihenfolge wichtig: Erst prüfen, ob für diesen Bogentyp schon Turniere
+       existieren (dann Auswahl-Overlay + Abbruch der Initialisierung unten);
+       existiert noch keines und steht auch kein ?id= in der URL, vergibt
+       autoId() still eine frische ID, BEVOR URL_ID/KEY_SUFFIX gelesen werden –
+       zwei neu gestartete Turniere in verschiedenen Tabs teilen sich sonst
+       denselben Speicher-Slot. */
+    const RESUME_PICKER_SHOWN = (typeof TResumePicker !== 'undefined') &&
+      TResumePicker.maybePromptFromRegistry({ sessionKeyBase: 'sw_univ', typeLabel: 'Schweizer System' });
+    if (!RESUME_PICKER_SHOWN && typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+    const URL_ID = (function(){
+      try { return new URLSearchParams(location.search).get('id') || ''; } catch(e){ return ''; }
+    })();
+    const KEY_SUFFIX = (URL_ID && URL_ID !== TResumePicker.BASE_ID)
+      ? ('.' + URL_ID.replace(/[^A-Za-z0-9_-]/g, '')) : '';
+    const CFG_KEY = 'sw_univ_cfg' + KEY_SUFFIX;
+    const NAMES_KEY = 'sw_univ_names' + KEY_SUFFIX;
+    const SCORES_KEY = 'sw_univ_scores' + KEY_SUFFIX;
+    const ROUND1_KEY = 'sw_univ_round1' + KEY_SUFFIX;
+    const MATCHES_KEY = 'sw_univ_matches' + KEY_SUFFIX;
+    const FIELDS_KEY = 'sw_univ_fields' + KEY_SUFFIX;
+    const DROPOUT_KEY = 'sw_univ_dropout' + KEY_SUFFIX;
+    const ROUND_MODE_KEY = 'sw_univ_roundmode' + KEY_SUFFIX;
+    const START_KEY = 'sw_univ_start' + KEY_SUFFIX;
+    const END_KEY = 'sw_univ_end' + KEY_SUFFIX;
     const BASE_START = 600;
     const BASE_END = 840;
     const TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
@@ -624,14 +643,14 @@
     let fieldsVisible = false;
     let dropoutVisible = false;
     let LAST_TIMEFIT_NEEDED_FIELDS = null;
-    const SESSION_KEY = 'sw_univ';
+    const SESSION_KEY = 'sw_univ' + KEY_SUFFIX;
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
     const SESSION_TITLE = 'Schweizer System (Universal)';
     const TITLE_KEY = SESSION_KEY + '_title';
 
     /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
        Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
-    const SHEET_ID = 'swiss';
+    const SHEET_ID = 'swiss' + KEY_SUFFIX;
     const SHEET_TYPE = 'Schweizer System';
     const ARCHIVE_KEYS = [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY,
                           FIELDS_KEY, DROPOUT_KEY, ROUND_MODE_KEY, START_KEY, END_KEY, TITLE_KEY];
@@ -1994,7 +2013,7 @@
       if(idx >= 0 && idx < list.length - 1){ list[idx + 1].focus(); if(typeof list[idx + 1].select === 'function') list[idx + 1].select(); }
     });
     loadCfg();
-    rebuild();
+    if (!RESUME_PICKER_SHOWN) rebuild();
   </script>
 <!-- Bedienhilfen: gemeinsam fuer alle Boegen -->
 <script src="spielplan-enh.js"></script>

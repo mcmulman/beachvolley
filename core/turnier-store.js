@@ -38,6 +38,23 @@
     try { s.removeItem(key); } catch (e) { }
   }
 
+  /* Erlaubt mehrere unabhängige Turniere DESSELBEN Bogens parallel in
+     verschiedenen Tabs: ?id=xyz an die URL anhängen → eigener localStorage-
+     Schlüssel "<base>.xyz" statt des geteilten "<base>". Ohne Parameter
+     verhält sich der Bogen wie gewohnt (ein gemeinsames Turnier je Datei).
+     Sonderfall id=BASE_ID: verweist bewusst auf den unverzweigten "<base>"-
+     Schlüssel (siehe turnier-resume-picker.js), damit auch das klassische,
+     nicht-mit-id-versehene Turnier über die Auswahl erreichbar bleibt. */
+  const BASE_ID = '_base_';
+  function sheetIdFrom(base) {
+    try {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) return base;
+      if (id === BASE_ID) return base;
+      return base + '.' + id.replace(/[^A-Za-z0-9_-]/g, '');
+    } catch (e) { return base; }
+  }
+
   /* -------------------------------------------------------------- Schema */
   /* Ein Turnier ist EIN Objekt. Ergebnisse liegen immer als drei Satzpaare
      vor – unabhängig vom aktuell gewählten Satzmodus. Dadurch löscht ein
@@ -388,6 +405,7 @@
 
   return {
     SCHEMA, PREFIX, INDEX_KEY, LEGACY,
+    sheetIdFrom, BASE_ID,
     emptyTournament, load, save, reset, normalize,
     setScore, getSets, clearScores,
     setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,

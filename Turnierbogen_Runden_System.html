@@ -231,13 +231,28 @@
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
+<script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
 (function(){
   'use strict';
-  const SHEET = 'runden';
+  /* Dieser Bogen deckt zwei Turniertypen ab: "Jeder gegen Jeden" (?mode=rr,
+     Default) und "Schweizer System" (?mode=swiss) – siehe die zwei
+     getrennten Karten auf der Startseite. Speicherplatz UND Auswahl-Overlay
+     (core/turnier-resume-picker.js) müssen daher pro Modus getrennt sein,
+     sonst landen Schweizer-System-Turniere unter falscher Bezeichnung bzw.
+     im falschen Eintrag der "Jeder gegen Jeden"-Liste. Der Modus muss daher
+     VOR dem Picker-Aufruf aus der URL gelesen werden. */
+  const urlMode = new URLSearchParams(location.search).get('mode');
+  const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
+  const SHEET_TYPE = 'Jeder gegen Jeden';
+  const SHEET_TYPES = { rr: SHEET_TYPE, swiss: 'Schweizer System' };
+  const PICKER_BASE = 'runden_' + (MODE_HINT || 'rr');
+  const PICKER_LABEL = SHEET_TYPES[MODE_HINT || 'rr'];
+  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt(PICKER_BASE, PICKER_LABEL)) return;
+  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
   const $ = id => document.getElementById(id);
 
   /* Papier-Variante der Tabellen-Erklaerung: auf dem Ausdruck rechnet niemand
@@ -249,11 +264,11 @@
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
      Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
   const SHEET_FILE = 'Turnierbogen_Runden_System.html';
-  /* Turniertyp exakt wie auf der Startseite – dieser Bogen deckt zwei Typen ab. */
-  const SHEET_TYPE = 'Jeder gegen Jeden';
-  const SHEET_TYPES = { rr: SHEET_TYPE, swiss: 'Schweizer System' };
+  /* Speicher-Schlüssel = PICKER_BASE des jeweiligen Modus + optionales
+     ?id=-Suffix (sheetIdFrom) – deckungsgleich mit PICKER_BASE oben, damit
+     Auswahl-Overlay und tatsächlicher Speicherort immer zusammenpassen. */
   function storageSheetId(mode) {
-    return SHEET + '_' + (mode || 'rr');
+    return TStore.sheetIdFrom('runden_' + (mode || 'rr'));
   }
   let S = null;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing().
@@ -264,8 +279,6 @@
     save: t => TStore.save(t),
     repaint: () => paint()
   });
-  const urlMode = new URLSearchParams(location.search).get('mode');
-  const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
   const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'rr';
   const sheetType = cfg => SHEET_TYPES[activeMode(cfg)] || SHEET_TYPE;
   /* Fenster-/Drucktitel: Turniertitel, Turniertyp und Turniergroesse. */

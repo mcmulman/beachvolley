@@ -638,22 +638,22 @@
     .session-card {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 12px 16px;
+      gap: 10px;
+      padding: 7px 12px;
       background: var(--white);
       border: 1.5px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 10px;
+      border-radius: 8px;
+      margin-bottom: 6px;
     }
     .session-card:hover { border-color: var(--blue-dark); }
     .session-info { flex: 1; min-width: 0; }
-    .session-title { font-weight: 700; font-size: 14px; color: var(--blue-dark); }
-    .session-teams { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .session-date { font-size: 11px; color: #aaa; margin-top: 2px; }
-    .session-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-resume { padding: 6px 16px; font-size: 13px; font-weight: 600; background: var(--blue-dark); color: #fff; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
+    .session-title { font-weight: 700; font-size: 13px; color: var(--blue-dark); line-height: 1.3; }
+    .session-teams { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-date { font-size: 10px; color: #aaa; margin-top: 1px; }
+    .session-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-resume { padding: 4px 12px; font-size: 12px; font-weight: 600; background: var(--blue-dark); color: #fff; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
     .btn-resume:hover { background: #163a5c; }
-    .btn-delete { padding: 6px 10px; font-size: 13px; background: none; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; color: #999; }
+    .btn-delete { padding: 4px 8px; font-size: 12px; background: none; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; color: #999; }
     .btn-delete:hover { border-color: #e74c3c; color: #e74c3c; }
     #sessions-list-wrap { position: relative; }
 
@@ -1377,7 +1377,7 @@
 
   initCardDetails();
 
-  const SESSIONS_PREVIEW = 1;
+  const SESSIONS_PREVIEW = 3;
   let sessionsExpanded = false;
   let sessionsCollapsed = false;
 
@@ -1413,9 +1413,55 @@
     document.getElementById('sessions-more').style.display = 'none';
   }
 
+  /* Die 8 "modernen" Bögen (core/turnier-store.js) speichern NICHT in der
+     Legacy-Registry "beachl_sessions", sondern in ihrem eigenen Index
+     "beachl.index" (Kommentar dort: "Übersicht für die Startseite" – bisher
+     aber nie angebunden). Ohne diese Zuordnung erscheint ein dort
+     gespeichertes Turnier trotz Klick auf "Speichern" nie in der Liste
+     unten. base -> Datei/Typ-Bezeichnung, wie in TStore.sheetIdFrom('base')
+     je Bogen verwendet. */
+  const STORE_BASE_MAP = {
+    'de-flex': { file: 'Turnierbogen_Doppel_KO_System.html', type: 'Doppel-KO-System' },
+    'flex_rr': { file: 'Turnierbogen_Flex_Turnier.html?mode=rr', type: 'Flex-Turnier' },
+    'flex_swiss': { file: 'Turnierbogen_Flex_Turnier.html', type: 'Flex-Turnier' },
+    'gruppen-final': { file: 'Turnierbogen_Gruppen_Finalrunde.html', type: 'Gruppen + Finalrunde' },
+    'ko-flex': { file: 'Turnierbogen_KO_System.html', type: 'KO-System' },
+    'kingqueen': { file: 'Turnierbogen_King_Queen.html', type: 'King & Queen' },
+    'koc': { file: 'Turnierbogen_King_Queen_of_the_Court.html', type: 'King/Queen of the Court' },
+    'mpp': { file: 'Turnierbogen_Modified_Pool_Play.html', type: 'Modified Pool Play' },
+    /* Turnierbogen_Runden_System.html deckt zwei Turniertypen ab (?mode=rr/
+       ?mode=swiss, siehe dortiges PICKER_BASE) – daher zwei Basis-Einträge
+       statt einem, sonst würden Schweizer-System-Turniere hier fehlen bzw.
+       fälschlich als "Jeder gegen Jeden" erscheinen. */
+    'runden_rr': { file: 'Turnierbogen_Runden_System.html', type: 'Jeder gegen Jeden' },
+    'runden_swiss': { file: 'Turnierbogen_Runden_System.html?mode=swiss', type: 'Schweizer System' }
+  };
+  function storeSessions() {
+    try {
+      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
+      return Object.keys(idx).map(function (sheetId) {
+        const baseName = Object.keys(STORE_BASE_MAP).filter(function (b) {
+          return sheetId === b || sheetId.indexOf(b + '.') === 0;
+        })[0];
+        if (!baseName) return null;
+        const info = STORE_BASE_MAP[baseName];
+        const suffix = sheetId === baseName ? '' : sheetId.slice(baseName.length + 1);
+        const e = idx[sheetId] || {};
+        const sep = info.file.indexOf('?') === -1 ? '?' : '&';
+        return {
+          key: 'store:' + sheetId,
+          file: info.file + (suffix ? (sep + 'id=' + suffix) : ''),
+          title: e.title || info.type,
+          teams: e.teams ? [e.teams + ' Teams'] : [],
+          savedAt: e.updated ? new Date(e.updated).getTime() : 0
+        };
+      }).filter(Boolean);
+    } catch (e) { return []; }
+  }
+
   function loadSessions() {
     try {
-      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]').concat(storeSessions());
       const container = document.getElementById('saved-sessions');
       const noSessions = document.getElementById('no-sessions');
       const wrap = document.getElementById('sessions-list-wrap');
@@ -1479,21 +1525,34 @@
   function deleteSession(key, btn) {
     if (!confirm('Gespeichertes Turnier löschen?')) return;
     try {
-      let registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-      registry = registry.filter(s => s.key !== key);
-      localStorage.setItem('beachl_sessions', JSON.stringify(registry));
-      /* Archivierte Turniere liegen unter ihrem eigenen Schlüssel,
-         Alt-Sessions unter "<key>_…". Beides entfernen. */
-      localStorage.removeItem(key);
-      Object.keys(localStorage).filter(k => k.startsWith(key + '_')).forEach(k => localStorage.removeItem(k));
-      btn.closest('.session-card').remove();
-      const countEl = document.getElementById('sessions-count');
-      if (countEl) countEl.textContent = registry.length > 1 ? '(' + registry.length + ')' : '';
-      if (!registry.length) { document.getElementById('no-sessions').style.display = ''; document.getElementById('sessions-more').style.display = 'none'; }
+      if (key.indexOf('store:') === 0) {
+        /* TStore-Turnier (siehe storeSessions()): eigener Schlüssel + eigener Index. */
+        const sheetId = key.slice(6);
+        localStorage.removeItem('beachl.t.' + sheetId);
+        const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
+        delete idx[sheetId];
+        localStorage.setItem('beachl.index', JSON.stringify(idx));
+      } else {
+        let registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+        registry = registry.filter(s => s.key !== key);
+        localStorage.setItem('beachl_sessions', JSON.stringify(registry));
+        /* Archivierte Turniere liegen unter ihrem eigenen Schlüssel,
+           Alt-Sessions unter "<key>_…". Beides entfernen. */
+        localStorage.removeItem(key);
+        Object.keys(localStorage).filter(k => k.startsWith(key + '_')).forEach(k => localStorage.removeItem(k));
+      }
+      loadSessions();
     } catch(e) {}
   }
 
   loadSessions();
+
+  /* Links auf Turnierbögen bleiben bewusst ohne ?id=: Der Zielbogen selbst
+     entscheidet (core/turnier-resume-picker.js) – existieren für diesen
+     Bogentyp bereits gespeicherte Turniere, fragt er nach ("fortsetzen oder
+     neu?"); existiert noch keines, vergibt er still eine frische ?id=, damit
+     zwei parallel gestartete neue Turniere desselben Typs nicht denselben
+     localStorage-Slot teilen. Siehe AGENTS.md §7a. */
 </script>
 
 <script>

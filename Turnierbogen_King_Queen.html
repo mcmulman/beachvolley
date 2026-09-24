@@ -211,13 +211,16 @@
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
+<script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
 (function(){
   'use strict';
-  const SHEET = 'kingqueen';
+  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
+  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  const SHEET = TStore.sheetIdFrom('kingqueen');
   const $ = id => document.getElementById(id);
 
   const DEFAULTS = { men:4, women:4, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', setMode:'21', levels:{} };

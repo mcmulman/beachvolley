@@ -222,3 +222,8 @@
   .no-flexgap .filterbar > * { margin-bottom: 0; }
   .no-flexgap .filterbar { margin-bottom: 0; }
 }
+
+/* ══ Turnier-Auswahl-Overlay (core/turnier-resume-picker.js) ═══════════ */
+.no-flexgap .trp-list > * + * { margin-top: 8px; }
+.no-flexgap .trp-item > * + * { margin-top: 2px; }
+

@@ -297,13 +297,16 @@
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
+<script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
 (function(){
   'use strict';
-  const SHEET = 'mpp';
+  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('mpp', 'Modified Pool Play')) return;
+  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  const SHEET = TStore.sheetIdFrom('mpp');
   const $ = id => document.getElementById(id);
 
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.

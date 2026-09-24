@@ -575,24 +575,43 @@
   <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
 </div>
 
+<script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script>
   /* ================= Konfiguration ================= */
   const MIN_TEAMS = 4, MAX_TEAMS = 20, MAX_FIELDS = 10;
-  const STORE_KEY  = 'turnierflexrr_teamnames';
-  const SCORE_KEY  = 'turnierflexrr_scores';
-  const ABSENT_KEY = 'turnierflexrr_absent';
-  const FIELD_KEY  = 'turnierflexrr_fields';
-  const CFG_KEY    = 'turnierflexrr_config';
-  const START_KEY  = 'turnierflexrr_start';
-  const END_KEY    = 'turnierflexrr_end';
-  const ROUND_FILTER_KEY = 'turnierflexrr_sched_round_filter';
-  const SESSION_KEY   = 'turnierflexrr';
+  /* Erlaubt mehrere unabhängige Turniere dieses Bogens parallel in
+     verschiedenen Tabs, siehe core/turnier-resume-picker.js. ?id=xyz an die
+     URL anhängen → eigener Satz Keys "..._xyz" statt der geteilten
+     Standard-Keys. id=BASE_ID meint bewusst den alten, unverzweigten Slot.
+     Reihenfolge wichtig: Erst prüfen, ob für diesen Bogentyp schon Turniere
+     existieren (dann Auswahl-Overlay + Abbruch der Initialisierung unten);
+     existiert noch keines und steht auch kein ?id= in der URL, vergibt
+     autoId() still eine frische ID, BEVOR URL_ID/KEY_SUFFIX gelesen werden –
+     zwei neu gestartete Turniere in verschiedenen Tabs teilen sich sonst
+     denselben Speicher-Slot. */
+  const RESUME_PICKER_SHOWN = (typeof TResumePicker !== 'undefined') &&
+    TResumePicker.maybePromptFromRegistry({ sessionKeyBase: 'turnierflexrr', typeLabel: 'Jeder gegen Jeden' });
+  if (!RESUME_PICKER_SHOWN && typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  const URL_ID = (function(){
+    try { return new URLSearchParams(location.search).get('id') || ''; } catch(e){ return ''; }
+  })();
+  const KEY_SUFFIX = (URL_ID && URL_ID !== TResumePicker.BASE_ID)
+    ? ('.' + URL_ID.replace(/[^A-Za-z0-9_-]/g, '')) : '';
+  const STORE_KEY  = 'turnierflexrr_teamnames' + KEY_SUFFIX;
+  const SCORE_KEY  = 'turnierflexrr_scores' + KEY_SUFFIX;
+  const ABSENT_KEY = 'turnierflexrr_absent' + KEY_SUFFIX;
+  const FIELD_KEY  = 'turnierflexrr_fields' + KEY_SUFFIX;
+  const CFG_KEY    = 'turnierflexrr_config' + KEY_SUFFIX;
+  const START_KEY  = 'turnierflexrr_start' + KEY_SUFFIX;
+  const END_KEY    = 'turnierflexrr_end' + KEY_SUFFIX;
+  const ROUND_FILTER_KEY = 'turnierflexrr_sched_round_filter' + KEY_SUFFIX;
+  const SESSION_KEY   = 'turnierflexrr' + KEY_SUFFIX;
   const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
   const TITLE_KEY  = SESSION_KEY + '_title';
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
-  const SHEET_ID = 'flex-rr';
+  const SHEET_ID = 'flex-rr' + KEY_SUFFIX;
   const SHEET_TYPE = 'Jeder gegen Jeden';
   const ARCHIVE_KEYS = [STORE_KEY, SCORE_KEY, ABSENT_KEY, FIELD_KEY, CFG_KEY,
                         START_KEY, END_KEY, ROUND_FILTER_KEY, TITLE_KEY];
@@ -1781,7 +1800,7 @@
   }
 
   /* ================= Init ================= */
-  (function init(){
+  if (!RESUME_PICKER_SHOWN) (function init(){
     const cfg = loadCfg();
     if(cfg.teams && cfg.teams>=MIN_TEAMS && cfg.teams<=MAX_TEAMS) NTEAMS = cfg.teams;
     if(cfg.fields && cfg.fields>=1) NFIELDS = cfg.fields;

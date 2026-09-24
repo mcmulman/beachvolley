@@ -257,13 +257,29 @@
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
+<script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
 (function(){
   'use strict';
-  const SHEET = 'flex';
+  /* Dieser Bogen deckt intern zwei Speicher-Modi ab (Jeder-gegen-Jeden /
+     Schweizer-System-Paarung, per Dropdown im Bogen wechselbar, siehe
+     onChange()) - beide laufen unter EINEM Startseiten-Eintrag "Flex-
+     Turnier". Ohne ?mode= in der URL (Normalfall beim Öffnen von der
+     Startseite) muss die Existenzprüfung daher BEIDE Modi zusammen
+     berücksichtigen, sonst würde ein laufendes Turnier im jeweils anderen
+     Modus beim Neuladen unbemerkt durch ein leeres neues ersetzt. */
+  const urlMode = new URLSearchParams(location.search).get('mode');
+  const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
+  const SHEET_TYPE = 'Flex-Turnier';
+  const SHEET_TYPES = { rr: SHEET_TYPE, swiss: SHEET_TYPE + ' (Schweizer System)' };
+  const PICKER_BASES = MODE_HINT
+    ? [{ base: 'flex_' + MODE_HINT }]
+    : [{ base: 'flex_rr', params: { mode: 'rr' } }, { base: 'flex_swiss', params: { mode: 'swiss' } }];
+  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt(PICKER_BASES, SHEET_TYPE)) return;
+  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
   const $ = id => document.getElementById(id);
 
   /* Papier-Variante der Tabellen-Erklaerung: auf dem Ausdruck rechnet niemand
@@ -281,14 +297,10 @@
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
      Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
   const SHEET_FILE = 'Turnierbogen_Flex_Turnier.html';
-  /* Turniertyp exakt wie auf der Startseite – dieser Bogen deckt zwei Typen ab
-     (Jeder-gegen-Jeden-/Schweizer-System-Paarung), beide unter dem Namen
-     "Flex-Turnier": feste Teams beliebiger Geschlechter-Zusammensetzung
-     treten in EINER gemeinsamen Rangliste an (siehe Team-Art-Badge). */
-  const SHEET_TYPE = 'Flex-Turnier';
-  const SHEET_TYPES = { rr: SHEET_TYPE, swiss: SHEET_TYPE + ' (Schweizer System)' };
+  /* Speicher-Schlüssel = 'flex_' + Modus + optionales ?id=-Suffix
+     (sheetIdFrom) – deckungsgleich mit PICKER_BASES oben. */
   function storageSheetId(mode) {
-    return SHEET + '_' + (mode || 'swiss');
+    return TStore.sheetIdFrom('flex_' + (mode || 'swiss'));
   }
   let S = null;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing().
@@ -299,8 +311,6 @@
     save: t => TStore.save(t),
     repaint: () => paint()
   });
-  const urlMode = new URLSearchParams(location.search).get('mode');
-  const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
   const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'swiss';
   const sheetType = cfg => SHEET_TYPES[activeMode(cfg)] || SHEET_TYPE;
   /* Fenster-/Drucktitel: Turniertitel, Turniertyp und Turniergroesse. */
