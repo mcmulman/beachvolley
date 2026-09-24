@@ -362,6 +362,9 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     transition: border-color .15s, box-shadow .15s;
   }
 .schedule-roundbar select:hover { border-color: var(--app-blue, #1f6fa8); }
+/* :focus-visible erst ab Safari 15.4 (AGENTS.md §7b) - :focus als Fallback. */
+.schedule-roundbar select:focus { outline: 2px solid var(--app-blue, #1f6fa8); outline-offset: 2px; }
+.schedule-roundbar select:focus:not(:focus-visible) { outline: none; }
 .schedule-roundbar select:focus-visible { outline: 2px solid var(--app-blue, #1f6fa8); outline-offset: 2px; }
 .schedule-roundbar select:disabled { opacity: .45; cursor: not-allowed; }
 .schedule-roundbar .nbtn-round {
@@ -407,6 +410,8 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .schedule-roundbar .nbtn-round:active:not(:disabled) {
     transform: scale(.95);
   }
+.schedule-roundbar .nbtn-round:focus { outline: 2px solid #fff; outline-offset: 2px; }
+.schedule-roundbar .nbtn-round:focus:not(:focus-visible) { outline: none; }
 .schedule-roundbar .nbtn-round:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .schedule-roundbar .nbtn-round:disabled {
     opacity: .35;

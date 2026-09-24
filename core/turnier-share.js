@@ -244,7 +244,11 @@
     const style = document.createElement('style');
     style.id = 'tshare-style';
     style.textContent =
-      '.tshare-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(20,30,45,.55);' +
+      /* "inset:0" statt der vier Langformen wuerde auf Safari 12 (altes iPad,
+         siehe AGENTS.md §7b) klanglos ignoriert - das Overlay haette dann
+         keine Verankerung und wuerde ausserhalb des Viewports gerendert
+         (unsichtbar, ohne Fehlermeldung). Daher immer top/right/bottom/left. */
+      '.tshare-backdrop{position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;background:rgba(20,30,45,.55);' +
         'display:flex;align-items:center;justify-content:center;padding:16px;' +
         '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
       '@media print{.tshare-backdrop{display:none !important;}}' +
@@ -263,7 +267,7 @@
       '.tshare-options{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}' +
       '.tshare-opt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid #ccd8e8;' +
         'border-radius:10px;padding:10px 12px;cursor:pointer;}' +
-      '.tshare-opt:has(input:checked){border-color:#1f6fa8;background:#e8f3fb;}' +
+      '.tshare-opt.is-checked{border-color:#1f6fa8;background:#e8f3fb;}' +
       '.tshare-opt input{margin-top:3px;flex:0 0 auto;}' +
       '.tshare-opt strong{display:block;font-size:13.5px;color:#1a1a2e;}' +
       '.tshare-opt em{font-style:normal;color:#0a7d2c;font-size:11.5px;font-weight:700;margin-left:4px;}' +
@@ -363,6 +367,19 @@
       '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">Link erstellen</button>'
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
+    /* Ersatz fuer ".tshare-opt:has(input:checked)" (Safari erst ab 15.4, siehe
+       AGENTS.md §7b): Klasse manuell je Radio-Wechsel setzen. */
+    const opts = root.querySelectorAll('.tshare-opt');
+    function syncCheckedOpt() {
+      opts.forEach(function (opt) {
+        const input = opt.querySelector('input');
+        opt.classList.toggle('is-checked', !!(input && input.checked));
+      });
+    }
+    root.querySelectorAll('input[name="tshare-mode"]').forEach(function (input) {
+      input.addEventListener('change', syncCheckedOpt);
+    });
+    syncCheckedOpt();
     root.querySelector('[data-act="create"]').addEventListener('click', function () {
       const mode = root.querySelector('input[name="tshare-mode"]:checked').value;
       const pw = root.querySelector('#tshare-pw').value || '';

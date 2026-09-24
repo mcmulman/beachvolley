@@ -53,6 +53,10 @@
       margin-right: auto !important;
       background: #fff;
       box-shadow: 0 10px 44px rgba(26, 58, 92, .13);
+      padding-left: 28px !important;
+      padding-right: 28px !important;
+      /* clamp() erst ab Safari 13.1 (AGENTS.md §7b) - Zeile davor ist der
+         Fallback fuer aeltere iPads, wird von modernen Browsern ueberschrieben. */
       padding-left: clamp(20px, 2.2vw, 40px) !important;
       padding-right: clamp(20px, 2.2vw, 40px) !important;
       padding-bottom: 48px !important;
@@ -60,6 +64,10 @@
     }
     /* App-Leiste randlos an die Kartenkanten ziehen */
     .app-bar {
+      /* Fallback fuer Safari < 13.1 ohne clamp() (AGENTS.md §7b) - danach
+         von modernen Browsern ueberschrieben. */
+      margin-left: -28px;
+      margin-right: -28px;
       margin-left: calc(-1 * clamp(20px, 2.2vw, 40px));
       margin-right: calc(-1 * clamp(20px, 2.2vw, 40px));
     }
@@ -282,7 +290,20 @@
     .app-bar__back { padding: 0; min-width: 40px; justify-content: center; }
   }
 
-  /* Sichtbarer Fokus für Tastatur-/Screenreader-Bedienung. */
+  /* Sichtbarer Fokus für Tastatur-/Screenreader-Bedienung.
+     :focus-visible erst ab Safari 15.4 (AGENTS.md §7b) - :focus als
+     Fallback zeigt den Ring auf aelteren iPads dann bei JEDEM Fokus
+     (auch Touch/Klick), :not(:focus-visible) beschraenkt es dort, wo
+     unterstuetzt, wieder auf reine Tastaturbedienung. */
+  .app-bar a:focus,
+  .app-bar button:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .app-bar a:focus:not(:focus-visible),
+  .app-bar button:focus:not(:focus-visible) {
+    outline: none;
+  }
   .app-bar a:focus-visible,
   .app-bar button:focus-visible {
     outline: 2px solid #fff;
@@ -594,6 +615,9 @@
   }
   .nbtn:hover { background: #d8e8f8; }
   .nbtn:active { transform: translateY(1px); }
+  /* :focus-visible erst ab Safari 15.4 (AGENTS.md §7b) - Fallback siehe app-bar oben. */
+  .nbtn:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  .nbtn:focus:not(:focus-visible) { outline: none; }
   .nbtn:focus-visible { outline: 2px solid var(--app-blue); outline-offset: 2px; }
 
   /* Einheitliche Linien-Icons (SVG statt Emoji) in Buttons: rendern auf
@@ -720,8 +744,17 @@
   /* Aktions-Reihe in Panels mit etwas Luft nach oben. */
   .nactions { gap: 8px; margin-top: 12px; }
 
-  /* Allgemeiner sichtbarer Fokus für Bedien-Elemente (außer App-Leiste). */
-  body :is(a, button, input, [tabindex]):not(.app-bar *):focus-visible {
+  /* Allgemeiner sichtbarer Fokus für Bedien-Elemente (außer App-Leiste).
+     :is() ohne Fallback erst ab Safari 14 (AGENTS.md §7b) - hier bewusst
+     als einzelne Selektoren ausgeschrieben (identische Wirkung, auch auf
+     alten iPads). Auf ein zusaetzliches :focus-Fallback fuer :focus-visible
+     wird hier verzichtet, da input-Felder anderswo (z. B. .cfgfield > input:focus)
+     bereits ihren eigenen Fokus-Ring haben - ein weiterer wuerde sich dort nur
+     ueberlagern. */
+  body a:not(.app-bar *):focus-visible,
+  body button:not(.app-bar *):focus-visible,
+  body input:not(.app-bar *):focus-visible,
+  body [tabindex]:not(.app-bar *):focus-visible {
     outline: 2px solid var(--app-blue);
     outline-offset: 2px;
   }
