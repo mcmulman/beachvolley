@@ -665,7 +665,8 @@
      Aktiv-Zustand wird zusätzlich per Rahmen (.active) markiert. */
   .nbtn[onclick*="toggleNames"],
   .nbtn[onclick*="drawGroups"],
-  .nbtn[onclick*="drawStart"] {
+  .nbtn[onclick*="drawStart"],
+  #btnExportFinal {
     background: var(--app-blue-dark);
     color: #fff;
     border-color: var(--app-blue-dark);
@@ -673,7 +674,8 @@
   }
   .nbtn[onclick*="toggleNames"]:hover,
   .nbtn[onclick*="drawGroups"]:hover,
-  .nbtn[onclick*="drawStart"]:hover {
+  .nbtn[onclick*="drawStart"]:hover,
+  #btnExportFinal:hover {
     background: var(--app-blue);
     border-color: var(--app-blue);
   }
