@@ -1039,6 +1039,20 @@
           return;
         }
         const sa = gv(r,a), sb = gv(r,b);
+        /* Entscheidungssatz (Satz 3/TB) nur freischalten, wenn Satz 1+2 schon
+           gueltig UND unentschieden sind - sonst zaehlt das leere, nie
+           benoetigte TB-Feld bei einer klaren 2:0-Fuehrung als "noch offen"
+           (Karte bleibt gelb) und der Auto-Sprung nach Satz 2 (":"/Enter/OK-
+           Knopf) springt faelschlich ins ungenutzte TB-Feld statt zum
+           naechsten Spiel. */
+        if(hasDecidingSet()){
+          const sa2 = gv2(r,a), sb2 = gv2(r,b);
+          const needsTB = setValidWithTarget(sa,sb,setTarget()) && setValidWithTarget(sa2,sb2,setTarget())
+            && ((sa>sb?1:0)+(sa2>sb2?1:0)) === ((sb>sa?1:0)+(sb2>sa2?1:0));
+          const tbA = document.getElementById('g3'+r+'_'+a), tbB = document.getElementById('g3'+r+'_'+b);
+          if(tbA) tbA.disabled = !needsTB;
+          if(tbB) tbB.disabled = !needsTB;
+        }
         const res = resultOf(r,a,b);
         if(res){
           if(res.winner==='a'){ st[a].w += 1; st[a].pts += WIN_PTS; cum[a].pts += WIN_PTS; }

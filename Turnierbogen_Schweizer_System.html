@@ -1315,6 +1315,22 @@
     }
     function setValidForRound(a, b, r){ return setValidWithTarget(a, b, setTargetForRound(r)); }
     function setValidForSetForRound(a, b, setNo, r){ return setValidWithTarget(a, b, targetForSetForRound(r, setNo)); }
+    /* Wird der Entscheidungssatz (Satz 3/TB) fuer dieses Spiel ueberhaupt
+       gebraucht? Nur wenn Satz 1+2 bereits gueltig UND unentschieden (1:1)
+       sind - siehe TC.decidingSetNeeded() in core/turnier-core.js (gleiche
+       Logik, hier lokal wegen des eigenstaendigen ID-Schemas sA/sB/s2A/s2B).
+       Sonst zaehlt das leere, nie benoetigte TB-Feld bei einer klaren
+       2:0-Fuehrung als "noch offen" und der Auto-Sprung nach Satz 2 springt
+       faelschlich ins ungenutzte TB-Feld statt zum naechsten Spiel. */
+    function decidingSetNeededForRound(r, i){
+      if(!hasDecidingSetForRound(r)) return false;
+      const a1 = sval(r, i, 'A'), b1 = sval(r, i, 'B');
+      const a2 = sval2(r, i, 'A'), b2 = sval2(r, i, 'B');
+      if(!setValidForRound(a1, b1, r) || !setValidForRound(a2, b2, r)) return false;
+      const aSets = (a1 > b1 ? 1 : 0) + (a2 > b2 ? 1 : 0);
+      const bSets = (b1 > a1 ? 1 : 0) + (b2 > a2 ? 1 : 0);
+      return aSets === bSets;
+    }
     function slotResult(r, i){
       const m = MATCHES[r][i];
       const a1 = sval(r, i, 'A'), b1 = sval(r, i, 'B');
@@ -1857,7 +1873,16 @@
           setHtml('rB_' + r + '_' + i, nameB);
           if(m.a === 0 || m.b === 0) setScorePairState(r, i, {enabled:false, clear:true, placeholder:'–'});
           else if(isFreilos(r, i)) setScorePairState(r, i, {enabled:false, clear:true, placeholder:'–'});
-          else setScorePairState(r, i, {enabled:true, clear:false, placeholder:''});
+          else {
+            setScorePairState(r, i, {enabled:true, clear:false, placeholder:''});
+            if(hasDecidingSetForRound(r)){
+              const needsTB = decidingSetNeededForRound(r, i);
+              const s3A = document.getElementById('s3A_' + r + '_' + i);
+              const s3B = document.getElementById('s3B_' + r + '_' + i);
+              if(s3A) s3A.disabled = !needsTB;
+              if(s3B) s3B.disabled = !needsTB;
+            }
+          }
           const winner = winnerOf(r, i);
           const side = winner ? (winner === m.a ? 'a' : (winner === m.b ? 'b' : null)) : null;
           setWinnerHighlight(r, i, side);

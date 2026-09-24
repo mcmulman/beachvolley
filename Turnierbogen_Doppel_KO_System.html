@@ -445,9 +445,18 @@
          entgegenzunehmen, die nie gebraucht werden. */
       const isReset = !!m.reset;
       const resetLocked = isReset && !B.deResetNeeded;
+      /* Entscheidungssatz (Satz 3) NUR sperren, wenn Satz 1+2 bereits gueltig
+         UND unentschieden sind - siehe TC.decidingSetNeeded(). Sonst zaehlt
+         das leere, nie benoetigte TB-Feld bei einer klaren 2:0-Fuehrung als
+         "noch offen" (Karte bleibt gelb) und der Auto-Sprung nach Satz 2
+         springt faelschlich ins ungenutzte TB-Feld statt zum naechsten Spiel. */
+      const res = S.results[id];
+      const s1 = res && res[0], s2 = res && res[1];
+      const decidingNotNeeded = TC.hasDecidingSet(ctx.setMode) && s1 && s2
+        && !TC.decidingSetNeeded(s1[0], s1[1], s2[0], s2[1], ctx.setMode);
       td.querySelectorAll('input.score').forEach(inp => {
-        inp.disabled = open || bye || resetLocked;
         const set = +inp.getAttribute('data-set');
+        inp.disabled = open || bye || resetLocked || (set === 3 && decidingNotNeeded);
         const side = inp.getAttribute('data-side');
         const v = (S.results[id] && S.results[id][set-1]) ? S.results[id][set-1][side==='a'?0:1] : null;
         if(document.activeElement !== inp) inp.value = (v == null ? '' : v);

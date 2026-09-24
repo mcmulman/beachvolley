@@ -995,6 +995,22 @@
     return { aBalls, bBalls, aSets, bSets, winner, draw };
   }
 
+  /* Wird der Entscheidungssatz (3. Satz) bei einem Modus MIT decidingSet
+     ueberhaupt gebraucht? Nur wenn Satz 1+2 beide gueltig UND unentschieden
+     (1:1) sind - bei bereits klarer 2:0-Fuehrung bleibt Satz 3 gesperrt.
+     Wichtig fuer die Eingabe-Oberflaeche: sonst zaehlt das leere, nie
+     benoetigte TB-Feld als "noch offen" (Karte bleibt gelb markiert) und der
+     Auto-Sprung nach Satz 2 springt faelschlich ins ungenutzte TB-Feld statt
+     zum naechsten Spiel (siehe AGENTS.md - Fokus-Workflow Score-Felder). */
+  function decidingSetNeeded(a1, b1, a2, b2, modeId) {
+    const def = modeDef(modeId);
+    if (!def.decidingSet) return false;
+    if (!setValid(a1, b1, def.target) || !setValid(a2, b2, def.target)) return false;
+    const aSets = (a1 > b1 ? 1 : 0) + (a2 > b2 ? 1 : 0);
+    const bSets = (b1 > a1 ? 1 : 0) + (b2 > a2 ? 1 : 0);
+    return aSets === bSets;
+  }
+
   /* ==========================================================================
      7. TABELLE / STANDINGS
 
@@ -1253,7 +1269,7 @@
   return {
     SET_MODES, MODE_MIN, WIN_PTS, DRAW_PTS, LOSS_PTS,
     modeDef, isMulti, hasDecidingSet, targetForSet,
-    setValid, computeResult,
+    setValid, computeResult, decidingSetNeeded,
     genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genDoubleBracket, genPlacement,
     genModifiedPoolPlay,
     kqValidScore, kqComputeRoundResult, kqCourtMatches, kqNextCourts, kqInitialCourts,

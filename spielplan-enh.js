@@ -136,14 +136,60 @@
      beide Kaestchen rot (gleiche Klasse/Optik wie eine echte Falscheingabe)
      und fokussiert das erste noch leere bzw. erste Kaestchen. Sobald wieder
      getippt wird, raeumt die Bogen-eigene Logik die Markierung ohnehin neu
-     auf (sie entfernt "invalid" bei jeder Eingabe zuerst global). */
+     auf (sie entfernt "invalid" bei jeder Eingabe zuerst global).
+
+     WICHTIG (Schweizer System / Rundenmodus mit Swiss-Runden): Wird ein
+     Spiel durch DIESES Kaestchenpaar bereits entschieden (z.B. klares 2:0
+     ohne Entscheidungssatz), aendert sich dadurch oft die Paarungs-Vorschau
+     einer noch nicht gestarteten Folgerunde - der Bogen baut dann den
+     KOMPLETTEN Spielplan neu auf (siehe rebuild()/buildStructure() in den
+     jeweiligen Turnierboegen). Passiert dieser Neuaufbau waehrend eines
+     nativen Fokuswechsels (Button "stiehlt" per mousedown den Fokus ->
+     blur/change auf dem alten Feld -> Neuaufbau ersetzt das gesamte Markup
+     INKLUSIVE des gerade angeklickten Knopfes), kommt der "click" auf dem
+     inzwischen aus dem DOM entfernten Knopf gar nicht mehr an - der Sprung
+     zum naechsten Feld unterbleibt komplett und alle Kaestchen bleiben
+     gelb markiert. Deshalb: der Knopf nimmt (siehe "mousedown" unten) nie
+     selbst den Fokus, und wir loesen die Auto-Vervollstaendigung/Validierung
+     HIER kontrolliert per "change" aus - anschliessend werden Anchor/Liste
+     ueber eine stabile Signatur (data-mid/-set/-side bzw. ID) NEU aus dem
+     (ggf. frisch aufgebauten) DOM geholt, statt alte Knoten weiterzunutzen. */
+  document.addEventListener('mousedown', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
+    if (btn) e.preventDefault();
+  }, true);
+
+  function scoreInputSig(inp) {
+    var mid = inp.getAttribute('data-mid');
+    if (mid) {
+      return 'input.score[data-mid="' + mid + '"][data-set="' + inp.getAttribute('data-set')
+        + '"][data-side="' + inp.getAttribute('data-side') + '"]';
+    }
+    return inp.id ? 'input.score#' + inp.id : null;
+  }
+
   document.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
     if (!btn) return;
     e.preventDefault();
     var box = btn.closest('.sbox');
     var boxInputs = box ? Array.prototype.slice.call(box.querySelectorAll('input.score')) : [];
-    var active = boxInputs.filter(function (inp) { return !inp.disabled; });
+    if (!boxInputs.length) return;
+    var sigs = boxInputs.map(scoreInputSig);
+    /* Autovervollstaendigung/Validierung ZUERST ausloesen (ersetzt das
+       native "blur", das der Knopf per "mousedown" oben bewusst verhindert)
+       - erst DANACH steht fest, ob das Kaestchenpaar wirklich vollstaendig
+       ist (die Gegenseite kann durch genau dieses "change" gerade erst
+       automatisch befuellt werden). */
+    boxInputs.forEach(function (inp) { if (!inp.disabled) inp.dispatchEvent(new Event('change', { bubbles: true })); });
+    /* Ab hier keine der oben gelesenen DOM-Referenzen mehr verwenden - das
+       "change" kann (siehe Kommentar oben) bereits einen kompletten
+       Neuaufbau ausgeloest haben. Alles Weitere ueber die Signaturen frisch
+       aus dem (ggf. neuen) DOM holen. */
+    var freshInputs = sigs.map(function (sig) { return sig ? document.querySelector(sig) : null; })
+      .filter(function (inp) { return inp; });
+    if (!freshInputs.length) return;
+    var active = freshInputs.filter(function (inp) { return !inp.disabled; });
     if (!active.length) return;
     var empty = active.filter(function (inp) { return String(inp.value || '').trim() === ''; });
     var invalid = active.some(function (inp) { return inp.classList.contains('invalid'); });
@@ -155,8 +201,7 @@
       schedule();
       return;
     }
-    var anchor = boxInputs.length ? boxInputs[boxInputs.length - 1] : null;
-    if (!anchor) return;
+    var anchor = freshInputs[freshInputs.length - 1];
     var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
     var idx = list.indexOf(anchor);
     var next = idx >= 0 ? list[idx + 1] : null;

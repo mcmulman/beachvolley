@@ -923,7 +923,7 @@
     if (!rootEl) return;
     let lastFocusedMatch = null;
     const fields = () => Array.prototype.slice.call(rootEl.querySelectorAll('input.score'))
-      .filter(i => i.offsetParent !== null || i.closest('td') === null);
+      .filter(i => !i.disabled && (i.offsetParent !== null || i.closest('td') === null));
     const cards = () => Array.prototype.slice.call(rootEl.querySelectorAll('td.match'))
       .filter(td => td.offsetParent !== null && !td.hidden);
     const firstEnabledScore = td => {
