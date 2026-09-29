@@ -266,7 +266,7 @@
   function archiveOpts(){
     const cur = TStore.load(SHEET);
     const names = cur.teamNames || {};
-    const max = Math.min(4, +cur.config.teams || 0);
+    const max = +cur.config.teams || 0;
     const teams = [];
     for(let i=1;i<=max;i++) teams.push(names[i] || ('Team ' + i));
     const empty = !Object.keys(cur.results || {}).length

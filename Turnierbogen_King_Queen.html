@@ -239,7 +239,7 @@
     const names = cur.teamNames || {};
     const men = +cur.config.men || 0, women = +cur.config.women || 0;
     const roster = [];
-    for(let i=1;i<=Math.min(4, men+women);i++) roster.push(names[i] || ('Person ' + i));
+    for(let i=1;i<=men+women;i++) roster.push(names[i] || ('Person ' + i));
     const empty = !Object.keys(cur.results || {}).length
       && !Object.keys(cur.teamNames || {}).length
       && !(cur.absent || []).length;
@@ -333,8 +333,24 @@
       men: getMenCount(), women: getWomenCount(),
       rounds: S.config.rounds, fields: S.config.fields,
       startTime: S.config.startTime, setMode: S.config.setMode,
-      levels: S.config.levels, absent: S.absent, results: S.results
+      levels: S.config.levels, absent: S.absent, results: S.results,
+      fixedRounds: S.frozen || {}
     });
+    /* Runden mit Ergebnis einfrieren, damit spätere Änderungen (Ausfall,
+       Niveau, Rundenzahl) gespielte Paarungen nicht neu auslosen und die
+       Ergebnisse damit anderen Teams zuordnen. Ohne Eingabe wieder frei. */
+    let changed = false;
+    S.frozen = S.frozen || {};
+    B.rounds.forEach(rd => {
+      if(rd.frozen && !S.frozen[rd.round]){
+        S.frozen[rd.round] = { matches: rd.matches.map(m => [m.teamA.slice(), m.teamB.slice()]),
+          byePlayer: rd.byePlayer, byeTeam: rd.byeTeam };
+        changed = true;
+      } else if(!rd.frozen && S.frozen[rd.round]){
+        delete S.frozen[rd.round]; changed = true;
+      }
+    });
+    if(changed) TStore.save(S);
     return B;
   }
 

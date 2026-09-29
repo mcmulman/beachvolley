@@ -1435,9 +1435,29 @@
       return { pairs, hadRepeat };
     }
 
+    /* Eingefrorene Runden (c.fixedRounds[r] = { matches:[[teamA,teamB],…],
+       bye:[…] }): sobald eine Runde ein Ergebnis hat, speichert der Bogen
+       ihre Besetzung. Ohne das würde jede spätere Änderung (Ausfall, Niveau,
+       Rundenzahl) auch GESPIELTE Runden neu auslosen und die eingetragenen
+       Ergebnisse anderen Teams zuordnen (Prinzip wie fixedCourts/fixedPairs). */
+    const fixedRounds = c.fixedRounds || {};
+    function validFixed(fx) {
+      if (!fx || !Array.isArray(fx.matches) || !fx.matches.length) return false;
+      return fx.matches.every(p => Array.isArray(p) && p.length === 2
+        && p.every(t => Array.isArray(t) && t.length === 2 && t.every(x => all.indexOf(+x) >= 0)));
+    }
+
     for (let r = 1; r <= want; r++) {
+      const fx = fixedRounds[r];
+      let matchedTeamPairs, byePlayer = null, byeTeam = null;
+      if (validFixed(fx)) {
+        matchedTeamPairs = fx.matches.map(p => [p[0].map(Number), p[1].map(Number)]);
+        const fixedBye = [];
+        if (fx.byePlayer != null) { byePlayer = +fx.byePlayer; fixedBye.push(byePlayer); }
+        if (Array.isArray(fx.byeTeam) && fx.byeTeam.length === 2) { byeTeam = fx.byeTeam.map(Number); fixedBye.push(...byeTeam); }
+        fixedBye.forEach(p => { byeCount[p] = byesOf(p) + 1; });
+      } else {
       const pool = order.slice();
-      let byePlayer = null;
       if (pool.length % 2 === 1) {
         const idx = pickByeCandidate(pool, p => [p]);
         byePlayer = pool.splice(idx, 1)[0];
@@ -1451,17 +1471,18 @@
           + 'Partnerschaft mehr möglich – eine Partnerschaft wiederholt sich.');
       }
 
-      let byeTeam = null;
       if (teams.length % 2 === 1) {
         const idx = pickByeCandidate(teams, t => t);
         byeTeam = teams.splice(idx, 1)[0];
         byeTeam.forEach(p => { byeCount[p] = byesOf(p) + 1; });
       }
 
-      const { pairs: matchedTeamPairs, hadRepeat: oppRepeat } = formMatches(teams);
-      if (oppRepeat) {
+      const formed = formMatches(teams);
+      matchedTeamPairs = formed.pairs;
+      if (formed.hadRepeat) {
         notes.push('Runde ' + r + ': Bei mindestens einem Spiel war keine komplett neue '
           + 'Gegnerpaarung mehr möglich – eine Begegnung wiederholt sich.');
+      }
       }
 
       const matches = matchedTeamPairs.map((p, i) => ({
@@ -1506,7 +1527,12 @@
       if (byeTeam) byeList.push(byeTeam[0], byeTeam[1]);
       if (byeList.length) notes.push('Runde ' + r + ': ' + byeList.map(p => 'Spieler ' + p).join(', ') + ' pausiert(en) (ungerade Teilnehmerzahl).');
 
-      rounds.push({ round: r, title: 'Runde ' + r, matches, bye: byeList, complete: roundComplete });
+      const hasInput = matches.some(m => {
+        const raw = c.results[m.id];
+        return Array.isArray(raw) && raw.some(s => Array.isArray(s) ? s.some(v => v !== '' && v != null) : (s !== '' && s != null));
+      });
+      rounds.push({ round: r, title: 'Runde ' + r, matches, bye: byeList, complete: roundComplete,
+        frozen: hasInput, byePlayer, byeTeam: byeTeam ? byeTeam.slice() : null });
 
       if (roundComplete) {
         order = active.slice().sort(sortKey);

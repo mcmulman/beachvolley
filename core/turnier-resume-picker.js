@@ -84,7 +84,7 @@
         id: s.key === sessionKeyBase ? BASE_ID : s.key.slice(sessionKeyBase.length + 1),
         title: s.customTitle || s.title || '',
         meta: [
-          Array.isArray(s.teams) ? s.teams.join(' · ') : '',
+          Array.isArray(s.teams) ? shortList(s.teams, ' · ') : '',
           fmtDate(s.savedAt)
         ].filter(Boolean).join(' · '),
         updated: s.savedAt || 0
@@ -199,6 +199,12 @@
     overlay.querySelector('.trp-new').addEventListener('click', function () { gotoId(freshId()); });
 
     document.body.appendChild(overlay);
+  }
+
+  /* Namenslisten enthalten alle Teams/Personen – in Übersichten nur die
+     ersten 4 zeigen, sonst sprengen z. B. 16 Teams die Karte. */
+  function shortList(t, SEP) {
+    return (t.length > 4 ? t.slice(0, 4).join(SEP) + SEP + '… (+' + (t.length - 4) + ')' : t.join(SEP));
   }
 
   function alreadyResolved() {

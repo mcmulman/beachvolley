@@ -512,6 +512,12 @@
      TArchive.applyPendingRestore(): archiviert zuerst den aktuellen Stand,
      schreibt dann den Snapshot in den laufenden Speicherplatz und lädt neu.
      opts: archiveOpts() des Bogens (für das Sichern des bisherigen Standes). */
+  /* Geteilt werden alle Namen; in Abfragen nur die ersten 4 anzeigen. */
+  function shortTeams(t) {
+    const SEP = ', ';
+    return (t.length > 4 ? t.slice(0, 4).join(SEP) + SEP + '… (+' + (t.length - 4) + ')' : t.join(SEP));
+  }
+
   function applyPendingShare(opts) {
     const pending = readPendingHash();
     if (!pending) return false;
@@ -568,7 +574,7 @@
     apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
       if (handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id))) return;
       const info = (env.title || env.type || 'Turnier')
-        + (env.teams && env.teams.length ? ' (' + env.teams.join(', ') + ')' : '');
+        + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
       serverUnlockLoop(id, env, info, opts, 0);
     }).catch(function (err) {
       if (err.network) {
@@ -628,7 +634,7 @@
     if (handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue)) return false;
 
     const info = (env.title || env.type || 'Turnier')
-      + (env.teams && env.teams.length ? ' (' + env.teams.join(', ') + ')' : '');
+      + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
 
     let snapshot = null, tries = 0;
     while (snapshot == null) {

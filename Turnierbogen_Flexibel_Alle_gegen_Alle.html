@@ -706,7 +706,7 @@
   function registerSession(){
     try {
       const teams = [];
-      for(let i=1; i<=Math.min(4, NTEAMS); i++){
+      for(let i=1; i<=NTEAMS; i++){
         const el = document.getElementById('tn' + i);
         teams.push(el ? (el.value.trim() || 'Team ' + i) : 'Team ' + i);
       }

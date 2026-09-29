@@ -1558,7 +1558,9 @@
         title.textContent = s.title || 'Gespeichertes Turnier';
         const teams = document.createElement('div');
         teams.className = 'session-teams';
-        teams.textContent = Array.isArray(s.teams) ? s.teams.join(' · ') : '';
+        teams.textContent = Array.isArray(s.teams)
+          ? (s.teams.length > 4 ? s.teams.slice(0, 4).join(' · ') + ' · … (+' + (s.teams.length - 4) + ')' : s.teams.join(' · '))
+          : '';
         const meta = document.createElement('div');
         meta.className = 'session-date';
         meta.textContent = date ? ('Zuletzt gespeichert: ' + date) : 'Gespeichert';
