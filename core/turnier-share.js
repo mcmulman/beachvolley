@@ -664,7 +664,17 @@
         alert('Zu diesem Code konnte keine passende Turnierseite gefunden werden.');
         return;
       }
-      location.href = file + SERVER_PREFIX + encodeURIComponent(id);
+      /* Der Code kennt nur die Datei – der Snapshot liegt aber unter den
+         Speicher-Schlüsseln des Absenders (base.<id>). Ohne dieselbe ?id=
+         wäre "sheet" auf der Zielseite ein anderes und der Import würde als
+         "anderer Turnierbogen" abgelehnt. id aus env.sheet ableiten
+         (Konvention: "base" bzw. "base.<id>", Basen enthalten keinen Punkt). */
+      const sheet = String(env.sheet || '');
+      const dot = sheet.indexOf('.');
+      const sid = dot >= 0 ? sheet.slice(dot + 1) : '_base_';
+      const target = /[?&]id=/.test(file) ? file
+        : file + (file.indexOf('?') >= 0 ? '&' : '?') + 'id=' + encodeURIComponent(sid);
+      location.href = target + SERVER_PREFIX + encodeURIComponent(id);
     }).catch(function (err) {
       if (err.network) {
         alert('Der Code konnte gerade nicht überprüft werden:\n' + err.message

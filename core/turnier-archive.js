@@ -97,6 +97,21 @@
     return out;
   }
 
+  /* Link zum Wiederherstellen eines Archiveintrags. Die Daten liegen unter
+     den Speicher-Schlüsseln des Turniers ("base" bzw. "base.<id>") – die
+     Zielseite muss daher mit DERSELBEN ?id= geöffnet werden, sonst passt
+     "sheet" nicht und der Restore wird verworfen. file kann schon Parameter
+     tragen (z. B. "…?mode=swiss"), daher Trenner korrekt wählen. */
+  function restoreUrl(file, sheet, key) {
+    let f = String(file || '');
+    const s = String(sheet || '');
+    const dot = s.indexOf('.');
+    if (!/[?&]id=/.test(f)) {
+      f += (f.indexOf('?') >= 0 ? '&' : '?') + 'id=' + encodeURIComponent(dot >= 0 ? s.slice(dot + 1) : '_base_');
+    }
+    return f + '&restore=' + encodeURIComponent(key);
+  }
+
   /* Archiviert den aktuellen Stand eines Bogens.
      opts: { sheet, file, type, keys, title, teams, liveKey }
      Rückgabe: Archivschlüssel oder null, wenn nichts zu sichern war. */
@@ -129,7 +144,7 @@
     if (o.liveKey) registry = registry.filter(s => s.key !== o.liveKey);
     registry.push({
       key: key,
-      file: (o.file || '') + '?restore=' + encodeURIComponent(key),
+      file: restoreUrl(o.file, o.sheet, key),
       title: title,
       teams: stored.teams,
       savedAt: savedAt,
@@ -221,7 +236,7 @@
   return {
     ARCHIVE_PREFIX, REGISTRY_KEY,
     newTitle, isAutoTitle, docTitle, headTitle, headTitleHtml, barTitle, sizeInfo, snapshot, writeSnapshot, save, meta, restore, remove, clearLive,
-    pendingRestore, clearPendingParam, applyPendingRestore, startNew,
+    pendingRestore, clearPendingParam, applyPendingRestore, startNew, restoreUrl,
     _readRegistry: readRegistry, _writeRegistry: writeRegistry
   };
 });

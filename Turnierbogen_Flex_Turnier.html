@@ -350,7 +350,7 @@
      && !Object.keys(cur.frozen || {}).length
      && !Object.keys(cur.teamGender || {}).length
      && !(cur.absent || []).length;
-    return { sheet:key, file:SHEET_FILE, type:sheetType(cur.config), empty:empty,
+    return { sheet:key, file:SHEET_FILE + '?mode=' + mode, type:sheetType(cur.config), empty:empty,
              keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
@@ -1182,14 +1182,15 @@
     const nextMode = $('roundMode').value;
     const modeChanged = nextMode !== prevMode;
 
+    /* Moduswechsel = Navigation auf ?mode=<neu> (gleiche ?id=). Nur so passen
+       URL, Speicherplatz, Archiv ("Neues Turnier") und Auswahl-Overlay nach
+       einem Neuladen zusammen – ein reiner In-Page-Wechsel lud danach wieder
+       den alten Modus und "Neues Turnier" archivierte den falschen Bogen. */
     if(modeChanged){
       save();
-      S = TStore.load(storageSheetId(nextMode), DEFAULTS);
-      S.sheet = storageSheetId(nextMode);
-      S.config.mode = nextMode;
-      if(!S.teamGender) S.teamGender = {};
-      fillSelects();
-      structureKey=''; rebuild();
+      const url = new URL(location.href);
+      url.searchParams.set('mode', nextMode);
+      location.replace(url.pathname + url.search);
       return;
     }
 
@@ -1255,7 +1256,28 @@
     });
 
     $('btnDrawStart').addEventListener('click', () => {
-      if(S.frozen[1] && !confirm('Runde 1 ist bereits eingetragen. Startrunde trotzdem neu auslosen? Die Ergebnisse der Runde 1 werden dadurch ungültig.')) return;
+      /* Neu auslosen nur, solange ab Runde 2 noch nichts eingetragen ist:
+         spätere Runden wurden aus der ALTEN Startrunde gebildet – eine neue
+         Startrunde könnte genau deren Begegnungen wiederholen. Ergebnisse
+         der Runde 1 werden gelöscht, sonst wanderten sie auf die neuen
+         Paarungen (gleiche Spiel-IDs sw_1_*). */
+      const hasInput = (id) => {
+        const v = S.results[id];
+        return !!(v && v.some(p => p && p.some(x => x != null && x !== '')));
+      };
+      const laterStarted = Object.keys(S.frozen).some(r => +r > 1)
+        || Object.keys(S.results).some(id => /^sw_(\d+)_/.test(id) && +id.split('_')[1] > 1 && hasInput(id));
+      if(laterStarted){
+        alert('Die Startrunde kann nicht mehr neu ausgelost werden, weil ab Runde 2 schon Ergebnisse eingetragen sind. '
+          + 'Die weiteren Runden wurden aus der bisherigen Startrunde gebildet – eine neue Auslosung würde Begegnungen wiederholen.');
+        return;
+      }
+      const r1Started = !!S.frozen[1] || Object.keys(S.results).some(id => id.indexOf('sw_1_') === 0 && hasInput(id));
+      if(r1Started && !confirm('Runde 1 ist bereits eingetragen. Startrunde trotzdem neu auslosen? Die Ergebnisse der Runde 1 werden dabei gelöscht.')) return;
+      if(r1Started){
+        Object.keys(S.results).forEach(id => { if(id.indexOf('sw_1_') === 0) delete S.results[id]; });
+        if(S.frozenModes) delete S.frozenModes[1];
+      }
       const list = allTeams().filter(t => !S.absent.includes(t));
       S.round1 = genderAwarePairs(list);
       delete S.frozen[1];

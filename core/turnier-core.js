@@ -224,12 +224,14 @@
       return res;
     }
 
+    let btSteps = Infinity;
     function pairBT(list, built) {
+      if (btSteps-- <= 0) return null;
       if (list.length === 0) {
-        if (roundsAfter === 0) return [];
+        if (lookahead === 0) return [];
         const merged = new Set(played);
         built.forEach(k => merged.add(k));
-        return feasible(merged, roundsAfter) ? [] : null;
+        return feasible(merged, lookahead) ? [] : null;
       }
       const a = list[0];
       for (let j = 1; j < list.length; j++) {
@@ -255,6 +257,40 @@
       return out;
     }
 
+    /* Notfall: minimale Zahl an Wiederholungen. Sucht per Backtracking eine
+       Paarung mit höchstens `allowed` Wiederholungen (1, 2, …) – der frühere
+       reine Greedy-Ansatz erzeugte oft mehr Wiederholungen als nötig. */
+    function pairMinRepeats(list) {
+      for (let allowed = 1; allowed <= list.length / 2; allowed++) {
+        let steps = 200000;
+        const go = (l, left) => {
+          if (steps-- <= 0) return null;
+          if (l.length === 0) return [];
+          const a = l[0];
+          for (let j = 1; j < l.length; j++) {
+            const b = l[j];
+            const rep = a > 0 && b > 0 && played.has(pairKey(a, b)) ? 1 : 0;
+            if (rep > left) continue;
+            const rest = l.slice(1); rest.splice(j - 1, 1);
+            const sub = go(rest, left - rep);
+            if (sub) return [[a, b]].concat(sub);
+          }
+          return null;
+        };
+        const res = go(list, allowed);
+        if (res) return res;
+        if (steps <= 0) break;
+      }
+      return greedyPair(list);
+    }
+
+    /* Reihenfolge der Versuche:
+       1) wiederholungsfrei MIT Lookahead (Folgerunden bleiben planbar),
+       2) wiederholungsfrei nur für DIESE Runde – früher fiel der Algorithmus
+          hier direkt auf Greedy zurück und erzeugte eine Wiederholung sofort,
+          obwohl sie in dieser Runde vermeidbar gewesen wäre,
+       3) so wenige Wiederholungen wie möglich.                               */
+    let lookahead = roundsAfter;
     let bye = null, pairs = null, exhaustive = true;
     if (active.length % 2 === 1) {
       const candidates = active.slice().sort(byeCompare);
@@ -264,13 +300,21 @@
         if (attempt) { bye = cand; pairs = attempt; break; }
       }
       if (pairs == null) {
+        lookahead = 0; btSteps = 300000;
+        for (const cand of candidates) {
+          const attempt = pairBT(active.filter(t => t !== cand), []);
+          if (attempt) { bye = cand; pairs = attempt; break; }
+        }
+      }
+      if (pairs == null) {
         bye = candidates[0];
-        pairs = greedyPair(active.filter(t => t !== bye));
+        pairs = pairMinRepeats(active.filter(t => t !== bye));
         exhaustive = false;
       }
     } else {
       pairs = pairBT(active, []);
-      if (!pairs) { pairs = greedyPair(active); exhaustive = false; }
+      if (!pairs) { lookahead = 0; btSteps = 300000; pairs = pairBT(active, []); }
+      if (!pairs) { pairs = pairMinRepeats(active); exhaustive = false; }
     }
     return { pairs, bye, exhaustive };
   }

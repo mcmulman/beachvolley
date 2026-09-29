@@ -1497,6 +1497,25 @@
     } catch (e) { return []; }
   }
 
+  /* Archiv-Einträge, die vor dem Fix in core/turnier-archive.js (restoreUrl)
+     angelegt wurden, tragen einen Link ohne ?id= bzw. mit doppeltem "?"
+     ("…?mode=swiss?restore=…") – der Restore lief dann ins Leere. Den Link
+     aus den im Archiv gespeicherten sheet/file-Angaben neu bilden. */
+  function archiveResumeUrl(s) {
+    try {
+      if (!s || !s.archived) return s && s.file;
+      const m = JSON.parse(localStorage.getItem(s.key) || 'null');
+      if (!m || m.file == null) return s.file;
+      const sheet = String(m.sheet || '');
+      const dot = sheet.indexOf('.');
+      let f = String(m.file || '');
+      if (!/[?&]id=/.test(f)) {
+        f += (f.indexOf('?') >= 0 ? '&' : '?') + 'id=' + encodeURIComponent(dot >= 0 ? sheet.slice(dot + 1) : '_base_');
+      }
+      return f + '&restore=' + encodeURIComponent(s.key);
+    } catch (e) { return s.file; }
+  }
+
   function loadSessions() {
     try {
       const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]').concat(storeSessions());
@@ -1547,7 +1566,7 @@
         actions.className = 'session-actions';
         const resume = document.createElement('a');
         resume.className = 'btn-resume';
-        resume.href = s.file;
+        resume.href = archiveResumeUrl(s);
         resume.target = '_blank';
         resume.textContent = 'Weiter ▶';
 

@@ -831,6 +831,17 @@
       }
       const played = new Set();
       const byeHist = { counts: {}, lastRound: {} };
+      /* Paarungen ALLER eingefrorenen Runden – auch SPÄTERER. Wurde z. B. in
+         Runde 3 schon etwas eingetragen, während Runde 2 noch leer ist (oder
+         Runde 1 nachträglich korrigiert wird), darf die neu berechnete
+         Runde 2 keine Begegnung aus Runde 3 vorwegnehmen. Früher kannte sie
+         nur die VORHERIGEN Runden – das erzeugte Wiederholungen. */
+      const reserved = new Set();
+      Object.keys(c.fixedPairs || {}).forEach(k => {
+        if (+k > want) return;
+        (c.fixedPairs[k] || []).forEach(p => reserved.add(TC.pairKey(p[0], p[1])));
+      });
+      const blockedFor = () => { const s = new Set(played); reserved.forEach(k => s.add(k)); return s; };
 
       for (let r = 1; r <= want; r++) {
         const fixed = c.fixedPairs && c.fixedPairs[r];
@@ -848,6 +859,12 @@
           pairs.forEach(p => { used.add(p[0]); used.add(p[1]); });
           const left = active.filter(t => !used.has(t));
           bye = left.length === 1 ? left[0] : null;
+        } else if (r === 1 && reserved.size) {
+          /* Runde 1 noch offen, spätere Runden aber schon eingefroren: die
+             Startrunde muss deren Begegnungen meiden. */
+          const sw = TC.genSwissRound(active.slice(), blockedFor(), byeHist, 0);
+          pairs = sw.pairs || [];
+          bye = sw.bye;
         } else if (r === 1) {
           /* Startrunde ohne Auslosung: 1-2, 3-4, … – auf dem Papier sofort
              nachvollziehbar und beliebig per „Auslosen" ersetzbar. */
@@ -857,13 +874,9 @@
           for (let i = 0; i + 1 < list.length; i += 2) pairs.push([list[i], list[i + 1]]);
         } else {
           const order = rankUpto(r - 1).filter(t => !absent.has(t));
-          const sw = TC.genSwissRound(order, played, byeHist, want - r);
+          const sw = TC.genSwissRound(order, reserved.size ? blockedFor() : played, byeHist, want - r);
           pairs = sw.pairs || [];
           bye = sw.bye;
-          if (!sw.exhaustive) {
-            notes.push('Runde ' + r + ': Es war keine vollständig wiederholungsfreie '
-              + 'Paarung mehr möglich – eine Begegnung wiederholt sich.');
-          }
         }
 
         pairs.forEach(p => played.add(TC.pairKey(p[0], p[1])));
@@ -883,6 +896,25 @@
     }
 
     const table = tableUpto(rounds.length);
+
+    /* Jede tatsächliche Wiederholung benennen (Teams + Runden + Grund), statt
+       nur pauschal zu warnen – so ist für die Turnierleitung nachvollziehbar,
+       ob sie unvermeidbar war oder aus bereits eingetragenen Runden stammt. */
+    if (c.mode === 'swiss') {
+      const firstMet = {};
+      rounds.forEach(rd => rd.matches.forEach(m => {
+        if (m.dead || m.bye != null) return;
+        const k = TC.pairKey(m.a, m.b);
+        if (firstMet[k] == null) { firstMet[k] = rd.round; return; }
+        const bothFixed = c.fixedPairs && c.fixedPairs[rd.round] && c.fixedPairs[firstMet[k]];
+        warnings.push('Wiederholung: Team ' + Math.min(m.a, m.b) + ' – Team ' + Math.max(m.a, m.b)
+          + ' spielen in Runde ' + rd.round + ' erneut (schon in Runde ' + firstMet[k] + '). '
+          + (bothFixed
+            ? 'Beide Runden sind bereits eingetragen und stehen damit fest.'
+            : 'Bei ' + active.length + ' Teams und ' + rounds.length
+              + ' Runden war keine wiederholungsfreie Paarung mehr möglich.'));
+      }));
+    }
 
     /* --- Zeitplan ---------------------------------------------------------
        Jede Runde wird mit IHREM Satzmodus getaktet, sonst stimmt die Uhrzeit

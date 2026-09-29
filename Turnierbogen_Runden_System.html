@@ -105,9 +105,6 @@
     <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
     </label>
-    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> Spielmodus</span>
-      <select id="roundMode"></select>
-    </label>
     <div class="cfgfield-row">
       <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Teams</span>
         <select id="teamCount"></select>
@@ -247,10 +244,16 @@
      VOR dem Picker-Aufruf aus der URL gelesen werden. */
   const urlMode = new URLSearchParams(location.search).get('mode');
   const MODE_HINT = (urlMode === 'rr' || urlMode === 'swiss') ? urlMode : null;
+  /* Der Modus haengt FEST an der URL (Startseiten-Karte) und ist im Bogen
+     nicht umschaltbar – beide Modi verhalten sich wie getrennte Boegen.
+     Ein Umschalten innerhalb der Seite liess URL, Speicherplatz, Auswahl-
+     Overlay und Archiv auseinanderlaufen: nach dem Neuladen war das Turnier
+     "weg" und "Neues Turnier" archivierte/leerte den Bogen des ANDEREN Modus. */
+  const MODE = MODE_HINT || 'rr';
   const SHEET_TYPE = 'Jeder gegen Jeden';
   const SHEET_TYPES = { rr: SHEET_TYPE, swiss: 'Schweizer System' };
-  const PICKER_BASE = 'runden_' + (MODE_HINT || 'rr');
-  const PICKER_LABEL = SHEET_TYPES[MODE_HINT || 'rr'];
+  const PICKER_BASE = 'runden_' + MODE;
+  const PICKER_LABEL = SHEET_TYPES[MODE];
   if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt(PICKER_BASE, PICKER_LABEL)) return;
   if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
   const $ = id => document.getElementById(id);
@@ -279,7 +282,7 @@
     save: t => TStore.save(t),
     repaint: () => paint()
   });
-  const activeMode = cfg => (S && S.config && S.config.mode) || MODE_HINT || (cfg && cfg.mode) || 'rr';
+  const activeMode = () => MODE;
   const sheetType = cfg => SHEET_TYPES[activeMode(cfg)] || SHEET_TYPE;
   /* Fenster-/Drucktitel: Turniertitel, Turniertyp und Turniergroesse. */
   function applyDocTitle(){
@@ -305,7 +308,7 @@
     return true;
   }
   function archiveOpts(){
-    const mode = MODE_HINT || ((S && S.config && S.config.mode) || 'rr');
+    const mode = MODE;
     const key = storageSheetId(mode);
     const cur = TStore.load(key, DEFAULTS);
     const names = cur.teamNames || {};
@@ -335,10 +338,9 @@
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
   if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
-  const initialMode = MODE_HINT || 'rr';
-  S = TStore.load(storageSheetId(initialMode), DEFAULTS);
-  S.sheet = storageSheetId(initialMode);
-  S.config.mode = initialMode;
+  S = TStore.load(storageSheetId(MODE), DEFAULTS);
+  S.sheet = storageSheetId(MODE);
+  S.config.mode = MODE;
   let needSave = syncAutoTitle();
   if(TStore.applyUrlConfig(S, {
       teams:  TStore.urlInt(4, 24),
@@ -375,12 +377,10 @@
   function fillSelects(){
     const t = $('teamCount');
     if(!t.options.length){
-      TFormat.ROUND_MODES.forEach(m => $('roundMode').add(new Option(m.label, m.id)));
       for(let n=4;n<=24;n++) t.add(new Option(n + ' Teams', n));
       TC.SET_MODES.forEach(m => $('setMode').add(new Option(m.label, m.id)));
     }
     fillRoundCount();
-    $('roundMode').value = S.config.mode;
     t.value = S.config.teams;
     /* Mehr Felder als gleichzeitige Spiele bringen nichts – die Auswahl
        richtet sich deshalb nach der Teamzahl. */
@@ -419,7 +419,7 @@
   }
 
   function readConfig(){
-    S.config.mode = $('roundMode').value;
+    S.config.mode = MODE;
     S.config.teams = +$('teamCount').value;
     if (!isSwiss()) {
       S.config.rounds = null;
@@ -1089,25 +1089,11 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    S.sheet = storageSheetId(S.config.mode || 'rr');
+    S.sheet = storageSheetId(MODE);
     return TStore.save(S);
   }
   function onChange(){
     const prevTeams = S.config.teams;
-    const prevMode = S.config.mode;
-    const nextMode = $('roundMode').value;
-    const modeChanged = nextMode !== prevMode;
-
-    if(modeChanged){
-      save();
-      S = TStore.load(storageSheetId(nextMode), DEFAULTS);
-      S.sheet = storageSheetId(nextMode);
-      S.config.mode = nextMode;
-      fillSelects();
-      structureKey=''; rebuild();
-      return;
-    }
-
     readConfig();
     /* Teamzahl oder Spielmodus ändern die Paarungen von Grund auf – dann sind
        eingefrorene Runden gegenstandslos. Ergebnisse bleiben erhalten. */
@@ -1126,7 +1112,7 @@
   }
 
   function wire(){
-    ['roundMode','teamCount','roundCount','fieldCount','setMode','startTime','endTime']
+    ['teamCount','roundCount','fieldCount','setMode','startTime','endTime']
       .forEach(id => $(id).addEventListener('change', onChange));
 
     $('session-title-input').addEventListener('input', e => {
@@ -1163,7 +1149,28 @@
     });
 
     $('btnDrawStart').addEventListener('click', () => {
-      if(S.frozen[1] && !confirm('Runde 1 ist bereits eingetragen. Startrunde trotzdem neu auslosen? Die Ergebnisse der Runde 1 werden dadurch ungültig.')) return;
+      /* Neu auslosen nur, solange ab Runde 2 noch nichts eingetragen ist:
+         spätere Runden wurden aus der ALTEN Startrunde gebildet – eine neue
+         Startrunde könnte genau deren Begegnungen wiederholen. Ergebnisse
+         der Runde 1 werden gelöscht, sonst wanderten sie auf die neuen
+         Paarungen (gleiche Spiel-IDs sw_1_*). */
+      const hasInput = (id) => {
+        const v = S.results[id];
+        return !!(v && v.some(p => p && p.some(x => x != null && x !== '')));
+      };
+      const laterStarted = Object.keys(S.frozen).some(r => +r > 1)
+        || Object.keys(S.results).some(id => /^sw_(\d+)_/.test(id) && +id.split('_')[1] > 1 && hasInput(id));
+      if(laterStarted){
+        alert('Die Startrunde kann nicht mehr neu ausgelost werden, weil ab Runde 2 schon Ergebnisse eingetragen sind. '
+          + 'Die weiteren Runden wurden aus der bisherigen Startrunde gebildet – eine neue Auslosung würde Begegnungen wiederholen.');
+        return;
+      }
+      const r1Started = !!S.frozen[1] || Object.keys(S.results).some(id => id.indexOf('sw_1_') === 0 && hasInput(id));
+      if(r1Started && !confirm('Runde 1 ist bereits eingetragen. Startrunde trotzdem neu auslosen? Die Ergebnisse der Runde 1 werden dabei gelöscht.')) return;
+      if(r1Started){
+        Object.keys(S.results).forEach(id => { if(id.indexOf('sw_1_') === 0) delete S.results[id]; });
+        if(S.frozenModes) delete S.frozenModes[1];
+      }
       const list = allTeams().filter(t => !S.absent.includes(t));
       for(let i=list.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [list[i],list[j]]=[list[j],list[i]]; }
       const pairs = [];
@@ -1233,12 +1240,11 @@
     $('btnReset').addEventListener('click', () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
       const started = TArchive.startNew(archiveOpts());
-      const mode = S.config.mode;
-      const key = storageSheetId(mode);
+      const key = storageSheetId(MODE);
       TStore.reset(key);
       S = TStore.load(key, DEFAULTS);
       S.sheet = key;
-      S.config.mode = mode;
+      S.config.mode = MODE;
       S.title = started.title;
       save();
       fillSelects(); structureKey=''; rebuild();

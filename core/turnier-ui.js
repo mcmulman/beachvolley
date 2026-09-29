@@ -1007,15 +1007,15 @@
       el.value = raw.replace(/[^0-9]/g, '').slice(0, 3);
       onChange(el.getAttribute('data-mid'), +el.getAttribute('data-set'),
         el.getAttribute('data-side'), el.value);
-      if (jump) focusNext(el, fields());
+      if (jump) focusNext(el, fields(), fields);
     });
     rootEl.addEventListener('keydown', e => {
       const el = e.target;
       if (!el.classList || !el.classList.contains('score')) return;
-      if (e.key === 'Enter') { e.preventDefault(); focusNext(el, fields()); }
+      if (e.key === 'Enter') { e.preventDefault(); focusNext(el, fields(), fields); }
       if (e.key === 'Tab') {
         const list = fields();
-        const moved = e.shiftKey ? focusPrev(el, list) : focusNext(el, list);
+        const moved = e.shiftKey ? focusPrev(el, list, fields) : focusNext(el, list, fields);
         if (moved) e.preventDefault();
       }
     });
@@ -1109,24 +1109,46 @@
       focusNextCard(td);
     });
   }
-  function focusNext(el, list) {
+  /* Sprung zum Nachbar-Kaestchen (dir = +1/-1). Das aktuelle Feld wird ZUERST
+     per blur() verlassen: Das loest das native "change" (Auto-Vervollstaendigung)
+     aus, und das kann im Schweizer System einen kompletten Neuaufbau des
+     Spielplans nach sich ziehen (neue Paarungs-Vorschau). Wuerde man direkt
+     den alten Nachbarn fokussieren, liefe der Neuaufbau mitten im Fokuswechsel
+     und der Fokus landete auf einem inzwischen entfernten Knoten -> Tab sprang
+     an den Seitenanfang. Deshalb Anker ueber data-mid/-set/-side NEU aus dem
+     (ggf. frisch gebauten) DOM holen - wie beim OK-Knopf in spielplan-enh.js. */
+  function scoreSig(el) {
+    const mid = el.getAttribute('data-mid');
+    return mid == null ? null
+      : 'input.score[data-mid="' + mid + '"][data-set="' + el.getAttribute('data-set')
+        + '"][data-side="' + el.getAttribute('data-side') + '"]';
+  }
+  function focusStep(el, list, dir, fresh) {
+    if (!el.isConnected && scoreSig(el)) el = document.querySelector(scoreSig(el)) || el;
     const i = list.indexOf(el);
-    if (i >= 0 && i + 1 < list.length) {
-      list[i + 1].focus();
-      list[i + 1].select();
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return false;
+    const sig = fresh ? scoreSig(el) : null;
+    if (!sig) {
+      list[j].focus();
+      list[j].select();
       return true;
     }
-    return false;
-  }
-  function focusPrev(el, list) {
-    const i = list.indexOf(el);
-    if (i > 0) {
-      list[i - 1].focus();
-      list[i - 1].select();
-      return true;
+    el.blur();
+    const now = fresh();
+    const anchor = el.isConnected ? el : document.querySelector(sig);
+    const k = anchor ? now.indexOf(anchor) : -1;
+    const target = k >= 0 ? now[k + dir] : list[j].isConnected ? list[j] : null;
+    if (target) {
+      target.focus();
+      target.select();
+    } else if (anchor) {
+      anchor.focus();
     }
-    return false;
+    return true;
   }
+  function focusNext(el, list, fresh) { return focusStep(el, list, 1, fresh); }
+  function focusPrev(el, list, fresh) { return focusStep(el, list, -1, fresh); }
 
   /* ======================================================= FELDER & ZEITPLAN
      Mehr Felder als gleichzeitig moegliche Spiele bringen nichts – deshalb
