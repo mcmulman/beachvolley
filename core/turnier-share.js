@@ -520,13 +520,53 @@
     return applyServerShare(pending.value, opts);
   }
 
+  /* Speicherplatz-Konvention aller Bögen: "base" bzw. "base.<id>" (Basen
+     enthalten keinen Punkt, ?id=_base_ steht für die nackte Basis). */
+  function sheetParts(sheet) {
+    const s = String(sheet || '');
+    const dot = s.indexOf('.');
+    return dot >= 0 ? { base: s.slice(0, dot), id: s.slice(dot + 1) } : { base: s, id: '' };
+  }
+
+  /* URL dieser Seite, die genau den Speicherplatz "sheet" öffnet (mit
+     explizitem ?id= und – bei Bögen mit mehreren Modi – passendem ?mode=).
+     null, wenn "sheet" nicht zu dieser Seite gehört. opts.sheetModes
+     (optional): { <base>: <mode> } für Bögen, deren Basis vom ?mode= abhängt. */
+  function urlForSheet(sheet, opts) {
+    const want = sheetParts(sheet);
+    const cur = sheetParts(opts && opts.sheet);
+    const modes = (opts && opts.sheetModes) || {};
+    const sameBase = want.base && want.base === cur.base;
+    if (!sameBase && !(want.base in modes && cur.base in modes)) return null;
+    try {
+      const url = new URL(location.href);
+      url.hash = '';
+      url.searchParams.delete('restore');
+      url.searchParams.set('id', want.id || '_base_');
+      if (want.base in modes) url.searchParams.set('mode', modes[want.base]);
+      return url.pathname + url.search;
+    } catch (e) { return null; }
+  }
+
+  /* Link passt nicht zum aktuell geöffneten Speicherplatz (z. B. Admin-Link
+     oder alter Link ohne ?id=/?mode=): auf denselben Bogen mit richtigem
+     ?id=/?mode= umleiten, der Link-Hash bleibt erhalten. Nur wenn das nicht
+     möglich ist (anderer Bogen-Typ), wird abgelehnt. true = erledigt. */
+  function handleSheetMismatch(envSheet, opts, hash) {
+    if (!opts || !opts.sheet || !envSheet || envSheet === opts.sheet) return false;
+    const target = urlForSheet(envSheet, opts);
+    if (target && target !== location.pathname + location.search) {
+      location.replace(target + hash);
+      return true;
+    }
+    clearHash();
+    alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
+    return true;
+  }
+
   function applyServerShare(id, opts) {
     apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
-      if (opts && opts.sheet && env.sheet && env.sheet !== opts.sheet) {
-        clearHash();
-        alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
-        return;
-      }
+      if (handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id))) return;
       const info = (env.title || env.type || 'Turnier')
         + (env.teams && env.teams.length ? ' (' + env.teams.join(', ') + ')' : '');
       serverUnlockLoop(id, env, info, opts, 0);
@@ -585,11 +625,7 @@
   function applyOfflineShare(hashValue, opts) {
     const env = offlineDecodeEnvelope(hashValue);
     if (!env) { clearHash(); alert('Der Link enthält keine gültigen Turnierdaten.'); return false; }
-    if (opts && opts.sheet && env.sheet && env.sheet !== opts.sheet) {
-      clearHash();
-      alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
-      return false;
-    }
+    if (handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue)) return false;
 
     const info = (env.title || env.type || 'Turnier')
       + (env.teams && env.teams.length ? ' (' + env.teams.join(', ') + ')' : '');
@@ -631,8 +667,13 @@
       TArchive.save(opts);              // bisherigen Stand sichern (No-op, falls leer)
       TArchive.writeSnapshot(snapshot);  // geteilten Stand in den laufenden Speicherplatz schreiben
     }
+    /* Explizit mit ?id= (und ggf. ?mode=) neu öffnen: ein bloßes reload()
+       ohne ?id= ließe Auswahl-Overlay/autoId() einen ANDEREN (leeren)
+       Speicherplatz öffnen – die übernommenen Daten wären unsichtbar. */
+    const target = opts && opts.sheet ? urlForSheet(opts.sheet, opts) : null;
     clearHash();
-    location.reload();
+    if (target) location.replace(target);
+    else location.reload();
   }
 
   /* ============================================================ Code-Eingabe

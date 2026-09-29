@@ -333,6 +333,7 @@
        aus "file" + "#share=…" bestehen) funktionieren so gleichermaßen. */
     const file = SHEET_FILE + (mode === 'swiss' ? '?mode=swiss' : '');
     return { sheet:key, file:file, type:sheetType(cur.config), empty:empty,
+             sheetModes:{ runden_rr:'rr', runden_swiss:'swiss' },
              keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());

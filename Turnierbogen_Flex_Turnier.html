@@ -351,6 +351,7 @@
      && !Object.keys(cur.teamGender || {}).length
      && !(cur.absent || []).length;
     return { sheet:key, file:SHEET_FILE + '?mode=' + mode, type:sheetType(cur.config), empty:empty,
+             sheetModes:{ flex_rr:'rr', flex_swiss:'swiss' },
              keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
   }
   if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
