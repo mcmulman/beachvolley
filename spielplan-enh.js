@@ -107,6 +107,25 @@
     sanitizeScore(el);
   }, true);
 
+  /* The round-robin template keeps every round in the DOM while its round
+     filter hides inactive rows. Enter must skip those hidden inputs and blur
+     first so the change handler can complete a corrected score. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target || !e.target.matches
+        || !e.target.matches('input.score[data-rr-round]')) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var currentId = e.target.id;
+    e.target.blur();
+    var visible = Array.prototype.slice.call(document.querySelectorAll('input.score[data-rr-round]:not(:disabled)'))
+      .filter(function (inp) { return inp.getClientRects().length > 0; });
+    var current = visible.findIndex(function (inp) { return inp.id === currentId; });
+    if (current >= 0 && current + 1 < visible.length) {
+      visible[current + 1].focus();
+      if (visible[current + 1].select) visible[current + 1].select();
+    }
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     if (e.key !== ':' && e.key !== '-' && e.key !== '/') return;
     var el = e.target;

@@ -9,13 +9,7 @@
    genau der URL, die der Bogen ohnehin für "id vorhanden" kennt – der ganze
    restliche Lade-/Init-Code der Bögen bleibt unverändert.
 
-   Zwei Quellen für "was existiert bereits":
-   - maybePrompt(base, typeLabel)              → core/turnier-store.js-Bögen
-     (JSON-Turnier je Schlüssel, Liste über TStore.index()).
-   - maybePromptFromRegistry(opts)             → Alt-Bögen ohne TStore
-     (mehrere Einzel-Keys je Turnier, Liste über die vorhandene
-     "beachl_sessions"-Registry aus core/turnier-archive.js).
-   Beide münden in denselben Overlay-Renderer und denselben ?id=-Mechanismus.
+   Gespeicherte Turniere werden ausschließlich über TStore.index() gefunden.
 
    BASE_ID ist der Sentinel-Wert für "der unverzweigte, alte Standard-Slot
    ohne Suffix" – so bleiben vor Einführung dieses Features gespeicherte
@@ -70,41 +64,17 @@
     return out;
   }
 
-  /* Dieselbe Aufgabe für die Alt-Bögen: liest die "beachl_sessions"-Liste,
-     die registerSession() in diesen Dateien ohnehin schon pflegt, und
-     filtert auf die zum aktuellen Bogen (sessionKeyBase) gehörenden Einträge. */
-  function listFromRegistry(sessionKeyBase) {
-    let registry;
-    try { registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]'); }
-    catch (e) { return []; }
-    if (!Array.isArray(registry)) return [];
-    return registry
-      .filter(s => s && !s.archived && (s.key === sessionKeyBase || String(s.key || '').indexOf(sessionKeyBase + '.') === 0))
-      .map(s => ({
-        id: s.key === sessionKeyBase ? BASE_ID : s.key.slice(sessionKeyBase.length + 1),
-        title: s.customTitle || s.title || '',
-        meta: [
-          Array.isArray(s.teams) ? shortList(s.teams, ' · ') : '',
-          fmtDate(s.savedAt)
-        ].filter(Boolean).join(' · '),
-        updated: s.savedAt || 0
-      }));
-  }
-
   function freshId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  /* Grobe Gesamtzahl aller gespeicherten Turniere über beide Speicher-
-     quellen hinweg (TStore-Index + Alt-Registry) – nur für den Hinweistext
-     "es gibt noch weitere" im Overlay, daher bewusst ungenau/ungefiltert
-     gehalten (kein Aufwand für Archiv-Sonderfälle o. Ä.). */
+  /* Grobe Gesamtzahl laufender Turniere im Index – nur für den Hinweistext
+     "es gibt noch weitere" im Overlay. */
   function countAllSaved() {
     let n = 0;
-    try { n += Object.keys(JSON.parse(localStorage.getItem('beachl.index') || '{}') || {}).length; } catch (e) {}
     try {
-      const reg = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-      if (Array.isArray(reg)) n += reg.filter(s => s && !s.archived).length;
+      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
+      n = Object.keys(idx).filter(k => k.indexOf('__') !== 0).length;
     } catch (e) {}
     return n;
   }
@@ -201,12 +171,6 @@
     document.body.appendChild(overlay);
   }
 
-  /* Namenslisten enthalten alle Teams/Personen – in Übersichten nur die
-     ersten 4 zeigen, sonst sprengen z. B. 16 Teams die Karte. */
-  function shortList(t, SEP) {
-    return (t.length > 4 ? t.slice(0, 4).join(SEP) + SEP + '… (+' + (t.length - 4) + ')' : t.join(SEP));
-  }
-
   function alreadyResolved() {
     const qp = new URLSearchParams(location.search);
     /* ?id= bereits eindeutig, ?restore= wird von turnier-archive.js selbst
@@ -239,21 +203,7 @@
     } catch (e) { return false; }
   }
 
-  /* Für Alt-Bögen ohne core/turnier-store.js (mehrere localStorage-Keys je
-     Turnier, siehe core/turnier-archive.js "beachl_sessions"-Registry).
-     opts: { sessionKeyBase, typeLabel } */
-  function maybePromptFromRegistry(opts) {
-    try {
-      if (alreadyResolved() || isRankImport()) return false;
-      const o = opts || {};
-      const existing = listFromRegistry(o.sessionKeyBase);
-      if (!existing.length) return false;
-      render(existing, o.typeLabel, Math.max(0, countAllSaved() - existing.length));
-      return true;
-    } catch (e) { return false; }
-  }
-
-  /* Aufruf NUR, wenn maybePrompt()/maybePromptFromRegistry() zuvor false
+  /* Aufruf NUR, wenn maybePrompt() zuvor false
      zurückgegeben hat (kein ?id=, keine bestehenden Turniere gefunden – also
      ein wirklich neues Turnier). Schreibt in diesem Fall still eine frische
      ?id= in die Adresszeile (per history.replaceState, ohne Neuladen), damit
@@ -269,7 +219,7 @@
     } catch (e) { /* z. B. file://-Aufruf ohne History-API: Standard-Slot bleibt */ }
   }
 
-  const api = { BASE_ID, maybePrompt, maybePromptFromRegistry, autoId };
+  const api = { BASE_ID, maybePrompt, autoId };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TResumePicker = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -254,8 +254,8 @@
   const SHEET_TYPES = { rr: SHEET_TYPE, swiss: 'Schweizer System' };
   const PICKER_BASE = 'runden_' + MODE;
   const PICKER_LABEL = SHEET_TYPES[MODE];
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt(PICKER_BASE, PICKER_LABEL)) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt(PICKER_BASE, PICKER_LABEL)) return;
+  TResumePicker.autoId();
   const $ = id => document.getElementById(id);
 
   /* Papier-Variante der Tabellen-Erklaerung: auf dem Ausdruck rechnet niemand

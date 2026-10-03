@@ -278,8 +278,8 @@
   const PICKER_BASES = MODE_HINT
     ? [{ base: 'flex_' + MODE_HINT }]
     : [{ base: 'flex_rr', params: { mode: 'rr' } }, { base: 'flex_swiss', params: { mode: 'swiss' } }];
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt(PICKER_BASES, SHEET_TYPE)) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt(PICKER_BASES, SHEET_TYPE)) return;
+  TResumePicker.autoId();
   const $ = id => document.getElementById(id);
 
   /* Papier-Variante der Tabellen-Erklaerung: auf dem Ausdruck rechnet niemand

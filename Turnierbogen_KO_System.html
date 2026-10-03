@@ -236,8 +236,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('ko-flex', 'KO-System')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('ko-flex', 'KO-System')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('ko-flex');
   const $ = id => document.getElementById(id);
   const DEFAULTS = { teams:8, fields:4, groups:0, setMode:'21', finalMode:'ko',

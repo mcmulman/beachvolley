@@ -17,7 +17,8 @@
   'use strict';
 
   const ARCHIVE_PREFIX = 'beachl.arch.';
-  const REGISTRY_KEY = 'beachl_sessions';
+  const INDEX_KEY = 'beachl.index';
+  const ARCHIVES_KEY = '__archives';
 
   function ls() {
     try { return (typeof localStorage !== 'undefined') ? localStorage : null; }
@@ -26,11 +27,13 @@
   function readRaw(key) { const s = ls(); if (!s) return null; try { return s.getItem(key); } catch (e) { return null; } }
   function writeRaw(key, val) { const s = ls(); if (!s) return false; try { s.setItem(key, val); return true; } catch (e) { return false; } }
   function removeRaw(key) { const s = ls(); if (!s) return; try { s.removeItem(key); } catch (e) { } }
-  function readRegistry() {
-    try { const v = JSON.parse(readRaw(REGISTRY_KEY) || '[]'); return Array.isArray(v) ? v : []; }
-    catch (e) { return []; }
+  function readIndex() {
+    try {
+      const v = JSON.parse(readRaw(INDEX_KEY) || '{}');
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
   }
-  function writeRegistry(list) { writeRaw(REGISTRY_KEY, JSON.stringify(list)); }
+  function writeIndex(index) { writeRaw(INDEX_KEY, JSON.stringify(index)); }
 
   /* Titelvorschlag für ein neues Turnier: Typ und Datum, z. B.
      "Schweizer System – 19.08.2026". */
@@ -113,7 +116,7 @@
   }
 
   /* Archiviert den aktuellen Stand eines Bogens.
-     opts: { sheet, file, type, keys, title, teams, liveKey }
+     opts: { sheet, file, type, keys, title, teams }
      Rückgabe: Archivschlüssel oder null, wenn nichts zu sichern war. */
   function save(opts) {
     const o = opts || {};
@@ -138,19 +141,22 @@
     };
     if (!writeRaw(key, JSON.stringify(stored))) return null;
 
-    /* Der laufende Eintrag des Bogens wandert in den Archiveintrag – sonst
-       stünde dasselbe Turnier zweimal in der Liste. */
-    let registry = readRegistry();
-    if (o.liveKey) registry = registry.filter(s => s.key !== o.liveKey);
-    registry.push({
+    const index = readIndex();
+    const archives = index[ARCHIVES_KEY] && typeof index[ARCHIVES_KEY] === 'object'
+      ? index[ARCHIVES_KEY] : {};
+    archives[key] = {
       key: key,
-      file: restoreUrl(o.file, o.sheet, key),
+      file: o.file || '',
+      sheet: stored.sheet,
+      type: stored.type,
       title: title,
       teams: stored.teams,
       savedAt: savedAt,
       archived: true
-    });
-    writeRegistry(registry);
+    };
+    index[ARCHIVES_KEY] = archives;
+    if (o.sheet) delete index[o.sheet];
+    writeIndex(index);
     return key;
   }
 
@@ -159,6 +165,28 @@
      Turnier-Links genutzt – dieselbe Datenform wie beim Archivieren/Restore. */
   function writeSnapshot(data) {
     Object.keys(data || {}).forEach(k => writeRaw(k, data[k]));
+    updateLiveIndex(data);
+  }
+
+  function updateLiveIndex(data, savedAt) {
+    const index = readIndex();
+    let changed = false;
+    Object.keys(data || {}).forEach(key => {
+      if (key.indexOf('beachl.t.') !== 0) return;
+      const sheet = key.slice('beachl.t.'.length);
+      try {
+        const tournament = JSON.parse(data[key]);
+        if (!sheet || !tournament || tournament.schema !== 2) return;
+        index[sheet] = {
+          title: tournament.title || '',
+          teams: tournament.config && tournament.config.teams,
+          updated: tournament.updated || new Date(savedAt || Date.now()).toISOString(),
+          filled: Object.keys(tournament.results || {}).length
+        };
+        changed = true;
+      } catch (e) { }
+    });
+    if (changed) writeIndex(index);
   }
 
   function meta(key) {
@@ -176,19 +204,29 @@
     if (!m) return null;
     Object.keys(m.data).forEach(k => writeRaw(k, m.data[k]));
     remove(key);
+    updateLiveIndex(m.data, m.savedAt);
     return m;
   }
 
   function remove(key) {
     if (!key) return;
     removeRaw(key);
-    writeRegistry(readRegistry().filter(s => s.key !== key));
+    const index = readIndex();
+    if (index[ARCHIVES_KEY]) {
+      delete index[ARCHIVES_KEY][key];
+      if (!Object.keys(index[ARCHIVES_KEY]).length) delete index[ARCHIVES_KEY];
+      writeIndex(index);
+    }
   }
 
   /* Löscht die laufenden Daten eines Bogens (nach dem Archivieren). */
-  function clearLive(keys, liveKey) {
+  function clearLive(keys, sheet) {
     (keys || []).forEach(removeRaw);
-    if (liveKey) writeRegistry(readRegistry().filter(s => s.key !== liveKey));
+    if (sheet) {
+      const index = readIndex();
+      delete index[sheet];
+      writeIndex(index);
+    }
   }
 
   /* ?restore=… aus der Adresszeile lesen. */
@@ -218,7 +256,7 @@
     const m = meta(key);
     if (!m || (opts && opts.sheet && m.sheet && m.sheet !== opts.sheet)) { clearPendingParam(); return null; }
     save(opts);                       // laufendes Turnier sichern (falls vorhanden)
-    if (opts && opts.keys) (opts.keys || []).forEach(removeRaw);
+    if (opts && opts.keys) clearLive(opts.keys, opts.sheet);
     const restored = restore(key);
     clearPendingParam();
     return restored;
@@ -229,14 +267,13 @@
   function startNew(opts) {
     const o = opts || {};
     const archived = save(o);
-    clearLive(o.keys, o.liveKey);
+    clearLive(o.keys, o.sheet);
     return { archived: archived, title: newTitle(o.type) };
   }
 
   return {
-    ARCHIVE_PREFIX, REGISTRY_KEY,
+    ARCHIVE_PREFIX, INDEX_KEY, ARCHIVES_KEY,
     newTitle, isAutoTitle, docTitle, headTitle, headTitleHtml, barTitle, sizeInfo, snapshot, writeSnapshot, save, meta, restore, remove, clearLive,
-    pendingRestore, clearPendingParam, applyPendingRestore, startNew, restoreUrl,
-    _readRegistry: readRegistry, _writeRegistry: writeRegistry
+    pendingRestore, clearPendingParam, applyPendingRestore, startNew, restoreUrl
   };
 });

@@ -305,8 +305,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('mpp', 'Modified Pool Play')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('mpp', 'Modified Pool Play')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('mpp');
   const $ = id => document.getElementById(id);
 

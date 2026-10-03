@@ -242,8 +242,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('de-flex', 'Doppel-KO-System')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('de-flex', 'Doppel-KO-System')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('de-flex');
   const $ = id => document.getElementById(id);
   /* Doppel-K.-o. braucht ca. doppelt so viele Spiele wie ein einfacher

@@ -404,9 +404,22 @@
        aktualisiert angezeigt) – die eigentliche Neusortierung passiert erst,
        wenn "Fertig" geklickt wird. So springen Zeilen nicht schon während der
        Eingabe hin und her. */
-    rows.forEach(row => { row.calcPlace = 0; });
-    rows.slice().sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i))
-      .forEach((row, i) => { row.calcPlace = i + 1; });
+    const hasScoreDeltas = rows.some(row => row.dPts || row.dBd);
+    if (!hasScoreDeltas) {
+      rows.forEach(row => {
+        row.calcPlace = Number.isFinite(Number(row.orig.place)) ? Number(row.orig.place) : row.i + 1;
+      });
+    } else {
+      const recalculated = rows.slice().sort((a, b) =>
+        (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i));
+      let place = 1;
+      recalculated.forEach((row, i) => {
+        if (i && (row.effPts !== recalculated[i - 1].effPts || row.effBd !== recalculated[i - 1].effBd)) {
+          place = i + 1;
+        }
+        row.calcPlace = place;
+      });
+    }
     rows.forEach(row => { row.place = row.hasPlace ? row.overridePlace : row.calcPlace; });
     const sortedRows = rows.slice().sort((a, b) => (a.place - b.place) || (a.i - b.i));
     sortedRows.forEach((row, i) => {

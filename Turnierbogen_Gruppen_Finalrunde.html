@@ -291,8 +291,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('gruppen-final', 'Gruppen + Finalrunde')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('gruppen-final', 'Gruppen + Finalrunde')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('gruppen-final');
   const $ = id => document.getElementById(id);
 

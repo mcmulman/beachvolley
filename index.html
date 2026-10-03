@@ -695,6 +695,7 @@
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
   <script src="core/turnier-share.js"></script>
+  <script src="core/turnier-store.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
@@ -1451,15 +1452,11 @@
     document.getElementById('sessions-more').style.display = 'none';
   }
 
-  /* Die 8 "modernen" Bögen (core/turnier-store.js) speichern NICHT in der
-     Legacy-Registry "beachl_sessions", sondern in ihrem eigenen Index
-     "beachl.index" (Kommentar dort: "Übersicht für die Startseite" – bisher
-     aber nie angebunden). Ohne diese Zuordnung erscheint ein dort
-     gespeichertes Turnier trotz Klick auf "Speichern" nie in der Liste
-     unten. base -> Datei/Typ-Bezeichnung, wie in TStore.sheetIdFrom('base')
+  /* base -> Datei/Typ-Bezeichnung, wie in TStore.sheetIdFrom('base')
      je Bogen verwendet. */
   const STORE_BASE_MAP = {
     'de-flex': { file: 'Turnierbogen_Doppel_KO_System.html', type: 'Doppel-KO-System' },
+    'flex-rr': { file: 'Turnierbogen_Flexibel_Alle_gegen_Alle.html', type: 'Jeder gegen Jeden' },
     'flex_rr': { file: 'Turnierbogen_Flex_Turnier.html?mode=rr', type: 'Flex-Turnier' },
     'flex_swiss': { file: 'Turnierbogen_Flex_Turnier.html', type: 'Flex-Turnier' },
     'gruppen-final': { file: 'Turnierbogen_Gruppen_Finalrunde.html', type: 'Gruppen + Finalrunde' },
@@ -1467,6 +1464,7 @@
     'kingqueen': { file: 'Turnierbogen_King_Queen.html', type: 'King & Queen' },
     'koc': { file: 'Turnierbogen_King_Queen_of_the_Court.html', type: 'King/Queen of the Court' },
     'mpp': { file: 'Turnierbogen_Modified_Pool_Play.html', type: 'Modified Pool Play' },
+    'swiss': { file: 'Turnierbogen_Schweizer_System.html', type: 'Schweizer System' },
     /* Turnierbogen_Runden_System.html deckt zwei Turniertypen ab (?mode=rr/
        ?mode=swiss, siehe dortiges PICKER_BASE) – daher zwei Basis-Einträge
        statt einem, sonst würden Schweizer-System-Turniere hier fehlen bzw.
@@ -1474,9 +1472,81 @@
     'runden_rr': { file: 'Turnierbogen_Runden_System.html', type: 'Jeder gegen Jeden' },
     'runden_swiss': { file: 'Turnierbogen_Runden_System.html?mode=swiss', type: 'Schweizer System' }
   };
+  const INDEX_ARCHIVES_KEY = '__archives';
+  const INDEX_MIGRATIONS_KEY = '__migrations';
+  function readSessionIndex() {
+    try {
+      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}');
+      return idx && typeof idx === 'object' && !Array.isArray(idx) ? idx : {};
+    } catch (e) { return {}; }
+  }
+  function writeSessionIndex(idx) {
+    try { localStorage.setItem('beachl.index', JSON.stringify(idx)); } catch (e) {}
+  }
+  function migrateReferenceSessions() {
+    try {
+      const existingIndex = readSessionIndex();
+      const migrations = existingIndex[INDEX_MIGRATIONS_KEY] || {};
+      if (!migrations.referenceStorageV1) {
+        const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
+        if (Array.isArray(registry)) {
+          const refs = [
+            { legacy: 'turnierflexrr', sheet: 'flex-rr' },
+            { legacy: 'sw_univ', sheet: 'swiss' }
+          ];
+          registry.forEach(function (session) {
+            if (!session || session.archived || typeof session.key !== 'string') return;
+            const ref = refs.filter(r => session.key === r.legacy || session.key.indexOf(r.legacy + '.') === 0)[0];
+            if (!ref) return;
+            const suffix = session.key === ref.legacy ? '' : session.key.slice(ref.legacy.length + 1);
+            if (suffix && !/^[A-Za-z0-9_-]+$/.test(suffix)) return;
+            const sheetId = ref.sheet + (suffix ? '.' + suffix : '');
+            const idx = readSessionIndex();
+            if (idx[sheetId]) return;
+            const current = localStorage.getItem('beachl.t.' + sheetId);
+            if (current != null) {
+              try {
+                const stored = JSON.parse(current);
+                if (stored && stored.schema === 2) TStore.updateIndex(stored);
+              } catch (e) {}
+              return;
+            }
+            if (TStore.hasLegacy(sheetId)) TStore.load(sheetId);
+          });
+        }
+      }
+
+      const idx = readSessionIndex();
+      const archives = idx[INDEX_ARCHIVES_KEY] && typeof idx[INDEX_ARCHIVES_KEY] === 'object'
+        ? idx[INDEX_ARCHIVES_KEY] : {};
+      Object.keys(localStorage).forEach(function (key) {
+        if (key.indexOf('beachl.arch.') !== 0 || archives[key]) return;
+        try {
+          const archive = JSON.parse(localStorage.getItem(key) || 'null');
+          if (!archive || !archive.sheet || !archive.file || !archive.data ||
+              typeof archive.data !== 'object' || !Object.keys(archive.data).length) return;
+          archives[key] = {
+            key: key,
+            sheet: archive.sheet,
+            file: archive.file,
+            type: archive.type || '',
+            title: archive.title || '',
+            teams: Array.isArray(archive.teams) ? archive.teams : [],
+            savedAt: archive.savedAt || 0,
+            archived: true
+          };
+        } catch (e) {}
+      });
+      if (Object.keys(archives).length) idx[INDEX_ARCHIVES_KEY] = archives;
+      if (!migrations.referenceStorageV1) {
+        idx[INDEX_MIGRATIONS_KEY] = Object.assign({}, idx[INDEX_MIGRATIONS_KEY], { referenceStorageV1: true });
+      }
+      writeSessionIndex(idx);
+    } catch (e) {}
+  }
   function storeSessions() {
     try {
-      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
+      const idx = readSessionIndex();
       return Object.keys(idx).map(function (sheetId) {
         const baseName = Object.keys(STORE_BASE_MAP).filter(function (b) {
           return sheetId === b || sheetId.indexOf(b + '.') === 0;
@@ -1495,6 +1565,20 @@
         };
       }).filter(Boolean);
     } catch (e) { return []; }
+  }
+  function archiveSessions() {
+    const idx = readSessionIndex();
+    const archives = idx[INDEX_ARCHIVES_KEY] && typeof idx[INDEX_ARCHIVES_KEY] === 'object'
+      ? idx[INDEX_ARCHIVES_KEY] : {};
+    return Object.keys(archives).map(function (key) {
+      const entry = archives[key];
+      if (!entry || !entry.archived) return null;
+      try {
+        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        if (!payload || !payload.data || typeof payload.data !== 'object' || !Object.keys(payload.data).length) return null;
+      } catch (e) { return null; }
+      return Object.assign({}, entry, { key: key });
+    }).filter(Boolean);
   }
 
   /* Archiv-Einträge, die vor dem Fix in core/turnier-archive.js (restoreUrl)
@@ -1518,18 +1602,19 @@
 
   function loadSessions() {
     try {
-      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]').concat(storeSessions());
+      migrateReferenceSessions();
+      const sessions = storeSessions().concat(archiveSessions());
       const container = document.getElementById('saved-sessions');
       const noSessions = document.getElementById('no-sessions');
       const wrap = document.getElementById('sessions-list-wrap');
       wrap.innerHTML = '';
       updateBulkBar();
-      if (!registry.length) { noSessions.style.display = ''; return; }
+      if (!sessions.length) { noSessions.style.display = ''; return; }
       noSessions.style.display = 'none';
-      registry.sort((a, b) => b.savedAt - a.savedAt);
+      sessions.sort((a, b) => b.savedAt - a.savedAt);
       const countEl = document.getElementById('sessions-count');
-      if (countEl) countEl.textContent = registry.length > 1 ? '(' + registry.length + ')' : '';
-      registry.forEach((s, idx) => {
+      if (countEl) countEl.textContent = sessions.length > 1 ? '(' + sessions.length + ')' : '';
+      sessions.forEach((s, idx) => {
         const rawTs = s.savedAt || s.ts;
         const d = rawTs ? new Date(rawTs) : null;
         const date = (d && !isNaN(d.getTime())) ? d.toLocaleString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
@@ -1581,10 +1666,10 @@
         card.appendChild(actions);
         wrap.appendChild(card);
       });
-      if (!sessionsExpanded && registry.length > SESSIONS_PREVIEW) {
+      if (!sessionsExpanded && sessions.length > SESSIONS_PREVIEW) {
         const more = document.getElementById('sessions-more');
         more.style.display = '';
-        const n = registry.length - SESSIONS_PREVIEW;
+        const n = sessions.length - SESSIONS_PREVIEW;
         document.getElementById('sessions-more-label').textContent = n + ' weitere gespeicherte Turnier' + (n === 1 ? '' : 'e') + ' anzeigen';
       } else {
         document.getElementById('sessions-more').style.display = 'none';
@@ -1597,20 +1682,19 @@
   function deleteSessionKey(key) {
     try {
       if (key.indexOf('store:') === 0) {
-        /* TStore-Turnier (siehe storeSessions()): eigener Schlüssel + eigener Index. */
         const sheetId = key.slice(6);
         localStorage.removeItem('beachl.t.' + sheetId);
-        const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
+        const idx = readSessionIndex();
         delete idx[sheetId];
-        localStorage.setItem('beachl.index', JSON.stringify(idx));
-      } else {
-        let registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-        registry = registry.filter(s => s.key !== key);
-        localStorage.setItem('beachl_sessions', JSON.stringify(registry));
-        /* Archivierte Turniere liegen unter ihrem eigenen Schlüssel,
-           Alt-Sessions unter "<key>_…". Beides entfernen. */
+        writeSessionIndex(idx);
+      } else if (key.indexOf('beachl.arch.') === 0) {
         localStorage.removeItem(key);
-        Object.keys(localStorage).filter(k => k.startsWith(key + '_')).forEach(k => localStorage.removeItem(k));
+        const idx = readSessionIndex();
+        if (idx[INDEX_ARCHIVES_KEY]) {
+          delete idx[INDEX_ARCHIVES_KEY][key];
+          if (!Object.keys(idx[INDEX_ARCHIVES_KEY]).length) delete idx[INDEX_ARCHIVES_KEY];
+        }
+        writeSessionIndex(idx);
       }
     } catch(e) {}
   }

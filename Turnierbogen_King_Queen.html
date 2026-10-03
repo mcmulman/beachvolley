@@ -220,8 +220,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('kingqueen');
   const $ = id => document.getElementById(id);
 

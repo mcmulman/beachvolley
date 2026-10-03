@@ -59,12 +59,14 @@
       .kq-courts { display:flex; }
       .kqside.is-win .n { color:#0a6222 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .kqcourt.is-king { background:#fffaf0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .kq-final-table-wrap { overflow:visible; }
     }
     @media screen and (max-width:700px) {
       .kqcourt { flex:1 1 100%; }
     }
     .kq-final-table .pts { font-weight:bold; }
     .kq-final-table .sub { font-size:11px; color:#666; }
+    .kq-final-table-wrap { max-width:100%; overflow-x:auto; }
   </style>
   <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
@@ -183,11 +185,13 @@
 <h1 id="standingsSection">Endwertung</h1>
 <p class="sub">Nach jeder Runde: Ergebnisse auf Seite 1 eintragen, hier die kumulierten Punkte kontrollieren.</p>
 
-<table class="stand kq-final-table" id="placeTable">
-  <caption><span class="cap-title">Endstand – kumulierte Punkte je Team</span><span class="cap-hint" id="hintFinal"></span></caption>
-  <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th class="pts">Punkte gesamt</th><th class="sub">Runden gespielt</th><th class="sub">Ø Punkte/Runde</th><th class="sub">Bestes Feld</th></tr></thead>
-  <tbody id="placeBody"></tbody>
-</table>
+<div class="kq-final-table-wrap">
+  <table class="stand kq-final-table" id="placeTable">
+    <caption><span class="cap-title">Endstand – kumulierte Punkte je Team</span><span class="cap-hint" id="hintFinal"></span></caption>
+    <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th class="pts">Punkte gesamt</th><th class="sub">Runden gespielt</th><th class="sub">Ø Punkte/Runde</th><th class="sub">Bestes Feld</th></tr></thead>
+    <tbody id="placeBody"></tbody>
+  </table>
+</div>
 
 <div class="legend" id="h-legend">
   <b>Wertung:</b> Primär entscheiden die <b>kumulierten Punkte</b> aus allen Runden (klassische
@@ -209,8 +213,8 @@
 <script>
 (function(){
   'use strict';
-  if (typeof TResumePicker !== 'undefined' && TResumePicker.maybePrompt('koc', 'King/Queen of the Court')) return;
-  if (typeof TResumePicker !== 'undefined') TResumePicker.autoId();
+  if (TResumePicker.maybePrompt('koc', 'King/Queen of the Court')) return;
+  TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('koc');
   const $ = id => document.getElementById(id);
   const SHEET_FILE = 'Turnierbogen_King_Queen_of_the_Court.html';

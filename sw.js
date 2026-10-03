@@ -1,7 +1,7 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v75';
+const CACHE_VERSION = 'beachl-turniere-v78';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
@@ -19,16 +19,6 @@ const PRECACHE = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
-  /* Weiterleitungs-Stubs der abgelösten Bögen – bleiben im Cache, damit
-     gespeicherte Lesezeichen und installierte PWA-Verknüpfungen offline
-     ankommen und den Nutzer zum passenden dynamischen Bogen leiten. */
-  './Turnierbogen_6_Teams_Gruppen_Platzierungsrunde.html',
-  './Turnierbogen_8_Teams_4_Felder_Gruppen_KO_System.html',
-  './Turnierbogen_8_Teams_4_Felder_Gruppen_Platzierungsrunde.html',
-  './Turnierbogen_8_Teams_4_Felder_KO_System.html',
-  './Turnierbogen_10_Teams_Gruppen_Platzierungsrunde.html',
-  './Turnierbogen_12_Teams_6_Felder_Gruppen_Platzierungsrunde.html',
-  './Turnierbogen_16_Teams_8_Felder_Gruppen_Platzierungsrunde.html',
   './Turnierbogen_Flexibel_Alle_gegen_Alle.html',
   './Turnierbogen_Schweizer_System.html',
   /* Dynamische Universalbögen und ihre gemeinsame Engine */
@@ -46,6 +36,7 @@ const PRECACHE = [
   './core/turnier-archive.js',
   './core/turnier-core.js',
   './core/turnier-format.js',
+  './core/turnier-resume-picker.js',
   './core/turnier-store.js',
   './core/turnier-ui.js',
   './docs/format-jeder-gegen-jeden.html',

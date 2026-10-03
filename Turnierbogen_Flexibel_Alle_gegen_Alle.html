@@ -575,64 +575,38 @@
   <button type="button" class="nbtn" onclick="window.print()">🖨️ Drucken</button>
 </div>
 
+<script src="core/turnier-store.js"></script>
 <script src="core/turnier-resume-picker.js"></script>
 <script src="core/turnier-archive.js"></script>
 <script src="core/turnier-share.js"></script>
 <script>
   /* ================= Konfiguration ================= */
   const MIN_TEAMS = 4, MAX_TEAMS = 20, MAX_FIELDS = 10;
-  /* Erlaubt mehrere unabhängige Turniere dieses Bogens parallel in
-     verschiedenen Tabs, siehe core/turnier-resume-picker.js. ?id=xyz an die
-     URL anhängen → eigener Satz Keys "..._xyz" statt der geteilten
-     Standard-Keys. id=BASE_ID meint bewusst den alten, unverzweigten Slot.
-     Reihenfolge wichtig: Erst prüfen, ob für diesen Bogentyp schon Turniere
-     existieren (dann Auswahl-Overlay + Abbruch der Initialisierung unten);
-     existiert noch keines und steht auch kein ?id= in der URL, vergibt
-     autoId() still eine frische ID, BEVOR URL_ID/KEY_SUFFIX gelesen werden –
-     zwei neu gestartete Turniere in verschiedenen Tabs teilen sich sonst
-     denselben Speicher-Slot. */
-  const RESUME_PICKER_SHOWN = (typeof TResumePicker !== 'undefined') &&
-    TResumePicker.maybePromptFromRegistry({ sessionKeyBase: 'turnierflexrr', typeLabel: 'Jeder gegen Jeden' });
-  if (!RESUME_PICKER_SHOWN && typeof TResumePicker !== 'undefined') TResumePicker.autoId();
-  const URL_ID = (function(){
-    try { return new URLSearchParams(location.search).get('id') || ''; } catch(e){ return ''; }
-  })();
-  const KEY_SUFFIX = (URL_ID && URL_ID !== TResumePicker.BASE_ID)
-    ? ('.' + URL_ID.replace(/[^A-Za-z0-9_-]/g, '')) : '';
-  const STORE_KEY  = 'turnierflexrr_teamnames' + KEY_SUFFIX;
-  const SCORE_KEY  = 'turnierflexrr_scores' + KEY_SUFFIX;
-  const ABSENT_KEY = 'turnierflexrr_absent' + KEY_SUFFIX;
-  const FIELD_KEY  = 'turnierflexrr_fields' + KEY_SUFFIX;
-  const CFG_KEY    = 'turnierflexrr_config' + KEY_SUFFIX;
-  const START_KEY  = 'turnierflexrr_start' + KEY_SUFFIX;
-  const END_KEY    = 'turnierflexrr_end' + KEY_SUFFIX;
-  const ROUND_FILTER_KEY = 'turnierflexrr_sched_round_filter' + KEY_SUFFIX;
-  const SESSION_KEY   = 'turnierflexrr' + KEY_SUFFIX;
+  /* Vorhandene Turniere aus dem TStore-Index anbieten und neue Tabs
+     automatisch mit einer eigenen ID isolieren. */
+  const RESUME_PICKER_SHOWN = TResumePicker.maybePrompt('flex-rr', 'Jeder gegen Jeden');
+  if (!RESUME_PICKER_SHOWN) TResumePicker.autoId();
   const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
-  const TITLE_KEY  = SESSION_KEY + '_title';
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
-  const SHEET_ID = 'flex-rr' + KEY_SUFFIX;
+  const SHEET_ID = TStore.sheetIdFrom('flex-rr');
   const SHEET_TYPE = 'Jeder gegen Jeden';
-  const ARCHIVE_KEYS = [STORE_KEY, SCORE_KEY, ABSENT_KEY, FIELD_KEY, CFG_KEY,
-                        START_KEY, END_KEY, ROUND_FILTER_KEY, TITLE_KEY];
+  const ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
+  let STORE = TStore.load(SHEET_ID, {teams:8, fields:4, setMode:'21'});
   function archiveOpts(){
-    let names = {};
-    try { names = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch(e){}
-    let title = '';
-    try { title = localStorage.getItem(TITLE_KEY) || ''; } catch(e){}
+    const names = STORE.teamNames || {};
+    const title = STORE.title || '';
     const teams = [];
     for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
-    let scores = {}, absent = {};
-    try { scores = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}') || {}; } catch(e){}
-    try { absent = JSON.parse(localStorage.getItem(ABSENT_KEY) || '{}') || {}; } catch(e){}
     const hasNames  = Object.keys(names).some(k => (names[k] || '').trim() !== '');
-    const hasScores = Object.keys(scores).some(k => String(scores[k] || '').trim() !== '');
-    const hasAbsent = Array.isArray(absent) ? absent.length : Object.keys(absent).some(k => absent[k]);
+    const hasScores = Object.keys(STORE.results || {}).length > 0 || Object.keys(STORE.legacyByTeam || {}).length > 0;
+    const hasAbsent = (STORE.absent || []).length > 0;
     const empty = !hasNames && !hasScores && !hasAbsent && !title;
     return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
-             title:title, teams:teams, liveKey:SESSION_KEY };
+             title:title, teams:teams };
   }
-  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+  if(typeof TArchive !== 'undefined' && TArchive.applyPendingRestore(archiveOpts())) {
+    STORE = TStore.load(SHEET_ID, {teams:8, fields:4, setMode:'21'});
+  }
   if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
   const BASE_START = '10:00';
@@ -691,49 +665,73 @@
   }
 
   /* ================= Persistenz-Helfer ================= */
-  function loadCfg(){ try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch(e){ return {}; } }
-  function saveCfg(o){ try { localStorage.setItem(CFG_KEY, JSON.stringify(o)); } catch(e){} }
-  function loadNames(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; } }
-  function saveNames(o){ try { localStorage.setItem(STORE_KEY, JSON.stringify(o)); } catch(e){} }
-  function loadAbsent(){ try{ return JSON.parse(localStorage.getItem(ABSENT_KEY))||{}; }catch(e){ return {}; } }
-  function saveAbsent(o){ try{ localStorage.setItem(ABSENT_KEY, JSON.stringify(o)); }catch(e){} }
-  function loadScores(){ try { return JSON.parse(localStorage.getItem(SCORE_KEY)) || {}; } catch(e){ return {}; } }
-  function loadFieldNames(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
-  function saveFieldNames(n){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(n)); }catch(e){} }
+  function saveStore(){ TStore.save(STORE); }
+  function loadCfg(){
+    const c = STORE.config || {};
+    return {teams:c.teams, fields:c.fields, points:c.setMode, roundFilter:c.roundFilter};
+  }
+  function saveCfg(o){
+    if(o.teams != null) STORE.config.teams = +o.teams;
+    if(o.fields != null) STORE.config.fields = +o.fields;
+    if(o.points != null) STORE.config.setMode = String(o.points);
+    saveStore();
+  }
+  function loadNames(){ return STORE.teamNames || {}; }
+  function saveNames(o){ STORE.teamNames = o || {}; saveStore(); }
+  function loadAbsent(){
+    const out = {};
+    (STORE.absent || []).forEach(t => { out[t] = 1; });
+    return out;
+  }
+  function saveAbsent(o){ STORE.absent = Object.keys(o || {}).filter(k => o[k]).map(Number); saveStore(); }
+  function loadScores(){
+    const out = {};
+    const byTeam = STORE.legacyByTeam || {};
+    SCHEDULE.forEach((round, idx) => round.matches.forEach(pair => {
+      const roundNo = idx + 1;
+      const lowTeam = Math.min(pair[0], pair[1]);
+      const highTeam = Math.max(pair[0], pair[1]);
+      const sets = TStore.getSets(STORE, 'rr_' + lowTeam + '_' + highTeam);
+      pair.forEach(team => {
+        const side = team === lowTeam ? 0 : 1;
+        sets.forEach((set, setIdx) => {
+          let value = set[side];
+          if(value == null){
+            const legacySet = byTeam['rr_' + roundNo] && byTeam['rr_' + roundNo][setIdx + 1];
+            if(legacySet) value = legacySet[team];
+          }
+          if(value != null) out['g' + (setIdx === 0 ? '' : setIdx + 1) + roundNo + '_' + team] = value;
+        });
+      });
+    }));
+    return out;
+  }
+  function saveScoresFromDOM(){
+    STORE.results = {};
+    SCHEDULE.forEach((round, idx) => round.matches.forEach(pair => {
+      const lowTeam = Math.min(pair[0], pair[1]);
+      const highTeam = Math.max(pair[0], pair[1]);
+      const matchId = 'rr_' + lowTeam + '_' + highTeam;
+      for(let setNo=1; setNo<=3; setNo++){
+        const prefix = setNo === 1 ? 'g' : 'g' + setNo;
+        pair.forEach(team => {
+          const input = document.getElementById(prefix + (idx + 1) + '_' + team);
+          const value = input ? input.value : '';
+          TStore.setScore(STORE, matchId, setNo, team === lowTeam ? 'a' : 'b', value);
+        });
+      }
+    }));
+    delete STORE.legacyByTeam;
+    saveStore();
+  }
+  function loadFieldNames(){ return STORE.fieldNames || {}; }
+  function saveFieldNames(n){ STORE.fieldNames = n || {}; saveStore(); }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-  /* ================= Sessions-Registry (Startseite) ================= */
-  function registerSession(){
-    try {
-      const teams = [];
-      for(let i=1; i<=NTEAMS; i++){
-        const el = document.getElementById('tn' + i);
-        teams.push(el ? (el.value.trim() || 'Team ' + i) : 'Team ' + i);
-      }
-      const hasTeams = teams.some((team, idx) => team !== 'Team ' + (idx + 1));
-      const hasScores = Array.from(document.querySelectorAll('input.score')).some(el => (el.value || '').trim() !== '');
-      const hasFlags = Array.from(document.querySelectorAll('input[type="checkbox"]')).some(el => el.checked);
-      const customTitle = localStorage.getItem(TITLE_KEY) || '';
-      if(!hasTeams && !hasScores && !hasFlags && !customTitle) return;
-      const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-      const idx = registry.findIndex(s => s.key === SESSION_KEY);
-      const entry = {
-        key: SESSION_KEY,
-        file: SESSION_FILE,
-        title: 'Jeder gegen Jeden – ' + NTEAMS + ' Teams (flexibel)' + (customTitle ? ' – ' + customTitle : ''),
-        customTitle: customTitle,
-        teams: teams,
-        savedAt: Date.now()
-      };
-      if(idx >= 0) registry[idx] = entry;
-      else registry.push(entry);
-      localStorage.setItem('beachl_sessions', JSON.stringify(registry));
-    } catch(e){}
-  }
   /* Ueberschrift + Fenster-/Drucktitel, identisch zu den anderen Bogen. */
   function applyDocTitle(val) {
     let t = val;
-    if (t == null) { try { t = localStorage.getItem(TITLE_KEY) || ''; } catch(e) { t = ''; } }
+    if (t == null) t = STORE.title || '';
     document.title = (typeof TArchive !== 'undefined')
       ? TArchive.docTitle(t, SHEET_TYPE, TArchive.sizeInfo(NTEAMS, NFIELDS))
       : ('Turnierbogen – ' + SHEET_TYPE);
@@ -745,20 +743,17 @@
   }
   function saveTitle() {
     const val = (document.getElementById('session-title-input') || {}).value || '';
-    try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
+    STORE.title = val; saveStore();
     applyDocTitle(val);
   }
   function restoreTitle() {
-    try {
-      const val = localStorage.getItem(TITLE_KEY) || '';
-      const inp = document.getElementById('session-title-input');
-      if (inp) inp.value = val;
-      applyDocTitle(val);
-    } catch(e) {}
+    const val = STORE.title || '';
+    const inp = document.getElementById('session-title-input');
+    if (inp) inp.value = val;
+    applyDocTitle(val);
   }
   function manualSave() {
     saveTitle();
-    registerSession();
     const btn = document.querySelector('[onclick="manualSave()"]');
     if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
   }
@@ -789,7 +784,6 @@
   function applyTeamNames(){
     const names = loadNames();
     for(let i=1;i<=NTEAMS;i++) applyName(i, names[i]||'');
-    registerSession();
   }
   function buildNamePanel(){
     const names = loadNames();
@@ -826,9 +820,13 @@
   }
 
   /* ================= Ergebnisse ================= */
-  function onScore(){ const sc={}; document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id) sc[inp.id]=inp.value; }); try{ localStorage.setItem(SCORE_KEY, JSON.stringify(sc)); }catch(e){} computeAll(); }
-  function restoreScores(){ const sc=loadScores(); document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id && sc[inp.id]!=null) inp.value=sc[inp.id]; }); }
-  function clearScores(){ if(!confirm('Alle Ergebnisse und Ausfälle wirklich löschen?')) return; try{ localStorage.removeItem(SCORE_KEY); }catch(e){} try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
+  function onScore(){ saveScoresFromDOM(); computeAll(); }
+  function restoreScores(){
+    const sc=loadScores();
+    document.querySelectorAll('input.score').forEach(inp=>{ if(inp.id && sc[inp.id]!=null) inp.value=sc[inp.id]; });
+    if(Object.keys(STORE.legacyByTeam || {}).length) saveScoresFromDOM();
+  }
+  function clearScores(){ if(!confirm('Alle Ergebnisse und Ausfälle wirklich löschen?')) return; STORE.results = {}; delete STORE.legacyByTeam; STORE.absent = []; saveStore(); document.querySelectorAll('input.score').forEach(inp=>inp.value=''); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
 
   /* ================= Auswertungs-Helfer ================= */
   function num(el){
@@ -1172,7 +1170,9 @@
     if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
     saveTitle();                         // noch nicht gespeicherten Titel mitsichern
     const started = TArchive.startNew(archiveOpts());
-    try{ localStorage.setItem(TITLE_KEY, started.title); }catch(e){}
+    STORE = TStore.emptyTournament(SHEET_ID, {teams:8, fields:4, setMode:'21'});
+    STORE.title = started.title;
+    saveStore();
     location.reload();
   }
   function shareTournament(){
@@ -1329,14 +1329,12 @@
     const subMode=document.querySelector('#h-sub .rmode');
     if(subMode) subMode.textContent=modeText;
   }
-  function onStartTime(){ try{localStorage.setItem(START_KEY,document.getElementById('startTime').value);}catch(e){} computeTimes(); }
-  function onEndTime(){   try{localStorage.setItem(END_KEY,  document.getElementById('endTime').value);}catch(e){} computeTimes(); }
+  function onStartTime(){ STORE.config.startTime = document.getElementById('startTime').value; saveStore(); computeTimes(); }
+  function onEndTime(){   STORE.config.endTime = document.getElementById('endTime').value; saveStore(); computeTimes(); }
   function loadTimes(){
-    try{
-      const s=localStorage.getItem(START_KEY), e=localStorage.getItem(END_KEY);
-      if(s){const i=document.getElementById('startTime');if(i)i.value=s;}
-      if(e){const i=document.getElementById('endTime');  if(i)i.value=e;}
-    }catch(e){}
+    const s=STORE.config.startTime, e=STORE.config.endTime;
+    if(s){const i=document.getElementById('startTime');if(i)i.value=s;}
+    if(e){const i=document.getElementById('endTime');  if(i)i.value=e;}
   }
 
   /* ================= Feldnamen ================= */
@@ -1370,7 +1368,7 @@
     });
   }
   function onFieldInput(idx){ const val=document.getElementById('fni_'+idx).value; const n=loadFieldNames(); n[idx]=val; saveFieldNames(n); applyFieldName(idx,val); }
-  function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{localStorage.removeItem(FIELD_KEY);}catch(e){} DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
+  function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; STORE.fieldNames = {}; saveStore(); DEFAULT_FIELDS.forEach((_,i)=>{ const el=document.getElementById('fni_'+i); if(el) el.value=''; applyFieldName(i,''); }); }
   function toggleFields(){ const p=document.getElementById('fieldpanel'); p.hidden=!p.hidden; const b=document.getElementById('btnToggleFields'); if(b){ b.classList.toggle('active', !p.hidden); b.setAttribute('aria-pressed', String(!p.hidden)); } }
   function populateAbsentPanel(){
     const container = document.getElementById('absentGridContainer');
@@ -1389,17 +1387,14 @@
     if(!p.hidden) populateAbsentPanel();
     const b=document.getElementById('btnToggleAbsent'); if(b){ b.classList.toggle('active', !p.hidden); b.setAttribute('aria-pressed', String(!p.hidden)); }
   }
-  function clearAbsent(){ if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return; try{ localStorage.removeItem(ABSENT_KEY); }catch(e){} document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
+  function clearAbsent(){ if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return; STORE.absent = []; saveStore(); document.querySelectorAll('input.ab-check').forEach(cb=>cb.checked=false); computeAll(); }
   function loadScheduleRoundFilter(){
-    try{
-      const v = localStorage.getItem(ROUND_FILTER_KEY);
-      if(v === 'all' || (/^\d+$/.test(v) && +v >= 1)) SCHEDULE_ROUND_FILTER = v;
-    }catch(e){}
+    const v = STORE.config.roundFilter;
+    if(v === 'all' || (/^\d+$/.test(String(v || '')) && +v >= 1)) SCHEDULE_ROUND_FILTER = String(v);
   }
   function saveScheduleRoundFilter(){
-    try{
-      localStorage.setItem(ROUND_FILTER_KEY, SCHEDULE_ROUND_FILTER);
-    }catch(e){}
+    STORE.config.roundFilter = SCHEDULE_ROUND_FILTER;
+    saveStore();
   }
   function fillScheduleRoundFilter(){
     const sel = document.getElementById('scheduleRoundFilter');

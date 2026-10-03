@@ -18,6 +18,31 @@
    Spielplan erscheinen – der Bogen soll ohne Gerät benutzbar bleiben. */
 @media screen {
   .round-block-hidden { display: none !important; }
+
+  /* Separate the per-round tables into readable, touch-friendly cards. */
+  .round-block {
+    margin: 14px 0 18px;
+    padding: 12px;
+    border: 1px solid #cdd8e6;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(31, 78, 121, .08);
+  }
+
+  .round-block .table-scroll {
+    margin: 0;
+  }
+
+  .round-block .round-subline {
+    margin: 8px 0 0;
+  }
+}
+
+/* The score confirmation controls are the primary touch navigation on tablets. */
+.score-ok,
+.sched tr.rhead .rconfirm {
+  min-width: 44px !important;
+  min-height: 44px !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -29,6 +54,11 @@
 .mobile-jumpbar { display: none; }
 
 @media screen and (max-width: 640px) {
+  .round-block {
+    margin: 10px 0 14px;
+    padding: 8px;
+  }
+
   .mobile-jumpbar {
     position: fixed;
     left: 0;

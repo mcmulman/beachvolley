@@ -578,38 +578,15 @@
     </div>
   </div>
 
+  <script src="core/turnier-store.js"></script>
   <script src="core/turnier-resume-picker.js"></script>
   <script src="core/turnier-archive.js"></script>
   <script src="core/turnier-share.js"></script>
   <script>
-    /* Erlaubt mehrere unabhängige Turniere dieses Bogens parallel in
-       verschiedenen Tabs, siehe core/turnier-resume-picker.js. ?id=xyz an die
-       URL anhängen → eigener Satz Keys "..._xyz" statt der geteilten
-       Standard-Keys. id=BASE_ID meint bewusst den alten, unverzweigten Slot.
-       Reihenfolge wichtig: Erst prüfen, ob für diesen Bogentyp schon Turniere
-       existieren (dann Auswahl-Overlay + Abbruch der Initialisierung unten);
-       existiert noch keines und steht auch kein ?id= in der URL, vergibt
-       autoId() still eine frische ID, BEVOR URL_ID/KEY_SUFFIX gelesen werden –
-       zwei neu gestartete Turniere in verschiedenen Tabs teilen sich sonst
-       denselben Speicher-Slot. */
-    const RESUME_PICKER_SHOWN = (typeof TResumePicker !== 'undefined') &&
-      TResumePicker.maybePromptFromRegistry({ sessionKeyBase: 'sw_univ', typeLabel: 'Schweizer System' });
-    if (!RESUME_PICKER_SHOWN && typeof TResumePicker !== 'undefined') TResumePicker.autoId();
-    const URL_ID = (function(){
-      try { return new URLSearchParams(location.search).get('id') || ''; } catch(e){ return ''; }
-    })();
-    const KEY_SUFFIX = (URL_ID && URL_ID !== TResumePicker.BASE_ID)
-      ? ('.' + URL_ID.replace(/[^A-Za-z0-9_-]/g, '')) : '';
-    const CFG_KEY = 'sw_univ_cfg' + KEY_SUFFIX;
-    const NAMES_KEY = 'sw_univ_names' + KEY_SUFFIX;
-    const SCORES_KEY = 'sw_univ_scores' + KEY_SUFFIX;
-    const ROUND1_KEY = 'sw_univ_round1' + KEY_SUFFIX;
-    const MATCHES_KEY = 'sw_univ_matches' + KEY_SUFFIX;
-    const FIELDS_KEY = 'sw_univ_fields' + KEY_SUFFIX;
-    const DROPOUT_KEY = 'sw_univ_dropout' + KEY_SUFFIX;
-    const ROUND_MODE_KEY = 'sw_univ_roundmode' + KEY_SUFFIX;
-    const START_KEY = 'sw_univ_start' + KEY_SUFFIX;
-    const END_KEY = 'sw_univ_end' + KEY_SUFFIX;
+    /* Vorhandene Turniere aus dem TStore-Index anbieten und neue Tabs
+       automatisch mit einer eigenen ID isolieren. */
+    const RESUME_PICKER_SHOWN = TResumePicker.maybePrompt('swiss', 'Schweizer System');
+    if (!RESUME_PICKER_SHOWN) TResumePicker.autoId();
     const BASE_START = 600;
     const BASE_END = 840;
     const TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
@@ -643,39 +620,32 @@
     let fieldsVisible = false;
     let dropoutVisible = false;
     let LAST_TIMEFIT_NEEDED_FIELDS = null;
-    const SESSION_KEY = 'sw_univ' + KEY_SUFFIX;
     const SESSION_FILE = 'Turnierbogen_Schweizer_System.html';
-    const SESSION_TITLE = 'Schweizer System (Universal)';
-    const TITLE_KEY = SESSION_KEY + '_title';
 
     /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
        Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
-    const SHEET_ID = 'swiss' + KEY_SUFFIX;
+    const SHEET_ID = TStore.sheetIdFrom('swiss');
     const SHEET_TYPE = 'Schweizer System';
-    const ARCHIVE_KEYS = [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY,
-                          FIELDS_KEY, DROPOUT_KEY, ROUND_MODE_KEY, START_KEY, END_KEY, TITLE_KEY];
+    const ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
+    let STORE = TStore.load(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
     function archiveOpts(){
-      let names = {};
-      try { names = JSON.parse(localStorage.getItem(NAMES_KEY) || '{}') || {}; } catch(e){}
-      let title = '';
-      try { title = localStorage.getItem(TITLE_KEY) || ''; } catch(e){}
+      const names = STORE.teamNames || {};
+      const title = STORE.title || '';
       const teams = [];
       for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
       const hasNames = Object.keys(names).some(k => (names[k] || '').trim() !== '');
-      let scores = {}, dropped = [];
-      try { scores = JSON.parse(localStorage.getItem(SCORES_KEY) || '{}') || {}; } catch(e){}
-      try { dropped = JSON.parse(localStorage.getItem(DROPOUT_KEY) || '[]') || []; } catch(e){}
-      const hasScores = Object.keys(scores).some(k => String(scores[k] || '').trim() !== '');
-      const empty = !hasNames && !hasScores && !dropped.length && !title;
+      const hasScores = Object.keys(STORE.results || {}).length > 0;
+      const empty = !hasNames && !hasScores && !(STORE.absent || []).length && !title;
       return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
-               title:title, teams:teams, liveKey:SESSION_KEY };
+               title:title, teams:teams };
     }
-    if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
+    if(typeof TArchive !== 'undefined' && TArchive.applyPendingRestore(archiveOpts())) {
+      STORE = TStore.load(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
+    }
     if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
     function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-    function loadJSON(key, fallback){ try{ const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }catch(e){ return fallback; } }
-    function saveJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
+    function saveStore(){ TStore.save(STORE); }
     function fromMin(min){ const m = ((Math.round(min) % 1440) + 1440) % 1440; const h = Math.floor(m / 60); const mm = m % 60; return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0'); }
     function toMin(text){ const m = /^(\d{1,2}):(\d{2})$/.exec(String(text || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
     function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
@@ -719,7 +689,7 @@
     }
     /* --- Pro-Runde-Modus (siehe ROUND_MODES oben) ------------------------ */
     function loadRoundModes(){
-      const raw = loadJSON(ROUND_MODE_KEY, {}) || {};
+      const raw = STORE.frozenModes || {};
       const out = {};
       for(const k in raw){
         const rn = parseInt(k, 10);
@@ -728,7 +698,7 @@
       }
       return out;
     }
-    function saveRoundModes(){ saveJSON(ROUND_MODE_KEY, ROUND_MODES); }
+    function saveRoundModes(){ STORE.frozenModes = ROUND_MODES; saveStore(); }
     /* Modus, der fuer Runde r tatsaechlich gilt: der beim Einfrieren gespeicherte
        Modus, falls vorhanden, sonst (Runde noch nie erzeugt/gestartet) die
        aktuell gewaehlte Einstellung. */
@@ -758,58 +728,59 @@
       return false;
     }
     function applyCfg(cfg){
-      NTEAMS = cfg.t; NROUNDS = clampRounds(cfg.r); NFIELDS = Math.ceil(NTEAMS / 2);
+      const teamCountChanged = cfg.t != null && +cfg.t !== NTEAMS;
+      NTEAMS = cfg.t || NTEAMS; NROUNDS = clampRounds(cfg.r);
+      if(cfg.fields != null) NFIELDS = +cfg.fields;
+      else if(teamCountChanged) NFIELDS = Math.ceil(NTEAMS / 2);
       if(cfg.p != null){
         const def = SET_MODES.find(m => m.id === String(cfg.p));
         if(def){ SET_MODE = def.id; }
       }
     }
     function loadCfg(){
-      const cfg = loadJSON(CFG_KEY, {t:12, r:7}) || {t:12, r:7};
-      const t = TEAM_OPTIONS.includes(+cfg.t) ? +cfg.t : 12;
-      applyCfg({t, r: cfg.r, p: cfg.p});
+      const cfg = STORE.config || {};
+      const t = TEAM_OPTIONS.includes(+cfg.teams) ? +cfg.teams : 12;
+      applyCfg({t, r: cfg.rounds, fields:cfg.fields, p: cfg.setMode});
       ROUND_MODES = loadRoundModes();
-      return {t:NTEAMS, r:NROUNDS, p:SET_MODE};
+      return {t:NTEAMS, r:NROUNDS, fields:NFIELDS, p:SET_MODE};
     }
-    function saveCfg(cfg){ applyCfg(cfg); saveJSON(CFG_KEY, {t:NTEAMS, r:NROUNDS, p:SET_MODE}); }
+    function saveCfg(cfg){
+      applyCfg(cfg);
+      Object.assign(STORE.config, {teams:NTEAMS, rounds:NROUNDS, fields:NFIELDS, setMode:SET_MODE});
+      saveStore();
+    }
     function defaultNames(){ const out = {}; for(let t=1;t<=NTEAMS;t++) out[t] = ''; return out; }
-    function loadNames(){ const raw = loadJSON(NAMES_KEY, {}) || {}; const out = defaultNames(); for(let t=1;t<=NTEAMS;t++) if(typeof raw[t] === 'string') out[t] = raw[t]; return out; }
-    function saveNames(names){ saveJSON(NAMES_KEY, names); }
-    function loadScores(){ return loadJSON(SCORES_KEY, {}) || {}; }
-    function saveScores(obj){ saveJSON(SCORES_KEY, obj); }
-    function loadDroppedTeams(){ const arr = loadJSON(DROPOUT_KEY, []) || []; return new Set(arr.map(Number).filter(t => t >= 1 && t <= NTEAMS)); }
-    function saveDroppedTeams(set){ saveJSON(DROPOUT_KEY, Array.from(set).sort((a,b)=>a-b)); }
-    function registerSession(){
-      try {
-        const teams = [];
-        for(let i=1; i<=NTEAMS; i++){
-          const el = document.getElementById('tn' + i);
-          teams.push(el ? (el.value.trim() || 'Team ' + i) : 'Team ' + i);
-        }
-        const hasTeams = teams.some((team, idx) => team !== 'Team ' + (idx + 1));
-        const hasScores = Array.from(document.querySelectorAll('input.score')).some(el => (el.value || '').trim() !== '');
-        const hasFlags = Array.from(document.querySelectorAll('input[type="checkbox"]')).some(el => el.checked);
-        const customTitle = localStorage.getItem(TITLE_KEY) || '';
-        if(!hasTeams && !hasScores && !hasFlags && !customTitle) return;
-        const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-        const idx = registry.findIndex(s => s.key === SESSION_KEY);
-        const entry = {
-          key: SESSION_KEY,
-          file: SESSION_FILE,
-          title: SESSION_TITLE + (customTitle ? ' – ' + customTitle : ''),
-          customTitle: customTitle,
-          teams: teams,
-          savedAt: Date.now()
-        };
-        if(idx >= 0) registry[idx] = entry;
-        else registry.push(entry);
-        localStorage.setItem('beachl_sessions', JSON.stringify(registry));
-      } catch(e){}
+    function loadNames(){ const raw = STORE.teamNames || {}; const out = defaultNames(); for(let t=1;t<=NTEAMS;t++) if(typeof raw[t] === 'string') out[t] = raw[t]; return out; }
+    function saveNames(names){ STORE.teamNames = names; saveStore(); }
+    function loadScores(){
+      const out = {};
+      Object.keys(STORE.results || {}).forEach(matchId => {
+        const m = /^sw_(\d+)_(\d+)$/.exec(matchId);
+        if(!m) return;
+        TStore.getSets(STORE, matchId).forEach((set, idx) => {
+          const prefix = idx === 0 ? 's' : 's' + (idx + 1);
+          if(set[0] != null) out[prefix + 'A_' + m[1] + '_' + m[2]] = set[0];
+          if(set[1] != null) out[prefix + 'B_' + m[1] + '_' + m[2]] = set[1];
+        });
+      });
+      return out;
     }
+    function saveScores(obj){
+      STORE.results = {};
+      Object.keys(obj || {}).forEach(id => {
+        const m = /^s([23]?)([AB])_(\d+)_(\d+)$/.exec(id);
+        if(!m) return;
+        const setNo = m[1] ? parseInt(m[1], 10) : 1;
+        TStore.setScore(STORE, 'sw_' + m[3] + '_' + m[4], setNo, m[2] === 'A' ? 'a' : 'b', obj[id]);
+      });
+      saveStore();
+    }
+    function loadDroppedTeams(){ return new Set((STORE.absent || []).map(Number).filter(t => t >= 1 && t <= NTEAMS)); }
+    function saveDroppedTeams(set){ STORE.absent = Array.from(set).sort((a,b)=>a-b); saveStore(); }
     /* Ueberschrift + Fenster-/Drucktitel, identisch zu den anderen Bogen. */
     function applyDocTitle(val) {
       let t = val;
-      if (t == null) { try { t = localStorage.getItem(TITLE_KEY) || ''; } catch(e) { t = ''; } }
+      if (t == null) t = STORE.title || '';
       document.title = (typeof TArchive !== 'undefined')
         ? TArchive.docTitle(t, SHEET_TYPE, TArchive.sizeInfo(NTEAMS, NFIELDS))
         : ('Turnierbogen – ' + SHEET_TYPE);
@@ -821,28 +792,25 @@
     }
     function saveTitle() {
       const val = (document.getElementById('session-title-input') || {}).value || '';
-      try { localStorage.setItem(TITLE_KEY, val); } catch(e) {}
+      STORE.title = val; saveStore();
       applyDocTitle(val);
     }
 
     function restoreTitle() {
-      try {
-        const val = localStorage.getItem(TITLE_KEY) || '';
-        const inp = document.getElementById('session-title-input');
-        if (inp) inp.value = val;
-        applyDocTitle(val);
-      } catch(e) {}
+      const val = STORE.title || '';
+      const inp = document.getElementById('session-title-input');
+      if (inp) inp.value = val;
+      applyDocTitle(val);
     }
 
     function manualSave() {
       saveTitle();
-      registerSession();
       const btn = document.querySelector('[onclick="manualSave()"]');
       if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
     }
     function defaultFieldNames(){ return DEFAULT_FIELD_POOL.slice(0, NFIELDS).reduce((acc, name, i) => (acc[i] = name, acc), {}); }
-    function loadFieldNames(){ return Object.assign(defaultFieldNames(), loadJSON(FIELDS_KEY, {}) || {}); }
-    function saveFieldNames(obj){ saveJSON(FIELDS_KEY, obj); }
+    function loadFieldNames(){ return Object.assign(defaultFieldNames(), STORE.fieldNames || {}); }
+    function saveFieldNames(obj){ STORE.fieldNames = obj; saveStore(); }
     function getFieldName(i){ const fields = loadFieldNames(); return (fields[i] || defaultFieldNames()[i] || ('Feld ' + (i + 1))).trim(); }
     function defaultRound1(){
       if(NTEAMS === 12) return DEFAULT_ROUND1_12.map(p => p.slice());
@@ -853,7 +821,7 @@
       return out;
     }
     function loadRound1(){
-      const raw = loadJSON(ROUND1_KEY, null);
+      const raw = STORE.round1 || null;
       if(!Array.isArray(raw) || raw.length !== NFIELDS) return defaultRound1();
       const flat = raw.flat();
       const expectedByes = (NTEAMS % 2 === 1) ? 1 : 0;
@@ -865,7 +833,7 @@
         && new Set(teamValues).size === NTEAMS;
       return ok ? raw.map(p => [Number(p[0]), Number(p[1])]) : defaultRound1();
     }
-    function saveRound1(pairs){ saveJSON(ROUND1_KEY, pairs); }
+    function saveRound1(pairs){ STORE.round1 = pairs; saveStore(); }
     /* Persistiert bereits erzeugte Runden-Paarungen (ab Runde 2), damit ein
        nachträglich markiertes "Team ausgefallen" NICHT rückwirkend die
        Paarungen bereits gespielter/generierter Runden verändert. Ohne dies
@@ -873,11 +841,11 @@
        (ggf. reduzierten) Team-Liste neu berechnen und dabei bereits
        eingetragene Ergebnisse fälschlich einer anderen Paarung zuordnen
        (Ergebnisse sind pro Runde+Feld-Index gespeichert, nicht pro Team-Paar). */
-    function loadPersistedMatches(){ return loadJSON(MATCHES_KEY, {}); }
-    function savePersistedMatches(m){ saveJSON(MATCHES_KEY, m); }
-    function clearPersistedMatches(){ try{ localStorage.removeItem(MATCHES_KEY); }catch(e){} }
-    function loadStartTime(){ const t = localStorage.getItem(START_KEY); return toMin(t) == null ? '10:00' : t; }
-    function loadEndTime(){ const t = localStorage.getItem(END_KEY); return toMin(t) == null ? '14:00' : t; }
+    function loadPersistedMatches(){ return STORE.frozen || {}; }
+    function savePersistedMatches(m){ STORE.frozen = m; saveStore(); }
+    function clearPersistedMatches(){ STORE.frozen = {}; saveStore(); }
+    function loadStartTime(){ const t = STORE.config.startTime; return toMin(t) == null ? '10:00' : t; }
+    function loadEndTime(){ const t = STORE.config.endTime; return toMin(t) == null ? '14:00' : t; }
     function scoreIds(){
       const ids = [];
       for(let r=1;r<=NROUNDS;r++) for(let i=0;i<NFIELDS;i++) ids.push(['sA_'+r+'_'+i, 'sB_'+r+'_'+i]);
@@ -1221,7 +1189,15 @@
         const el = document.getElementById('teamCount'); if(el) el.value = String(NTEAMS);
         return;
       }
-      [CFG_KEY, NAMES_KEY, SCORES_KEY, ROUND1_KEY, MATCHES_KEY, FIELDS_KEY, DROPOUT_KEY, START_KEY, END_KEY, ROUND_MODE_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+      STORE.teamNames = {};
+      STORE.results = {};
+      STORE.round1 = null;
+      STORE.frozen = {};
+      STORE.fieldNames = {};
+      STORE.absent = [];
+      STORE.config.startTime = '10:00';
+      STORE.config.endTime = '14:00';
+      STORE.frozenModes = {};
       ROUND_MODES = {};
       saveCfg({t:next, r:defaultRoundsForTeams(next)});
       namesVisible = fieldsVisible = dropoutVisible = false;
@@ -1238,15 +1214,15 @@
       saveCfg({t:NTEAMS, r:NROUNDS, p:def.id});
       rebuild();
     }
-    function onStartTime(){ try{ localStorage.setItem(START_KEY, document.getElementById('startTime').value || '10:00'); }catch(e){} applyTimes(); computeTimes(); }
-    function onEndTime(){ try{ localStorage.setItem(END_KEY, document.getElementById('endTime').value || '14:00'); }catch(e){} applyTimes(); computeTimes(); }
+    function onStartTime(){ STORE.config.startTime = document.getElementById('startTime').value || '10:00'; saveStore(); applyTimes(); computeTimes(); }
+    function onEndTime(){ STORE.config.endTime = document.getElementById('endTime').value || '14:00'; saveStore(); applyTimes(); computeTimes(); }
     function toggleNames(){ namesVisible = !namesVisible; const el = document.getElementById('namepanel'); if(el) el.hidden = !namesVisible; const b=document.getElementById('btnToggleNames'); if(b){ b.classList.toggle('active', namesVisible); b.setAttribute('aria-pressed', String(namesVisible)); } }
     function toggleFields(){ fieldsVisible = !fieldsVisible; const el = document.getElementById('fieldpanel'); if(el) el.hidden = !fieldsVisible; const b=document.getElementById('btnToggleFields'); if(b){ b.classList.toggle('active', fieldsVisible); b.setAttribute('aria-pressed', String(fieldsVisible)); } }
     function toggleDropout(){ dropoutVisible = !dropoutVisible; const el = document.getElementById('dropoutpanel'); if(el) el.hidden = !dropoutVisible; const b=document.getElementById('btnToggleDropout'); if(b){ b.classList.toggle('active', dropoutVisible); b.setAttribute('aria-pressed', String(dropoutVisible)); } }
     function onNameInput(team){ const names = loadNames(); names[team] = document.getElementById('tn' + team).value || ''; saveNames(names); computeAll(); }
     function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames(defaultNames()); hydratePanels(); computeAll(); }
     function onFieldInput(idx){ const fields = loadFieldNames(); fields[idx] = document.getElementById('fni_' + idx).value || ''; saveFieldNames(fields); rebuild(); }
-    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; try{ localStorage.removeItem(FIELDS_KEY); }catch(e){} rebuild(); }
+    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; STORE.fieldNames = {}; saveStore(); rebuild(); }
     function onDropoutChange(){
       const set = new Set();
       for(let t=1;t<=NTEAMS;t++){ const cb = document.getElementById('drop_' + t); if(cb && cb.checked) set.add(t); }
@@ -1267,8 +1243,14 @@
     function resetTournament(){
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
       saveTitle();                       // noch nicht gespeicherten Titel mitsichern
+      const roundFilter = STORE.config.roundFilter;
+      const showAllRounds = STORE.config.showAllRounds;
       const started = TArchive.startNew(archiveOpts());
-      try{ localStorage.setItem(TITLE_KEY, started.title); }catch(e){}
+      STORE = TStore.emptyTournament(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
+      STORE.title = started.title;
+      if(roundFilter != null) STORE.config.roundFilter = roundFilter;
+      if(showAllRounds != null) STORE.config.showAllRounds = showAllRounds;
+      saveStore();
       ROUND_MODES = {};
       location.reload();
     }
@@ -1287,7 +1269,8 @@
     }
     function clearScores(){
       if(!confirm('Alle Ergebnisse wirklich löschen?')) return;
-      try{ localStorage.removeItem(SCORES_KEY); }catch(e){}
+      STORE.results = {};
+      saveStore();
       restoreScores();
       document.querySelectorAll('input.score').forEach(inp => { inp.value = ''; });
       computeAll();
@@ -1801,7 +1784,7 @@
       }
       const oldFields = NFIELDS;
       NFIELDS = LAST_TIMEFIT_NEEDED_FIELDS;
-      try{ localStorage.setItem(FIELDS_KEY, JSON.stringify({count: NFIELDS})); }catch(e){}
+      STORE.config.fields = NFIELDS; saveStore();
       alert('Feldzahl optimiert: ' + oldFields + ' → ' + NFIELDS + ' Felder');
       rebuild();
     }
@@ -2026,7 +2009,6 @@
       renderRounds();
       renderCentral();
       markScores();
-      registerSession();
     }
     document.addEventListener('keydown', e => {
       if(e.key !== 'Enter') return;
@@ -2039,6 +2021,14 @@
     });
     loadCfg();
     if (!RESUME_PICKER_SHOWN) rebuild();
+    window.getSwissRoundPreference = function(){
+      return {round:STORE.config.roundFilter, showAll:STORE.config.showAllRounds === true};
+    };
+    window.saveSwissRoundPreference = function(round, showAll){
+      STORE.config.roundFilter = String(round);
+      STORE.config.showAllRounds = !!showAll;
+      saveStore();
+    };
   </script>
 <!-- Bedienhilfen: gemeinsam fuer alle Boegen -->
 <script src="spielplan-enh.js"></script>
@@ -2147,8 +2137,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   if(window.__ROUND_NAV_INIT__) return;
   window.__ROUND_NAV_INIT__ = true;
 
-  const STORAGE_KEY = 'beachl_swiss_round';
-  const STORAGE_KEY_ALL = 'beachl_swiss_round_showall';
   const ICON_LAYERS = '<svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>';
   const ICON_PAGE = '<svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 13h6"/></svg>';
   let currentRound = 1;
@@ -2158,10 +2146,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   function filterToRound(roundNum) {
     currentRound = roundNum;
     showAll = false;
-    try { localStorage.setItem(STORAGE_KEY_ALL, '0'); } catch(e) {}
-
-    // Save to localStorage
-    try { localStorage.setItem(STORAGE_KEY, String(roundNum)); } catch(e) {}
+    if(window.saveSwissRoundPreference) window.saveSwissRoundPreference(roundNum, false);
     
     // Apply filter: show only current round
     const allRounds = document.querySelectorAll('[data-round-num]');
@@ -2196,7 +2181,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   // Show all rounds at once (stacked), so results of every round are visible simultaneously
   function showAllRounds() {
     showAll = true;
-    try { localStorage.setItem(STORAGE_KEY_ALL, '1'); } catch(e) {}
+    if(window.saveSwissRoundPreference) window.saveSwissRoundPreference(currentRound, true);
 
     const allRounds = document.querySelectorAll('[data-round-num]');
     allRounds.forEach(function(el) { el.style.display = ''; });
@@ -2271,20 +2256,16 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     
     // Load saved round from localStorage, or default to 1
     let savedRound = 1;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if(saved) {
-        const r = parseInt(saved, 10);
-        if(!isNaN(r) && rounds.includes(r)) {
-          savedRound = r;
-        }
-      }
-    } catch(e) {}
+    const preference = window.getSwissRoundPreference ? window.getSwissRoundPreference() : {};
+    const saved = preference.round;
+    if(saved) {
+      const r = parseInt(saved, 10);
+      if(!isNaN(r) && rounds.includes(r)) savedRound = r;
+    }
 
     // Read "show all rounds" preference BEFORE filterToRound() runs,
     // since filterToRound() resets that flag to '0' as a side effect.
-    let savedShowAll = false;
-    try { savedShowAll = localStorage.getItem(STORAGE_KEY_ALL) === '1'; } catch(e) {}
+    const savedShowAll = preference.showAll === true;
     
     // Apply filter to saved/default round
     filterToRound(savedRound);

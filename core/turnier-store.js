@@ -369,7 +369,9 @@
       cfg: 'turnierflexrr_config', names: 'turnierflexrr_teamnames',
       scores: 'turnierflexrr_scores', absent: 'turnierflexrr_absent',
       fields: 'turnierflexrr_fields', start: 'turnierflexrr_start', end: 'turnierflexrr_end',
-      title: 'turnierflexrr', scoreKind: 'flexrr'
+      title: 'turnierflexrr', titleKey: 'turnierflexrr_title',
+      roundFilter: 'turnierflexrr_sched_round_filter',
+      scoreKind: 'flexrr'
     },
     'swiss': {
       prefix: 'sw_univ',
@@ -377,7 +379,9 @@
       absent: 'sw_univ_dropout', fields: 'sw_univ_fields',
       start: 'sw_univ_start', end: 'sw_univ_end',
       frozen: 'sw_univ_matches', frozenModes: 'sw_univ_roundmode', round1: 'sw_univ_round1',
-      title: 'sw_univ', scoreKind: 'swiss'
+      title: 'sw_univ', titleKey: 'sw_univ_title',
+      roundFilter: 'beachl_swiss_round',
+      roundFilterAll: 'beachl_swiss_round_showall', scoreKind: 'swiss'
     },
     'gruppen-6':   { prefix: 'turnier6g',   names: 'turnier6g_names',      scores: 'turnier6g_scores',   absent: 'turnier6g_absent',   fields: 'turnier6g_fields',   start: 'turnier6g_start',   end: 'turnier6g_end',   title: 'turnier6g',   teams: 6,  scoreKind: 'group' },
     'gruppen-8':   { prefix: 'turnier8',    names: 'turnier8_teamnames',   scores: 'turnier8_scores',    absent: 'turnier8_absent',    fields: 'turnier8_fields',    start: 'turnier8_start',    end: 'turnier8_end',    title: 'turnier8',    teams: 8,  scoreKind: 'group' },
@@ -417,22 +421,29 @@
   }
 
   function migrate(sheetId, cfgDefaults) {
-    const L = LEGACY[sheetId];
+    const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
+    const L = LEGACY[baseSheetId];
     if (!L) return null;
     const s = ls(); if (!s) return null;
+    const suffix = String(sheetId).slice(baseSheetId.length);
+    const legacyKey = (key, shared) => key && (shared ? key : key + suffix);
 
-    const cfgRaw = L.cfg ? readJSON(L.cfg, null) : null;
-    const names = L.names ? (readJSON(L.names, null) || {}) : {};
-    const scores = L.scores ? (readJSON(L.scores, null) || {}) : {};
-    const absentRaw = L.absent ? readJSON(L.absent, null) : null;
-    const fields = L.fields ? (readJSON(L.fields, null) || {}) : {};
+    const cfgRaw = L.cfg ? readJSON(legacyKey(L.cfg), null) : null;
+    const names = L.names ? (readJSON(legacyKey(L.names), null) || {}) : {};
+    const scores = L.scores ? (readJSON(legacyKey(L.scores), null) || {}) : {};
+    const absentRaw = L.absent ? readJSON(legacyKey(L.absent), null) : null;
+    const fields = L.fields ? (readJSON(legacyKey(L.fields), null) || {}) : {};
     let start = null, end = null, title = '';
-    try { start = s.getItem(L.start); } catch (e) { }
-    try { end = s.getItem(L.end); } catch (e) { }
-    try { title = s.getItem(L.title) || ''; } catch (e) { }
+    let roundFilter = null, roundFilterAll = null;
+    try { start = s.getItem(legacyKey(L.start)); } catch (e) { }
+    try { end = s.getItem(legacyKey(L.end)); } catch (e) { }
+    try { title = s.getItem(legacyKey(L.titleKey)) || s.getItem(legacyKey(L.title)) || ''; } catch (e) { }
+    try { roundFilter = s.getItem(legacyKey(L.roundFilter, baseSheetId === 'swiss')); } catch (e) { }
+    try { roundFilterAll = s.getItem(legacyKey(L.roundFilterAll, true)); } catch (e) { }
 
     const nothing = !cfgRaw && !Object.keys(names).length && !Object.keys(scores).length
-      && !absentRaw && !Object.keys(fields).length && !start && !end && !title;
+      && !absentRaw && !Object.keys(fields).length && !start && !end && !title
+      && !roundFilter && !roundFilterAll;
     if (nothing) return null;
 
     const t = emptyTournament(sheetId, cfgDefaults);
@@ -444,6 +455,11 @@
       if (cfgRaw.points != null) t.config.setMode = String(cfgRaw.points);
       if (cfgRaw.p != null) t.config.setMode = String(cfgRaw.p);
     }
+    if (baseSheetId === 'swiss' && fields.count != null && Number.isFinite(+fields.count) && +fields.count > 0) {
+      t.config.fields = +fields.count;
+    }
+    if (roundFilter != null && roundFilter !== '') t.config.roundFilter = roundFilter;
+    if (roundFilterAll != null) t.config.showAllRounds = roundFilterAll === '1';
     if (L.teams) t.config.teams = L.teams;
     if (start) t.config.startTime = start;
     if (end) t.config.endTime = end;
@@ -481,15 +497,15 @@
     if (Object.keys(raw).length) t.legacyByTeam = raw;
 
     if (L.frozen) {
-      const fr = readJSON(L.frozen, null);
+      const fr = readJSON(legacyKey(L.frozen), null);
       if (fr && typeof fr === 'object') t.frozen = fr;
     }
     if (L.frozenModes) {
-      const fm = readJSON(L.frozenModes, null);
+      const fm = readJSON(legacyKey(L.frozenModes), null);
       if (fm && typeof fm === 'object') t.frozenModes = fm;
     }
     if (L.round1) {
-      const r1 = readJSON(L.round1, null);
+      const r1 = readJSON(legacyKey(L.round1), null);
       if (Array.isArray(r1)) t.round1 = r1;
     }
 
@@ -500,11 +516,17 @@
 
   /* Prüft, ob für einen Bogen noch migrierbare Altdaten vorliegen. */
   function hasLegacy(sheetId) {
-    const L = LEGACY[sheetId]; if (!L) return false;
+    const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
+    const L = LEGACY[baseSheetId]; if (!L) return false;
     const s = ls(); if (!s) return false;
-    return [L.cfg, L.names, L.scores, L.absent, L.fields, L.title]
+    const suffix = String(sheetId).slice(baseSheetId.length);
+    return [L.cfg, L.names, L.scores, L.absent, L.fields, L.title, L.titleKey,
+      L.start, L.end, L.frozen, L.frozenModes, L.round1, L.roundFilter, L.roundFilterAll]
       .filter(Boolean)
-      .some(k => { try { return s.getItem(k) != null; } catch (e) { return false; } });
+      .some(k => {
+        const shared = baseSheetId === 'swiss' && (k === L.roundFilter || k === L.roundFilterAll);
+        try { return s.getItem(shared ? k : k + suffix) != null; } catch (e) { return false; }
+      });
   }
 
   /* Voreinstellung über die URL (?teams=8&fields=4&…).
