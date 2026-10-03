@@ -1764,9 +1764,15 @@
       setRV('rv-fitEnd', fmtMin(neededEndMin));
       setRVState('rv-fitEnd', bufferMin < 0 ? 'warn' : null);
       const gamesPerTeam = NROUNDS;
-      setRV('rv-perTeam', setRange.min === setRange.max
-        ? (gamesPerTeam + ' Spiele · ' + (gamesPerTeam * setRange.min) + ' Sätze')
-        : (gamesPerTeam + ' Spiele · ' + (gamesPerTeam * setRange.min) + '\u2013' + (gamesPerTeam * setRange.max) + ' Sätze'));
+      setRV('rv-perTeam', gamesPerTeam);
+      setPerTeamSub(setRange.max === 1 ? ''
+        : ((gamesPerTeam * setRange.min) + (setRange.min === setRange.max ? '' : '\u2013' + (gamesPerTeam * setRange.max)) + ' Sätze'));
+    }
+    function setPerTeamSub(txt){
+      const el = document.getElementById('rv-perTeam'); if(!el) return;
+      let sub = document.getElementById('rv-perTeamSets');
+      if(!sub){ sub = document.createElement('span'); sub.id = 'rv-perTeamSets'; sub.className = 'cfgres-val cfgres-val--sub'; el.after(sub); }
+      sub.textContent = txt; sub.hidden = !txt;
     }
     function setRVState(id, state){
       const el = document.getElementById(id); if(!el) return;

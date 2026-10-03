@@ -1699,10 +1699,16 @@
     const teamSetsMax = gamesPerTeam * setRangeTeam.max;
     setRV('rv-rounds', ROUNDS.length);
     updateTeamsBadge();
-    setRV('rv-perTeam', teamSetsMin === teamSetsMax
-      ? (gamesPerTeam + ' Spiele · ' + teamSetsMin + ' Sätze')
-      : (gamesPerTeam + ' Spiele · ' + teamSetsMin + '–' + teamSetsMax + ' Sätze'));
+    setRV('rv-perTeam', gamesPerTeam);
+    setPerTeamSub(teamSetsMax === gamesPerTeam ? ''
+      : (teamSetsMin + (teamSetsMin === teamSetsMax ? '' : '–' + teamSetsMax) + ' Sätze'));
     setRV('rv-fields', NFIELDS + (slotsPerRound > 1 ? ' · ' + slotsPerRound + ' Slots/R' : ''));
+  }
+  function setPerTeamSub(txt){
+    const el = document.getElementById('rv-perTeam'); if(!el) return;
+    let sub = document.getElementById('rv-perTeamSets');
+    if(!sub){ sub = document.createElement('span'); sub.id = 'rv-perTeamSets'; sub.className = 'cfgres-val cfgres-val--sub'; el.after(sub); }
+    sub.textContent = txt; sub.hidden = !txt;
   }
   function updateTeamsBadge(){
     const absent = loadAbsent();

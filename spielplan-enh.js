@@ -404,7 +404,51 @@
     }
   }, true);
 
-  function boot() { observe(); setTimeout(update, 80); }
+  /* ------------------------------------------------- Kennzahlen-Übersicht
+     Zweistufig: oben wenige große Kacheln mit den Key-Infos (Teams, Felder,
+     Spiele pro Team, Ende, Zeitreserve), darunter eine ruhige Detailzeile.
+     Die bestehenden Elemente (#rv-…) werden nur umsortiert, damit die
+     bogeneigene Befüllung inkl. is-warn unverändert weiterarbeitet.       */
+  var KPI_MAIN = [
+    ['rv-teams', 'Teams'], ['rv-participants', 'Teilnehmer:innen'], ['rv-groups', 'Gruppen'],
+    ['rv-fields', 'Felder'], ['rv-perTeam', 'Spiele pro Team'], ['rv-perPerson', 'Spiele pro Person'],
+    ['rv-fitEnd', 'Ende ca.'], ['rv-buffer', 'Zeitreserve']
+  ];
+  var KPI_MORE = [
+    ['rv-mode', 'Modus'], ['rv-rounds', 'Runden'], ['rv-size', 'Baumgröße'], ['rv-byes', 'Freilose Runde 1'],
+    ['rv-games', 'Spiele'], ['rv-grpGames', 'Spiele Vorrunde'], ['rv-finGames', 'Spiele Finalrunde'],
+    ['rv-subsets', 'Sätze'], ['rv-perGame', 'Zeit pro Spiel (verfügbar / nötig)'],
+    ['rv-duration', 'Zeitfenster / Bedarf']
+  ];
+  function layoutKpis() {
+    var box = document.querySelector('.cfgresult');
+    if (!box || box.classList.contains('kpi2') || box.querySelectorAll('.cfgres-item').length < 7) return;
+    var main = document.createElement('div'); main.className = 'kpi-main';
+    var more = document.createElement('div'); more.className = 'kpi-more';
+    function move(list, target) {
+      list.forEach(function (d) {
+        var el = document.getElementById(d[0]);
+        var item = el && el.closest('.cfgres-item');
+        if (!item || item.parentNode !== box) return;
+        item.classList.remove('is-primary');
+        item.setAttribute('data-kpi', d[0].slice(3));
+        var lbl = item.querySelector('.cfgres-lbl');
+        if (lbl) { lbl.setAttribute('title', lbl.textContent); lbl.textContent = d[1]; }
+        if (target === more && lbl) item.insertBefore(lbl, item.firstChild);
+        target.appendChild(item);
+      });
+    }
+    move(KPI_MAIN, main);
+    move(KPI_MORE, more);
+    Array.prototype.slice.call(box.children).forEach(function (rest) {
+      if (rest.classList && rest.classList.contains('cfgres-item')) main.appendChild(rest);
+    });
+    box.appendChild(main);
+    if (more.children.length) box.appendChild(more);
+    box.classList.add('kpi2');
+  }
+
+  function boot() { layoutKpis(); observe(); setTimeout(update, 80); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
   window.addEventListener('load', function () { setTimeout(update, 120); });

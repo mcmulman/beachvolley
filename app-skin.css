@@ -540,6 +540,36 @@
     .cfgres-item { flex-basis: calc(50% - 5px); }
   }
 
+  /* Zweistufige Übersicht (spielplan-enh.js layoutKpis): große Key-Kacheln
+     + ruhige Detailzeile. Reserve grün, bei Zeitmangel rot (is-warn). */
+  .cfgresult.kpi2 { display: block; }
+  .kpi2 .kpi-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+  .kpi2 .kpi-main .cfgres-item { min-width: 0; padding: 12px 8px 10px; background: #fff; border: 1px solid #c9d6e6; }
+  .kpi2 .kpi-main .cfgres-val { font-size: 26px; }
+  .kpi2 .kpi-main .cfgres-lbl { font-size: 11.5px; }
+  .kpi2 .kpi-main .cfgres-val--sub { font-size: 13px; font-weight: 600; }
+  .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) { background: #eaf5ee; border-color: #bfe0c8; }
+  .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) .cfgres-val { color: var(--app-green); }
+  .kpi2 .kpi-more {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; padding: 9px 12px;
+    background: var(--app-tint); border: 1px solid var(--app-line-soft); border-radius: 10px;
+  }
+  .kpi2 .kpi-more .cfgres-item {
+    flex: 0 0 auto; min-width: 0; flex-direction: row; align-items: baseline; gap: 6px;
+    padding: 0; background: none; border: 0; border-radius: 0;
+  }
+  .kpi2 .kpi-more .cfgres-lbl { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+  .kpi2 .kpi-more .cfgres-val { font-size: 14px; font-weight: 800; text-align: left; }
+  .kpi2 .kpi-more .cfgres-val--sub { font-size: 12px; }
+  .kpi2 .kpi-more .cfgres-item.is-warn { background: none; }
+  .kpi2 .kpi-more .cfgres-item.is-warn .cfgres-lbl { color: #c0392b; }
+  @media (max-width: 560px) {
+    .kpi2 .kpi-main { grid-template-columns: repeat(2, 1fr); }
+    .kpi2 .kpi-main .cfgres-val:not(.cfgres-val--sub) { font-size: 22px; }
+    .kpi2 .kpi-main .cfgres-item:last-child:nth-child(odd) { grid-column: span 2; }
+    .kpi2 .kpi-more { gap: 4px 14px; }
+  }
+
   /* Hinweis-/Legenden-Boxen dezent. */
   .legend, .team-legend {
     border: 1px solid var(--app-line-soft);
