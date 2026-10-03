@@ -1449,12 +1449,18 @@
 
     for (let r = 1; r <= want; r++) {
       const fx = fixedRounds[r];
-      let matchedTeamPairs, byePlayer = null, byeTeam = null;
+      let matchedTeamPairs, byePlayer = null, byeTeam = null, idle = [];
       if (validFixed(fx)) {
         matchedTeamPairs = fx.matches.map(p => [p[0].map(Number), p[1].map(Number)]);
         const fixedBye = [];
         if (fx.byePlayer != null) { byePlayer = +fx.byePlayer; fixedBye.push(byePlayer); }
         if (Array.isArray(fx.byeTeam) && fx.byeTeam.length === 2) { byeTeam = fx.byeTeam.map(Number); fixedBye.push(...byeTeam); }
+        /* idle: Personen, deren Spiel nach "Spieler löschen" entfallen ist –
+           sie pausieren in dieser bereits gespielten Runde. */
+        if (Array.isArray(fx.idle)) {
+          idle = fx.idle.map(Number).filter(x => all.indexOf(x) >= 0 && fixedBye.indexOf(x) < 0);
+          fixedBye.push(...idle);
+        }
         fixedBye.forEach(p => { byeCount[p] = byesOf(p) + 1; });
       } else {
       const pool = order.slice();
@@ -1525,14 +1531,16 @@
       const byeList = [];
       if (byePlayer != null) byeList.push(byePlayer);
       if (byeTeam) byeList.push(byeTeam[0], byeTeam[1]);
-      if (byeList.length) notes.push('Runde ' + r + ': ' + byeList.map(p => 'Spieler ' + p).join(', ') + ' pausiert(en) (ungerade Teilnehmerzahl).');
+      idle.forEach(p => byeList.push(p));
+      if (byeList.length) notes.push('Runde ' + r + ': ' + byeList.map(p => 'Spieler ' + p).join(', ') + ' pausiert(en) ('
+        + (idle.length ? 'Spiel nach Löschen einer Person entfallen' : 'ungerade Teilnehmerzahl') + ').');
 
       const hasInput = matches.some(m => {
         const raw = c.results[m.id];
         return Array.isArray(raw) && raw.some(s => Array.isArray(s) ? s.some(v => v !== '' && v != null) : (s !== '' && s != null));
       });
       rounds.push({ round: r, title: 'Runde ' + r, matches, bye: byeList, complete: roundComplete,
-        frozen: hasInput, byePlayer, byeTeam: byeTeam ? byeTeam.slice() : null });
+        frozen: hasInput, byePlayer, byeTeam: byeTeam ? byeTeam.slice() : null, idle: idle.slice() });
 
       if (roundComplete) {
         order = active.slice().sort(sortKey);

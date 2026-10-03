@@ -394,11 +394,12 @@
   }
 
   /* -------------------------------------------------------- Konfiguration */
+  const MIN_TEAMS = 4;
   function fillSelects(){
     const t = $('teamCount');
     if(!t.options.length){
       TFormat.ROUND_MODES.forEach(m => $('roundMode').add(new Option(m.label, m.id)));
-      for(let n=4;n<=24;n++) t.add(new Option(n + ' Teams', n));
+      for(let n=MIN_TEAMS;n<=24;n++) t.add(new Option(n + ' Teams', n));
       TC.SET_MODES.forEach(m => $('setMode').add(new Option(m.label, m.id)));
     }
     fillRoundCount();
@@ -578,7 +579,7 @@
     if (hintEl) hintEl.hidden = false;
     $('nameGrid').innerHTML = nameGenderPanelHtml(allTeams(), S.teamNames, S.teamGender);
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx);
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedBody'), roundFilter);
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -1147,7 +1148,8 @@
     $('formatDoc').href = 'docs/format-flex-turnier.html';
     $('absentHint').textContent = isSwiss()
       ? 'ℹ️ Ausgefallene Teams werden in noch nicht begonnenen Runden nicht mehr eingeplant. In bereits eingetragenen Runden erhält der Gegner ein Freilos (Sieg ohne Ball-Differenz).'
-      : 'ℹ️ Ausfälle ändern den einmal gedruckten Spielplan nicht. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.';
+      : 'ℹ️ Ausfälle ändern den einmal gedruckten Spielplan nicht. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.'
+      + ' 🗑 löscht ein Team endgültig: Der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl), Ergebnisse unveränderter Begegnungen bleiben erhalten.';
 
     $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, B.table.criteria);
     $('h-legend').innerHTML = '<b>Modus:</b> ' + TUI.esc(modeLabel())
@@ -1176,6 +1178,45 @@
   function save(){
     S.sheet = storageSheetId(S.config.mode || 'swiss');
     return TStore.save(S);
+  }
+  /* Team endgültig löschen: Nummern dahinter rücken nach, der Plan wird für
+     die neue Teamzahl neu gebildet (Freilos nur bei ungerader Zahl).
+     Ergebnisse bleiben erhalten, sofern es die Begegnung weiterhin gibt –
+     im Schweizer System innerhalb derselben (festgeschriebenen) Runde.   */
+  function removeTeam(t){
+    const n = S.config.teams;
+    if(n - 1 < MIN_TEAMS){ alert('Mindestens ' + MIN_TEAMS + ' Teams erforderlich.'); return; }
+    if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
+    const swiss = isSwiss();
+    const phaseOf = swiss ? (id => (/^(sw_\d+)_/.exec(id) || [, id])[1]) : TStore.matchPhase;
+    const listMatches = () => B.rounds.reduce((a, rd) => a.concat(rd.matches.map(m => ({ id: m.id, a: m.a, b: m.b }))), []);
+    const map = TStore.teamRemap(t);
+    const snap = TStore.snapshotResults(S, listMatches(), map, phaseOf);
+    S.config.teams = n - 1;
+    TStore.remapCommon(S, map, ['teamGender']);
+    const all = allTeams();
+    if(swiss){
+      const fz = {};
+      Object.keys(S.frozen || {}).forEach(r => { fz[r] = TStore.repairPairs(S.frozen[r], map, all); });
+      S.frozen = fz;
+      if(S.round1) S.round1 = TStore.repairPairs(S.round1, map, all);
+      const max = TFormat.maxSwissRounds(S.config.teams);
+      if(S.config.rounds && S.config.rounds > max) S.config.rounds = max;
+    } else {
+      S.frozenModes = {};
+    }
+    TStore.restoreResults(S, snap, () => { compute(); return listMatches(); }, phaseOf);
+    if(swiss){
+      /* Hinten liegende Runden ohne jedes Ergebnis wieder freigeben, damit
+         sie mit der neuen Teamzahl optimal gepaart werden. */
+      const rs = Object.keys(S.frozen).map(Number).sort((a, b) => b - a);
+      for(const r of rs){
+        const has = Object.keys(S.results).some(id => id.indexOf('sw_' + r + '_') === 0 && TStore.hasInput(S.results[id]));
+        if(has) break;
+        delete S.frozen[r]; if(S.frozenModes) delete S.frozenModes[r];
+      }
+    }
+    save(); fillSelects(); structureKey=''; rebuild();
   }
   function onChange(){
     const prevTeams = S.config.teams;
@@ -1245,6 +1286,10 @@
       const v = e.target.value.trim();
       if(v) S.fieldNames[f] = v; else delete S.fieldNames[f];
       save(); paint();
+    });
+    $('absentGrid').addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('[data-remove-team]');
+      if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
     });
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');

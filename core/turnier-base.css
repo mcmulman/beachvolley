@@ -108,6 +108,11 @@
   .panel-checks { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:6px 12px; }
   .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; font-size:11px; color:#1f4e79; font-weight:700; }
   #absentpanel .panel-checks label { display:flex; flex-direction:row; align-items:center; gap:8px; }
+  .panel-checks .absent-row { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
+  .panel-checks .absent-row > label { flex:1 1 auto; min-width:0; }
+  .team-del { -webkit-appearance:none; appearance:none; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border:1px solid #e3b4b4; background:#fff; color:#b42318; border-radius:6px; cursor:pointer; }
+  .team-del:hover:not(:disabled) { background:#fdecec; border-color:#b42318; }
+  .team-del:disabled { opacity:.35; cursor:not-allowed; }
   .namectl { margin:0 0 12px; }
   .nbtn { -webkit-appearance:none; appearance:none; padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
   .nbtn.active { outline:3px solid #ffb300; outline-offset:2px; }

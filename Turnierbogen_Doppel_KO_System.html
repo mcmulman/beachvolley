@@ -175,6 +175,7 @@
     <div class="panel-checks" id="absentGrid"></div>
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
     <p class="nhint">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Der Gegner zieht kampflos in die nächste Runde ein.</p>
+    <p class="nhint">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -314,10 +315,11 @@
   }
 
   /* -------------------------------------------------------- Konfiguration */
+  const MIN_TEAMS = 4;
   function fillSelects(){
     const t = $('teamCount');
     if(!t.options.length){
-      for(let n=4;n<=16;n++) t.add(new Option(n + ' Teams', n));
+      for(let n=MIN_TEAMS;n<=16;n++) t.add(new Option(n + ' Teams', n));
       TC.SET_MODES.forEach(m => $('setMode').add(new Option(m.label, m.id)));
     }
     t.value = S.config.teams;
@@ -365,7 +367,7 @@
     buildBracket();
     $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames);
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, ctx);
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedFinBody'), roundFilter);
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -611,6 +613,23 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){ return TStore.save(S); }
+  /* Team endgültig löschen: Nummern dahinter rücken nach, der Plan wird
+     für die neue Teamzahl neu gebildet. Ergebnisse von Begegnungen, die es
+     in derselben Phase weiterhin gibt, bleiben erhalten.                  */
+  function removeTeam(t){
+    const n = S.config.teams;
+    if(n - 1 < MIN_TEAMS){ alert('Mindestens ' + MIN_TEAMS + ' Teams erforderlich.'); return; }
+    if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
+    const listMatches = () => (B.allMatches || []).map(m => ({ id: m.id, a: m.ta, b: m.tb }));
+    const map = TStore.teamRemap(t);
+    const snap = TStore.snapshotResults(S, listMatches(), map);
+    const nn = n - 1;
+    S.config.teams = nn;
+    TStore.remapCommon(S, map);
+    S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
+    TStore.restoreResults(S, snap, () => { compute(); return listMatches(); });
+    save(); fillSelects(); structureKey = ''; rebuild();
+  }
   function onChange(){
     const prevTeams = S.config.teams;
     readConfig();
@@ -651,6 +670,10 @@
       const v = e.target.value.trim();
       if(v) S.fieldNames[f] = v; else delete S.fieldNames[f];
       save(); paint();
+    });
+    $('absentGrid').addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('[data-remove-team]');
+      if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
     });
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');

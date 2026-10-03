@@ -781,12 +781,34 @@
     }
     return html;
   }
-  function absentPanelHtml(teams, absent, ctx) {
+  function absentPanelHtml(teams, absent, ctx, opts) {
     const set = new Set(absent || []);
-    return teams.map(t =>
-      '<label class="chk"><input type="checkbox" data-absent-input="' + t + '"'
-      + (set.has(t) ? ' checked' : '') + '> ' + esc(ctx.teamLabel(t)) + '</label>'
-    ).join('');
+    const o = opts || {};
+    const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
+    return teams.map(t => {
+      const chk = '<label class="chk"><input type="checkbox" data-absent-input="' + t + '"'
+        + (set.has(t) ? ' checked' : '') + '> ' + esc(ctx.teamLabel(t)) + '</label>';
+      if (!o.removable) return chk;
+      return '<div class="absent-row">' + chk
+        + '<button type="button" class="team-del" data-remove-team="' + t + '"'
+        + (canRemove ? '' : ' disabled')
+        + ' title="' + (canRemove ? 'Team endgültig löschen' : 'Mindestanzahl an Teams erreicht')
+        + '" aria-label="' + esc(ctx.teamLabel(t)) + ' löschen">'
+        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
+        + '</button></div>';
+    }).join('');
+  }
+  /* Rückfrage vor dem endgültigen Löschen eines Teams. */
+  function confirmRemoveTeam(label, o) {
+    o = o || {};
+    let msg = '„' + label + '“ endgültig aus dem Turnier löschen?\n\n'
+      + 'Alle nachfolgenden Teams rücken eine Nummer nach vorn';
+    msg += o.hasResults
+      ? ', der Spielplan wird neu erstellt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten; Spiele mit diesem Team entfallen.'
+      : ' und der Spielplan wird neu erstellt.';
+    if (o.extra) msg += '\n\n' + o.extra;
+    msg += '\n\nTipp: Soll das Team nur pausieren, stattdessen „ausgefallen“ ankreuzen.';
+    return (typeof confirm === 'function') ? confirm(msg) : true;
   }
 
   /* ==================================================== 8. RUNDEN-NAVIGATOR
@@ -1346,7 +1368,7 @@
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    namePanelHtml, fieldPanelHtml, absentPanelHtml,
+    namePanelHtml, fieldPanelHtml, absentPanelHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,

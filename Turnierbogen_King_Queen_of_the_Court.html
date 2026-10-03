@@ -160,6 +160,7 @@
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
     <p class="nhint">ℹ️ Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
       betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.</p>
+    <p class="nhint">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, bereits gespielte Runden behalten ihre Feldbesetzung (ohne das gelöschte Team), die weiteren Runden werden neu eingeteilt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -243,6 +244,7 @@
      ohne dass die Auswahl unuebersichtlich wird (AGENTS.md §1: "oft 5" Teams
      je Spiel – hier als 4±1 je Feld abgebildet). */
   const TEAM_OPTIONS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24];
+  const MIN_TEAMS = TEAM_OPTIONS[0];
 
   let S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
   let B = null;
@@ -275,7 +277,13 @@
       r.add(new Option('automatisch', ''));
       for(let n=3;n<=10;n++) r.add(new Option(n + ' Runden', n));
     }
-    t.value = TEAM_OPTIONS.includes(+S.config.teams) ? S.config.teams : 12;
+    /* Nach "Team löschen" kann eine Teamzahl entstehen, die nicht in der
+       Standardliste steht (z. B. 21) – dann die Option ergänzen.        */
+    if(S.config.teams >= MIN_TEAMS && !Array.from(t.options).some(o => +o.value === +S.config.teams)){
+      const before = Array.from(t.options).find(o => +o.value > +S.config.teams) || null;
+      t.add(new Option(S.config.teams + ' Teams', S.config.teams), before);
+    }
+    t.value = Array.from(t.options).some(o => +o.value === +S.config.teams) ? S.config.teams : 12;
     $('courtCount').value = String(Math.max(1, Math.min(5, +S.config.courts || 3)));
     $('roundCount').value = S.config.rounds ? String(S.config.rounds) : '';
     $('roundMinutes').value = String(S.config.roundMinutes || 15);
@@ -311,6 +319,36 @@
     if(changed) TStore.save(S);
     return B;
   }
+  /* Team endgültig löschen: Nummern dahinter rücken nach. Festgeschriebene
+     Runden behalten ihre Feldbesetzung ohne das gelöschte Team; Ergebnisse
+     bleiben erhalten, sofern dieselbe Begegnung in derselben Runde weiter
+     existiert. Hinten liegende Runden ohne Ergebnis werden neu eingeteilt. */
+  function removeTeam(t){
+    const n = S.config.teams;
+    if(n - 1 < MIN_TEAMS){ alert('Mindestens ' + MIN_TEAMS + ' Teams erforderlich.'); return; }
+    if(!TUI.confirmRemoveTeam(ctxFor().teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
+    const listMatches = () => B.rounds.reduce((acc, rd) => {
+      rd.courts.forEach(cd => cd.matches.forEach(m => acc.push({ id: m.id, a: m.a, b: m.b })));
+      return acc;
+    }, []);
+    const map = TStore.teamRemap(t);
+    const snap = TStore.snapshotResults(S, listMatches(), map);
+    S.config.teams = n - 1;
+    TStore.remapCommon(S, map);
+    const fz = {};
+    Object.keys(S.frozen || {}).forEach(r => {
+      fz[r] = (S.frozen[r] || []).map(list => TStore.remapList(list, map));
+    });
+    S.frozen = fz;
+    TStore.restoreResults(S, snap, () => { compute(); return listMatches(); });
+    const rs = Object.keys(S.frozen).map(Number).sort((a, b) => b - a);
+    for(const r of rs){
+      const has = Object.keys(S.results).some(id => id.indexOf('koc_r' + r + '_') === 0 && TStore.hasInput(S.results[id]));
+      if(has) break;
+      delete S.frozen[r];
+    }
+    TStore.save(S); fillSelects(); structureKey = ''; rebuild();
+  }
   function keyOf(){
     const c = S.config;
     return [c.teams, c.courts, c.rounds, c.roundMinutes, c.startTime].join('|');
@@ -326,7 +364,7 @@
   function buildStructure(){
     buildTeamsTable();
     $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames);
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor());
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor(), { removable: true, minTeams: MIN_TEAMS });
     buildLadder();
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -487,6 +525,10 @@
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm('Alle Teamnamen löschen?')) return;
       S.teamNames = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames); paint();
+    });
+    document.getElementById('absentGrid').addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('[data-remove-team]');
+      if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
     });
     document.getElementById('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');

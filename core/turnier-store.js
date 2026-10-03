@@ -222,6 +222,142 @@
     return t;
   }
 
+  /* ------------------------------------------------------- Team löschen
+     Ein Team (bzw. bei King/Queen ein Spieler) wird endgültig entfernt:
+     alle Nummern dahinter rücken um 1 nach vorn. Ergebnisse werden nicht
+     über Spiel-IDs (die verschieben sich), sondern über die Begegnung
+     (Phase + Teampaar) gesichert und nach dem Neuaufbau wieder eingesetzt.
+     ------------------------------------------------------------------- */
+  function teamRemap(removed) {
+    removed = +removed;
+    return x => {
+      x = +x;
+      if (!Number.isFinite(x) || x === removed) return null;
+      return x > removed ? x - 1 : x;
+    };
+  }
+  function remapKeys(obj, map) {
+    const out = {};
+    Object.keys(obj || {}).forEach(k => {
+      const n = map(+k);
+      if (n != null) out[n] = obj[k];
+    });
+    return out;
+  }
+  function remapList(arr, map) {
+    return (arr || []).map(x => map(+x)).filter(x => x != null);
+  }
+  /* teamNames, absent und manuelle Korrekturen; extraKeys = weitere
+     Objekte, die per Teamnummer verschlüsselt sind (z. B. teamGender). */
+  function remapCommon(t, map, extraKeys) {
+    t.teamNames = remapKeys(t.teamNames, map);
+    t.absent = remapList(t.absent, map);
+    ['manualStandings', 'manualPlacements'].forEach(f => {
+      const o = t[f] || {};
+      Object.keys(o).forEach(k => {
+        o[k] = remapKeys(o[k], map);
+        if (!Object.keys(o[k]).length) delete o[k];
+      });
+      t[f] = o;
+    });
+    (extraKeys || []).forEach(k => { if (t[k]) t[k] = remapKeys(t[k], map); });
+    return t;
+  }
+  /* Feste Paarungslisten (Schweizer Runden, Startrunde): Paare mit dem
+     gelöschten Team entfallen; übrig gebliebene Teams (Partner + bisheriges
+     Freilos) werden neu gepaart. Bei gerader Teamzahl bleibt so kein
+     Freilos übrig, bei ungerader genau eins.                              */
+  function repairPairs(pairs, map, allTeams) {
+    const out = [];
+    const used = new Set();
+    (pairs || []).forEach(p => {
+      const a = map(p[0]), b = map(p[1]);
+      if (a == null || b == null) return;
+      out.push([a, b]); used.add(a); used.add(b);
+    });
+    const left = (allTeams || []).filter(x => !used.has(x));
+    for (let i = 0; i + 1 < left.length; i += 2) out.push([left[i], left[i + 1]]);
+    return out;
+  }
+  /* Phase einer Spiel-ID: Begegnungen werden nur innerhalb derselben Phase
+     wiedererkannt (ein Gruppenspiel A–B ist kein Finale A–B).            */
+  function matchPhase(id) {
+    id = String(id);
+    let m;
+    if ((m = /^g([A-Z]+)_/.exec(id))) return 'g';
+    if ((m = /^(kq|koc)_r(\d+)/.exec(id))) return m[1] + m[2];
+    if ((m = /^de_(wb|lb|gf)/.exec(id))) return 'de_' + m[1];
+    if ((m = /^h([A-Za-z]+)_/.exec(id))) return 'h' + m[1];
+    if ((m = /^([a-z]+)/i.exec(id))) return m[1];
+    return id;
+  }
+  function sideKey(x) {
+    return Array.isArray(x) ? x.map(Number).sort((a, b) => a - b).join('+') : String(x);
+  }
+  function mapSide(x, map) {
+    if (x == null) return null;
+    if (Array.isArray(x)) {
+      const m = x.map(v => map(+v));
+      return m.some(v => v == null) ? null : m;
+    }
+    return map(+x);
+  }
+  function hasInput(r) {
+    if (!Array.isArray(r)) return false;
+    return r.some(s => Array.isArray(s)
+      ? s.some(x => x != null && x !== '')
+      : (s != null && s !== ''));
+  }
+  function swapResult(r) {
+    if (!Array.isArray(r)) return r;
+    if (r.some(s => Array.isArray(s))) return r.map(s => Array.isArray(s) ? [s[1], s[0]] : s);
+    return [r[1], r[0]];
+  }
+  /* matches: [{id, a, b}] in ALTER Nummerierung (a/b = Teamnummer oder
+     Spieler-Array). Liefert die gesicherten Ergebnisse in NEUER Nummerierung. */
+  function snapshotResults(t, matches, map, phaseOf) {
+    const ph = phaseOf || matchPhase;
+    const out = [];
+    const seen = new Set();
+    (matches || []).forEach(m => {
+      if (!m || seen.has(m.id)) return;
+      seen.add(m.id);
+      const r = t.results && t.results[m.id];
+      if (!hasInput(r)) return;
+      const a = mapSide(m.a, map), b = mapSide(m.b, map);
+      if (a == null || b == null) return;
+      out.push({ phase: ph(m.id), a: sideKey(a), b: sideKey(b),
+        r: JSON.parse(JSON.stringify(r)), used: false });
+    });
+    return out;
+  }
+  /* getMatches() baut den Bogen mit dem aktuellen t.results neu auf und
+     liefert [{id, a, b}] in neuer Nummerierung. Mehrere Durchläufe, weil
+     Final-/KO-Spiele erst feststehen, wenn die Vorrunde wieder eingetragen
+     ist. Rückgabe: Anzahl wieder eingesetzter Ergebnisse.                */
+  function restoreResults(t, snap, getMatches, phaseOf) {
+    const ph = phaseOf || matchPhase;
+    t.results = {};
+    for (let pass = 0; pass < 30; pass++) {
+      let added = 0;
+      (getMatches() || []).forEach(m => {
+        if (!m || m.a == null || m.b == null || t.results[m.id]) return;
+        const p = ph(m.id), ka = sideKey(m.a), kb = sideKey(m.b);
+        const e = snap.find(s => !s.used && s.phase === p
+          && ((s.a === ka && s.b === kb) || (s.a === kb && s.b === ka)));
+        if (!e) return;
+        e.used = true;
+        t.results[m.id] = e.a === ka ? e.r : swapResult(e.r);
+        added++;
+      });
+      if (!added) break;
+    }
+    return snap.filter(s => s.used).length;
+  }
+  function anyResults(t) {
+    return Object.keys(t.results || {}).some(id => hasInput(t.results[id]));
+  }
+
   /* ------------------------------------------------------------ Migration
      Liest die alten, bogenspezifischen Schlüssel und überführt sie in das
      neue Schema. Die alten Schlüssel bleiben unangetastet, damit ein
@@ -411,6 +547,8 @@
     setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,
     setManualPlacement, getManualPlacements, resetManualPlacementRow, resetManualPlacements,
     applyUrlConfig, urlInt, urlOneOf, urlBool,
+    teamRemap, remapKeys, remapList, remapCommon, repairPairs, matchPhase,
+    snapshotResults, restoreResults, anyResults, hasInput,
     index, updateIndex, hasLegacy, migrate, parseLegacyScoreId,
     _readJSON: readJSON, _writeJSON: writeJSON
   };

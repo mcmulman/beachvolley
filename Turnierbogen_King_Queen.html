@@ -52,6 +52,8 @@
     table.roster td.rname input { width:100%; box-sizing:border-box; padding:5px 7px; font-size:13px; border:1px solid #aab8cc; border-radius:4px; }
     table.roster td.rlevel select { padding:4px 5px; font-size:12.5px; border:1px solid #aab8cc; border-radius:4px; }
     table.roster td.rabsent { text-align:center; width:44px; }
+    table.roster td.rdel, table.roster th.rdel { text-align:center; width:36px; }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
     table.roster tr.is-absent td.rname input { text-decoration:line-through; color:#9aa6b5; }
     .kq-round { margin: 16px 0; }
     .kq-round-title { font-size:13px; font-weight:700; color:#1f4e79; margin:0 0 6px; display:flex; align-items:center; gap:8px; }
@@ -157,14 +159,14 @@
   <div style="flex:0 0 48%">
     <table class="roster" id="menRoster">
       <caption><span class="cap-title">Herren</span></caption>
-      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th></tr></thead>
+      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th><th class="rdel"><span class="sr-only">Löschen</span></th></tr></thead>
       <tbody id="menRosterBody"></tbody>
     </table>
   </div>
   <div style="flex:0 0 48%">
     <table class="roster" id="womenRoster">
       <caption><span class="cap-title">Damen</span></caption>
-      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th></tr></thead>
+      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th><th class="rdel"><span class="sr-only">Löschen</span></th></tr></thead>
       <tbody id="womenRosterBody"></tbody>
     </table>
   </div>
@@ -354,6 +356,53 @@
     return B;
   }
 
+  /* Person endgültig löschen: alle IDs dahinter rücken nach (Herren 1..M,
+     Damen M+1..M+W). Bereits gespielte (eingefrorene) Runden bleiben
+     erhalten; Spiele mit der gelöschten Person entfallen, die übrigen drei
+     pausieren in dieser Runde. Noch nicht gespielte Runden werden neu
+     ausgelost.                                                           */
+  const MIN_PLAYERS = 4;
+  function removePlayer(id){
+    const men = getMenCount(), women = getWomenCount();
+    if(men + women - 1 < MIN_PLAYERS){ alert('Mindestens ' + MIN_PLAYERS + ' Personen erforderlich.'); return; }
+    const label = playerName(id);
+    if(!TUI.confirmRemoveTeam(label, { hasResults: TStore.anyResults(S) })) return;
+    const map = TStore.teamRemap(id);
+    const newResults = {};
+    const fz = {};
+    Object.keys(S.frozen || {}).forEach(r => {
+      const fx = S.frozen[r];
+      if(!fx || !Array.isArray(fx.matches)) return;
+      const idle = [];
+      const kept = [];
+      fx.matches.forEach((p, i) => {
+        const a = TStore.remapList(p[0], map), b = TStore.remapList(p[1], map);
+        if(a.length === 2 && b.length === 2){
+          const oldId = 'kq_r' + r + '_m' + (i + 1);
+          if(S.results[oldId]) newResults['kq_r' + r + '_m' + (kept.length + 1)] = S.results[oldId];
+          kept.push([a, b]);
+        } else {
+          idle.push(...a, ...b);
+        }
+      });
+      let byePlayer = fx.byePlayer != null ? map(fx.byePlayer) : null;
+      let byeTeam = null;
+      if(Array.isArray(fx.byeTeam)){
+        const bt = TStore.remapList(fx.byeTeam, map);
+        if(bt.length === 2) byeTeam = bt; else idle.push(...bt);
+      }
+      idle.push(...TStore.remapList(fx.idle, map));
+      if(kept.length) fz[r] = { matches: kept, byePlayer, byeTeam, idle };
+    });
+    S.results = newResults;
+    S.frozen = fz;
+    TStore.remapCommon(S, map);
+    S.config.levels = TStore.remapKeys(S.config.levels, map);
+    if(id <= men) S.config.men = men - 1; else S.config.women = women - 1;
+    fillSelects();
+    save(); structureKey=''; rebuild();
+  }
+
   function keyOf(){
     if(!B) return '';
     return B.rounds.map(r => r.round + ':'
@@ -434,6 +483,7 @@
   function buildRoster(){
     const men = getMenCount(), women = getWomenCount();
     const absentSet = new Set(S.absent || []);
+    const canRemove = men + women > MIN_PLAYERS;
     const row = (id, label) => {
       const lvl = playerLevel(id);
       let opts = '';
@@ -443,6 +493,9 @@
         + '<td class="rname"><input data-name-input="' + id + '" value="' + esc((S.teamNames && S.teamNames[id]) || '') + '" placeholder="' + (id <= men ? 'Herr ' : 'Dame ') + label + '" autocomplete="off" spellcheck="false"></td>'
         + '<td class="rlevel"><select data-level-input="' + id + '">' + opts + '</select></td>'
         + '<td class="rabsent"><input type="checkbox" data-absent-input="' + id + '"' + (absentSet.has(id) ? ' checked' : '') + '></td>'
+        + '<td class="rdel"><button type="button" class="team-del" data-remove-player="' + id + '"'
+        + (canRemove ? ' title="Person endgültig löschen"' : ' disabled title="Mindestens ' + MIN_PLAYERS + ' Personen erforderlich"')
+        + ' aria-label="' + esc(playerName(id)) + ' löschen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td>'
         + '</tr>';
     };
     let menHtml = '';
@@ -693,6 +746,10 @@
         if(v) S.teamNames[id] = v; else delete S.teamNames[id];
         save(); paintRounds(); paintStandings();
       }
+    });
+    $('rosterSection').addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('[data-remove-player]');
+      if(btn && !btn.disabled) removePlayer(+btn.getAttribute('data-remove-player'));
     });
     document.addEventListener('change', e => {
       if(e.target.matches('[data-level-input]')){
