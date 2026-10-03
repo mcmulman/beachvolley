@@ -22,7 +22,8 @@
     .notebox.is-warn { border-left-color:#b35c00; background:#fff6ec; }
     .notebox ul { margin:3px 0; padding-left:18px; }
     .final-empty { color:#666; font-style:italic; padding:8px 0; }
-    .placelist td.pl { width:40px; background:var(--bg); font-weight:bold; }
+    .placelist td.pl { width:40px; background:var(--bg); font-weight:bold; white-space:nowrap; text-align:center; }
+    .track td.pos { white-space:nowrap; }
     .placelist td.nm { text-align:left; }
     .placelist td.src { font-size:11px; color:#555; }
     .stand .nm { display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -44,6 +45,8 @@
     }
     @media screen {
       .stand .pl { display:none; }
+      /* Endstand hat kein Platz-Badge am Namen – dort bleibt die Platz-Spalte sichtbar. */
+      .stand.placelist .pl { display:table-cell; width:64px; }
     }
   
     /* Primäre Schaltflächen dunkelblau – spiegelt app-skin.css-Regeln
@@ -647,6 +650,7 @@
       const editable = MSTD.isEditing(key);
       const size = (B.groups[g] || []).length;
       const blockEnd = blockStart + size - 1;
+      const placeOffset = isBlocks ? blockStart - 1 : 0;
       const caption = isBlocks
         ? 'Platzierungsblock ' + g + ' (Platz ' + blockStart + (blockEnd > blockStart ? '–' + blockEnd : '') + ')'
         : 'Gruppe ' + g;
@@ -657,7 +661,8 @@
         + '</caption>'
         + (hasResult
             ? TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw: showDraw,
-                editable, manual: TStore.getManualStandings(S, key) })
+                editable, manual: TStore.getManualStandings(S, key),
+                rankBadge: true, isFinal: !!t.complete, placeOffset })
             : emptyGroupTableHtml(B.groups[g] || []))
         + '</table></div>';
     });
@@ -687,7 +692,8 @@
       const editable = MSTD.isEditing(key);
       html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Hauptrunde ' + TUI.esc(n) + MSTD.toolbarHtml(key) + '</caption>'
         + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw:true,
-            editable, manual: TStore.getManualStandings(S, key) })
+            editable, manual: TStore.getManualStandings(S, key),
+            rankBadge: true, isFinal: !!t.complete })
         + '</table></div>';
     });
     $('mainTables').innerHTML = html + '</div>';
@@ -698,8 +704,20 @@
     const editable = MSTD.isEditing(key);
     const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
-    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
+    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key),
+      rankBadge: true, isFinal: tournamentFinished() });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">Noch keine Platzierung – zuerst die Vorrunde eintragen.</td></tr>';
+  }
+
+  /* Endstand steht fest, wenn alle Gruppen- und Finalspiele entschieden sind
+     (Freilose und beidseitig leere Platzhalter zählen als erledigt). */
+  function tournamentFinished(){
+    const isBye = r => !!(r && r.k === 'bye');
+    const done = m => !!(m.result || m.bye != null || (isBye(m.a) && isBye(m.b)));
+    return B.groupNames.length > 0
+      && B.groupNames.every(g => B.groupTables[g].complete)
+      && B.finalRounds.every(rd => rd.matches.every(done))
+      && (B.placements || []).some(p => p.team != null);
   }
 
   /* Kumulierte Punkte/Ball-Differenz je Vorrunden-Runde. */
@@ -739,14 +757,25 @@
     });
     // Platz aus der Gesamtreihung der Vorrunde
     const overall = {};
-    B.groupNames.forEach(g => B.groupTables[g].ranked.forEach(e => overall[e.team] = { place:e.place, group:g, shared:e.shared }));
+    const blocks = S.config.finalMode === 'blocks';
+    let offset = 0;
+    B.groupNames.forEach(g => {
+      B.groupTables[g].ranked.forEach(e => overall[e.team] = { place:e.place, group:g, shared:e.shared, offset });
+      offset += (B.groups[g] || []).length;
+    });
     /* Ohne Ergebnisse bleibt die Platz-Spalte leer – sonst stünde auf dem
        frisch gedruckten Bogen bei jedem Team "A1.=". */
     const anyResult = activeTeams().some(t => acc[t] && acc[t].seen);
     document.querySelectorAll('#trackBody td[data-pos]').forEach(td => {
       const t = +td.closest('tr').getAttribute('data-team');
       const o = anyResult ? overall[t] : null;
-      td.textContent = o ? (o.group + o.place + '.' + (o.shared ? '=' : '')) : (S.absent.includes(t) ? '–' : '');
+      /* Einheitliches Rang-Badge: Top 3 der Gruppe hervorgehoben, Medaille
+         sobald die Gruppe fertig gespielt ist. */
+      /* Platzierungsblöcke: Gesamtplatz statt Gruppenplatz (Block 2 = Platz 4–6 …). */
+      if (o) td.innerHTML = TUI.rankBadgeHtml(blocks ? o.place + o.offset : o.place, { prefix: blocks ? '' : o.group, shared: o.shared,
+        final: !!B.groupTables[o.group].complete,
+        title: B.groupTables[o.group].complete ? 'Endplatz in Gruppe ' + o.group : 'Aktueller Platz in Gruppe ' + o.group });
+      else td.textContent = S.absent.includes(t) ? '–' : '';
       td.classList.toggle('pz-tie', !!(o && o.shared));
     });
   }

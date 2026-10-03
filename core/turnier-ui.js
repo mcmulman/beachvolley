@@ -440,9 +440,16 @@
           + '<input type="number" min="1" class="mstd-in" data-field="place" value="' + row.place + '"></td>'
           + '<td class="nm">' + teamHtml + '</td>';
       } else {
-        const placeBadge = '<span class="screen-place' + (row.shared ? ' pz-tie' : '') + '"'
-          + ' title="Aktueller Platz: ' + row.place + (row.shared ? ' (geteilt)' : '') + (row.hasPlace ? ' – manuell gesetzt' : '') + '">'
-          + row.place + '.' + (row.shared ? '=' : '') + '</span>';
+        /* o.rankBadge: einheitliches Rang-Badge (Top 3 hervorgehoben,
+           Medaille bei o.isFinal) statt der neutralen Platz-Pille.
+           o.placeOffset: Gesamtplatz = Tabellenplatz + Offset (z. B. bei
+           Platzierungsblöcken: Block 2 spielt um Platz 4–6). */
+        const placeBadge = o.rankBadge
+          ? rankBadgeHtml(row.place + (Number(o.placeOffset) || 0), { final: !!o.isFinal, shared: row.shared, manual: row.hasPlace,
+              cls: 'screen-place' + (row.shared ? ' pz-tie' : '') })
+          : '<span class="screen-place' + (row.shared ? ' pz-tie' : '') + '"'
+            + ' title="Aktueller Platz: ' + row.place + (row.shared ? ' (geteilt)' : '') + (row.hasPlace ? ' – manuell gesetzt' : '') + '">'
+            + row.place + '.' + (row.shared ? '=' : '') + '</span>';
         html += '<td class="pl' + (row.shared ? ' pz-tie' : '') + (row.hasPlace ? ' is-manual' : '') + '">'
           + row.place + '.' + (row.shared ? '=' : '') + '</td>'
           + '<td class="nm">' + teamHtml + placeBadge + '</td>';
@@ -477,6 +484,31 @@
       html += '</tr>';
     });
     return html + '</tbody>';
+  }
+
+  /* Rang-Badge – dieselbe Darstellung wie in Runden-, Flex- und Schweizer
+     Bogen (Klassen in spielplan.css): laufender Platz als Pille, Platz 1–3
+     farbig hervorgehoben, Medaille sobald der Platz endgültig feststeht.
+     o.final  – Platz steht fest (Medaille + rank-final)
+     o.prefix – Text vor der Zahl (z. B. Gruppenbuchstabe „A“)
+     o.shared – geteilter Platz („=“ dahinter)
+     o.cls    – zusätzliche Klassen (z. B. screen-place)                    */
+  const RANK_MEDALS = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+  function rankBadgeHtml(place, o) {
+    o = o || {};
+    const extra = o.cls ? ' ' + o.cls : '';
+    if (place == null || !Number.isFinite(Number(place))) {
+      return '<span class="rank-badge rank-none' + extra + '">–</span>';
+    }
+    const p = Number(place);
+    const fin = !!o.final;
+    const topCls = p >= 1 && p <= 3 ? ' rank-top rank-' + p : '';
+    const medal = fin && RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
+    const label = (o.prefix || '') + p + '.' + (o.shared ? '=' : '');
+    const title = (o.title || (fin ? 'Endplatzierung' : 'Aktueller Platz (laufend)')) + ': ' + label
+      + (o.shared ? ' (geteilt)' : '') + (o.manual ? ' – manuell gesetzt' : '');
+    return '<span class="rank-badge ' + (fin ? 'rank-final' : 'rank-live') + topCls + extra
+      + '" title="' + esc(title) + '">' + medal + esc(label) + '</span>';
   }
 
   /* Kleines "Δ"-Zeichen mit Tooltip neben Pkt/Diff, wenn dort eine manuelle
@@ -531,7 +563,10 @@
               : '')
           + '</td>';
       } else {
-        html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + '">' + esc(placeLabel) + '</td>'
+        const plHtml = o.rankBadge && p.team != null && !p.rangeLabel
+          ? rankBadgeHtml(row.place, { final: !!o.isFinal, manual: row.hasPlace })
+          : esc(placeLabel);
+        html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + '">' + plHtml + '</td>'
           + '<td class="nm">' + teamHtml + '</td>'
           + '<td class="src' + (row.hasSource ? ' is-manual' : '') + '">' + esc(row.source) + '</td>';
       }
@@ -1309,7 +1344,7 @@
     esc, fmtTime, fmtDiff, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
-    standingsTableHtml, placeListHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,
