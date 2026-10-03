@@ -1963,7 +1963,7 @@
       }
       // Rang-Badge direkt am Teamnamen (nicht nur ganz rechts in der letzten
       // Runden-Spalte): zeigt den aktuellen Platz laufend an und wird optisch
-      // hervorgehoben (Medaille), sobald er nach der letzten Runde feststeht.
+      // hervorgehoben (Medaille für Platz 1–3, auch schon laufend).
       const isFinal = lastCompleteRound > 0 && lastCompleteRound === NROUNDS;
       const medal = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
       for(let t=1;t<=NTEAMS;t++){
@@ -1973,7 +1973,7 @@
           badge = '<span class="rank-badge rank-none">–</span>';
         } else {
           const topCls = place <= 3 ? ' rank-top rank-' + place : '';
-          const icon = isFinal && medal[place] ? medal[place] + ' ' : '';
+          const icon = medal[place] ? medal[place] + ' ' : '';
           badge = '<span class="rank-badge' + (isFinal ? ' rank-final' : ' rank-live') + topCls + '" title="'
             + (isFinal ? 'Endplatzierung' : 'Aktueller Platz (laufend)') + ': ' + place + '.">' + icon + place + '.</span>';
         }

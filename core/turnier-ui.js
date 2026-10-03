@@ -440,12 +440,13 @@
           + '<input type="number" min="1" class="mstd-in" data-field="place" value="' + row.place + '"></td>'
           + '<td class="nm">' + teamHtml + '</td>';
       } else {
-        /* o.rankBadge: einheitliches Rang-Badge (Top 3 hervorgehoben,
-           Medaille bei o.isFinal) statt der neutralen Platz-Pille.
+        /* Einheitliches Rang-Badge (Top 3 mit Medaille); o.rankBadge:false
+           schaltet auf die neutrale Platz-Pille zurück. o.isFinal steuert
+           nur Tooltip/Klasse (Endplatzierung vs. laufend).
            o.placeOffset: Gesamtplatz = Tabellenplatz + Offset (z. B. bei
            Platzierungsblöcken: Block 2 spielt um Platz 4–6). */
-        const placeBadge = o.rankBadge
-          ? rankBadgeHtml(row.place + (Number(o.placeOffset) || 0), { final: !!o.isFinal, shared: row.shared, manual: row.hasPlace,
+        const placeBadge = o.rankBadge !== false
+          ? rankBadgeHtml(row.place + (Number(o.placeOffset) || 0), { final: o.isFinal, shared: row.shared, manual: row.hasPlace,
               cls: 'screen-place' + (row.shared ? ' pz-tie' : '') })
           : '<span class="screen-place' + (row.shared ? ' pz-tie' : '') + '"'
             + ' title="Aktueller Platz: ' + row.place + (row.shared ? ' (geteilt)' : '') + (row.hasPlace ? ' – manuell gesetzt' : '') + '">'
@@ -486,10 +487,10 @@
     return html + '</tbody>';
   }
 
-  /* Rang-Badge – dieselbe Darstellung wie in Runden-, Flex- und Schweizer
-     Bogen (Klassen in spielplan.css): laufender Platz als Pille, Platz 1–3
-     farbig hervorgehoben, Medaille sobald der Platz endgültig feststeht.
-     o.final  – Platz steht fest (Medaille + rank-final)
+  /* Rang-Badge – einheitlich in allen Bögen (Klassen in spielplan.css):
+     Platz als Pille, Platz 1–3 schon während des Turniers mit Medaille und
+     Gold/Silber/Bronze hervorgehoben.
+     o.final  – true: Endplatzierung, false: laufender Platz, undefined: neutral
      o.prefix – Text vor der Zahl (z. B. Gruppenbuchstabe „A“)
      o.shared – geteilter Platz („=“ dahinter)
      o.cls    – zusätzliche Klassen (z. B. screen-place)                    */
@@ -501,11 +502,11 @@
       return '<span class="rank-badge rank-none' + extra + '">–</span>';
     }
     const p = Number(place);
-    const fin = !!o.final;
+    const fin = o.final === true;
     const topCls = p >= 1 && p <= 3 ? ' rank-top rank-' + p : '';
-    const medal = fin && RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
+    const medal = RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
     const label = (o.prefix || '') + p + '.' + (o.shared ? '=' : '');
-    const title = (o.title || (fin ? 'Endplatzierung' : 'Aktueller Platz (laufend)')) + ': ' + label
+    const title = (o.title || (fin ? 'Endplatzierung' : o.final === false ? 'Aktueller Platz (laufend)' : 'Platz')) + ': ' + label
       + (o.shared ? ' (geteilt)' : '') + (o.manual ? ' – manuell gesetzt' : '');
     return '<span class="rank-badge ' + (fin ? 'rank-final' : 'rank-live') + topCls + extra
       + '" title="' + esc(title) + '">' + medal + esc(label) + '</span>';
@@ -563,8 +564,8 @@
               : '')
           + '</td>';
       } else {
-        const plHtml = o.rankBadge && p.team != null && !p.rangeLabel
-          ? rankBadgeHtml(row.place, { final: !!o.isFinal, manual: row.hasPlace })
+        const plHtml = o.rankBadge !== false && p.team != null && !p.rangeLabel
+          ? rankBadgeHtml(row.place, { final: o.isFinal, manual: row.hasPlace })
           : esc(placeLabel);
         html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + '">' + plHtml + '</td>'
           + '<td class="nm">' + teamHtml + '</td>'

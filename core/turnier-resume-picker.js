@@ -222,9 +222,16 @@
      Rückgabe: true = Auswahl wird angezeigt, Aufrufer bricht die eigene
      Initialisierung ab (Navigation folgt per location.replace).
      false = keine Mehrdeutigkeit, normal weiterladen. */
+  /* Übergabe einer Rangliste ("Finalrunde spielen", #rankimport=) startet
+     immer ein NEUES Turnier – keine Auswahl, autoId() vergibt eine frische
+     ?id=, damit kein gespeichertes Turnier überschrieben wird. */
+  function isRankImport() {
+    return String(location.hash || '').indexOf('rankimport=') >= 0;
+  }
+
   function maybePrompt(base, typeLabel) {
     try {
-      if (alreadyResolved()) return false;
+      if (alreadyResolved() || isRankImport()) return false;
       const existing = listFromStore(base);
       if (!existing.length) return false;
       render(existing, typeLabel, Math.max(0, countAllSaved() - existing.length));
@@ -237,7 +244,7 @@
      opts: { sessionKeyBase, typeLabel } */
   function maybePromptFromRegistry(opts) {
     try {
-      if (alreadyResolved()) return false;
+      if (alreadyResolved() || isRankImport()) return false;
       const o = opts || {};
       const existing = listFromRegistry(o.sessionKeyBase);
       if (!existing.length) return false;

@@ -1022,11 +1022,11 @@
       if (effPlace == null) {
         badge = '<span class="rank-badge rank-none">–</span>';
       } else {
-        /* Medaille erst, wenn der Endstand feststeht – vorher nur der Platz. */
+        /* Medaille für Platz 1–3 schon laufend (einheitlich, TUI.rankBadgeHtml). */
         const isFinal = B.rounds.length > 0 && B.rounds.every(rd =>
           rd.matches.every(m => m.result || m.bye != null || m.dead));
         const topCls = effPlace <= 3 ? ' rank-top rank-' + effPlace : '';
-        const medal = isFinal ? ({ 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' }[effPlace] || '') : '';
+        const medal = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' }[effPlace] || '';
         badge = '<span class="rank-badge ' + (isFinal ? 'rank-final' : 'rank-live') + topCls + '" title="'
           + (isFinal ? 'Endplatzierung' : 'Aktueller Platz (laufend)') + ': ' + effPlace + '.">'
           + (medal ? medal + ' ' : '') + effPlace + '.</span>';

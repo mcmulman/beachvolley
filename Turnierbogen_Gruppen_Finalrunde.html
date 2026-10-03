@@ -23,7 +23,6 @@
     .notebox ul { margin:3px 0; padding-left:18px; }
     .final-empty { color:#666; font-style:italic; padding:8px 0; }
     .placelist td.pl { width:40px; background:var(--bg); font-weight:bold; white-space:nowrap; text-align:center; }
-    .track td.pos { white-space:nowrap; }
     .placelist td.nm { text-align:left; }
     .placelist td.src { font-size:11px; color:#555; }
     .stand .nm { display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -45,8 +44,7 @@
     }
     @media screen {
       .stand .pl { display:none; }
-      /* Endstand hat kein Platz-Badge am Namen – dort bleibt die Platz-Spalte sichtbar. */
-      .stand.placelist .pl { display:table-cell; width:64px; }
+      .stand.placelist .pl { width:64px; }
     }
   
     /* Primäre Schaltflächen dunkelblau – spiegelt app-skin.css-Regeln
@@ -430,6 +428,8 @@
     S.absent = [];
     S.frozen = {};
     S.frozenModes = {};
+    S.manualStandings = {};
+    S.manualPlacements = {};
     S.teamNames = {};
     capped.forEach((nm, i) => { S.teamNames[i+1] = nm; });
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
@@ -778,6 +778,13 @@
       else td.textContent = S.absent.includes(t) ? '–' : '';
       td.classList.toggle('pz-tie', !!(o && o.shared));
     });
+    /* Zeilen nach aktuellem Platz sortieren – wie in „Jeder gegen Jeden“:
+       Gruppe für Gruppe (Blöcke: Gesamtplatz), ohne Ergebnisse Teamreihenfolge. */
+    const gi = g => B.groupNames.indexOf(g);
+    const key = t => { const o = overall[t]; return o ? [gi(o.group), o.place + o.offset] : [99, t]; };
+    const order = activeTeams().slice();
+    if (anyResult) order.sort((a, b) => { const ka = key(a), kb = key(b); return (ka[0] - kb[0]) || (ka[1] - kb[1]) || (a - b); });
+    TUI.sortTrackRows($('trackBody'), order);
   }
 
   function paintNotices(){

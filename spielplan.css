@@ -1175,7 +1175,7 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
 .example-row td { background: #eef6ff; color: #15467a; font-style: italic; }
 .example-row .teamcol, .example-row .lbl { background: #dceaf7; font-style: normal; }
 
-.rank-badge { display: inline-block; font-weight: 800; }
+.rank-badge { display: inline-block; font-weight: 800; white-space: nowrap; }
 .rank-badge.rank-none { color: #6b7280; font-weight: 400; }
 .rank-badge.rank-top.rank-1 { color: #8a6d00; }
 .rank-badge.rank-top.rank-2 { color: #55606b; }
@@ -1206,9 +1206,9 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
   }
   .rank-badge.rank-none { background: none; color: #6b7280; font-weight: 500; min-width: 0; padding: 0; }
   .rank-badge.rank-live { background: #e4ecf7; color: #1f4e79; }
-  .rank-badge.rank-final.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
-  .rank-badge.rank-final.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
-  .rank-badge.rank-final.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
+  .rank-badge.rank-top.rank-1 { background: #fff1c2; color: #7a5c00; box-shadow: 0 0 0 1.5px #e0bd52 inset; }
+  .rank-badge.rank-top.rank-2 { background: #e9edf2; color: #4a545f; box-shadow: 0 0 0 1.5px #b9c4d0 inset; }
+  .rank-badge.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
 }
 
 @media screen and (max-width: 640px) {

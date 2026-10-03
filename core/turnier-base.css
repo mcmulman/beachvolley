@@ -352,6 +352,8 @@
       .stand .pl,
       .stand .rk { background: #e8edf5; color: #1a1a2e; }
       .stand .pl { display: none; }
+      /* Endstand-Listen haben kein Badge am Namen – Platz-Spalte bleibt sichtbar. */
+      .stand.placelist .pl { display: table-cell; white-space: nowrap; text-align: center; }
       .stand .screen-place {
         display: inline-block;
         min-width: 26px;
