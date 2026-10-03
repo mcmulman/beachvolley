@@ -600,6 +600,7 @@
     return '';
   }
   function nameGenderPanelHtml(teams, teamNames, teamGender){
+    const canRemove = teams.length > MIN_TEAMS;
     return teams.map(t => {
       const g = teamGender[t] || '';
       const opt = v => '<option value="' + v + '"' + (g === v ? ' selected' : '') + '>'
@@ -608,7 +609,8 @@
         + '<input type="text" class="nname" data-name-input="' + t + '" value="' + TUI.esc(teamNames[t] || '')
         + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false">'
         + '<select class="ngender" data-gender-input="' + t + '" title="Team-Art">'
-        + opt('') + opt('m') + opt('w') + opt('x') + '</select></div>';
+        + opt('') + opt('m') + opt('w') + opt('x') + '</select>'
+        + TUI.teamDelBtnHtml(t, teamNames[t] || ('Team ' + t), canRemove) + '</div>';
     }).join('');
   }
 
@@ -1287,10 +1289,10 @@
       if(v) S.fieldNames[f] = v; else delete S.fieldNames[f];
       save(); paint();
     });
-    $('absentGrid').addEventListener('click', e => {
+    ['nameGrid', 'absentGrid'].forEach(id => document.getElementById(id).addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('[data-remove-team]');
       if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
-    });
+    }));
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;

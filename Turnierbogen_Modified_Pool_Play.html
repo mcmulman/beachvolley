@@ -465,7 +465,7 @@
     buildTeamsTable();
     buildGroupOverview();
     $('trackBody').innerHTML = TUI.trackTableHtml(activeTeams(), B.groupRounds.length, cg);
-    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames);
+    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
     $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, cg, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedGrpBody'), roundFilter);
@@ -977,10 +977,10 @@
       if(v) S.fieldNames[f] = v; else delete S.fieldNames[f];
       save(); paint();
     });
-    $('absentGrid').addEventListener('click', e => {
+    ['nameGrid', 'absentGrid'].forEach(id => document.getElementById(id).addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('[data-remove-team]');
       if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
-    });
+    }));
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;

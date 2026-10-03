@@ -367,7 +367,7 @@
 
   function buildStructure(){
     buildTeamsTable();
-    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames);
+    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
     $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor(), { removable: true, minTeams: MIN_TEAMS });
     buildLadder();
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
@@ -524,16 +524,16 @@
       for(let i=names.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
       S.teamNames = {};
       names.forEach((v,i) => { if(v) S.teamNames[i+1] = v; });
-      TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames); paint();
+      TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS }); paint();
     });
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm('Alle Teamnamen löschen?')) return;
-      S.teamNames = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames); paint();
+      S.teamNames = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS }); paint();
     });
-    document.getElementById('absentGrid').addEventListener('click', e => {
+    ['nameGrid', 'absentGrid'].forEach(id => document.getElementById(id).addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('[data-remove-team]');
       if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
-    });
+    }));
     document.getElementById('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;

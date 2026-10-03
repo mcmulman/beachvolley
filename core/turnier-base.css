@@ -113,6 +113,10 @@
   .team-del { -webkit-appearance:none; appearance:none; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border:1px solid #e3b4b4; background:#fff; color:#b42318; border-radius:6px; cursor:pointer; }
   .team-del:hover:not(:disabled) { background:#fdecec; border-color:#b42318; }
   .team-del:disabled { opacity:.35; cursor:not-allowed; }
+  .namepanel .ngrid:has(.nrow-del) { grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
+  .ngrid .nrow-del { display:flex; align-items:flex-end; gap:6px; min-width:0; }
+  .ngrid .nrow-del > label { flex:1 1 auto; min-width:0; }
+  .ngrid .nrow-del > .team-del, .namepanel .nrow2 > .team-del { width:36px; height:36px; }
   .namectl { margin:0 0 12px; }
   .nbtn { -webkit-appearance:none; appearance:none; padding:7px 14px; font-size:13px; cursor:pointer; border:1px solid #1f4e79; background:#1f4e79; color:#fff; border-radius:4px; font-weight:700; }
   .nbtn.active { outline:3px solid #ffb300; outline-offset:2px; }

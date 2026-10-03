@@ -780,12 +780,27 @@
   }
 
   /* ============================================================== 7. PANELS */
-  function namePanelHtml(teams, teamNames) {
-    return teams.map(t =>
-      '<label class="nrow"><span class="nnum">' + t + '</span>'
-      + '<input type="text" data-name-input="' + t + '" value="' + esc(teamNames[t] || '')
-      + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false"></label>'
-    ).join('');
+  /* Papierkorb-Button „Team endgültig löschen“ – gleiche Funktion im
+     Teamnamen- und im Ausfall-Panel (Bogen delegiert [data-remove-team]). */
+  function teamDelBtnHtml(t, label, canRemove) {
+    return '<button type="button" class="team-del" data-remove-team="' + t + '"'
+      + (canRemove ? '' : ' disabled')
+      + ' title="' + (canRemove ? 'Team endgültig löschen' : 'Mindestanzahl an Teams erreicht')
+      + '" aria-label="' + esc(label) + ' löschen">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
+      + '</button>';
+  }
+  function namePanelHtml(teams, teamNames, opts) {
+    const o = opts || {};
+    const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
+    return teams.map(t => {
+      const row = '<label class="nrow"><span class="nnum">' + t + '</span>'
+        + '<input type="text" data-name-input="' + t + '" value="' + esc(teamNames[t] || '')
+        + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false"></label>';
+      if (!o.removable) return row;
+      return '<div class="nrow-del">' + row
+        + teamDelBtnHtml(t, teamNames[t] || ('Team ' + t), canRemove) + '</div>';
+    }).join('');
   }
   function fieldPanelHtml(count, fieldNames) {
     let html = '';
@@ -805,12 +820,7 @@
         + (set.has(t) ? ' checked' : '') + '> ' + esc(ctx.teamLabel(t)) + '</label>';
       if (!o.removable) return chk;
       return '<div class="absent-row">' + chk
-        + '<button type="button" class="team-del" data-remove-team="' + t + '"'
-        + (canRemove ? '' : ' disabled')
-        + ' title="' + (canRemove ? 'Team endgültig löschen' : 'Mindestanzahl an Teams erreicht')
-        + '" aria-label="' + esc(ctx.teamLabel(t)) + ' löschen">'
-        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
-        + '</button></div>';
+        + teamDelBtnHtml(t, ctx.teamLabel(t), canRemove) + '</div>';
     }).join('');
   }
   /* Rückfrage vor dem endgültigen Löschen eines Teams. */
@@ -1383,7 +1393,7 @@
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    namePanelHtml, fieldPanelHtml, absentPanelHtml, confirmRemoveTeam,
+    namePanelHtml, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
     scoringTablesHtml, jumpBarHtml, wireJumpBar,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,

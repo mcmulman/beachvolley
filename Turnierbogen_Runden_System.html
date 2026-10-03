@@ -556,7 +556,7 @@
        paintStandings()); Jeder-gegen-Jeden -> Ausfuellanleitung + Korrektur-
        Toolbar fuer die laufende Tabelle (siehe paintTrack()). */
     if (hintEl) hintEl.hidden = false;
-    $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S.teamNames);
+    $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
     $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedBody'), roundFilter);
@@ -1195,10 +1195,10 @@
       if(v) S.fieldNames[f] = v; else delete S.fieldNames[f];
       save(); paint();
     });
-    $('absentGrid').addEventListener('click', e => {
+    ['nameGrid', 'absentGrid'].forEach(id => $(id).addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('[data-remove-team]');
       if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
-    });
+    }));
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;
