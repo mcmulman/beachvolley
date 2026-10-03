@@ -6,7 +6,7 @@
    ein Bogen self-contained ist oder das core/-Modul nutzt.
 
    Enthalten:
-   - offene Spiele hervorheben (td.bl-open), erledigte zuruecknehmen (td.bl-done)
+   - offene Spiele im Ergebnisbereich hervorheben (td.bl-open)
    - Tooltip an ungueltigen Ergebnissen
    - "✓ gespeichert"-Hinweis beim echten Schreiben in den localStorage
    - Eingabe von "21:19" auf beide Kaestchen verteilen, ":" springt weiter
@@ -24,7 +24,8 @@
     + 'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
     + 'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
     + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
-    + '@media screen{td.bl-open{box-shadow:inset 0 0 0 2px #f0a000}td.bl-done{opacity:.62}}'
+    + '@media screen{td.bl-open .psets{background:#f3e6e8;border-bottom:3px solid #925d68;'
+    + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
     + '@media print{#bl-toast{display:none!important}'
     + 'td.bl-open{box-shadow:none!important}td.bl-done{opacity:1!important}}';
   var st = document.createElement('style');
@@ -232,10 +233,103 @@
     }
   }, true);
 
+  /* ------------------------------------------------ Runde abschliessen (✓)
+     Boegen ohne eigenen Runden-Knopf (Vorlagen, King/Queen) bekommen rechts
+     im Rundenkopf denselben runden ✓-Knopf wie die Universal-Boegen. Er
+     prueft alle Ergebnisse der Runde: fehlt eines oder ist eines ungueltig,
+     wird es rot markiert und fokussiert - sonst geht es zur naechsten Runde. */
+  var ROUND_HEAD_SEL = 'tr.rhead > td.rhead-cell, .kq-round-title, .kq-round-head';
+
+  function injectRoundButtons() {
+    document.querySelectorAll(ROUND_HEAD_SEL).forEach(function (head) {
+      if (head.querySelector('.rconfirm')) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'nbtn rconfirm bl-rdone noprint';
+      btn.setAttribute('data-bl-round-done', '');
+      btn.setAttribute('aria-label', 'Runde abschließen');
+      btn.title = 'Runde abschließen';
+      btn.textContent = '✓';
+      head.appendChild(btn);
+    });
+  }
+
+  function roundInputs(btn) {
+    var tr = btn.closest('tr.rhead');
+    var nodes = [];
+    if (tr) {
+      var r = tr.getAttribute('data-round');
+      var slot = tr.getAttribute('data-slot');
+      var sel = 'tr[data-round="' + r + '"]' + (slot != null ? '[data-slot="' + slot + '"]' : '');
+      nodes = Array.prototype.slice.call(tr.parentNode.querySelectorAll(sel));
+    } else {
+      var box = btn.closest('.kq-round, [data-round-block], .round-block');
+      if (box) nodes = [box];
+    }
+    var out = [];
+    nodes.forEach(function (n) {
+      Array.prototype.forEach.call(n.querySelectorAll('input.score'), function (inp) { out.push(inp); });
+    });
+    return out;
+  }
+
+  document.addEventListener('mousedown', function (e) {
+    if (e.target && e.target.closest && e.target.closest('[data-bl-round-done]')) e.preventDefault();
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-bl-round-done]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    var ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('score')) {
+      ae.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (!btn.isConnected) return;
+    var inputs = roundInputs(btn);
+    var active = inputs.filter(function (inp) { return !inp.disabled; });
+    if (!active.length) return;
+    var bad = [];
+    active.forEach(function (inp) {
+      var partner = scorePartner(inp);
+      var empty = String(inp.value || '').trim() === '';
+      var pEmpty = partner && !partner.disabled ? String(partner.value || '').trim() === '' : empty;
+      if (inp.classList.contains('invalid') || empty || pEmpty) bad.push(inp);
+    });
+    if (bad.length) {
+      bad.forEach(function (inp) { inp.classList.add('invalid'); });
+      var first = bad.filter(function (inp) { return String(inp.value || '').trim() === ''; })[0] || bad[0];
+      first.focus();
+      if (first.select) first.select();
+      schedule();
+      return;
+    }
+    var last = inputs[inputs.length - 1];
+    var all = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
+    var next = all[all.indexOf(last) + 1] || null;
+    var nextSig = next ? scoreInputSig(next) : null;
+    if (next && !next.getClientRects().length) {
+      var nav = Array.prototype.slice.call(document.querySelectorAll('.nbtn-round-next'))
+        .filter(function (b) { return b.getClientRects().length && !b.disabled; })[0];
+      if (nav) nav.click();
+    }
+    (window.requestAnimationFrame || setTimeout)(function () {
+      var target = nextSig ? document.querySelector(nextSig) : null;
+      if (target && target.getClientRects().length) {
+        target.focus();
+        if (target.select) target.select();
+        if (target.scrollIntoView) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } else if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+    });
+  }, true);
+
   /* -------------------------------------- offene/erledigte Spiele markieren
      Bewusst rein am Markup entschieden: ein Spiel gilt als erledigt, wenn
      alle aktiven Kaestchen der Zelle gefuellt und keines ungueltig ist.    */
   function update() {
+    injectRoundButtons();
     document.querySelectorAll('input.score').forEach(function (inp) {
       if (inp.classList.contains('invalid')) {
         if (inp.title !== INVALID_TITLE) inp.title = INVALID_TITLE;

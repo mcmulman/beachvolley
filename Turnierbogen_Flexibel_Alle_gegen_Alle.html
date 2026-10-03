@@ -1555,11 +1555,12 @@
           head += '<span class="rbye">spielfrei: <span data-team="'+rd.bye+'">Team '+rd.bye+'</span></span>';
         }
         head += '</td>';
+        html += '<tr class="rgap" data-round="'+roundNo+'" aria-hidden="true"><td class="rgap-cell" colspan="'+NFIELDS+'"></td></tr>';
         html += '<tr class="rhead" data-round="'+roundNo+'">' + head + '</tr>';
         let fhead = '<tr class="fhead" data-round="'+roundNo+'">';
         for(let f=0; f<NFIELDS; f++) fhead += '<th scope="col" data-field="'+f+'">Feld '+(f+1)+'</th>';
         html += fhead + '</tr>';
-        html += '<tr data-round="'+roundNo+'">';
+        html += '<tr class="rmatches" data-round="'+roundNo+'">';
         for(let f=0; f<NFIELDS; f++){
           const fieldLabel = DEFAULT_FIELDS[f] || ('Feld ' + (f+1));
           const mi = s*NFIELDS + f;

@@ -563,7 +563,10 @@
      Bedarf innerhalb der Karte. Nur @media screen → der Druck behält seine Größen. */
   input.score {
     box-sizing: border-box !important;
-    width: 40px !important;
+    width: 52px !important;
+    min-width: 52px !important;
+    flex-shrink: 0;
+    padding: 0 !important;
     height: 32px !important;
     /* 16px statt 15px: verhindert iOS-Safari-Auto-Zoom beim Fokussieren. */
     font-size: 16px !important;
@@ -577,6 +580,14 @@
     border-color: var(--app-blue);
     box-shadow: 0 0 0 3px rgba(31,111,168,.20);
     background: #fffdf3;
+  }
+  input.score.invalid {
+    background: #ffe0e0 !important;
+    border: 2px solid #b42318 !important;
+    color: #8f1710 !important;
+  }
+  input.score.invalid:focus {
+    box-shadow: 0 0 0 3px rgba(180,35,24,.25);
   }
   .score { border-radius: 8px; }
 

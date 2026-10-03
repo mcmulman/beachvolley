@@ -266,6 +266,8 @@
           + '</span>';
       }
       head += '</span></td>';
+      html += '<tr class="rgap" data-round="' + s.round + '" data-slot="' + s.slot + '" aria-hidden="true">'
+        + '<td class="rgap-cell" colspan="' + nf + '"></td></tr>';
       html += '<tr class="rhead" data-round="' + s.round + '" data-slot="' + s.slot + '">' + head + '</tr>';
 
       let fhead = '<tr class="fhead" data-round="' + s.round + '" data-slot="' + s.slot + '">';
@@ -275,7 +277,7 @@
       }
       html += fhead + '</tr>';
 
-      html += '<tr data-round="' + s.round + '" data-slot="' + s.slot + '">';
+      html += '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">';
       for (let f = 0; f < nf; f++) {
         const m = s.matches[f];
         if (m) html += matchCellHtml(Object.assign({}, m, { field: f, round: s.round, slot: s.slot }), ctx);

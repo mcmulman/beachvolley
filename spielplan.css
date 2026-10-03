@@ -1361,3 +1361,118 @@ table.timeplan th:nth-child(odd), table.timeplan td:nth-child(odd) {
 }
 table.timeplan td:nth-child(even) { text-align: left; }
 table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
+
+/* ---------------------------------------------------------------------------
+   Runden-Karten im gemeinsamen Spielplan und im Jeder-gegen-Jeden-Bogen.
+   Jede Runde (rhead + fhead + rmatches) bekommt einen eigenen Rahmen, eine
+   Abstandszeile (tr.rgap) trennt die Runden. Alle Regeln haengen an tr.rgap /
+   tr.rmatches. Nur Bildschirm; im Druck bleibt die dichte Tabelle.
+   --------------------------------------------------------------------------- */
+@media screen {
+  .sched > tbody > tr.rgap > td {
+    height: 24px;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .sched > tbody > tr.rgap:first-child { display: none; }
+  /* Der Spielplan scrollt nicht seitlich (overflow-x: hidden) - die
+     Scroll-Schatten-Verlaeufe aus app-skin.css faerben sonst die Abstaende
+     zwischen den Runden-Karten heller als den Seitenhintergrund. */
+  .table-scroll.is-wide,
+  .table-scroll.is-wide > table.sched { background: none !important; }
+  .sched tr.rmatches > td.match:not(.is-bye) { background: #fff; }
+  .sched tr.rgap + tr.rhead > td.rhead-cell {
+    border: 2px solid #1f4e79;
+    border-bottom: 1px solid #c3d3e6;
+  }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:first-child { border-left: 2px solid #1f4e79; }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:last-child { border-right: 2px solid #1f4e79; }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td { border-bottom: 2px solid #1f4e79; }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:first-child { border-left: 2px solid #1f4e79; }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child { border-right: 2px solid #1f4e79; }
+}
+@media screen and (max-width: 640px) {
+  .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] { height: 14px; }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] > td { display: none; }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round]:first-child { display: none; }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead {
+    border: 2px solid #1f4e79;
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+  }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead > td.rhead-cell {
+    margin-top: 0;
+    border: 0;
+    border-bottom: 2px solid #c3d3e6;
+  }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches {
+    border: 2px solid #1f4e79;
+    border-top: 0;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td {
+    border-left: 0;
+    border-right: 0;
+  }
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child {
+    border-bottom: 0;
+  }
+}
+@media print {
+  .sched > tbody > tr.rgap { display: none !important; }
+}
+
+/* Boegen mit einer eigenen Tabelle/Box je Runde (Schweizer System:
+   .round-block, King/Queen: .kq-round) bekommen dieselbe Karte. */
+@media screen {
+  .round-block,
+  .kq-round {
+    border: 2px solid #1f4e79;
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px;
+    margin: 0 0 24px;
+    box-sizing: border-box;
+  }
+  .round-block .table-scroll { margin: 0; }
+  .round-block .round-subline { margin: 8px 0 0; }
+}
+@media screen and (max-width: 640px) {
+  .round-block,
+  .kq-round { padding: 8px; margin: 0 0 16px; }
+}
+
+/* Runden-✓ (von spielplan-enh.js in Rundenkoepfe ohne eigenen Knopf eingesetzt):
+   gleiche Optik wie .rconfirm der Universal-Boegen, rechts oben in der Runde. */
+@media screen {
+  .bl-rdone {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    margin: -2px 0 -2px 8px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    border: 1px solid #1f6fa8 !important;
+    background: #1f6fa8 !important;
+    color: #fff !important;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .kq-round-head { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }
+  .kq-round-title > .bl-rdone,
+  .kq-round-head > .bl-rdone { float: none; margin-left: auto !important; }
+}
+@media print {
+  .bl-rdone { display: none !important; }
+}
