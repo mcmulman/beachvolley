@@ -9,7 +9,8 @@
    genau der URL, die der Bogen ohnehin für "id vorhanden" kennt – der ganze
    restliche Lade-/Init-Code der Bögen bleibt unverändert.
 
-   Gespeicherte Turniere werden ausschließlich über TStore.index() gefunden.
+   Gespeicherte Turniere werden ausschließlich über TStore.index() (async,
+   IndexedDB) gefunden; maybePrompt() liefert daher ein Promise<boolean>.
 
    BASE_ID ist der Sentinel-Wert für "der unverzweigte, alte Standard-Slot
    ohne Suffix" – so bleiben vor Einführung dieses Features gespeicherte
@@ -40,10 +41,8 @@
     return (Array.isArray(base) ? base : [base])
       .map(b => (typeof b === 'string') ? { base: b, params: null } : b);
   }
-  function listFromStore(base) {
-    const TStore = root.TStore;
-    if (!TStore || typeof TStore.index !== 'function') return [];
-    const idx = TStore.index() || {};
+  function listFromIndex(idx, base) {
+    idx = idx || {};
     const specs = normalizeBases(base);
     const out = [];
     Object.keys(idx).forEach(k => {
@@ -63,6 +62,12 @@
     });
     return out;
   }
+  /* → Promise<[Eintrag]> */
+  function listFromStore(base) {
+    const TStore = root.TStore;
+    if (!TStore || typeof TStore.index !== 'function') return Promise.resolve([]);
+    return Promise.resolve(TStore.index()).then(idx => listFromIndex(idx, base));
+  }
 
   function freshId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -70,13 +75,8 @@
 
   /* Grobe Gesamtzahl laufender Turniere im Index – nur für den Hinweistext
      "es gibt noch weitere" im Overlay. */
-  function countAllSaved() {
-    let n = 0;
-    try {
-      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}') || {};
-      n = Object.keys(idx).filter(k => k.indexOf('__') !== 0).length;
-    } catch (e) {}
-    return n;
+  function countAllSaved(idx) {
+    return Object.keys(idx || {}).filter(k => k.indexOf('__') !== 0).length;
   }
 
   /* idOrEntry: entweder eine reine ID (Klick auf "Neues Turnier") oder ein
@@ -193,14 +193,36 @@
     return String(location.hash || '').indexOf('rankimport=') >= 0;
   }
 
+  /* → Promise<boolean>; rejected nie. Während der (asynchronen) Index-Abfrage
+     bleibt die Seite verdeckt (trp-wait), damit kein falscher Bogen
+     aufblitzt; bei false/Fehler wird sie wieder freigegeben. */
   function maybePrompt(base, typeLabel) {
+    let waiting = false;
+    function release() {
+      if (!waiting) return;
+      waiting = false;
+      try { document.documentElement.classList.remove('trp-wait'); } catch (e) { }
+    }
     try {
-      if (alreadyResolved() || isRankImport()) return false;
-      const existing = listFromStore(base);
-      if (!existing.length) return false;
-      render(existing, typeLabel, Math.max(0, countAllSaved() - existing.length));
-      return true;
-    } catch (e) { return false; }
+      if (alreadyResolved() || isRankImport()) return Promise.resolve(false);
+      const TStore = root.TStore;
+      if (!TStore || typeof TStore.index !== 'function') return Promise.resolve(false);
+      try {
+        injectStyle();
+        document.documentElement.classList.add('trp-wait');
+        waiting = true;
+      } catch (e) { waiting = false; }
+      return Promise.resolve(TStore.index()).then(idx => {
+        const existing = listFromIndex(idx, base);
+        if (!existing.length) { release(); return false; }
+        render(existing, typeLabel, Math.max(0, countAllSaved(idx) - existing.length));
+        waiting = false;
+        return true;
+      }).then(null, () => { release(); return false; });
+    } catch (e) {
+      release();
+      return Promise.resolve(false);
+    }
   }
 
   /* Aufruf NUR, wenn maybePrompt() zuvor false
@@ -219,7 +241,7 @@
     } catch (e) { /* z. B. file://-Aufruf ohne History-API: Standard-Slot bleibt */ }
   }
 
-  const api = { BASE_ID, maybePrompt, autoId };
+  const api = { BASE_ID, maybePrompt, autoId, listFromStore };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TResumePicker = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -23,12 +23,13 @@
    werden anhand ihres Präfixes automatisch der richtigen Variante zugeordnet.
 
    Offline-/Datenverlust-Sicherheit (wichtig, bewusst so gebaut):
-   - Das laufende Turnier lebt immer im localStorage (siehe turnier-store.js)
+   - Das laufende Turnier lebt immer in IndexedDB (siehe turnier-store.js)
      und wird davon völlig unabhängig ganz normal weiter automatisch
      gespeichert - das Teilen ist rein "on top" und rührt den lokalen Stand
      NIE an, außer der Nutzer bestätigt aktiv die Übernahme eines *fremden*
      geteilten Turniers (und selbst dann wird der bisherige Stand vorher
-     automatisch archiviert, siehe unlockLoop()/applyOfflineShare()).
+     automatisch archiviert – in derselben Transaktion, siehe
+     confirmAndApplySnapshot() / TArchive.importSnapshot()).
    - Netzwerkfehler beim Erstellen/Öffnen eines SERVER-Links führen zu keinem
      Verlust: Es wird nichts geschrieben, bevor der Server erfolgreich
      geantwortet hat; ein per Link empfangener, aber (noch) nicht ladbarer
@@ -468,6 +469,13 @@
     renderShareForm(o);
   }
 
+  /* Aktueller Schnappschuss der Turnierdaten aus IndexedDB (wartet auf
+     laufende Speichervorgänge). → Promise<{ key: string }> */
+  function readSnapshot(o) {
+    if (typeof TArchive === 'undefined' || !TArchive.snapshot) return Promise.resolve({});
+    return Promise.resolve().then(function () { return TArchive.snapshot(o.keys); });
+  }
+
   /* -------------------------------------------------------- Server-Variante
      Wird bei einem Netzwerkfehler über den "Erneut versuchen"-Button im
      Overlay erneut aufgerufen, ohne das Passwort nochmal abzufragen - der
@@ -475,19 +483,21 @@
   function createServerShare(o, pw) {
     // Der Snapshot wird bei jedem Versuch frisch gelesen, damit auch ein
     // "Erneut versuchen" nach längerem Warten den aktuellsten Stand teilt.
-    const snapshot = (typeof TArchive !== 'undefined') ? TArchive.snapshot(o.keys) : {};
-
-    apiPost('/share.php?action=create', {
-      sheet: o.sheet || '', file: o.file || '', type: o.type || '',
-      title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
-      snapshot: snapshot, password: pw || ''
+    return readSnapshot(o).then(function (snapshot) {
+      return apiPost('/share.php?action=create', {
+        sheet: o.sheet || '', file: o.file || '', type: o.type || '',
+        title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
+        snapshot: snapshot, password: pw || ''
+      });
     }).then(function (data) {
       renderShareResult(buildServerShareUrl(data.id), pw, null, data.id);
     }).catch(function (err) {
       // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
       const msg = err.network
         ? ('Der Link konnte nicht erstellt werden: ' + err.message)
-        : ('Der Link konnte nicht erstellt werden (Serverfehler): ' + err.message);
+        : (err.status
+          ? ('Der Link konnte nicht erstellt werden (Serverfehler): ' + err.message)
+          : ('Der Turnierstand konnte nicht gelesen werden: ' + (err && err.message)));
       renderShareError(msg, {
         showOfflineFallback: true,
         onRetry: function () { renderShareLoading(); createServerShare(o, pw); },
@@ -499,11 +509,16 @@
   /* ------------------------------------------------------- Offline-Variante
      Rein clientseitig, funktioniert ohne Server/Internet. */
   function createOfflineShare(o, pw) {
-    const snapshot = (typeof TArchive !== 'undefined') ? TArchive.snapshot(o.keys) : {};
-    const url = buildOfflineShareUrl({
-      sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
-    }, pw || null);
-    renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null);
+    return readSnapshot(o).then(function (snapshot) {
+      const url = buildOfflineShareUrl({
+        sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
+      }, pw || null);
+      renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null);
+    }).catch(function (err) {
+      renderShareError('Der Turnierstand konnte nicht gelesen werden: ' + (err && err.message), {
+        onRetry: function () { createOfflineShare(o, pw); }
+      });
+    });
   }
 
   /* ========================================================== Übernehmen
@@ -518,12 +533,20 @@
     return (t.length > 4 ? t.slice(0, 4).join(SEP) + SEP + '… (+' + (t.length - 4) + ')' : t.join(SEP));
   }
 
+  /* → Promise<boolean>; rejected nie. true = ein Link wurde übernommen und
+     die Seite navigiert/lädt gleich neu (Aufrufer sollte nichts mehr
+     speichern). Fehler werden dem Nutzer angezeigt. */
   function applyPendingShare(opts) {
-    const pending = readPendingHash();
-    if (!pending) return false;
-
-    if (pending.kind === 'offline') return applyOfflineShare(pending.value, opts);
-    return applyServerShare(pending.value, opts);
+    let pending = null;
+    try { pending = readPendingHash(); } catch (e) { pending = null; }
+    if (!pending) return Promise.resolve(false);
+    const run = pending.kind === 'offline'
+      ? function () { return applyOfflineShare(pending.value, opts); }
+      : function () { return applyServerShare(pending.value, opts); };
+    return Promise.resolve().then(run).then(function (r) { return !!r; }, function (err) {
+      alert('Das geteilte Turnier konnte nicht übernommen werden:\n' + (err && err.message));
+      return false;
+    });
   }
 
   /* Speicherplatz-Konvention aller Bögen: "base" bzw. "base.<id>" (Basen
@@ -557,26 +580,28 @@
   /* Link passt nicht zum aktuell geöffneten Speicherplatz (z. B. Admin-Link
      oder alter Link ohne ?id=/?mode=): auf denselben Bogen mit richtigem
      ?id=/?mode= umleiten, der Link-Hash bleibt erhalten. Nur wenn das nicht
-     möglich ist (anderer Bogen-Typ), wird abgelehnt. true = erledigt. */
+     möglich ist (anderer Bogen-Typ), wird abgelehnt.
+     → false (passt) | 'redirect' (Navigation läuft) | 'rejected'. */
   function handleSheetMismatch(envSheet, opts, hash) {
     if (!opts || !opts.sheet || !envSheet || envSheet === opts.sheet) return false;
     const target = urlForSheet(envSheet, opts);
     if (target && target !== location.pathname + location.search) {
       location.replace(target + hash);
-      return true;
+      return 'redirect';
     }
     clearHash();
     alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
-    return true;
+    return 'rejected';
   }
 
   function applyServerShare(id, opts) {
-    apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
-      if (handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id))) return;
+    return apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
+      const mismatch = handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id));
+      if (mismatch) return mismatch === 'redirect';
       const info = (env.title || env.type || 'Turnier')
         + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
-      serverUnlockLoop(id, env, info, opts, 0);
-    }).catch(function (err) {
+      return serverUnlockLoop(id, env, info, opts, 0);
+    }, function (err) {
       if (err.network) {
         // Link bleibt bewusst stehen: Dein Turnier auf diesem Gerät bleibt
         // unverändert; ein Neuladen der Seite versucht es automatisch
@@ -586,25 +611,27 @@
           + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
           + ' Bitte Internetverbindung prüfen und die Seite neu laden, um es erneut zu versuchen.'
         );
-        return;
+        return false;
       }
       clearHash();
       if (err.status === 404) alert('Der Link enthält keine gültigen Turnierdaten (oder wurde bereits gelöscht).');
       else alert('Das geteilte Turnier konnte nicht geladen werden (Serverfehler):\n' + err.message);
+      return false;
     });
-    return true;
   }
 
   function serverUnlockLoop(id, env, info, opts, tries) {
     let pw = '';
     if (env.protected) {
       pw = prompt('Geteiltes Turnier "' + info + '" ist passwortgeschützt.\nBitte Passwort eingeben:', '');
-      if (pw === null) { clearHash(); return; } // abgebrochen
+      if (pw === null) { clearHash(); return Promise.resolve(false); } // abgebrochen
     }
 
-    apiPost('/share.php?action=unlock', { id: id, password: pw }).then(function (full) {
-      confirmAndApplySnapshot(info, full.snapshot, opts);
-    }).catch(function (err) {
+    return apiPost('/share.php?action=unlock', { id: id, password: pw }).then(function (full) {
+      return { full: full };
+    }, function (err) { return { err: err }; }).then(function (r) {
+      if (r.full) return confirmAndApplySnapshot(info, r.full.snapshot, opts);
+      const err = r.err;
       if (err.network) {
         // Link bleibt stehen, kein lokaler Datenverlust - siehe Kommentar
         // in applyServerShare(). Der Nutzer kann die Seite neu laden,
@@ -614,24 +641,25 @@
           + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
           + ' Bitte Internetverbindung prüfen und die Seite neu laden.'
         );
-        return;
+        return false;
       }
       if (err.code === 'wrong_password' && tries + 1 < MAX_PW_TRIES) {
         alert('Falsches Passwort, bitte erneut versuchen.');
-        serverUnlockLoop(id, env, info, opts, tries + 1);
-        return;
+        return serverUnlockLoop(id, env, info, opts, tries + 1);
       }
       clearHash();
       if (err.code === 'wrong_password') alert('Falsches Passwort – Übernahme abgebrochen.');
       else if (err.code === 'too_many_attempts') alert('Zu viele Versuche – bitte später erneut versuchen.');
       else alert('Das geteilte Turnier konnte nicht geladen werden:\n' + err.message);
+      return false;
     });
   }
 
   function applyOfflineShare(hashValue, opts) {
     const env = offlineDecodeEnvelope(hashValue);
     if (!env) { clearHash(); alert('Der Link enthält keine gültigen Turnierdaten.'); return false; }
-    if (handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue)) return false;
+    const mismatch = handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue);
+    if (mismatch) return mismatch === 'redirect';
 
     const info = (env.title || env.type || 'Turnier')
       + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
@@ -655,31 +683,47 @@
       }
     }
 
-    confirmAndApplySnapshot(info, snapshot, opts);
-    return true;
+    return confirmAndApplySnapshot(info, snapshot, opts);
   }
 
   /* Gemeinsamer letzter Schritt beider Varianten: Nutzer bestätigen lassen,
-     bisherigen Stand sichern, geteilten Snapshot übernehmen, neu laden. */
+     dann in EINER IndexedDB-Transaktion den bisherigen Stand sichern und den
+     geteilten Snapshot übernehmen. Neu geladen wird erst, wenn die
+     Transaktion dauerhaft abgeschlossen ist. Schlägt das Speichern fehl,
+     bleibt der Link in der Adresszeile (Neuladen = neuer Versuch) und der
+     bisherige Stand ist unverändert. → Promise<boolean> */
   function confirmAndApplySnapshot(info, snapshot, opts) {
     const ok = confirm(
       'Geteiltes Turnier gefunden: "' + info + '".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
       + 'gesichert und bleibt über die Startseite abrufbar.'
     );
-    if (!ok) { clearHash(); return; }
-
-    if (typeof TArchive !== 'undefined') {
-      TArchive.save(opts);              // bisherigen Stand sichern (No-op, falls leer)
-      TArchive.writeSnapshot(snapshot);  // geteilten Stand in den laufenden Speicherplatz schreiben
+    if (!ok) { clearHash(); return Promise.resolve(false); }
+    if (typeof TArchive === 'undefined' || !TArchive.importSnapshot) {
+      alert('Das geteilte Turnier konnte nicht übernommen werden: Speicher nicht verfügbar.');
+      return Promise.resolve(false);
     }
-    /* Explizit mit ?id= (und ggf. ?mode=) neu öffnen: ein bloßes reload()
-       ohne ?id= ließe Auswahl-Overlay/autoId() einen ANDEREN (leeren)
-       Speicherplatz öffnen – die übernommenen Daten wären unsichtbar. */
-    const target = opts && opts.sheet ? urlForSheet(opts.sheet, opts) : null;
-    clearHash();
-    if (target) location.replace(target);
-    else location.reload();
+
+    return TArchive.importSnapshot(opts, snapshot).then(function () {
+      /* Explizit mit ?id= (und ggf. ?mode=) neu öffnen: ein bloßes reload()
+         ohne ?id= ließe Auswahl-Overlay/autoId() einen ANDEREN (leeren)
+         Speicherplatz öffnen – die übernommenen Daten wären unsichtbar. */
+      const target = opts && opts.sheet ? urlForSheet(opts.sheet, opts) : null;
+      clearHash();
+      if (target) location.replace(target);
+      else location.reload();
+      return true;
+    }, function (err) {
+      if (err && err.code === 'invalid-snapshot') {
+        clearHash();
+        alert('Der Link enthält keine gültigen Turnierdaten.');
+        return false;
+      }
+      alert('Das geteilte Turnier konnte nicht gespeichert werden:\n' + (err && err.message)
+        + '\n\nDein bisheriges Turnier auf diesem Gerät ist unverändert.'
+        + ' Bitte Speicherplatz prüfen und die Seite neu laden, um es erneut zu versuchen.');
+      return false;
+    });
   }
 
   /* ============================================================ Code-Eingabe

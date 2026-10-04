@@ -211,9 +211,9 @@
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
-(function(){
+(async function(){
   'use strict';
-  if (TResumePicker.maybePrompt('koc', 'King/Queen of the Court')) return;
+  if (await TResumePicker.maybePrompt('koc', 'King/Queen of the Court')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('koc');
   const $ = id => document.getElementById(id);
@@ -229,7 +229,7 @@
       S && S.config && S.config.teams, S && S.config && S.config.courts));
   }
   function archiveOpts(){
-    const cur = TStore.load(SHEET);
+    const cur = S;
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
@@ -238,11 +238,9 @@
       && !Object.keys(cur.teamNames || {}).length
       && !(cur.absent || []).length;
     return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
-             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams };
+             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams,
+             fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
   }
-  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
-  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
-
   /* Empfohlene Teamzahlen: glattes Vielfaches von 4 (Regelfall), plus ein
      paar Nachbarwerte, damit die Feld-Freilos-Regel demonstrierbar bleibt,
      ohne dass die Auswahl unuebersichtlich wird (AGENTS.md §1: "oft 5" Teams
@@ -250,7 +248,11 @@
   const TEAM_OPTIONS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24];
   const MIN_TEAMS = TEAM_OPTIONS[0];
 
-  let S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
+  const DEFAULTS = { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' };
+  let S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+    S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   let B = null;
   let structureKey = '';
   let roundFilter = 'all';
@@ -481,22 +483,19 @@
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
-    $('btnReset').addEventListener('click', () => {
+    $('btnReset').addEventListener('click', async () => {
       if(!confirm('Neues Turnier starten? Der bisherige Stand wird im Archiv gesichert.')) return;
-      const started = TArchive.startNew(archiveOpts());
+      if(!await TStore.save(S)) return;
+      const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
         alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
         return;
       }
-      TStore.reset(SHEET);
-      S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
-      S.absent = []; S.frozen = {};
-      S.title = started.title;
-      TStore.save(S);
+      S = started.tournament;
       fillSelects(); structureKey=''; rebuild(); applyDocTitle();
     });
-    $('btnSave').addEventListener('click', () => {
-      const ok = TStore.save(S); applyDocTitle();
+    $('btnSave').addEventListener('click', async () => {
+      const ok = await TStore.save(S); applyDocTitle();
       const b = $('btnSave'); const old = b.innerHTML;
       b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
       setTimeout(()=>{ b.innerHTML = old; }, 1500);
@@ -583,7 +582,14 @@
   wire();
   rebuild();
   applyDocTitle();
-})();
+})().catch(function(err){
+  console.error(err);
+  const box = document.createElement('div');
+  box.className = 'notebox noprint';
+  box.setAttribute('role', 'alert');
+  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  document.body.insertBefore(box, document.body.firstChild);
+});
 </script>
 
 <script>

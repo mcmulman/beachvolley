@@ -1429,12 +1429,19 @@
     document.querySelectorAll('.session-check').forEach(c => c.checked = false);
     updateBulkBar();
   }
-  function bulkDeleteSessions() {
+  async function bulkDeleteSessions() {
     if (!selectedSessionKeys.size) return;
     if (!confirm(selectedSessionKeys.size + ' ausgewählte Turniere löschen?')) return;
-    selectedSessionKeys.forEach(deleteSessionKey);
-    selectedSessionKeys.clear();
-    loadSessions();
+    try {
+      const keys = Array.from(selectedSessionKeys);
+      await TStore.transaction(function (view) {
+        keys.forEach(function (key) { deleteSessionKey(view, key); });
+      });
+      selectedSessionKeys.clear();
+      await loadSessions();
+    } catch (error) {
+      alert('Turniere konnten nicht gelöscht werden. Es wurde nichts geändert: ' + error.message);
+    }
   }
 
   /* Code-Eingabe: löst die Bogen-Datei über TShare.openByCode() auf und
@@ -1461,9 +1468,10 @@
     document.getElementById('sessions-more').style.display = 'none';
   }
 
-  function exportTournamentBackup() {
+  async function exportTournamentBackup() {
     try {
-      const backup = TBackup.exportAll();
+      await TStore.whenIdle();
+      const backup = await TBackup.exportAll();
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1473,7 +1481,9 @@
       link.click();
       document.body.removeChild(link);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      alert('Sicherung heruntergeladen. Sie enthält personenbezogene Turnierdaten und ist nicht verschlüsselt. Bitte vertraulich und getrennt vom Gerät aufbewahren.');
+      alert((backup.storage === 'localStorage-readonly'
+        ? 'IndexedDB ist nicht verfügbar: Diese Rettungssicherung enthält nur lesbare localStorage-Altdaten, nicht möglicherweise neuere IndexedDB-Stände. '
+        : '') + 'Sicherung heruntergeladen. Sie enthält personenbezogene Turnierdaten und ist nicht verschlüsselt. Bitte vertraulich und getrennt vom Gerät aufbewahren.');
     } catch (error) {
       alert('Sicherung konnte nicht erstellt werden: ' + error.message);
     }
@@ -1488,13 +1498,13 @@
       alert('Die Sicherungsdatei konnte nicht gelesen werden.');
       input.value = '';
     };
-    reader.onload = function () {
+    reader.onload = async function () {
       try {
         const backup = JSON.parse(String(reader.result || ''));
         if (!confirm('Die Sicherung wird hinzugefügt. Vorhandene Einträge werden niemals überschrieben; bei gleichen Schlüsseln bleibt der aktuelle Stand erhalten. Fortfahren?')) return;
-        const result = TBackup.importAll(backup);
+        const result = await TBackup.importAll(backup);
         alert('Import abgeschlossen: ' + result.added + ' Einträge hinzugefügt, ' + result.skipped + ' bereits vorhandene Einträge übersprungen.');
-        loadSessions();
+        await loadSessions();
       } catch (error) {
         alert('Sicherung konnte nicht importiert werden: ' + error.message);
       } finally {
@@ -1569,55 +1579,16 @@
   };
   const INDEX_ARCHIVES_KEY = '__archives';
   const INDEX_MIGRATIONS_KEY = '__migrations';
-  function readSessionIndex() {
-    try {
-      const idx = JSON.parse(localStorage.getItem('beachl.index') || '{}');
-      return idx && typeof idx === 'object' && !Array.isArray(idx) ? idx : {};
-    } catch (e) { return {}; }
-  }
-  function writeSessionIndex(idx) {
-    try { localStorage.setItem('beachl.index', JSON.stringify(idx)); } catch (e) {}
-  }
-  function migrateReferenceSessions() {
-    try {
-      const existingIndex = readSessionIndex();
+  function migrateReferenceSessions(view) {
+      const existingIndex = TStore.refreshIndexInView(view);
       const migrations = existingIndex[INDEX_MIGRATIONS_KEY] || {};
-      if (!migrations.referenceStorageV1) {
-        const registry = JSON.parse(localStorage.getItem('beachl_sessions') || '[]');
-        if (Array.isArray(registry)) {
-          const refs = [
-            { legacy: 'turnierflexrr', sheet: 'flex-rr' },
-            { legacy: 'sw_univ', sheet: 'swiss' }
-          ];
-          registry.forEach(function (session) {
-            if (!session || session.archived || typeof session.key !== 'string') return;
-            const ref = refs.filter(r => session.key === r.legacy || session.key.indexOf(r.legacy + '.') === 0)[0];
-            if (!ref) return;
-            const suffix = session.key === ref.legacy ? '' : session.key.slice(ref.legacy.length + 1);
-            if (suffix && !/^[A-Za-z0-9_-]+$/.test(suffix)) return;
-            const sheetId = ref.sheet + (suffix ? '.' + suffix : '');
-            const idx = readSessionIndex();
-            if (idx[sheetId]) return;
-            const current = localStorage.getItem('beachl.t.' + sheetId);
-            if (current != null) {
-              try {
-                const stored = JSON.parse(current);
-                if (stored && stored.schema === 2) TStore.updateIndex(stored);
-              } catch (e) {}
-              return;
-            }
-            if (TStore.hasLegacy(sheetId)) TStore.load(sheetId);
-          });
-        }
-      }
-
-      const idx = readSessionIndex();
+      const idx = TStore.readIndexInView(view);
       const archives = idx[INDEX_ARCHIVES_KEY] && typeof idx[INDEX_ARCHIVES_KEY] === 'object'
         ? idx[INDEX_ARCHIVES_KEY] : {};
-      Object.keys(localStorage).forEach(function (key) {
+      view.keys().forEach(function (key) {
         if (key.indexOf('beachl.arch.') !== 0 || archives[key]) return;
         try {
-          const archive = JSON.parse(localStorage.getItem(key) || 'null');
+          const archive = JSON.parse(view.getItem(key) || 'null');
           if (!archive || !archive.sheet || !archive.file || !archive.data ||
               typeof archive.data !== 'object' || !Object.keys(archive.data).length) return;
           archives[key] = {
@@ -1636,12 +1607,9 @@
       if (!migrations.referenceStorageV1) {
         idx[INDEX_MIGRATIONS_KEY] = Object.assign({}, idx[INDEX_MIGRATIONS_KEY], { referenceStorageV1: true });
       }
-      writeSessionIndex(idx);
-    } catch (e) {}
+      view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
   }
-  function storeSessions() {
-    try {
-      const idx = readSessionIndex();
+  function storeSessions(idx) {
       return Object.keys(idx).map(function (sheetId) {
         const baseName = Object.keys(STORE_BASE_MAP).filter(function (b) {
           return sheetId === b || sheetId.indexOf(b + '.') === 0;
@@ -1659,20 +1627,18 @@
           savedAt: e.updated ? new Date(e.updated).getTime() : 0
         };
       }).filter(Boolean);
-    } catch (e) { return []; }
   }
-  function archiveSessions() {
-    const idx = readSessionIndex();
+  function archiveSessions(view, idx) {
     const archives = idx[INDEX_ARCHIVES_KEY] && typeof idx[INDEX_ARCHIVES_KEY] === 'object'
       ? idx[INDEX_ARCHIVES_KEY] : {};
     return Object.keys(archives).map(function (key) {
       const entry = archives[key];
       if (!entry || !entry.archived) return null;
       try {
-        const payload = JSON.parse(localStorage.getItem(key) || 'null');
+        const payload = JSON.parse(view.getItem(key) || 'null');
         if (!payload || !payload.data || typeof payload.data !== 'object' || !Object.keys(payload.data).length) return null;
+        return Object.assign({}, entry, { key: key, resumeUrl: archiveResumeUrl(entry, payload) });
       } catch (e) { return null; }
-      return Object.assign({}, entry, { key: key });
     }).filter(Boolean);
   }
 
@@ -1680,10 +1646,9 @@
      angelegt wurden, tragen einen Link ohne ?id= bzw. mit doppeltem "?"
      ("…?mode=swiss?restore=…") – der Restore lief dann ins Leere. Den Link
      aus den im Archiv gespeicherten sheet/file-Angaben neu bilden. */
-  function archiveResumeUrl(s) {
+  function archiveResumeUrl(s, m) {
     try {
       if (!s || !s.archived) return s && s.file;
-      const m = JSON.parse(localStorage.getItem(s.key) || 'null');
       if (!m || m.file == null) return s.file;
       const sheet = String(m.sheet || '');
       const dot = sheet.indexOf('.');
@@ -1695,20 +1660,25 @@
     } catch (e) { return s.file; }
   }
 
-  function loadSessions() {
+  async function loadSessions() {
     try {
-      migrateReferenceSessions();
-      const sessions = storeSessions().concat(archiveSessions());
+      const sessions = await TStore.transaction(function (view) {
+        migrateReferenceSessions(view);
+        const idx = TStore.readIndexInView(view);
+        return storeSessions(idx).concat(archiveSessions(view, idx));
+      });
       const container = document.getElementById('saved-sessions');
       const noSessions = document.getElementById('no-sessions');
       const wrap = document.getElementById('sessions-list-wrap');
       wrap.innerHTML = '';
       updateBulkBar();
+      const countEl = document.getElementById('sessions-count');
+      if (countEl) countEl.textContent = sessions.length > 1 ? '(' + sessions.length + ')' : '';
+      document.getElementById('sessions-more').style.display = 'none';
+      noSessions.textContent = 'Keine gespeicherten Turniere gefunden.';
       if (!sessions.length) { noSessions.style.display = ''; return; }
       noSessions.style.display = 'none';
       sessions.sort((a, b) => b.savedAt - a.savedAt);
-      const countEl = document.getElementById('sessions-count');
-      if (countEl) countEl.textContent = sessions.length > 1 ? '(' + sessions.length + ')' : '';
       sessions.forEach((s, idx) => {
         const rawTs = s.savedAt || s.ts;
         const d = rawTs ? new Date(rawTs) : null;
@@ -1748,7 +1718,7 @@
         actions.className = 'session-actions';
         const resume = document.createElement('a');
         resume.className = 'btn-resume';
-        resume.href = archiveResumeUrl(s);
+        resume.href = s.resumeUrl || s.file;
         resume.target = '_blank';
         resume.textContent = 'Weiter ▶';
 
@@ -1769,29 +1739,33 @@
       } else {
         document.getElementById('sessions-more').style.display = 'none';
       }
-    } catch(e) {}
+    } catch(error) {
+      const notice = document.getElementById('no-sessions');
+      notice.style.display = '';
+      notice.textContent = 'Turnierspeicher nicht verfügbar. Bestehende Daten bleiben erhalten; bitte eine Sicherung herunterladen. ' + error.message;
+    }
   }
 
   /* Löscht genau einen Speicher-Eintrag (ohne Bestätigung/Re-Render – siehe
      bulkDeleteSessions() für den eigentlichen Nutzer-Vorgang). */
-  function deleteSessionKey(key) {
-    try {
+  function deleteSessionKey(view, key) {
       if (key.indexOf('store:') === 0) {
         const sheetId = key.slice(6);
-        localStorage.removeItem('beachl.t.' + sheetId);
-        const idx = readSessionIndex();
+        const current = view.getItem(TStore.PREFIX + sheetId);
+        if (current != null) view.setItem(TStore.BACKUP_PREFIX + sheetId, current);
+        view.removeItem(TStore.PREFIX + sheetId);
+        const idx = TStore.readIndexInView(view);
         delete idx[sheetId];
-        writeSessionIndex(idx);
+        view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
       } else if (key.indexOf('beachl.arch.') === 0) {
-        localStorage.removeItem(key);
-        const idx = readSessionIndex();
+        view.removeItem(key);
+        const idx = TStore.readIndexInView(view);
         if (idx[INDEX_ARCHIVES_KEY]) {
           delete idx[INDEX_ARCHIVES_KEY][key];
           if (!Object.keys(idx[INDEX_ARCHIVES_KEY]).length) delete idx[INDEX_ARCHIVES_KEY];
         }
-        writeSessionIndex(idx);
+        view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
       }
-    } catch(e) {}
   }
 
   loadSessions();
@@ -1802,7 +1776,7 @@
      Bogentyp bereits gespeicherte Turniere, fragt er nach ("fortsetzen oder
      neu?"); existiert noch keines, vergibt er still eine frische ?id=, damit
      zwei parallel gestartete neue Turniere desselben Typs nicht denselben
-     localStorage-Slot teilen. Siehe AGENTS.md §7a. */
+     Speicher-Slot teilen. Siehe AGENTS.md §7a. */
 </script>
 
 <script>

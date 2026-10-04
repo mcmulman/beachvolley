@@ -1,11 +1,22 @@
 /* ============================================================================
    turnier-store.js – Persistenz und Schema-Migration
 
-   Ein einziges, versioniertes localStorage-Schema für ALLE Turnierbögen.
-   Ersetzt die bisher pro Bogen eigenen Schlüsselsätze (turnier6g_*, turnier8_*,
+   Ein einziges, versioniertes Schema für ALLE Turnierbögen. Ersetzt die
+   bisher pro Bogen eigenen Schlüsselsätze (turnier6g_*, turnier8_*,
    sw_univ_*, turnierflexrr_* …) und migriert sie verlustfrei.
 
-   Kein DOM-Zugriff außer localStorage.
+   Speicher: IndexedDB ist maßgeblich (Datenbank DB_NAME, EIN generischer
+   Key/Value-Objektspeicher KV_STORE; Schlüssel wie früher im localStorage,
+   Werte als JSON-Strings). Beim Anlegen der Datenbank werden alle bekannten
+   localStorage-Schlüssel (Turniere, Vorversionen, Quarantäne, Archive, Index
+   inkl. Archiv-Metadaten, Altbögen) einmalig übernommen – die Originale bleiben
+   unangetastet. Es gibt KEINEN stillen Schreib-Rückfall auf localStorage:
+   Ist IndexedDB blockiert/nicht verfügbar, wird ein Fehler gemeldet, Altdaten
+   bleiben lesbar, Speichern liefert aber false.
+
+   Alle speicherbezogenen Funktionen sind asynchron (Promise). Die reinen
+   Hilfsfunktionen (setScore, LEGACY, normalize …) bleiben synchron.
+   Kein DOM-Zugriff außer Events/localStorage(lesen)/IndexedDB.
    ========================================================================== */
 (function (root, factory) {
   const api = factory(root);
@@ -17,13 +28,25 @@
   const SCHEMA = 2;
   const PREFIX = 'beachl.t.';          // + sheetId
   const BACKUP_PREFIX = 'beachl.b.';   // + sheetId, previous valid revision
+  const REVISION_PREFIX = 'beachl.r.'; // revision high-water mark, also survives corrupt records
+  const QUARANTINE_PREFIX = 'beachl.q.'; // + sheetId + '.' + Zeitstempel
+  const ARCHIVE_PREFIX = 'beachl.arch.';
   const INDEX_KEY = 'beachl.index';    // Übersicht für die Startseite
+  const SESSIONS_KEY = 'beachl_sessions';
+  const SYNC_KEY = 'beachl.sync';      // nur Tab-Benachrichtigung, keine Daten
+  const DB_NAME = 'beachl';
+  const DB_VERSION = 1;
+  const KV_STORE = 'kv';
 
   function storageEvent(name, detail) {
+    if (name === 'beachl:storage-saved') {
+      delete failedSheets[detail.sheetId];
+      delete failedSheets[null];
+    }
     if (!root || typeof root.dispatchEvent !== 'function') return;
     let event;
     try {
-      event = new root.CustomEvent(name, { detail });
+      event = new root.CustomEvent(name, { detail: detail });
     } catch (e) {
       if (!root.document || !root.document.createEvent) return;
       event = root.document.createEvent('Event');
@@ -33,7 +56,8 @@
     root.dispatchEvent(event);
   }
   function storageIssue(code, sheetId) {
-    const detail = { code, sheetId };
+    failedSheets[sheetId] = true;
+    const detail = { code: code, sheetId: sheetId };
     if (root) {
       root.__BL_PENDING_STORAGE_ISSUES__ = root.__BL_PENDING_STORAGE_ISSUES__ || [];
       root.__BL_PENDING_STORAGE_ISSUES__.push(detail);
@@ -42,30 +66,354 @@
   }
   if (root && typeof root.addEventListener === 'function') {
     root.addEventListener('storage', function (event) {
-      if (!event.key || event.key.indexOf(PREFIX) !== 0) return;
+      if (!event.key) return;
+      if (event.key === SYNC_KEY) {
+        let info = null;
+        try { info = JSON.parse(event.newValue || 'null'); } catch (e) { info = null; }
+        if (info && typeof info.sheetId === 'string') {
+          storageEvent('beachl:storage-external-change', { sheetId: info.sheetId });
+        }
+        return;
+      }
+      if (event.key.indexOf(PREFIX) !== 0) return;
       storageEvent('beachl:storage-external-change', {
         sheetId: event.key.slice(PREFIX.length)
       });
     });
+    /* Ausstehende Speichervorgänge schützen: Seite nicht ohne Rückfrage verlassen. */
+    root.addEventListener('beforeunload', function (event) {
+      if (!pendingCount && !activityCount && !Object.keys(failedSheets).length) return;
+      if (event.preventDefault) event.preventDefault();
+      event.returnValue = '';
+      return '';
+    });
   }
 
-  /* ------------------------------------------------------------------ I/O */
-  function ls() {
+  /* ------------------------------------------------------ Schlüssel/Views */
+  function legacyStorage() {
     try { return (typeof localStorage !== 'undefined') ? localStorage : null; }
     catch (e) { return null; }
   }
-  function readJSON(key, fallback) {
-    const s = ls(); if (!s) return fallback;
-    try { const v = s.getItem(key); return v == null ? fallback : JSON.parse(v); }
+  function readJSON(view, key, fallback) {
+    if (!view) return fallback;
+    try { const v = view.getItem(key); return v == null ? fallback : JSON.parse(v); }
     catch (e) { return fallback; }
   }
-  function writeJSON(key, val) {
-    const s = ls(); if (!s) return false;
-    try { s.setItem(key, JSON.stringify(val)); return true; }
-    catch (e) { return false; }         // z.B. Quota überschritten / Privatmodus
+  /* Bekannte, nach IndexedDB zu übernehmende Schlüssel (rein, synchron). */
+  function isKnownKey(key) {
+    if (typeof key !== 'string') return false;
+    if (key === INDEX_KEY || key === SESSIONS_KEY) return true;
+    if (/^beachl\.(t|b|r|q|arch)\./.test(key)) return true;
+    return Object.keys(LEGACY).some(function (sheet) {
+      const spec = LEGACY[sheet];
+      return Object.keys(spec).some(function (name) {
+        if (name === 'scoreKind' || name === 'teams') return false;
+        const value = spec[name];
+        if (typeof value !== 'string') return false;
+        return key === value || key.indexOf(value + '.') === 0;
+      });
+    });
   }
+  /* Synchrone, localStorage-ähnliche Sicht auf eine Momentaufnahme.
+     data: { key: string }. Änderungen werden in changes protokolliert. */
+  function makeView(data, readOnly) {
+    const changes = {};
+    let closed = false;
+    let sorted = null;
+    function keys() {
+      if (!sorted) sorted = Object.keys(data).sort();
+      return sorted;
+    }
+    function guard() {
+      if (closed) throw new Error('TStore.transaction: Sicht ist nach Transaktionsende nicht mehr gültig.');
+      if (readOnly) throw new Error('TStore: Speicher ist nur lesbar.');
+    }
+    const view = {
+      getItem: function (key) {
+        key = String(key);
+        return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null;
+      },
+      setItem: function (key, value) {
+        guard();
+        key = String(key); value = String(value);
+        if (!Object.prototype.hasOwnProperty.call(data, key)) sorted = null;
+        data[key] = value;
+        changes[key] = { value: value };
+      },
+      removeItem: function (key) {
+        guard();
+        key = String(key);
+        if (!Object.prototype.hasOwnProperty.call(data, key)) return;
+        delete data[key];
+        sorted = null;
+        changes[key] = { remove: true };
+      },
+      key: function (i) {
+        const k = keys()[i];
+        return k === undefined ? null : k;
+      },
+      keys: function () { return keys().slice(); }
+    };
+    Object.defineProperty(view, 'length', { get: function () { return keys().length; } });
+    return {
+      view: view,
+      changes: changes,
+      close: function () { closed = true; }
+    };
+  }
+  /* Nur-Lese-Sicht auf localStorage (Altdaten, wenn IndexedDB ausfällt). */
+  function localStorageView() {
+    const s = legacyStorage();
+    if (!s) return null;
+    function readOnly() { throw new Error('TStore: Speicher ist nur lesbar.'); }
+    const view = {
+      getItem: function (k) { try { return s.getItem(String(k)); } catch (e) { return null; } },
+      setItem: readOnly,
+      removeItem: readOnly,
+      key: function (i) { try { return typeof s.key === 'function' ? s.key(i) : null; } catch (e) { return null; } },
+      keys: function () {
+        const out = [];
+        for (let i = 0; i < view.length; i++) { const k = view.key(i); if (k != null) out.push(k); }
+        return out;
+      }
+    };
+    Object.defineProperty(view, 'length', {
+      get: function () { try { return typeof s.length === 'number' ? s.length : 0; } catch (e) { return 0; } }
+    });
+    return view;
+  }
+
+  /* ------------------------------------------------------------ IndexedDB */
+  function storageError(code, cause) {
+    const err = new Error('TStore storage ' + code + (cause && cause.message ? ': ' + cause.message : ''));
+    err.code = code;
+    err.cause = cause;
+    return err;
+  }
+  function idbFactory() {
+    try { return (root && root.indexedDB) ? root.indexedDB : null; }
+    catch (e) { return null; }
+  }
+  function migrateLocalStorage(store) {
+    const s = legacyStorage();
+    if (!s) return;
+    let n = 0;
+    try { n = s.length; } catch (e) { return; }
+    for (let i = 0; i < n; i++) {
+      let key, value;
+      try { key = s.key(i); value = key == null ? null : s.getItem(key); }
+      catch (e) { continue; }
+      if (key == null || value == null || !isKnownKey(key)) continue;
+      store.put(String(value), key);
+    }
+  }
+  let dbPromise = null;
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    const p = new Promise(function (resolve, reject) {
+      const factory = idbFactory();
+      if (!factory) { reject(storageError('unavailable')); return; }
+      let req;
+      try { req = factory.open(DB_NAME, DB_VERSION); }
+      catch (e) { reject(storageError('unavailable', e)); return; }
+      let settled = false;
+      req.onupgradeneeded = function () {
+        const db = req.result;
+        const store = db.objectStoreNames.contains(KV_STORE)
+          ? req.transaction.objectStore(KV_STORE)
+          : db.createObjectStore(KV_STORE);
+        migrateLocalStorage(store);
+      };
+      req.onblocked = function () {
+        if (settled) return;
+        settled = true;
+        reject(storageError('blocked'));
+      };
+      req.onerror = function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (settled) return;
+        settled = true;
+        reject(storageError('unavailable', req.error));
+      };
+      req.onsuccess = function () {
+        const db = req.result;
+        if (settled) { try { db.close(); } catch (e) { } return; }
+        settled = true;
+        db.onversionchange = function () {
+          try { db.close(); } catch (e) { }
+          if (dbPromise === p) dbPromise = null;
+        };
+        db.onclose = function () { if (dbPromise === p) dbPromise = null; };
+        resolve(db);
+      };
+    });
+    dbPromise = p;
+    p.then(null, function () { if (dbPromise === p) dbPromise = null; });
+    return p;
+  }
+
+  /* Führt EINE IndexedDB-Transaktion aus: liest alle Datensätze, ruft
+     callback(view) SYNCHRON auf und schreibt die Änderungen der Sicht im
+     selben Vorgang. Promise erfüllt sich erst bei tx.oncomplete. */
+  function runTx(db, mode, callback) {
+    return new Promise(function (resolve, reject) {
+      let tx;
+      try { tx = db.transaction(KV_STORE, mode); }
+      catch (e) { reject(e); return; }
+      const store = tx.objectStore(KV_STORE);
+      const data = {};
+      let result, failure = null, wrapped = null;
+      tx.oncomplete = function () {
+        if (wrapped) wrapped.close();
+        if (failure) reject(failure); else resolve(result);
+      };
+      tx.onabort = function () {
+        if (wrapped) wrapped.close();
+        reject(failure || storageError('write-failed', tx.error));
+      };
+      tx.onerror = function () { /* onabort folgt */ };
+      let cursorReq;
+      try { cursorReq = store.openCursor(); }
+      catch (e) { failure = storageError('unavailable', e); try { tx.abort(); } catch (x) { } return; }
+      cursorReq.onsuccess = function () {
+        const cursor = cursorReq.result;
+        if (cursor) {
+          if (typeof cursor.value === 'string') data[String(cursor.key)] = cursor.value;
+          cursor.continue();
+          return;
+        }
+        wrapped = makeView(data, mode !== 'readwrite');
+        try {
+          result = callback(wrapped.view);
+          if (result && typeof result.then === 'function') {
+            throw new TypeError('TStore.transaction: callback muss synchron sein.');
+          }
+        } catch (e) {
+          failure = e;
+          wrapped.close();
+          try { tx.abort(); } catch (x) { }
+          return;
+        }
+        wrapped.close();
+        if (mode !== 'readwrite') return;
+        try {
+          Object.keys(wrapped.changes).forEach(function (key) {
+            const c = wrapped.changes[key];
+            if (c.remove) store.delete(key); else store.put(c.value, key);
+          });
+        } catch (e) {
+          failure = storageError('write-failed', e);
+          try { tx.abort(); } catch (x) { }
+        }
+      };
+    });
+  }
+  function withDb(mode, callback) {
+    return openDb().then(function (db) {
+      return runTx(db, mode, callback).then(null, function (err) {
+        /* Verbindung zwischenzeitlich geschlossen → einmal neu öffnen */
+        if (err && err.name === 'InvalidStateError') {
+          if (dbPromise) dbPromise = null;
+          return openDb().then(function (db2) { return runTx(db2, mode, callback); });
+        }
+        throw err;
+      });
+    });
+  }
+  /* Öffentliche, atomare Transaktion über ALLE Datensätze.
+     callback(view) muss synchron sein; Rückgabewert = Promise-Ergebnis. */
+  function transaction(callback, options) {
+    if (typeof callback !== 'function') {
+      return Promise.reject(new TypeError('TStore.transaction: callback fehlt.'));
+    }
+    const o = options || {};
+    const tracked = o.tracked !== false;
+    if (tracked) {
+      activityCount++;
+      storageEvent('beachl:storage-pending', { sheetId: o.sheetId || null, pending: pendingCount + activityCount });
+    }
+    let changed = false;
+    const sheets = Object.create(null);
+    return withDb('readwrite', function (view) {
+      const before = Object.create(null);
+      view.keys().forEach(function (key) { before[key] = view.getItem(key); });
+      const result = callback(view);
+      if (result && typeof result.then === 'function') return result;
+      Object.keys(before).concat(view.keys()).forEach(function (key) {
+        if (key.indexOf(PREFIX) !== 0) return;
+        const sheet = key.slice(PREFIX.length);
+        const parsed = before[key] == null ? { ok: false } : parseRecord(before[key], sheet);
+        const revision = parsed.ok ? Number(parsed.data._revision) || 0 : 0;
+        const highWater = Math.max(revision, revisionInView(view, sheet));
+        if (highWater > 0 || (before[key] != null && view.getItem(key) == null)
+            || view.getItem(REVISION_PREFIX + sheet) != null) {
+          view.setItem(REVISION_PREFIX + sheet, String(highWater));
+        }
+      });
+      Object.keys(before).concat(view.keys()).forEach(function (key) {
+        if (before[key] === view.getItem(key) || (before[key] === undefined && view.getItem(key) == null)) return;
+        changed = true;
+        if (key.indexOf(PREFIX) === 0) sheets[key.slice(PREFIX.length)] = true;
+        if (key.indexOf(REVISION_PREFIX) === 0) sheets[key.slice(REVISION_PREFIX.length)] = true;
+        if (key.indexOf(ARCHIVE_PREFIX) === 0) {
+          const archive = readJSON(view, key, null) || (function () {
+            try { return JSON.parse(before[key]); } catch (e) { return null; }
+          })();
+          if (archive && typeof archive.sheet === 'string' && archive.sheet) sheets[archive.sheet] = true;
+        }
+      });
+      return result;
+    }).then(function (result) {
+      if (tracked) {
+        activityCount--;
+        if (changed) {
+          const ids = Object.keys(sheets);
+          if (!ids.length) ids.push(o.sheetId || null);
+          ids.forEach(function (sheet) {
+            if (sheet != null) notifyTabs(sheet, null);
+            storageEvent('beachl:storage-saved', { sheetId: sheet, revision: null });
+          });
+        }
+        resolveIdle();
+      }
+      return result;
+    }, function (err) {
+      if (tracked) {
+        activityCount--;
+        if (o.report !== false) {
+          const ids = Object.keys(sheets);
+          if (!ids.length) ids.push(o.sheetId || null);
+          ids.forEach(function (sheet) { storageIssue(errorCode(err, 'write-failed'), sheet); });
+        }
+        resolveIdle();
+      }
+      throw err;
+    });
+  }
+  function readEntries() {
+    return withDb('readonly', function (view) {
+      return view.keys().map(function (key) { return { key: key, value: view.getItem(key) }; });
+    });
+  }
+  function getItem(key) {
+    return withDb('readonly', function (view) { return view.getItem(key); });
+  }
+  function setItem(key, value) {
+    return transaction(function (view) { view.setItem(key, value); return true; });
+  }
+  function removeItem(key) {
+    return transaction(function (view) { view.removeItem(key); return true; });
+  }
+  /* Öffnet die Datenbank (inkl. einmaliger localStorage-Übernahme). */
+  function ready() {
+    return openDb().then(function () { return true; });
+  }
+  function errorCode(err, fallback) {
+    return (err && typeof err.code === 'string') ? err.code : fallback;
+  }
+
   /* Erlaubt mehrere unabhängige Turniere DESSELBEN Bogens parallel in
-     verschiedenen Tabs: ?id=xyz an die URL anhängen → eigener localStorage-
+     verschiedenen Tabs: ?id=xyz an die URL anhängen → eigener Speicher-
      Schlüssel "<base>.xyz" statt des geteilten "<base>". Ohne Parameter
      verhält sich der Bogen wie gewohnt (ein gemeinsames Turnier je Datei).
      Sonderfall id=BASE_ID: verweist bewusst auf den unverzweigten "<base>"-
@@ -126,35 +474,165 @@
 
   function keyFor(sheetId) { return PREFIX + sheetId; }
   function backupKeyFor(sheetId) { return BACKUP_PREFIX + sheetId; }
+  function revisionInView(view, sheetId) {
+    let revision = Number(view.getItem(REVISION_PREFIX + sheetId)) || 0;
+    [keyFor(sheetId), backupKeyFor(sheetId)].forEach(function (key) {
+      const raw = view.getItem(key);
+      const parsed = raw == null ? { ok: false } : parseRecord(raw, sheetId);
+      if (parsed.ok) revision = Math.max(revision, Number(parsed.data._revision) || 0);
+    });
+    return revision;
+  }
 
-  function load(sheetId, cfgDefaults) {
-    const s = ls();
-    if (!s) {
-      storageIssue('unavailable', sheetId);
-      return emptyTournament(sheetId, cfgDefaults);
+  /* Parst einen gespeicherten Turnier-Datensatz (rein, synchron).
+     → { ok:true, data } | { ok:false, code:'corrupt'|'incompatible' } */
+  function parseRecord(raw, sheetId) {
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (e) { return { ok: false, code: 'corrupt' }; }
+    if (!data || data.schema !== SCHEMA || data.sheet !== sheetId) {
+      return { ok: false, code: 'incompatible' };
     }
-    let stored;
-    try { stored = s.getItem(keyFor(sheetId)); }
-    catch (e) {
-      storageIssue('unavailable', sheetId);
-      return emptyTournament(sheetId, cfgDefaults);
+    return { ok: true, data: data };
+  }
+
+  /* --------------------------------------------- synchrone View-Operationen
+     Laufen innerhalb EINER Transaktion (siehe transaction()).             */
+  function loadInView(view, sheetId, cfgDefaults, writable) {
+    let stored = null;
+    if (view) {
+      try { stored = view.getItem(keyFor(sheetId)); } catch (e) { stored = null; }
     }
     if (stored != null) {
-      let raw;
-      try { raw = JSON.parse(stored); }
-      catch (e) {
-        storageIssue('corrupt', sheetId);
-        return emptyTournament(sheetId, cfgDefaults);
-      }
-      if (raw && raw.schema === SCHEMA && raw.sheet === sheetId) {
-        return normalize(raw, sheetId, cfgDefaults);
-      }
-      storageIssue('incompatible', sheetId);
-      return emptyTournament(sheetId, cfgDefaults);
+      const parsed = parseRecord(stored, sheetId);
+      if (!parsed.ok) return { t: emptyTournament(sheetId, cfgDefaults), issue: parsed.code };
+      return { t: normalize(parsed.data, sheetId, cfgDefaults) };
     }
-    const migrated = migrate(sheetId, cfgDefaults);
-    if (migrated) return migrated;
-    return emptyTournament(sheetId, cfgDefaults);
+    if (view && (view.getItem(backupKeyFor(sheetId)) != null
+        || view.getItem(REVISION_PREFIX + sheetId) != null)) {
+      return { t: emptyTournament(sheetId, cfgDefaults) };
+    }
+    const migrated = view ? migrateView(view, sheetId, cfgDefaults) : null;
+    if (migrated) {
+      if (writable) {
+        const res = saveInView(view, migrated, sheetId, 0, new Date().toISOString());
+        if (res.ok) {
+          migrated._revision = res.revision;
+          migrated.updated = res.updated;
+          return { t: migrated, saved: res.revision };
+        }
+        return { t: migrated, issue: res.code };
+      }
+      return { t: migrated };
+    }
+    return { t: emptyTournament(sheetId, cfgDefaults) };
+  }
+
+  /* Revisionsprüfung + Vorversion + Datensatz + Index – alles in derselben
+     Transaktion. data = Momentaufnahme des Turniers. */
+  function saveInView(view, data, sheetId, baseRevision, nowIso) {
+    const key = keyFor(sheetId);
+    const current = view.getItem(key);
+    let currentRevision = 0;
+    if (current != null) {
+      const parsed = parseRecord(current, sheetId);
+      if (!parsed.ok) return { ok: false, code: parsed.code };
+      currentRevision = Number(parsed.data._revision) || 0;
+      if (currentRevision !== baseRevision) return { ok: false, code: 'conflict' };
+    } else if (baseRevision !== 0) {
+      return { ok: false, code: 'conflict' };
+    }
+    const candidate = Object.assign({}, data, {
+      schema: SCHEMA,
+      sheet: sheetId,
+      updated: nowIso,
+      _revision: Math.max(currentRevision, revisionInView(view, sheetId)) + 1
+    });
+    let serialized;
+    try { serialized = JSON.stringify(candidate); }
+    catch (e) { return { ok: false, code: 'write-failed' }; }
+    if (!parseRecord(serialized, sheetId).ok) return { ok: false, code: 'write-failed' };
+    if (current != null) view.setItem(backupKeyFor(sheetId), current);
+    view.setItem(key, serialized);
+    updateIndexInView(view, candidate);
+    return { ok: true, revision: candidate._revision, updated: candidate.updated };
+  }
+
+  function readIndexInView(view) {
+    const idx = readJSON(view, INDEX_KEY, {});
+    return (idx && typeof idx === 'object' && !Array.isArray(idx)) ? idx : {};
+  }
+  function indexEntry(t) {
+    return {
+      title: t.title || '',
+      teams: t.config ? t.config.teams : undefined,
+      updated: t.updated,
+      filled: Object.keys(t.results || {}).length
+    };
+  }
+  function refreshIndexInView(view) {
+    const candidates = Object.create(null);
+    ['flex-rr', 'swiss'].forEach(function (sheet) {
+      if (hasLegacyInView(view, sheet)) candidates[sheet] = true;
+      const spec = LEGACY[sheet];
+      Object.keys(spec).forEach(function (name) {
+        if (name === 'scoreKind' || typeof spec[name] !== 'string') return;
+        const prefix = spec[name] + '.';
+        view.keys().forEach(function (key) {
+          if (key.indexOf(prefix) !== 0) return;
+          const suffix = key.slice(prefix.length);
+          if (/^[A-Za-z0-9_-]+$/.test(suffix)) candidates[sheet + '.' + suffix] = true;
+        });
+      });
+    });
+    Object.keys(candidates).forEach(function (sheet) {
+      if (view.getItem(keyFor(sheet)) != null) return;
+      const loaded = loadInView(view, sheet, null, true);
+      if (loaded.issue) throw storageError(loaded.issue);
+    });
+    const idx = readIndexInView(view);
+    view.keys().forEach(function (key) {
+      if (key.indexOf(PREFIX) !== 0) return;
+      const sheet = key.slice(PREFIX.length);
+      const parsed = parseRecord(view.getItem(key), sheet);
+      if (parsed.ok) idx[sheet] = indexEntry(parsed.data);
+      else if (!idx[sheet]) idx[sheet] = { title: 'Nicht lesbarer Turnierstand', filled: 0 };
+    });
+    const serialized = JSON.stringify(idx);
+    if (serialized !== view.getItem(INDEX_KEY)) view.setItem(INDEX_KEY, serialized);
+    return idx;
+  }
+  function updateIndexInView(view, t) {
+    const idx = readIndexInView(view);
+    idx[t.sheet] = indexEntry(t);
+    view.setItem(INDEX_KEY, JSON.stringify(idx));
+    return idx;
+  }
+
+  function notifyTabs(sheetId, revision) {
+    const s = legacyStorage();
+    if (!s) return;
+    try {
+      s.setItem(SYNC_KEY, JSON.stringify({ sheetId: sheetId, revision: revision, at: Date.now() }));
+    } catch (e) { /* reine Benachrichtigung – Daten liegen in IndexedDB */ }
+  }
+
+  /* ------------------------------------------------------- async Persistenz */
+  function load(sheetId, cfgDefaults) {
+    return transaction(function (view) {
+      return loadInView(view, sheetId, cfgDefaults, true);
+    }, { tracked: false }).then(function (res) {
+      if (res.issue) storageIssue(res.issue, sheetId);
+      if (res.saved) notifyTabs(sheetId, res.saved);
+      return res.t;
+    }, function (err) {
+      /* Kein Schreib-Rückfall: Altdaten nur lesen, Fehler melden. */
+      storageIssue(errorCode(err, 'unavailable'), sheetId);
+      const res = loadInView(localStorageView(), sheetId, cfgDefaults, false);
+      if (res.issue) storageIssue(res.issue, sheetId);
+      Object.defineProperty(res.t, '_storageBlocked', { value: errorCode(err, 'unavailable') });
+      return res.t;
+    });
   }
 
   function normalize(t, sheetId, cfgDefaults) {
@@ -173,177 +651,197 @@
     return out;
   }
 
-  function save(t) {
-    const s = ls();
-    if (!s) {
-      storageIssue('unavailable', t.sheet);
-      return false;
+  /* Speicher-Warteschlange je Turnierobjekt: Ein laufender Schreibvorgang
+     wird nie überholt; weitere save()-Aufrufe währenddessen werden zu EINER
+     Momentaufnahme (der neuesten) zusammengefasst. Eingaben, die während
+     eines laufenden Schreibvorgangs erfolgen, bleiben im Objekt erhalten –
+     nach Erfolg werden nur schema/_revision/updated übernommen. */
+  const saveQueues = (typeof WeakMap === 'function') ? new WeakMap() : null;
+  let pendingCount = 0;
+  let activityCount = 0;
+  const failedSheets = Object.create(null);
+  const pendingBySheet = {};
+  const idleWaiters = [];
+  function pendingChanged(sheetId, delta) {
+    pendingCount += delta;
+    pendingBySheet[sheetId] = (pendingBySheet[sheetId] || 0) + delta;
+    if (pendingBySheet[sheetId] <= 0) delete pendingBySheet[sheetId];
+    if (delta > 0) {
+      storageEvent('beachl:storage-pending', { sheetId: sheetId, pending: pendingCount });
     }
-    const key = keyFor(t.sheet);
-    let current;
-    try { current = s.getItem(key); }
-    catch (e) {
-      storageIssue('unavailable', t.sheet);
-      return false;
+    resolveIdle();
+  }
+  function resolveIdle() {
+    if (!pendingCount && !activityCount) {
+      idleWaiters.splice(0).forEach(function (fn) { fn(true); });
     }
+  }
+  function isPending(sheetId) {
+    return sheetId == null ? pendingCount + activityCount > 0 : !!pendingBySheet[sheetId] || activityCount > 0;
+  }
+  function whenIdle() {
+    if (!pendingCount && !activityCount) return Promise.resolve(true);
+    return new Promise(function (resolve) { idleWaiters.push(resolve); });
+  }
 
-    let currentData = null;
-    if (current != null) {
-      try { currentData = JSON.parse(current); }
-      catch (e) {
-        storageIssue('corrupt', t.sheet);
-        return false;
-      }
-      if (!currentData || currentData.schema !== SCHEMA || currentData.sheet !== t.sheet) {
-        storageIssue('incompatible', t.sheet);
-        return false;
-      }
-      const currentRevision = Number(currentData._revision) || 0;
-      const loadedRevision = Number(t._revision) || 0;
-      if (currentRevision !== loadedRevision) {
-        storageIssue('conflict', t.sheet);
-        return false;
-      }
-      try { s.setItem(backupKeyFor(t.sheet), current); }
-      catch (e) {
-        storageIssue('backup-failed', t.sheet);
-        return false;
-      }
-    } else if ((Number(t._revision) || 0) !== 0) {
-      storageIssue('conflict', t.sheet);
+  function snapshotOf(t) {
+    return JSON.parse(JSON.stringify(t));
+  }
+  function executeSave(t, job) {
+    const sheetId = job.sheetId;
+    const baseRevision = Number(t._revision) || 0;
+    const nowIso = new Date().toISOString();
+    return transaction(function (view) {
+      return saveInView(view, job.data, sheetId, baseRevision, nowIso);
+    }, { tracked: false }).then(function (res) {
+      pendingChanged(sheetId, -1);
+      if (!res.ok) { storageIssue(res.code, sheetId); return false; }
+      t.schema = SCHEMA;
+      t._revision = res.revision;
+      t.updated = res.updated;
+      notifyTabs(sheetId, res.revision);
+      storageEvent('beachl:storage-saved', { sheetId: sheetId, revision: res.revision });
+      return true;
+    }, function (err) {
+      pendingChanged(sheetId, -1);
+      storageIssue(errorCode(err, 'write-failed'), sheetId);
       return false;
-    }
-
-    let latest;
-    try { latest = s.getItem(key); }
-    catch (e) {
-      storageIssue('unavailable', t.sheet);
-      return false;
-    }
-    if (latest !== current) {
-      storageIssue('conflict', t.sheet);
-      return false;
-    }
-
-    const candidate = Object.assign({}, t, {
-      schema: SCHEMA,
-      updated: new Date().toISOString(),
-      _revision: currentData ? (Number(currentData._revision) || 0) + 1 : 1
     });
-    let serialized;
-    try { serialized = JSON.stringify(candidate); }
+  }
+  function save(t) {
+    if (!t || typeof t !== 'object' || typeof t.sheet !== 'string') {
+      return Promise.resolve(false);
+    }
+    const sheetId = t.sheet;
+    if (t._storageBlocked) {
+      storageIssue(t._storageBlocked, sheetId);
+      return Promise.resolve(false);
+    }
+    let data;
+    try { data = snapshotOf(t); }
     catch (e) {
-      storageIssue('write-failed', t.sheet);
-      return false;
+      storageIssue('write-failed', sheetId);
+      return Promise.resolve(false);
     }
-    try { s.setItem(key, serialized); }
-    catch (e) {
-      storageIssue('write-failed', t.sheet);
-      return false;
+    let q = saveQueues ? saveQueues.get(t) : null;
+    if (!q) {
+      q = { running: null, next: null };
+      if (saveQueues) saveQueues.set(t, q);
     }
-    try {
-      if (s.getItem(key) !== serialized) {
-        storageIssue('conflict', t.sheet);
-        return false;
-      }
-    } catch (e) {
-      storageIssue('unavailable', t.sheet);
-      return false;
+    if (q.next) {
+      q.next.data = data;              // neueste Momentaufnahme gewinnt
+      return q.next.promise;
     }
-    Object.assign(t, candidate);
-    storageEvent('beachl:storage-saved', { sheetId: t.sheet, revision: t._revision });
-    if (!updateIndex(t)) storageIssue('index-failed', t.sheet);
-    return true;
+    const job = { sheetId: sheetId, data: data, promise: null };
+    pendingChanged(sheetId, 1);
+    const start = function () {
+      if (q.next === job) q.next = null;
+      return executeSave(t, job);
+    };
+    if (q.running) {
+      q.next = job;
+      job.promise = q.running.then(start, start);
+    } else {
+      job.promise = start();
+    }
+    const finished = job.promise.then(function (ok) {
+      if (q.running === finished) q.running = null;
+      return ok;
+    });
+    q.running = finished;
+    job.promise = finished;
+    return finished;
   }
 
   function reset(sheetId) {
-    const s = ls();
-    if (!s) {
-      storageIssue('unavailable', sheetId);
-      return false;
-    }
-    let current;
-    try { current = s.getItem(keyFor(sheetId)); }
-    catch (e) {
-      storageIssue('unavailable', sheetId);
-      return false;
-    }
-    if (current != null) {
-      try {
-        const data = JSON.parse(current);
-        if (!data || data.schema !== SCHEMA || data.sheet !== sheetId) {
-          storageIssue('incompatible', sheetId);
-          return false;
-        }
-        s.setItem(backupKeyFor(sheetId), current);
-        s.removeItem(keyFor(sheetId));
-      } catch (e) {
-        storageIssue('backup-failed', sheetId);
-        return false;
+    return transaction(function (view) {
+      const current = view.getItem(keyFor(sheetId));
+      if (current != null) {
+        const parsed = parseRecord(current, sheetId);
+        if (!parsed.ok) return { ok: false, code: parsed.code };
+        if (view.getItem(backupKeyFor(sheetId)) == null) view.setItem(backupKeyFor(sheetId), current);
+        view.removeItem(keyFor(sheetId));
       }
-    }
-    const idx = readJSON(INDEX_KEY, {}) || {};
-    delete idx[sheetId];
-    writeJSON(INDEX_KEY, idx);
-    return true;
+      view.setItem(REVISION_PREFIX + sheetId, String(Math.max(revisionInView(view, sheetId),
+        current == null ? 0 : Number(parseRecord(current, sheetId).data._revision) || 0)));
+      const idx = readIndexInView(view);
+      if (Object.prototype.hasOwnProperty.call(idx, sheetId)) {
+        delete idx[sheetId];
+        view.setItem(INDEX_KEY, JSON.stringify(idx));
+      }
+      return { ok: true, changed: current != null };
+    }, { sheetId: sheetId, report: false }).then(function (res) {
+      if (!res.ok) { storageIssue(res.code, sheetId); return false; }
+      if (res.changed) notifyTabs(sheetId, 0);
+      return true;
+    }, function (err) {
+      storageIssue(errorCode(err, 'write-failed'), sheetId);
+      return false;
+    });
   }
 
+  function hasBackupInView(view, sheetId) {
+    const raw = view ? view.getItem(backupKeyFor(sheetId)) : null;
+    return raw != null && parseRecord(raw, sheetId).ok;
+  }
   function hasBackup(sheetId) {
-    const raw = readJSON(backupKeyFor(sheetId), null);
-    return !!(raw && raw.schema === SCHEMA && raw.sheet === sheetId);
+    return withDb('readonly', function (view) {
+      return hasBackupInView(view, sheetId);
+    }).then(null, function () {
+      return hasBackupInView(localStorageView(), sheetId);
+    });
   }
 
+  /* Stellt die Vorversion wieder her. Der aktuelle Stand wird vorher unter
+     beachl.q.<sheet>.<zeit> aufbewahrt. Die Revision wird weitergezählt,
+     damit veraltete Tabs den wiederhergestellten Stand nicht überschreiben. */
   function restorePrevious(sheetId) {
-    const s = ls();
-    if (!s) {
-      storageIssue('unavailable', sheetId);
-      return false;
-    }
-    let previous, current;
-    try {
-      current = s.getItem(keyFor(sheetId));
-      previous = s.getItem(backupKeyFor(sheetId));
-    } catch (e) {
-      storageIssue('unavailable', sheetId);
-      return false;
-    }
-    let restored;
-    try { restored = JSON.parse(previous || 'null'); }
-    catch (e) {
-      storageIssue('backup-corrupt', sheetId);
-      return false;
-    }
-    if (!restored || restored.schema !== SCHEMA || restored.sheet !== sheetId) {
-      storageIssue('backup-corrupt', sheetId);
-      return false;
-    }
-    if (current != null) {
-      try { s.setItem('beachl.q.' + sheetId + '.' + Date.now(), current); }
-      catch (e) {
-        storageIssue('backup-failed', sheetId);
-        return false;
+    const stamp = Date.now();
+    return transaction(function (view) {
+      const previous = view.getItem(backupKeyFor(sheetId));
+      const current = view.getItem(keyFor(sheetId));
+      const parsedPrev = previous == null ? { ok: false } : parseRecord(previous, sheetId);
+      if (!parsedPrev.ok) return { ok: false, code: 'backup-corrupt' };
+      let currentRevision = revisionInView(view, sheetId);
+      if (current != null) {
+        const parsedCur = parseRecord(current, sheetId);
+        if (parsedCur.ok) currentRevision = Math.max(currentRevision, Number(parsedCur.data._revision) || 0);
+        let qKey = QUARANTINE_PREFIX + sheetId + '.' + stamp;
+        let n = 1;
+        while (view.getItem(qKey) != null) qKey = QUARANTINE_PREFIX + sheetId + '.' + stamp + '-' + (n++);
+        view.setItem(qKey, current);
       }
-    }
-    try { s.setItem(keyFor(sheetId), previous); }
-    catch (e) {
-      storageIssue('write-failed', sheetId);
+      const restored = parsedPrev.data;
+      restored._revision = Math.max(currentRevision, Number(restored._revision) || 0) + 1;
+      view.setItem(keyFor(sheetId), JSON.stringify(restored));
+      updateIndexInView(view, restored);
+      return { ok: true, revision: restored._revision };
+    }, { sheetId: sheetId, report: false }).then(function (res) {
+      if (!res.ok) { storageIssue(res.code, sheetId); return false; }
+      notifyTabs(sheetId, res.revision);
+      return true;
+    }, function (err) {
+      storageIssue(errorCode(err, 'write-failed'), sheetId);
       return false;
-    }
-    updateIndex(restored);
-    return true;
+    });
   }
 
   function updateIndex(t) {
-    const idx = readJSON(INDEX_KEY, {}) || {};
-    idx[t.sheet] = {
-      title: t.title || '',
-      teams: t.config.teams,
-      updated: t.updated,
-      filled: Object.keys(t.results || {}).length
-    };
-    return writeJSON(INDEX_KEY, idx);
+    if (!t || !t.sheet) return Promise.resolve(false);
+    return transaction(function (view) {
+      updateIndexInView(view, t);
+      return true;
+    }).then(null, function (err) {
+      storageIssue(errorCode(err, 'index-failed'), t.sheet);
+      return false;
+    });
   }
-  function index() { return readJSON(INDEX_KEY, {}) || {}; }
+  function index() {
+    return transaction(refreshIndexInView, { tracked: false }).then(null, function (err) {
+      storageIssue(errorCode(err, 'unavailable'), null);
+      return readIndexInView(localStorageView());
+    });
+  }
 
   /* ---------------------------------------------------------- Ergebnisse */
   /* Setzt ein einzelnes Satzergebnis, ohne andere Sätze anzutasten. */
@@ -616,19 +1114,23 @@
     return null;
   }
 
-  function migrate(sheetId, cfgDefaults) {
+  /* Rein synchron: baut aus den Altschlüsseln einer Sicht (Transaktions-
+     sicht oder nur lesbares localStorage) ein neues Turnier. Schreibt nichts. */
+  function migrateView(s, sheetId, cfgDefaults) {
     const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
     const L = LEGACY[baseSheetId];
     if (!L) return null;
-    const s = ls(); if (!s) return null;
+    if (!s) return null;
+    if (s.getItem(backupKeyFor(sheetId)) != null || s.getItem(REVISION_PREFIX + sheetId) != null) return null;
+    const readJSONs = function (key, fallback) { return readJSON(s, key, fallback); };
     const suffix = String(sheetId).slice(baseSheetId.length);
     const legacyKey = (key, shared) => key && (shared ? key : key + suffix);
 
-    const cfgRaw = L.cfg ? readJSON(legacyKey(L.cfg), null) : null;
-    const names = L.names ? (readJSON(legacyKey(L.names), null) || {}) : {};
-    const scores = L.scores ? (readJSON(legacyKey(L.scores), null) || {}) : {};
-    const absentRaw = L.absent ? readJSON(legacyKey(L.absent), null) : null;
-    const fields = L.fields ? (readJSON(legacyKey(L.fields), null) || {}) : {};
+    const cfgRaw = L.cfg ? readJSONs(legacyKey(L.cfg), null) : null;
+    const names = L.names ? (readJSONs(legacyKey(L.names), null) || {}) : {};
+    const scores = L.scores ? (readJSONs(legacyKey(L.scores), null) || {}) : {};
+    const absentRaw = L.absent ? readJSONs(legacyKey(L.absent), null) : null;
+    const fields = L.fields ? (readJSONs(legacyKey(L.fields), null) || {}) : {};
     let start = null, end = null, title = '';
     let roundFilter = null, roundFilterAll = null;
     try { start = s.getItem(legacyKey(L.start)); } catch (e) { }
@@ -693,28 +1195,50 @@
     if (Object.keys(raw).length) t.legacyByTeam = raw;
 
     if (L.frozen) {
-      const fr = readJSON(legacyKey(L.frozen), null);
+      const fr = readJSONs(legacyKey(L.frozen), null);
       if (fr && typeof fr === 'object') t.frozen = fr;
     }
     if (L.frozenModes) {
-      const fm = readJSON(legacyKey(L.frozenModes), null);
+      const fm = readJSONs(legacyKey(L.frozenModes), null);
       if (fm && typeof fm === 'object') t.frozenModes = fm;
     }
     if (L.round1) {
-      const r1 = readJSON(legacyKey(L.round1), null);
+      const r1 = readJSONs(legacyKey(L.round1), null);
       if (Array.isArray(r1)) t.round1 = r1;
     }
 
     t.migratedFrom = L.prefix;
-    save(t);
     return t;
   }
 
+  /* Migriert Altdaten nach IndexedDB (nur, wenn noch kein Datensatz im neuen
+     Schema existiert). → Promise<Turnier|null>; die Altschlüssel bleiben. */
+  function migrate(sheetId, cfgDefaults) {
+    return transaction(function (view) {
+      const t = migrateView(view, sheetId, cfgDefaults);
+      if (!t) return { t: null };
+      const res = saveInView(view, t, sheetId, 0, new Date().toISOString());
+      if (!res.ok) return { t: t, issue: res.code };
+      t._revision = res.revision;
+      t.updated = res.updated;
+      return { t: t, saved: res.revision };
+    }).then(function (res) {
+      if (res.issue) storageIssue(res.issue, sheetId);
+      if (res.saved) notifyTabs(sheetId, res.saved);
+      return res.t;
+    }, function (err) {
+      storageIssue(errorCode(err, 'unavailable'), sheetId);
+      const t = migrateView(localStorageView(), sheetId, cfgDefaults);
+      if (t) Object.defineProperty(t, '_storageBlocked', { value: errorCode(err, 'unavailable') });
+      return t;
+    });
+  }
+
   /* Prüft, ob für einen Bogen noch migrierbare Altdaten vorliegen. */
-  function hasLegacy(sheetId) {
+  function hasLegacyInView(s, sheetId) {
     const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
     const L = LEGACY[baseSheetId]; if (!L) return false;
-    const s = ls(); if (!s) return false;
+    if (!s) return false;
     const suffix = String(sheetId).slice(baseSheetId.length);
     return [L.cfg, L.names, L.scores, L.absent, L.fields, L.title, L.titleKey,
       L.start, L.end, L.frozen, L.frozenModes, L.round1, L.roundFilter, L.roundFilterAll]
@@ -723,6 +1247,13 @@
         const shared = baseSheetId === 'swiss' && (k === L.roundFilter || k === L.roundFilterAll);
         try { return s.getItem(shared ? k : k + suffix) != null; } catch (e) { return false; }
       });
+  }
+  function hasLegacy(sheetId) {
+    return withDb('readonly', function (view) {
+      return hasLegacyInView(view, sheetId);
+    }).then(null, function () {
+      return hasLegacyInView(localStorageView(), sheetId);
+    });
   }
 
   /* Voreinstellung über die URL (?teams=8&fields=4&…).
@@ -757,17 +1288,39 @@
   const urlBool = s => (s === '1' || s === 'true' ? true
                       : s === '0' || s === 'false' ? false : undefined);
 
+  const storage = {
+    ready: ready,
+    readEntries: readEntries,
+    transaction: transaction,
+    getItem: getItem,
+    setItem: setItem,
+    removeItem: removeItem,
+    isKnownKey: isKnownKey,
+    isPending: isPending,
+    whenIdle: whenIdle,
+    DB_NAME: DB_NAME,
+    DB_VERSION: DB_VERSION,
+    STORE_NAME: KV_STORE
+  };
+
   return {
-    SCHEMA, PREFIX, BACKUP_PREFIX, INDEX_KEY, LEGACY,
+    SCHEMA, PREFIX, BACKUP_PREFIX, REVISION_PREFIX, QUARANTINE_PREFIX, ARCHIVE_PREFIX, INDEX_KEY, SESSIONS_KEY, SYNC_KEY,
+    DB_NAME, DB_VERSION, STORE_NAME: KV_STORE, LEGACY,
     sheetIdFrom, BASE_ID,
-    emptyTournament, load, save, reset, normalize, hasBackup, restorePrevious,
+    emptyTournament, normalize, parseRecord,
+    // async (Promise) – IndexedDB maßgeblich
+    load, save, reset, hasBackup, restorePrevious, index, updateIndex, hasLegacy, migrate,
+    ready, readEntries, transaction, getItem, setItem, removeItem,
+    isPending, whenIdle, storage,
+    // synchron, rein (für transaction()-Callbacks und Tests)
+    isKnownKey, indexEntry, migrateView, hasLegacyInView,
+    loadInView, saveInView, updateIndexInView, readIndexInView, refreshIndexInView, revisionInView,
     setScore, getSets, clearScores,
     setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,
     setManualPlacement, getManualPlacements, resetManualPlacementRow, resetManualPlacements,
     applyUrlConfig, urlInt, urlOneOf, urlBool,
     teamRemap, remapKeys, remapList, remapCommon, repairPairs, matchPhase,
     snapshotResults, restoreResults, anyResults, hasInput,
-    index, updateIndex, hasLegacy, migrate, parseLegacyScoreId,
-    _readJSON: readJSON, _writeJSON: writeJSON
+    parseLegacyScoreId
   };
 });

@@ -218,9 +218,9 @@
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
-(function(){
+(async function(){
   'use strict';
-  if (TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
+  if (await TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('kingqueen');
   const $ = id => document.getElementById(id);
@@ -237,7 +237,7 @@
 
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
   function archiveOpts(){
-    const cur = TStore.load(SHEET, DEFAULTS);
+    const cur = S;
     const names = cur.teamNames || {};
     const men = +cur.config.men || 0, women = +cur.config.women || 0;
     const roster = [];
@@ -246,12 +246,13 @@
       && !Object.keys(cur.teamNames || {}).length
       && !(cur.absent || []).length;
     return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
-             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:roster };
+             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:roster,
+             fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
   }
-  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
-  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
-
-  let S = TStore.load(SHEET, DEFAULTS);
+  let S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+    S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.config.levels = S.config.levels || {};
 
   const MSTD = TUI.initManualEditing(document, {
@@ -654,7 +655,7 @@
     applyDocTitle();
   }
 
-  function save(){ TStore.save(S); }
+  function save(){ return TStore.save(S); }
 
   function wire(){
     $('session-title-input').addEventListener('input', e => {
@@ -722,21 +723,19 @@
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
-    $('btnReset').addEventListener('click', () => {
+    $('btnReset').addEventListener('click', async () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
-      const started = TArchive.startNew(archiveOpts());
+      if(!await save()) return;
+      const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
         alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
         return;
       }
-      TStore.reset(SHEET);
-      S = TStore.load(SHEET, DEFAULTS);
-      S.title = started.title;
-      save();
+      S = started.tournament;
       fillSelects(); structureKey=''; rebuild();
     });
-    $('btnSave').addEventListener('click', () => {
-      const ok = save();
+    $('btnSave').addEventListener('click', async () => {
+      const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
       b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
       setTimeout(()=>{ b.textContent = old; }, 1500);
@@ -785,7 +784,14 @@
   readConfig();
   wire();
   rebuild();
-})();
+})().catch(function(err){
+  console.error(err);
+  const box = document.createElement('div');
+  box.className = 'notebox noprint';
+  box.setAttribute('role', 'alert');
+  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  document.body.insertBefore(box, document.body.firstChild);
+});
 </script>
 
 <script>

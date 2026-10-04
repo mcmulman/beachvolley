@@ -585,8 +585,7 @@
   <script>
     /* Vorhandene Turniere aus dem TStore-Index anbieten und neue Tabs
        automatisch mit einer eigenen ID isolieren. */
-    const RESUME_PICKER_SHOWN = TResumePicker.maybePrompt('swiss', 'Schweizer System');
-    if (!RESUME_PICKER_SHOWN) TResumePicker.autoId();
+    let RESUME_PICKER_SHOWN = false;
     const BASE_START = 600;
     const BASE_END = 840;
     const TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
@@ -624,28 +623,32 @@
 
     /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
        Ein archiviertes Turnier kommt ueber ?restore=<Schluessel> zurueck. */
-    const SHEET_ID = TStore.sheetIdFrom('swiss');
+    let SHEET_ID = null;
     const SHEET_TYPE = 'Schweizer System';
-    const ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
-    let STORE = TStore.load(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
+    let ARCHIVE_KEYS = [];
+    const STORE_DEFAULTS = {teams:12, fields:6, rounds:7, setMode:'15'};
+    let STORE = null;
     function archiveOpts(){
       const names = STORE.teamNames || {};
       const title = STORE.title || '';
       const teams = [];
-      for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
+      for(let i=1;i<=STORE.config.teams;i++) teams.push(names[i] || ('Team ' + i));
       const hasNames = Object.keys(names).some(k => (names[k] || '').trim() !== '');
       const hasScores = Object.keys(STORE.results || {}).length > 0;
       const empty = !hasNames && !hasScores && !(STORE.absent || []).length && !title;
       return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
-               title:title, teams:teams };
+               title:title, teams:teams,
+               fresh: title => {
+                 const fresh = TStore.emptyTournament(SHEET_ID, STORE_DEFAULTS);
+                 fresh.title = title;
+                 if(STORE.config.roundFilter != null) fresh.config.roundFilter = STORE.config.roundFilter;
+                 if(STORE.config.showAllRounds != null) fresh.config.showAllRounds = STORE.config.showAllRounds;
+                 return fresh;
+               } };
     }
-    if(typeof TArchive !== 'undefined' && TArchive.applyPendingRestore(archiveOpts())) {
-      STORE = TStore.load(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
-    }
-    if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
     function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-    function saveStore(){ TStore.save(STORE); }
+    function saveStore(){ return TStore.save(STORE); }
     function fromMin(min){ const m = ((Math.round(min) % 1440) + 1440) % 1440; const h = Math.floor(m / 60); const mm = m % 60; return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0'); }
     function toMin(text){ const m = /^(\d{1,2}):(\d{2})$/.exec(String(text || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
     function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
@@ -792,8 +795,10 @@
     }
     function saveTitle() {
       const val = (document.getElementById('session-title-input') || {}).value || '';
-      STORE.title = val; saveStore();
+      STORE.title = val;
+      const saved = saveStore();
       applyDocTitle(val);
+      return saved;
     }
 
     function restoreTitle() {
@@ -803,10 +808,10 @@
       applyDocTitle(val);
     }
 
-    function manualSave() {
-      saveTitle();
+    async function manualSave() {
+      const ok = await saveTitle();
       const btn = document.querySelector('[onclick="manualSave()"]');
-      if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
+      if (btn) { const orig = btn.textContent; btn.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen'; setTimeout(() => btn.textContent = orig, 1500); }
     }
     function defaultFieldNames(){ return DEFAULT_FIELD_POOL.slice(0, NFIELDS).reduce((acc, name, i) => (acc[i] = name, acc), {}); }
     function loadFieldNames(){ return Object.assign(defaultFieldNames(), STORE.fieldNames || {}); }
@@ -1240,21 +1245,15 @@
       clearPersistedMatches();
       computeAll();
     }
-    function resetTournament(){
+    async function resetTournament(){
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
-      saveTitle();                       // noch nicht gespeicherten Titel mitsichern
-      const roundFilter = STORE.config.roundFilter;
-      const showAllRounds = STORE.config.showAllRounds;
-      const started = TArchive.startNew(archiveOpts());
+      if(!await saveTitle()) return;
+      const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
         alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
         return;
       }
-      STORE = TStore.emptyTournament(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
-      STORE.title = started.title;
-      if(roundFilter != null) STORE.config.roundFilter = roundFilter;
-      if(showAllRounds != null) STORE.config.showAllRounds = showAllRounds;
-      saveStore();
+      STORE = started.tournament;
       ROUND_MODES = {};
       location.reload();
     }
@@ -2029,12 +2028,31 @@
       const idx = list.indexOf(el);
       if(idx >= 0 && idx < list.length - 1){ list[idx + 1].focus(); if(typeof list[idx + 1].select === 'function') list[idx + 1].select(); }
     });
-    loadCfg();
-    if (!RESUME_PICKER_SHOWN) rebuild();
+    (async function init(){
+      RESUME_PICKER_SHOWN = await TResumePicker.maybePrompt('swiss', 'Schweizer System');
+      if(RESUME_PICKER_SHOWN) return;
+      TResumePicker.autoId();
+      SHEET_ID = TStore.sheetIdFrom('swiss');
+      ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
+      STORE = await TStore.load(SHEET_ID, STORE_DEFAULTS);
+      if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+        STORE = await TStore.load(SHEET_ID, STORE_DEFAULTS);
+      if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
+      loadCfg();
+      rebuild();
+    })().catch(function(err){
+      console.error(err);
+      const box = document.createElement('div');
+      box.className = 'notebox noprint';
+      box.setAttribute('role', 'alert');
+      box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+      document.body.insertBefore(box, document.body.firstChild);
+    });
     window.getSwissRoundPreference = function(){
-      return {round:STORE.config.roundFilter, showAll:STORE.config.showAllRounds === true};
+      return STORE ? {round:STORE.config.roundFilter, showAll:STORE.config.showAllRounds === true} : {};
     };
     window.saveSwissRoundPreference = function(round, showAll){
+      if(!STORE) return;
       STORE.config.roundFilter = String(round);
       STORE.config.showAllRounds = !!showAll;
       saveStore();

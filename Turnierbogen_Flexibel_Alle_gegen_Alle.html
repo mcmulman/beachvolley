@@ -584,30 +584,27 @@
   const MIN_TEAMS = 4, MAX_TEAMS = 20, MAX_FIELDS = 10;
   /* Vorhandene Turniere aus dem TStore-Index anbieten und neue Tabs
      automatisch mit einer eigenen ID isolieren. */
-  const RESUME_PICKER_SHOWN = TResumePicker.maybePrompt('flex-rr', 'Jeder gegen Jeden');
-  if (!RESUME_PICKER_SHOWN) TResumePicker.autoId();
+  let RESUME_PICKER_SHOWN = false;
   const SESSION_FILE  = 'Turnierbogen_Flexibel_Alle_gegen_Alle.html';
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
-  const SHEET_ID = TStore.sheetIdFrom('flex-rr');
+  let SHEET_ID = null;
   const SHEET_TYPE = 'Jeder gegen Jeden';
-  const ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
-  let STORE = TStore.load(SHEET_ID, {teams:8, fields:4, setMode:'21'});
+  let ARCHIVE_KEYS = [];
+  const STORE_DEFAULTS = {teams:8, fields:4, setMode:'21'};
+  let STORE = null;
   function archiveOpts(){
     const names = STORE.teamNames || {};
     const title = STORE.title || '';
     const teams = [];
-    for(let i=1;i<=4;i++) teams.push(names[i] || ('Team ' + i));
+    for(let i=1;i<=STORE.config.teams;i++) teams.push(names[i] || ('Team ' + i));
     const hasNames  = Object.keys(names).some(k => (names[k] || '').trim() !== '');
     const hasScores = Object.keys(STORE.results || {}).length > 0 || Object.keys(STORE.legacyByTeam || {}).length > 0;
     const hasAbsent = (STORE.absent || []).length > 0;
     const empty = !hasNames && !hasScores && !hasAbsent && !title;
     return { sheet:SHEET_ID, file:SESSION_FILE, type:SHEET_TYPE, keys:ARCHIVE_KEYS, empty:empty,
-             title:title, teams:teams };
+             title:title, teams:teams,
+             fresh: title => Object.assign(TStore.emptyTournament(SHEET_ID, STORE_DEFAULTS), { title:title }) };
   }
-  if(typeof TArchive !== 'undefined' && TArchive.applyPendingRestore(archiveOpts())) {
-    STORE = TStore.load(SHEET_ID, {teams:8, fields:4, setMode:'21'});
-  }
-  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
 
   const BASE_START = '10:00';
   const BASE_END   = '14:00';
@@ -665,7 +662,7 @@
   }
 
   /* ================= Persistenz-Helfer ================= */
-  function saveStore(){ TStore.save(STORE); }
+  function saveStore(){ return TStore.save(STORE); }
   function loadCfg(){
     const c = STORE.config || {};
     return {teams:c.teams, fields:c.fields, points:c.setMode, roundFilter:c.roundFilter};
@@ -743,8 +740,10 @@
   }
   function saveTitle() {
     const val = (document.getElementById('session-title-input') || {}).value || '';
-    STORE.title = val; saveStore();
+    STORE.title = val;
+    const saved = saveStore();
     applyDocTitle(val);
+    return saved;
   }
   function restoreTitle() {
     const val = STORE.title || '';
@@ -752,10 +751,10 @@
     if (inp) inp.value = val;
     applyDocTitle(val);
   }
-  function manualSave() {
-    saveTitle();
+  async function manualSave() {
+    const ok = await saveTitle();
     const btn = document.querySelector('[onclick="manualSave()"]');
-    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert'; setTimeout(() => btn.textContent = orig, 1500); }
+    if (btn) { const orig = btn.textContent; btn.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen'; setTimeout(() => btn.textContent = orig, 1500); }
   }
 
   /* ================= Teamnamen ================= */
@@ -1166,17 +1165,15 @@
   }
 
   /* ================= Neues Turnier ================= */
-  function resetTournament(){
+  async function resetTournament(){
     if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
-    saveTitle();                         // noch nicht gespeicherten Titel mitsichern
-    const started = TArchive.startNew(archiveOpts());
+    if(!await saveTitle()) return;
+    const started = await TArchive.startNew(archiveOpts());
     if (started.blocked) {
       alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
       return;
     }
-    STORE = TStore.emptyTournament(SHEET_ID, {teams:8, fields:4, setMode:'21'});
-    STORE.title = started.title;
-    saveStore();
+    STORE = started.tournament;
     location.reload();
   }
   function shareTournament(){
@@ -1820,7 +1817,16 @@
   }
 
   /* ================= Init ================= */
-  if (!RESUME_PICKER_SHOWN) (function init(){
+  (async function init(){
+    RESUME_PICKER_SHOWN = await TResumePicker.maybePrompt('flex-rr', 'Jeder gegen Jeden');
+    if(RESUME_PICKER_SHOWN) return;
+    TResumePicker.autoId();
+    SHEET_ID = TStore.sheetIdFrom('flex-rr');
+    ARCHIVE_KEYS = [TStore.PREFIX + SHEET_ID];
+    STORE = await TStore.load(SHEET_ID, STORE_DEFAULTS);
+    if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+      STORE = await TStore.load(SHEET_ID, STORE_DEFAULTS);
+    if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
     const cfg = loadCfg();
     if(cfg.teams && cfg.teams>=MIN_TEAMS && cfg.teams<=MAX_TEAMS) NTEAMS = cfg.teams;
     if(cfg.fields && cfg.fields>=1) NFIELDS = cfg.fields;
@@ -1849,7 +1855,14 @@
       const table = document.querySelector('#scheduleSection table.sched');
       if(table) table.style.zoom = '';
     });
-  })();
+  })().catch(function(err){
+    console.error(err);
+    const box = document.createElement('div');
+    box.className = 'notebox noprint';
+    box.setAttribute('role', 'alert');
+    box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+    document.body.insertBefore(box, document.body.firstChild);
+  });
 </script>
 
 <!-- Bedienhilfen: gemeinsam fuer alle Boegen -->

@@ -262,7 +262,7 @@
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
-(function(){
+(async function(){
   'use strict';
   /* Dieser Bogen deckt intern zwei Speicher-Modi ab (Jeder-gegen-Jeden /
      Schweizer-System-Paarung, per Dropdown im Bogen wechselbar, siehe
@@ -278,7 +278,7 @@
   const PICKER_BASES = MODE_HINT
     ? [{ base: 'flex_' + MODE_HINT }]
     : [{ base: 'flex_rr', params: { mode: 'rr' } }, { base: 'flex_swiss', params: { mode: 'swiss' } }];
-  if (TResumePicker.maybePrompt(PICKER_BASES, SHEET_TYPE)) return;
+  if (await TResumePicker.maybePrompt(PICKER_BASES, SHEET_TYPE)) return;
   TResumePicker.autoId();
   const $ = id => document.getElementById(id);
 
@@ -339,7 +339,7 @@
   function archiveOpts(){
     const mode = MODE_HINT || ((S && S.config && S.config.mode) || 'swiss');
     const key = storageSheetId(mode);
-    const cur = TStore.load(key, DEFAULTS);
+    const cur = S;
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
@@ -352,13 +352,15 @@
      && !(cur.absent || []).length;
     return { sheet:key, file:SHEET_FILE + '?mode=' + mode, type:sheetType(cur.config), empty:empty,
              sheetModes:{ flex_rr:'rr', flex_swiss:'swiss' },
-             keys:[TStore.PREFIX + key], title:cur.title, teams:teams };
+             keys:[TStore.PREFIX + key], title:cur.title, teams:teams,
+             fresh: title => Object.assign(TStore.emptyTournament(key,
+               Object.assign({}, DEFAULTS, { mode:mode })), { title:title, teamGender:{} }) };
   }
-  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
-  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
-
   const initialMode = MODE_HINT || 'swiss';
-  S = TStore.load(storageSheetId(initialMode), DEFAULTS);
+  S = await TStore.load(storageSheetId(initialMode), DEFAULTS);
+  if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+    S = await TStore.load(storageSheetId(initialMode), DEFAULTS);
+  if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.sheet = storageSheetId(initialMode);
   S.config.mode = initialMode;
   let needSave = syncAutoTitle();
@@ -1224,7 +1226,7 @@
     }
     save(); fillSelects(); structureKey=''; rebuild();
   }
-  function onChange(){
+  async function onChange(){
     const prevTeams = S.config.teams;
     const prevMode = S.config.mode;
     const nextMode = $('roundMode').value;
@@ -1235,7 +1237,10 @@
        einem Neuladen zusammen – ein reiner In-Page-Wechsel lud danach wieder
        den alten Modus und "Neues Turnier" archivierte den falschen Bogen. */
     if(modeChanged){
-      save();
+      if(!await save()){
+        $('roundMode').value = prevMode;
+        return;
+      }
       const url = new URL(location.href);
       url.searchParams.set('mode', nextMode);
       location.replace(url.pathname + url.search);
@@ -1367,26 +1372,19 @@
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
-    $('btnReset').addEventListener('click', () => {
+    $('btnReset').addEventListener('click', async () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
-      const started = TArchive.startNew(archiveOpts());
+      if(!await save()) return;
+      const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
         alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
         return;
       }
-      const mode = S.config.mode;
-      const key = storageSheetId(mode);
-      TStore.reset(key);
-      S = TStore.load(key, DEFAULTS);
-      S.sheet = key;
-      S.config.mode = mode;
-      S.title = started.title;
-      S.teamGender = {};
-      save();
+      S = started.tournament;
       fillSelects(); structureKey=''; rebuild();
     });
-    $('btnSave').addEventListener('click', () => {
-      const ok = save();
+    $('btnSave').addEventListener('click', async () => {
+      const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
       b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
       setTimeout(()=>{ b.textContent = old; }, 1500);
@@ -1432,7 +1430,14 @@
   fillSelects();
   wire();
   rebuild();
-})();
+})().catch(function(err){
+  console.error(err);
+  const box = document.createElement('div');
+  box.className = 'notebox noprint';
+  box.setAttribute('role', 'alert');
+  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  document.body.insertBefore(box, document.body.firstChild);
+});
 </script>
 
 <script>

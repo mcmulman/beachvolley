@@ -8,7 +8,7 @@
    Enthalten:
    - offene Spiele im Ergebnisbereich hervorheben (td.bl-open)
    - Tooltip an ungueltigen Ergebnissen
-   - "✓ gespeichert"-Hinweis beim echten Schreiben in den localStorage
+   - "✓ gespeichert"-Hinweis nach abgeschlossener IndexedDB-Transaktion
    - Eingabe von "21:19" auf beide Kaestchen verteilen, ":" springt weiter
    - Pfeiltasten ↑/↓ zwischen den Ergebnisfeldern
 
@@ -40,7 +40,7 @@
   var toast = document.createElement('div');
   toast.id = 'bl-toast';
   toast.textContent = '✓ gespeichert';
-  var toastT = null, saveT = null, armed = false;
+  var toastT = null, armed = false;
   function showToast() {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
     toast.classList.remove('error', 'warning');
@@ -53,17 +53,22 @@
     while (toast.firstChild) toast.removeChild(toast.firstChild);
     toast.textContent = message;
     if (kind === 'error' && issue && (issue.code === 'corrupt' || issue.code === 'incompatible')
-        && window.TStore && window.TStore.hasBackup(issue.sheetId)) {
+        && window.TStore) {
       var restore = document.createElement('button');
       restore.type = 'button';
       restore.textContent = 'Vorversion wiederherstellen';
-      restore.addEventListener('click', function () {
+      restore.disabled = true;
+      window.TStore.hasBackup(issue.sheetId).then(function (available) {
+        restore.disabled = !available;
+        if (!available && restore.parentNode) restore.parentNode.removeChild(restore);
+      });
+      restore.addEventListener('click', async function () {
         if (!window.confirm('Die aktuelle Datei wird vorher separat aufbewahrt. Die letzte gültige Vorversion wird wiederhergestellt. Fortfahren?')) return;
-        if (window.TStore.restorePrevious(issue.sheetId)) {
-          restore.disabled = true;
+        restore.disabled = true;
+        if (await window.TStore.restorePrevious(issue.sheetId)) {
           toast.textContent = 'Vorversion wiederhergestellt. Seite wird neu geladen …';
           setTimeout(function () { window.location.reload(); }, 500);
-        }
+        } else restore.disabled = false;
       });
       toast.appendChild(restore);
     }
@@ -79,12 +84,14 @@
   }
   var storageErrors = {
     unavailable: 'Speicher nicht verfügbar. Änderungen werden nicht gespeichert.',
+    blocked: 'Turnierspeicher ist durch ein anderes Fenster blockiert. Andere BeachL-Tabs schließen und erneut versuchen.',
     corrupt: 'Gespeicherte Daten sind beschädigt. Sie wurden nicht überschrieben. Bitte diese Seite nicht schließen.',
     incompatible: 'Gespeicherte Daten sind nicht kompatibel. Sie wurden nicht überschrieben.',
     conflict: 'Ein anderer Tab hat neuere Daten gespeichert. Bitte neu laden; dieser Stand wurde nicht gespeichert.',
     'backup-failed': 'Sicherung fehlgeschlagen. Änderungen wurden vorsichtshalber nicht gespeichert.',
     'write-failed': 'Speichern fehlgeschlagen (möglicherweise ist der Gerätespeicher voll). Bitte Daten sichern.',
-    'index-failed': 'Turnierdaten sind gespeichert, aber die Uebersicht konnte nicht aktualisiert werden. Bitte Speicherplatz pruefen.',
+    'index-failed': 'Turnierübersicht konnte nicht gespeichert werden. Bitte Speicherplatz prüfen.',
+    'backup-corrupt': 'Die Vorversion ist beschädigt. Eine Wiederherstellung ist nicht möglich.',
     'external-change': 'Dieses Turnier wurde in einem anderen Tab geändert. Vor weiteren Eingaben bitte neu laden.'
   };
   function handleStorageError(event) {
@@ -102,11 +109,13 @@
     var detail = event.detail || {};
     var unsaved = window.__BL_UNSAVED_SHEETS__ || {};
     delete unsaved[detail.sheetId || '_unknown'];
-    if (Object.keys(unsaved).length) return;
+    delete unsaved._unknown;
+    if (Object.keys(unsaved).length || (window.TStore && window.TStore.isPending())) return;
     window.__BL_UNSAVED_SHEETS__ = {};
     clearTimeout(toastT);
     toast.classList.remove('show', 'error', 'warning');
     toast.textContent = '✓ gespeichert';
+    if (armed) showToast();
   }
   window.addEventListener('beachl:storage-error', handleStorageError);
   window.addEventListener('beachl:storage-saved', handleStorageSaved);
@@ -119,23 +128,11 @@
     handleStorageError({ detail: pendingStorageIssues[pendingStorageIssues.length - 1] });
   }
   window.addEventListener('beforeunload', function (event) {
-    if (!Object.keys(window.__BL_UNSAVED_SHEETS__ || {}).length) return;
+    if (!Object.keys(window.__BL_UNSAVED_SHEETS__ || {}).length
+        && !(window.TStore && window.TStore.isPending())) return;
     event.preventDefault();
     event.returnValue = '';
   });
-  try {
-    var SP = window.Storage && window.Storage.prototype;
-    if (SP && !SP.__bl_wrapped) {
-      var _set = SP.setItem;
-      SP.__bl_wrapped = true;
-      SP.setItem = function (k, v) {
-        _set.call(this, k, v);
-        if (armed && String(k).indexOf('beachl.t.') === 0) {
-          clearTimeout(saveT); saveT = setTimeout(showToast, 450);
-        }
-      };
-    }
-  } catch (e) { /* privater Modus o. ae. – dann eben ohne Hinweis */ }
 
   /* ------------------------------------------- Partnerfeld eines Kaestchens
      Neue Boegen adressieren ueber data-mid/data-set/data-side, die aelteren

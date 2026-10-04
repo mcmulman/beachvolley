@@ -289,9 +289,9 @@
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
 <script>
-(function(){
+(async function(){
   'use strict';
-  if (TResumePicker.maybePrompt('gruppen-final', 'Gruppen + Finalrunde')) return;
+  if (await TResumePicker.maybePrompt('gruppen-final', 'Gruppen + Finalrunde')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('gruppen-final');
   const $ = id => document.getElementById(id);
@@ -310,7 +310,7 @@
       S && S.config && S.config.teams, S && S.config && S.config.fields));
   }
   function archiveOpts(){
-    const cur = TStore.load(SHEET);
+    const cur = S;
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
@@ -321,13 +321,15 @@
       && !Object.keys(cur.frozen || {}).length
       && !(cur.absent || []).length;
     return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
-             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams };
+             keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams,
+             fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
   }
-  if(typeof TArchive !== 'undefined') TArchive.applyPendingRestore(archiveOpts());
-  if(typeof TShare !== 'undefined') TShare.applyPendingShare(archiveOpts());
-
-  let S = TStore.load(SHEET, { teams:8, fields:4, groups:'auto', setMode:'21',
-    finalMode:'placement', startTime:'10:00', endTime:'14:30' });
+  const DEFAULTS = { teams:8, fields:4, groups:'auto', setMode:'21',
+    finalMode:'placement', startTime:'10:00', endTime:'14:30' };
+  let S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
+    S = await TStore.load(SHEET, DEFAULTS);
+  if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
@@ -435,20 +437,20 @@
     S.teamNames = {};
     capped.forEach((nm, i) => { S.teamNames[i+1] = nm; });
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
-    save();
+    const saving = save();
     fillSelects();
     structureKey = '';
     rebuild();
+    return saving;
   }
 
   /* Übergabe aus einem anderen Bogen (z. B. "Jeder gegen Jeden"): Der Link
      enthält die fertige Rangliste als #rankimport=<Base64-JSON-Array>. Wird
      nur automatisch übernommen, wenn dieser Bogen noch leer ist - sonst erst
      nach Rückfrage, damit kein laufendes Turnier überschrieben wird.        */
-  function applyPendingRankImportFromHash(){
+  async function applyPendingRankImportFromHash(){
     const m = /rankimport=([^&]+)/.exec(location.hash || '');
     if(!m) return;
-    history.replaceState(null, '', location.pathname + location.search);
     let names;
     try {
       names = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
@@ -456,7 +458,9 @@
     if(!Array.isArray(names) || names.length < 2) return;
     const empty = !Object.keys(S.results || {}).length && !Object.keys(S.teamNames || {}).length;
     if(!empty && !confirm('Rangliste aus einem anderen Turnier übernehmen? Das bisherige Turnier auf diesem Bogen wird dabei überschrieben.')) return;
-    applyRankImport(names);
+    if (await applyRankImport(names)) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
   }
 
 
@@ -1028,7 +1032,7 @@
     $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.target));
     $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.target));
     $('btnToggleRankImport').addEventListener('click', e => toggle('rankimportpanel', e.target));
-    $('btnRankImportApply').addEventListener('click', () => {
+    $('btnRankImportApply').addEventListener('click', async () => {
       const names = $('rankImportInput').value.split('\n')
         .map(s => s.replace(/^\s*\d+[.)]\s*/, '').trim())
         .filter(Boolean);
@@ -1037,7 +1041,10 @@
         hint.textContent = 'Bitte mindestens 2 Teams (ein Name pro Zeile, in Platzierungsreihenfolge) einfügen.';
         return;
       }
-      applyRankImport(names);
+      if (!await applyRankImport(names)) {
+        hint.textContent = 'Rangliste noch nicht gespeichert. Bitte Speicherfehler beheben und erneut versuchen.';
+        return;
+      }
       hint.textContent = '';
       toggle('rankimportpanel', $('btnToggleRankImport'));
     });
@@ -1091,22 +1098,19 @@
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
-    $('btnReset').addEventListener('click', () => {
+    $('btnReset').addEventListener('click', async () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
-      const started = TArchive.startNew(archiveOpts());
+      if(!await save()) return;
+      const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
         alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
         return;
       }
-      TStore.reset(SHEET);
-      S = TStore.load(SHEET, { teams:8, fields:4, groups:'auto', setMode:'21',
-        finalMode:'placement', startTime:'10:00', endTime:'14:30' });
-      S.title = started.title;
-      save();
+      S = started.tournament;
       fillSelects(); structureKey=''; rebuild();
     });
-    $('btnSave').addEventListener('click', () => {
-      const ok = save();
+    $('btnSave').addEventListener('click', async () => {
+      const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
       b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
       setTimeout(()=>{ b.textContent = old; }, 1500);
@@ -1146,9 +1150,10 @@
   }
 
   /* Migration alter Bögen anbieten, ohne etwas zu überschreiben. */
-  function offerLegacy(){
-    const src = ['gruppen-6','gruppen-8','gruppen-10','gruppen-12','gruppen-16','gruppen-ko-8']
-      .filter(id => TStore.hasLegacy(id));
+  async function offerLegacy(){
+    const ids = ['gruppen-6','gruppen-8','gruppen-10','gruppen-12','gruppen-16','gruppen-ko-8'];
+    const exists = await Promise.all(ids.map(id => TStore.hasLegacy(id)));
+    const src = ids.filter((id, i) => exists[i]);
     if(!src.length || Object.keys(S.results).length) return;
     const box = document.createElement('div');
     box.className = 'notebox noprint';
@@ -1159,10 +1164,17 @@
 
   fillSelects();
   wire();
-  applyPendingRankImportFromHash();
+  await applyPendingRankImportFromHash();
   rebuild();
-  offerLegacy();
-})();
+  await offerLegacy();
+})().catch(function(err){
+  console.error(err);
+  const box = document.createElement('div');
+  box.className = 'notebox noprint';
+  box.setAttribute('role', 'alert');
+  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  document.body.insertBefore(box, document.body.firstChild);
+});
 </script>
 
 <script>
