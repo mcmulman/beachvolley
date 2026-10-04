@@ -8,15 +8,46 @@
    Kein DOM-Zugriff außer localStorage.
    ========================================================================== */
 (function (root, factory) {
-  const api = factory();
+  const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TStore = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
 
   const SCHEMA = 2;
   const PREFIX = 'beachl.t.';          // + sheetId
+  const BACKUP_PREFIX = 'beachl.b.';   // + sheetId, previous valid revision
   const INDEX_KEY = 'beachl.index';    // Übersicht für die Startseite
+
+  function storageEvent(name, detail) {
+    if (!root || typeof root.dispatchEvent !== 'function') return;
+    let event;
+    try {
+      event = new root.CustomEvent(name, { detail });
+    } catch (e) {
+      if (!root.document || !root.document.createEvent) return;
+      event = root.document.createEvent('Event');
+      event.initEvent(name, false, false);
+      event.detail = detail;
+    }
+    root.dispatchEvent(event);
+  }
+  function storageIssue(code, sheetId) {
+    const detail = { code, sheetId };
+    if (root) {
+      root.__BL_PENDING_STORAGE_ISSUES__ = root.__BL_PENDING_STORAGE_ISSUES__ || [];
+      root.__BL_PENDING_STORAGE_ISSUES__.push(detail);
+    }
+    storageEvent('beachl:storage-error', detail);
+  }
+  if (root && typeof root.addEventListener === 'function') {
+    root.addEventListener('storage', function (event) {
+      if (!event.key || event.key.indexOf(PREFIX) !== 0) return;
+      storageEvent('beachl:storage-external-change', {
+        sheetId: event.key.slice(PREFIX.length)
+      });
+    });
+  }
 
   /* ------------------------------------------------------------------ I/O */
   function ls() {
@@ -33,11 +64,6 @@
     try { s.setItem(key, JSON.stringify(val)); return true; }
     catch (e) { return false; }         // z.B. Quota überschritten / Privatmodus
   }
-  function removeKey(key) {
-    const s = ls(); if (!s) return;
-    try { s.removeItem(key); } catch (e) { }
-  }
-
   /* Erlaubt mehrere unabhängige Turniere DESSELBEN Bogens parallel in
      verschiedenen Tabs: ?id=xyz an die URL anhängen → eigener localStorage-
      Schlüssel "<base>.xyz" statt des geteilten "<base>". Ohne Parameter
@@ -63,6 +89,7 @@
     return {
       schema: SCHEMA,
       sheet: sheetId,
+      _revision: 0,
       title: '',
       updated: null,
       config: Object.assign({
@@ -98,10 +125,33 @@
   }
 
   function keyFor(sheetId) { return PREFIX + sheetId; }
+  function backupKeyFor(sheetId) { return BACKUP_PREFIX + sheetId; }
 
   function load(sheetId, cfgDefaults) {
-    const raw = readJSON(keyFor(sheetId), null);
-    if (raw && raw.schema === SCHEMA) return normalize(raw, sheetId, cfgDefaults);
+    const s = ls();
+    if (!s) {
+      storageIssue('unavailable', sheetId);
+      return emptyTournament(sheetId, cfgDefaults);
+    }
+    let stored;
+    try { stored = s.getItem(keyFor(sheetId)); }
+    catch (e) {
+      storageIssue('unavailable', sheetId);
+      return emptyTournament(sheetId, cfgDefaults);
+    }
+    if (stored != null) {
+      let raw;
+      try { raw = JSON.parse(stored); }
+      catch (e) {
+        storageIssue('corrupt', sheetId);
+        return emptyTournament(sheetId, cfgDefaults);
+      }
+      if (raw && raw.schema === SCHEMA && raw.sheet === sheetId) {
+        return normalize(raw, sheetId, cfgDefaults);
+      }
+      storageIssue('incompatible', sheetId);
+      return emptyTournament(sheetId, cfgDefaults);
+    }
     const migrated = migrate(sheetId, cfgDefaults);
     if (migrated) return migrated;
     return emptyTournament(sheetId, cfgDefaults);
@@ -110,6 +160,7 @@
   function normalize(t, sheetId, cfgDefaults) {
     const base = emptyTournament(sheetId, cfgDefaults);
     const out = Object.assign(base, t);
+    out._revision = Number.isFinite(Number(t._revision)) ? Number(t._revision) : 0;
     out.config = Object.assign(base.config, t.config || {});
     out.teamNames = t.teamNames || {};
     out.fieldNames = t.fieldNames || {};
@@ -123,18 +174,142 @@
   }
 
   function save(t) {
-    t.schema = SCHEMA;
-    t.updated = new Date().toISOString();
-    const ok = writeJSON(keyFor(t.sheet), t);
-    if (ok) updateIndex(t);
-    return ok;
+    const s = ls();
+    if (!s) {
+      storageIssue('unavailable', t.sheet);
+      return false;
+    }
+    const key = keyFor(t.sheet);
+    let current;
+    try { current = s.getItem(key); }
+    catch (e) {
+      storageIssue('unavailable', t.sheet);
+      return false;
+    }
+
+    let currentData = null;
+    if (current != null) {
+      try { currentData = JSON.parse(current); }
+      catch (e) {
+        storageIssue('corrupt', t.sheet);
+        return false;
+      }
+      if (!currentData || currentData.schema !== SCHEMA || currentData.sheet !== t.sheet) {
+        storageIssue('incompatible', t.sheet);
+        return false;
+      }
+      const currentRevision = Number(currentData._revision) || 0;
+      const loadedRevision = Number(t._revision) || 0;
+      if (currentRevision !== loadedRevision) {
+        storageIssue('conflict', t.sheet);
+        return false;
+      }
+      try { s.setItem(backupKeyFor(t.sheet), current); }
+      catch (e) {
+        storageIssue('backup-failed', t.sheet);
+        return false;
+      }
+    } else if ((Number(t._revision) || 0) !== 0) {
+      storageIssue('conflict', t.sheet);
+      return false;
+    }
+
+    const candidate = Object.assign({}, t, {
+      schema: SCHEMA,
+      updated: new Date().toISOString(),
+      _revision: currentData ? (Number(currentData._revision) || 0) + 1 : 1
+    });
+    let serialized;
+    try { serialized = JSON.stringify(candidate); }
+    catch (e) {
+      storageIssue('write-failed', t.sheet);
+      return false;
+    }
+    try { s.setItem(key, serialized); }
+    catch (e) {
+      storageIssue('write-failed', t.sheet);
+      return false;
+    }
+    Object.assign(t, candidate);
+    if (!updateIndex(t)) storageIssue('index-failed', t.sheet);
+    return true;
   }
 
   function reset(sheetId) {
-    removeKey(keyFor(sheetId));
+    const s = ls();
+    if (!s) {
+      storageIssue('unavailable', sheetId);
+      return false;
+    }
+    let current;
+    try { current = s.getItem(keyFor(sheetId)); }
+    catch (e) {
+      storageIssue('unavailable', sheetId);
+      return false;
+    }
+    if (current != null) {
+      try {
+        const data = JSON.parse(current);
+        if (!data || data.schema !== SCHEMA || data.sheet !== sheetId) {
+          storageIssue('incompatible', sheetId);
+          return false;
+        }
+        s.setItem(backupKeyFor(sheetId), current);
+        s.removeItem(keyFor(sheetId));
+      } catch (e) {
+        storageIssue('backup-failed', sheetId);
+        return false;
+      }
+    }
     const idx = readJSON(INDEX_KEY, {}) || {};
     delete idx[sheetId];
     writeJSON(INDEX_KEY, idx);
+    return true;
+  }
+
+  function hasBackup(sheetId) {
+    const raw = readJSON(backupKeyFor(sheetId), null);
+    return !!(raw && raw.schema === SCHEMA && raw.sheet === sheetId);
+  }
+
+  function restorePrevious(sheetId) {
+    const s = ls();
+    if (!s) {
+      storageIssue('unavailable', sheetId);
+      return false;
+    }
+    let previous, current;
+    try {
+      current = s.getItem(keyFor(sheetId));
+      previous = s.getItem(backupKeyFor(sheetId));
+    } catch (e) {
+      storageIssue('unavailable', sheetId);
+      return false;
+    }
+    let restored;
+    try { restored = JSON.parse(previous || 'null'); }
+    catch (e) {
+      storageIssue('backup-corrupt', sheetId);
+      return false;
+    }
+    if (!restored || restored.schema !== SCHEMA || restored.sheet !== sheetId) {
+      storageIssue('backup-corrupt', sheetId);
+      return false;
+    }
+    if (current != null) {
+      try { s.setItem('beachl.q.' + sheetId + '.' + Date.now(), current); }
+      catch (e) {
+        storageIssue('backup-failed', sheetId);
+        return false;
+      }
+    }
+    try { s.setItem(keyFor(sheetId), previous); }
+    catch (e) {
+      storageIssue('write-failed', sheetId);
+      return false;
+    }
+    updateIndex(restored);
+    return true;
   }
 
   function updateIndex(t) {
@@ -145,7 +320,7 @@
       updated: t.updated,
       filled: Object.keys(t.results || {}).length
     };
-    writeJSON(INDEX_KEY, idx);
+    return writeJSON(INDEX_KEY, idx);
   }
   function index() { return readJSON(INDEX_KEY, {}) || {}; }
 
@@ -562,9 +737,9 @@
                       : s === '0' || s === 'false' ? false : undefined);
 
   return {
-    SCHEMA, PREFIX, INDEX_KEY, LEGACY,
+    SCHEMA, PREFIX, BACKUP_PREFIX, INDEX_KEY, LEGACY,
     sheetIdFrom, BASE_ID,
-    emptyTournament, load, save, reset, normalize,
+    emptyTournament, load, save, reset, normalize, hasBackup, restorePrevious,
     setScore, getSets, clearScores,
     setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,
     setManualPlacement, getManualPlacements, resetManualPlacementRow, resetManualPlacements,

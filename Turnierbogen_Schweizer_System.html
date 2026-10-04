@@ -1246,6 +1246,10 @@
       const roundFilter = STORE.config.roundFilter;
       const showAllRounds = STORE.config.showAllRounds;
       const started = TArchive.startNew(archiveOpts());
+      if (started.blocked) {
+        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        return;
+      }
       STORE = TStore.emptyTournament(SHEET_ID, {teams:12, fields:6, rounds:7, setMode:'15'});
       STORE.title = started.title;
       if(roundFilter != null) STORE.config.roundFilter = roundFilter;

@@ -1015,6 +1015,10 @@
     $('btnReset').addEventListener('click', () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
       const started = TArchive.startNew(archiveOpts());
+      if (started.blocked) {
+        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        return;
+      }
       TStore.reset(SHEET);
       S = TStore.load(SHEET, { teams:8, fields:4, groups:'auto', setMode:'21',
         finalMode:'placement', startTime:'10:00', endTime:'14:30' });

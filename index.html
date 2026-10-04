@@ -696,6 +696,7 @@
   <script src="core/compat.js"></script>
   <script src="core/turnier-share.js"></script>
   <script src="core/turnier-store.js"></script>
+  <script src="core/turnier-backup.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
 </head>
 <body>
@@ -851,6 +852,14 @@
       <span style="font-size:11px;font-weight:400;color:#bbb">Nur verfügbar wenn über Webserver geöffnet</span>
       <span id="sessions-toggle-icon" style="font-size:13px;color:#999;transition:transform .2s">▾</span>
     </span>
+  </div>
+  <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-8px 0 12px">
+    <button class="pill" type="button" onclick="exportTournamentBackup()">Sicherung herunterladen</button>
+    <button class="pill" type="button" onclick="document.getElementById('backup-file').click()">Sicherung importieren</button>
+    <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()">Speicher schützen</button>
+    <input id="backup-file" type="file" accept="application/json,.json" hidden onchange="importTournamentBackup(event)">
+    <span id="storage-status" role="status" style="font-size:12px;color:#5a6375">Speicherstatus wird geprüft …</span>
+    <span style="flex-basis:100%;font-size:11px;color:#6b7280">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</span>
   </div>
   <div id="saved-sessions" style="margin-bottom:40px">
     <div id="no-sessions" style="color:#999;font-size:13px;padding:12px 0">Keine gespeicherten Turniere gefunden.</div>
@@ -1452,6 +1461,92 @@
     document.getElementById('sessions-more').style.display = 'none';
   }
 
+  function exportTournamentBackup() {
+    try {
+      const backup = TBackup.exportAll();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'beachl-turniersicherung-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      alert('Sicherung heruntergeladen. Sie enthält personenbezogene Turnierdaten und ist nicht verschlüsselt. Bitte vertraulich und getrennt vom Gerät aufbewahren.');
+    } catch (error) {
+      alert('Sicherung konnte nicht erstellt werden: ' + error.message);
+    }
+  }
+
+  function importTournamentBackup(event) {
+    const input = event.target;
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onerror = function () {
+      alert('Die Sicherungsdatei konnte nicht gelesen werden.');
+      input.value = '';
+    };
+    reader.onload = function () {
+      try {
+        const backup = JSON.parse(String(reader.result || ''));
+        if (!confirm('Die Sicherung wird hinzugefügt. Vorhandene Einträge werden niemals überschrieben; bei gleichen Schlüsseln bleibt der aktuelle Stand erhalten. Fortfahren?')) return;
+        const result = TBackup.importAll(backup);
+        alert('Import abgeschlossen: ' + result.added + ' Einträge hinzugefügt, ' + result.skipped + ' bereits vorhandene Einträge übersprungen.');
+        loadSessions();
+      } catch (error) {
+        alert('Sicherung konnte nicht importiert werden: ' + error.message);
+      } finally {
+        input.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function refreshStorageStatus() {
+    const status = document.getElementById('storage-status');
+    const button = document.getElementById('persist-storage-button');
+    const manager = navigator.storage;
+    if (!manager || typeof manager.persisted !== 'function') {
+      status.textContent = 'Dieser Browser bietet keinen dauerhaften Speicher an. Bitte regelmäßig exportieren.';
+      button.disabled = true;
+      return;
+    }
+    manager.persisted().then(function (persistent) {
+      status.textContent = persistent
+        ? 'Dauerhafter Speicher ist aktiv.'
+        : 'Speicher kann vom Browser gelöscht werden. Regelmäßig exportieren.';
+      button.disabled = persistent || typeof manager.persist !== 'function';
+    }, function () {
+      status.textContent = 'Speicherstatus nicht verfügbar. Bitte regelmäßig exportieren.';
+    });
+    if (typeof manager.estimate === 'function') {
+      manager.estimate().then(function (estimate) {
+        if (!estimate || !estimate.quota) return;
+        const used = Math.round((estimate.usage || 0) / 1024 / 1024);
+        const quota = Math.round(estimate.quota / 1024 / 1024);
+        status.textContent += ' Belegt: ca. ' + used + ' MB von ' + quota + ' MB.';
+      }, function () {});
+    }
+  }
+
+  function requestPersistentStorage() {
+    const manager = navigator.storage;
+    if (!manager || typeof manager.persist !== 'function') {
+      alert('Dauerhafter Speicher wird von diesem Browser nicht angeboten. Bitte Sicherungsdateien regelmäßig extern aufbewahren.');
+      return;
+    }
+    manager.persist().then(function (persistent) {
+      refreshStorageStatus();
+      alert(persistent
+        ? 'Der Browser hat dauerhaften Speicher zugesagt. Zusätzliche externe Sicherungen bleiben wichtig.'
+        : 'Der Browser hat den Antrag abgelehnt. Bitte Turniere regelmäßig als Datei sichern.');
+    }, function () {
+      alert('Der Speicherstatus konnte nicht geändert werden. Bitte Turniere regelmäßig als Datei sichern.');
+    });
+  }
+
   /* base -> Datei/Typ-Bezeichnung, wie in TStore.sheetIdFrom('base')
      je Bogen verwendet. */
   const STORE_BASE_MAP = {
@@ -1700,6 +1795,7 @@
   }
 
   loadSessions();
+  refreshStorageStatus();
 
   /* Links auf Turnierbögen bleiben bewusst ohne ?id=: Der Zielbogen selbst
      entscheidet (core/turnier-resume-picker.js) – existieren für diesen

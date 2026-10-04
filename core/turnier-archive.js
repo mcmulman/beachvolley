@@ -266,9 +266,25 @@
      Rückgabe: { archived: <key|null>, title: <Titel für das neue Turnier> } */
   function startNew(opts) {
     const o = opts || {};
-    const archived = save(o);
+    const liveKeys = snapshot(o.keys);
+    const livePrefix = 'beachl.t.';
+    const hasInvalidLiveData = Object.keys(liveKeys).some(function (key) {
+      if (key.indexOf(livePrefix) !== 0) return false;
+      try {
+        const data = JSON.parse(liveKeys[key]);
+        return !data || data.schema !== 2 || data.sheet !== key.slice(livePrefix.length);
+      } catch (e) {
+        return true;
+      }
+    });
+    const mustArchive = !o.empty || hasInvalidLiveData;
+    const saveOptions = Object.assign({}, o, { empty: !mustArchive });
+    const archived = save(saveOptions);
+    if (mustArchive && !archived) {
+      return { archived: null, title: newTitle(o.type), blocked: true };
+    }
     clearLive(o.keys, o.sheet);
-    return { archived: archived, title: newTitle(o.type) };
+    return { archived: archived, title: newTitle(o.type), blocked: false };
   }
 
   return {

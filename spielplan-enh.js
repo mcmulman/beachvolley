@@ -23,6 +23,10 @@
     + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
     + 'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
     + 'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
+    + '#bl-toast.error{background:#a61b1b;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
+    + '#bl-toast.warning{background:#8a4b08;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
+    + '#bl-toast button{margin-left:10px;padding:5px 9px;border:1px solid currentColor;border-radius:5px;'
+    + 'background:#fff;color:#761010;font:inherit;cursor:pointer}'
     + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
     + '@media screen{td.bl-open .psets{background:#f3e6e8;border-bottom:3px solid #925d68;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
@@ -39,9 +43,62 @@
   var toastT = null, saveT = null, armed = false;
   function showToast() {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
+    toast.classList.remove('error', 'warning');
     toast.classList.add('show');
     clearTimeout(toastT);
     toastT = setTimeout(function () { toast.classList.remove('show'); }, 1400);
+  }
+  function showStorageNotice(message, kind, issue) {
+    if (!toast.isConnected && document.body) document.body.appendChild(toast);
+    toast.textContent = message;
+    if (kind === 'error' && issue && (issue.code === 'corrupt' || issue.code === 'incompatible')
+        && window.TStore && window.TStore.hasBackup(issue.sheetId)) {
+      var restore = document.createElement('button');
+      restore.type = 'button';
+      restore.textContent = 'Vorversion wiederherstellen';
+      restore.addEventListener('click', function () {
+        if (!window.confirm('Die aktuelle Datei wird vorher separat aufbewahrt. Die letzte gültige Vorversion wird wiederhergestellt. Fortfahren?')) return;
+        if (window.TStore.restorePrevious(issue.sheetId)) {
+          restore.disabled = true;
+          toast.textContent = 'Vorversion wiederhergestellt. Seite wird neu geladen …';
+          setTimeout(function () { window.location.reload(); }, 500);
+        }
+      });
+      toast.appendChild(restore);
+    }
+    toast.classList.remove('error', 'warning');
+    toast.classList.add(kind, 'show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () {
+      toast.classList.remove('show', kind);
+      toast.textContent = '✓ gespeichert';
+    }, 10000);
+  }
+  var storageErrors = {
+    unavailable: 'Speicher nicht verfügbar. Änderungen werden nicht gespeichert.',
+    corrupt: 'Gespeicherte Daten sind beschädigt. Sie wurden nicht überschrieben. Bitte diese Seite nicht schließen.',
+    incompatible: 'Gespeicherte Daten sind nicht kompatibel. Sie wurden nicht überschrieben.',
+    conflict: 'Ein anderer Tab hat neuere Daten gespeichert. Bitte neu laden; dieser Stand wurde nicht gespeichert.',
+    'backup-failed': 'Sicherung fehlgeschlagen. Änderungen wurden vorsichtshalber nicht gespeichert.',
+    'write-failed': 'Speichern fehlgeschlagen (möglicherweise ist der Gerätespeicher voll). Bitte Daten sichern.',
+    'index-failed': 'Turnierdaten sind gespeichert, aber die Uebersicht konnte nicht aktualisiert werden. Bitte Speicherplatz pruefen.',
+    'external-change': 'Dieses Turnier wurde in einem anderen Tab geändert. Vor weiteren Eingaben bitte neu laden.'
+  };
+  function handleStorageError(event) {
+    var issue = event.detail || {};
+    var pending = window.__BL_PENDING_STORAGE_ISSUES__ || [];
+    var index = pending.indexOf(issue);
+    if (index >= 0) pending.splice(index, 1);
+    showStorageNotice(storageErrors[issue.code] || 'Speicherfehler. Änderungen wurden nicht sicher gespeichert.', 'error', issue);
+  }
+  window.addEventListener('beachl:storage-error', handleStorageError);
+  window.addEventListener('beachl:storage-external-change', function () {
+    showStorageNotice(storageErrors['external-change'], 'warning');
+  });
+  var pendingStorageIssues = window.__BL_PENDING_STORAGE_ISSUES__ || [];
+  delete window.__BL_PENDING_STORAGE_ISSUES__;
+  if (pendingStorageIssues.length) {
+    handleStorageError({ detail: pendingStorageIssues[pendingStorageIssues.length - 1] });
   }
   try {
     var SP = window.Storage && window.Storage.prototype;
@@ -50,7 +107,9 @@
       SP.__bl_wrapped = true;
       SP.setItem = function (k, v) {
         _set.call(this, k, v);
-        if (armed) { clearTimeout(saveT); saveT = setTimeout(showToast, 450); }
+        if (armed && String(k).indexOf('beachl.t.') === 0) {
+          clearTimeout(saveT); saveT = setTimeout(showToast, 450);
+        }
       };
     }
   } catch (e) { /* privater Modus o. ae. – dann eben ohne Hinweis */ }

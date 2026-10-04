@@ -484,6 +484,10 @@
     $('btnReset').addEventListener('click', () => {
       if(!confirm('Neues Turnier starten? Der bisherige Stand wird im Archiv gesichert.')) return;
       const started = TArchive.startNew(archiveOpts());
+      if (started.blocked) {
+        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        return;
+      }
       TStore.reset(SHEET);
       S = TStore.load(SHEET, { teams:12, courts:3, rounds:null, roundMinutes:15, startTime:'10:00' });
       S.absent = []; S.frozen = {};

@@ -709,6 +709,10 @@
     $('btnReset').addEventListener('click', () => {
       if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
       const started = TArchive.startNew(archiveOpts());
+      if (started.blocked) {
+        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        return;
+      }
       TStore.reset(SHEET);
       S = TStore.load(SHEET, DEFAULTS);
       S.config.groups = 0; S.config.bracketMode = 'double'; S.config.finalMode = 'doubleko';

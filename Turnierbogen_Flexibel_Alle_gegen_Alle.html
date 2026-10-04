@@ -1170,6 +1170,10 @@
     if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
     saveTitle();                         // noch nicht gespeicherten Titel mitsichern
     const started = TArchive.startNew(archiveOpts());
+    if (started.blocked) {
+      alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+      return;
+    }
     STORE = TStore.emptyTournament(SHEET_ID, {teams:8, fields:4, setMode:'21'});
     STORE.title = started.title;
     saveStore();
