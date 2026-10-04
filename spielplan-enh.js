@@ -50,6 +50,7 @@
   }
   function showStorageNotice(message, kind, issue) {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
+    while (toast.firstChild) toast.removeChild(toast.firstChild);
     toast.textContent = message;
     if (kind === 'error' && issue && (issue.code === 'corrupt' || issue.code === 'incompatible')
         && window.TStore && window.TStore.hasBackup(issue.sheetId)) {
@@ -69,10 +70,12 @@
     toast.classList.remove('error', 'warning');
     toast.classList.add(kind, 'show');
     clearTimeout(toastT);
-    toastT = setTimeout(function () {
-      toast.classList.remove('show', kind);
-      toast.textContent = '✓ gespeichert';
-    }, 10000);
+    if (kind !== 'error') {
+      toastT = setTimeout(function () {
+        toast.classList.remove('show', kind);
+        toast.textContent = '✓ gespeichert';
+      }, 10000);
+    }
   }
   var storageErrors = {
     unavailable: 'Speicher nicht verfügbar. Änderungen werden nicht gespeichert.',
@@ -89,9 +92,24 @@
     var pending = window.__BL_PENDING_STORAGE_ISSUES__ || [];
     var index = pending.indexOf(issue);
     if (index >= 0) pending.splice(index, 1);
+    if (issue.code !== 'index-failed') {
+      window.__BL_UNSAVED_SHEETS__ = window.__BL_UNSAVED_SHEETS__ || {};
+      window.__BL_UNSAVED_SHEETS__[issue.sheetId || '_unknown'] = true;
+    }
     showStorageNotice(storageErrors[issue.code] || 'Speicherfehler. Änderungen wurden nicht sicher gespeichert.', 'error', issue);
   }
+  function handleStorageSaved(event) {
+    var detail = event.detail || {};
+    var unsaved = window.__BL_UNSAVED_SHEETS__ || {};
+    delete unsaved[detail.sheetId || '_unknown'];
+    if (Object.keys(unsaved).length) return;
+    window.__BL_UNSAVED_SHEETS__ = {};
+    clearTimeout(toastT);
+    toast.classList.remove('show', 'error', 'warning');
+    toast.textContent = '✓ gespeichert';
+  }
   window.addEventListener('beachl:storage-error', handleStorageError);
+  window.addEventListener('beachl:storage-saved', handleStorageSaved);
   window.addEventListener('beachl:storage-external-change', function () {
     showStorageNotice(storageErrors['external-change'], 'warning');
   });
@@ -100,6 +118,11 @@
   if (pendingStorageIssues.length) {
     handleStorageError({ detail: pendingStorageIssues[pendingStorageIssues.length - 1] });
   }
+  window.addEventListener('beforeunload', function (event) {
+    if (!Object.keys(window.__BL_UNSAVED_SHEETS__ || {}).length) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
   try {
     var SP = window.Storage && window.Storage.prototype;
     if (SP && !SP.__bl_wrapped) {

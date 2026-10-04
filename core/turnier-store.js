@@ -214,6 +214,17 @@
       return false;
     }
 
+    let latest;
+    try { latest = s.getItem(key); }
+    catch (e) {
+      storageIssue('unavailable', t.sheet);
+      return false;
+    }
+    if (latest !== current) {
+      storageIssue('conflict', t.sheet);
+      return false;
+    }
+
     const candidate = Object.assign({}, t, {
       schema: SCHEMA,
       updated: new Date().toISOString(),
@@ -230,7 +241,17 @@
       storageIssue('write-failed', t.sheet);
       return false;
     }
+    try {
+      if (s.getItem(key) !== serialized) {
+        storageIssue('conflict', t.sheet);
+        return false;
+      }
+    } catch (e) {
+      storageIssue('unavailable', t.sheet);
+      return false;
+    }
     Object.assign(t, candidate);
+    storageEvent('beachl:storage-saved', { sheetId: t.sheet, revision: t._revision });
     if (!updateIndex(t)) storageIssue('index-failed', t.sheet);
     return true;
   }
