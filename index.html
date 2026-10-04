@@ -870,6 +870,10 @@
         <button type="button" onclick="bulkDeleteSessions()" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12.5px;font-weight:600;cursor:pointer">Löschen</button>
       </span>
     </div>
+    <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
+      <span id="sessions-undo-message"></span>
+      <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer">Rückgängig</button>
+    </div>
     <div id="sessions-list-wrap"></div>
     <div id="sessions-more" style="display:none;margin-top:4px">
       <button onclick="expandSessions(event)" style="display:flex;align-items:center;gap:6px;background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--blue-dark);font-size:13px;cursor:pointer;padding:7px 14px;font-weight:600;width:100%;justify-content:center">
@@ -1407,6 +1411,65 @@
   let sessionsExpanded = false;
   let sessionsCollapsed = false;
   let selectedSessionKeys = new Set();
+  let sessionUndoTimer = null;
+
+  function showSessionUndo(message, undoKey, undo) {
+    const status = document.getElementById('sessions-undo-status');
+    const button = document.getElementById('sessions-undo-button');
+    document.getElementById('sessions-undo-message').textContent = message;
+    status.hidden = false;
+    status.style.display = 'flex';
+    button.disabled = false;
+    button.onclick = async function () {
+      button.disabled = true;
+      try {
+        await undo(undoKey);
+        status.hidden = true;
+        status.style.display = 'none';
+        clearTimeout(sessionUndoTimer);
+        await loadSessions();
+      } catch (error) {
+        button.disabled = false;
+        alert('Rückgängig fehlgeschlagen: ' + error.message);
+      }
+    };
+    clearTimeout(sessionUndoTimer);
+    sessionUndoTimer = setTimeout(async function () {
+      status.hidden = true;
+      status.style.display = 'none';
+      try { await TStore.removeItem(undoKey); } catch (error) {
+        console.error('Temporäre Rückgängig-Sicherung konnte nicht entfernt werden.', error);
+      }
+    }, 15000);
+  }
+
+  async function purgeExpiredUndoRecords() {
+    const entries = await TStore.readEntries();
+    const now = Date.now();
+    const undoEntries = entries.filter(function (entry) {
+      if (entry.key.indexOf(TStore.QUARANTINE_PREFIX + 'undo-delete.') !== 0
+          && entry.key.indexOf(TStore.QUARANTINE_PREFIX + 'undo-import.') !== 0) return false;
+      return true;
+    });
+    const expired = undoEntries.filter(function (entry) {
+      try {
+        const undo = JSON.parse(entry.value);
+        return !undo || !Number.isFinite(undo.expiresAt) || undo.expiresAt <= now;
+      } catch (error) { return true; }
+    });
+    if (expired.length) {
+      await TStore.transaction(function (view) {
+        expired.forEach(function (entry) { view.removeItem(entry.key); });
+      });
+    }
+    return undoEntries.filter(function (entry) { return expired.indexOf(entry) < 0; })
+      .sort(function (a, b) {
+        let at = 0, bt = 0;
+        try { at = JSON.parse(a.value).expiresAt || 0; } catch (error) {}
+        try { bt = JSON.parse(b.value).expiresAt || 0; } catch (error) {}
+        return bt - at;
+      })[0] || null;
+  }
 
   function toggleSessions() {
     const container = document.getElementById('saved-sessions');
@@ -1434,14 +1497,71 @@
     if (!confirm(selectedSessionKeys.size + ' ausgewählte Turniere löschen?')) return;
     try {
       const keys = Array.from(selectedSessionKeys);
-      await TStore.transaction(function (view) {
+      const undoKey = await TStore.transaction(function (view) {
+        const entries = [];
+        keys.forEach(function (sessionKey) {
+          const storageKey = sessionKey.indexOf('store:') === 0
+            ? TStore.PREFIX + sessionKey.slice(6) : sessionKey;
+          const value = view.getItem(storageKey);
+          if (value != null) entries.push({ sessionKey: sessionKey, storageKey: storageKey, value: value });
+        });
+        if (!entries.length) return null;
+        const stamp = Date.now();
+        let undoKey = TStore.QUARANTINE_PREFIX + 'undo-delete.' + stamp;
+        let suffix = 1;
+        while (view.getItem(undoKey) != null) {
+          undoKey = TStore.QUARANTINE_PREFIX + 'undo-delete.' + stamp + '-' + suffix++;
+        }
+        view.setItem(undoKey, JSON.stringify({
+          type: 'session-delete', expiresAt: stamp + 15000, entries: entries
+        }));
         keys.forEach(function (key) { deleteSessionKey(view, key); });
+        return undoKey;
       });
       selectedSessionKeys.clear();
       await loadSessions();
+      if (undoKey) showSessionUndo(keys.length + ' Turnier(e) gelöscht.', undoKey, undoDeletedSessions);
     } catch (error) {
       alert('Turniere konnten nicht gelöscht werden. Es wurde nichts geändert: ' + error.message);
     }
+  }
+
+  async function undoDeletedSessions(undoKey) {
+    await TStore.transaction(function (view) {
+      let undo;
+      try { undo = JSON.parse(view.getItem(undoKey) || 'null'); }
+      catch (error) { throw new Error('Die Rückgängig-Sicherung ist beschädigt.'); }
+      if (!undo || undo.type !== 'session-delete' || undo.expiresAt <= Date.now()
+          || !Array.isArray(undo.entries)) throw new Error('Die Rückgängig-Sicherung ist abgelaufen oder fehlt.');
+      undo.entries.forEach(function (entry) {
+        if (view.getItem(entry.storageKey) != null) {
+          throw new Error('Ein Eintrag wurde inzwischen neu angelegt; es wurde nichts wiederhergestellt.');
+        }
+      });
+      const index = TStore.readIndexInView(view);
+      undo.entries.forEach(function (entry) {
+        if (entry.sessionKey.indexOf('store:') === 0) {
+          const sheet = entry.sessionKey.slice(6);
+          const parsed = TStore.parseRecord(entry.value, sheet);
+          if (!parsed.ok) throw new Error('Ein Turnierdatensatz ist beschädigt; es wurde nichts wiederhergestellt.');
+          const tournament = parsed.data;
+          tournament._revision = Math.max(TStore.revisionInView(view, sheet), Number(tournament._revision) || 0) + 1;
+          view.setItem(entry.storageKey, JSON.stringify(tournament));
+          index[sheet] = TStore.indexEntry(tournament);
+        } else {
+          const archive = JSON.parse(entry.value);
+          view.setItem(entry.storageKey, entry.value);
+          index.__archives = index.__archives || {};
+          index.__archives[entry.storageKey] = {
+            key: entry.storageKey, file: archive.file || '', sheet: archive.sheet || '',
+            type: archive.type || '', title: archive.title || '', teams: archive.teams || [],
+            savedAt: archive.savedAt, archived: true
+          };
+        }
+      });
+      view.setItem(TStore.INDEX_KEY, JSON.stringify(index));
+      view.removeItem(undoKey);
+    });
   }
 
   /* Code-Eingabe: löst die Bogen-Datei über TShare.openByCode() auf und
@@ -1505,6 +1625,9 @@
         const result = await TBackup.importAll(backup);
         alert('Import abgeschlossen: ' + result.added + ' Einträge hinzugefügt, ' + result.skipped + ' bereits vorhandene Einträge übersprungen.');
         await loadSessions();
+        if (result.undoKey) {
+          showSessionUndo(result.added + ' Sicherungseintrag(e) importiert.', result.undoKey, TBackup.undoImport);
+        }
       } catch (error) {
         alert('Sicherung konnte nicht importiert werden: ' + error.message);
       } finally {
@@ -1768,7 +1891,18 @@
       }
   }
 
-  loadSessions();
+  purgeExpiredUndoRecords().then(async function (pendingUndo) {
+    await loadSessions();
+    if (!pendingUndo) return;
+    const record = JSON.parse(pendingUndo.value);
+    showSessionUndo(record.type === 'import'
+      ? record.entries.length + ' Sicherungseintrag(e) importiert.'
+      : record.entries.length + ' Turnier(e) gelöscht.',
+    pendingUndo.key, record.type === 'import' ? TBackup.undoImport : undoDeletedSessions);
+  }).catch(function (error) {
+    console.error('Temporäre Rückgängig-Sicherungen konnten nicht geprüft werden.', error);
+    loadSessions();
+  });
   refreshStorageStatus();
 
   /* Links auf Turnierbögen bleiben bewusst ohne ?id=: Der Zielbogen selbst

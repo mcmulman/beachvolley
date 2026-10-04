@@ -231,7 +231,25 @@
       if (sheet.indexOf('__') !== 0 && view.getItem(TStore.PREFIX + sheet) == null) delete merged[sheet];
     });
     view.setItem(TStore.INDEX_KEY, JSON.stringify(merged));
-    return { added: added.length, skipped: skipped };
+    let undoKey = null;
+    const undoEntries = added.filter(function (entry) {
+      return entry.key.indexOf(TStore.REVISION_PREFIX) !== 0;
+    });
+    if (undoEntries.length) {
+      const stamp = Date.now();
+      undoKey = TStore.QUARANTINE_PREFIX + 'undo-import.' + stamp;
+      let n = 1;
+      while (view.getItem(undoKey) != null) {
+        undoKey = TStore.QUARANTINE_PREFIX + 'undo-import.' + stamp + '-' + n++;
+      }
+      view.setItem(undoKey, JSON.stringify({
+        type: 'import',
+        createdAt: stamp,
+        expiresAt: stamp + 15000,
+        entries: undoEntries
+      }));
+    }
+    return { added: added.length, skipped: skipped, undoKey: undoKey };
   }
 
   /* → Promise<{ added, skipped }>. Alles-oder-nichts: eine einzige
@@ -249,9 +267,47 @@
     });
   }
 
+  function undoImport(undoKey) {
+    if (typeof undoKey !== 'string'
+        || undoKey.indexOf(TStore.QUARANTINE_PREFIX + 'undo-import.') !== 0) {
+      return Promise.reject(new Error('Ungültiger Import-Rückgängig-Schlüssel.'));
+    }
+    return TStore.transaction(function (view) {
+      let undo;
+      try { undo = JSON.parse(view.getItem(undoKey) || 'null'); }
+      catch (e) { throw new Error('Import-Rückgängig-Daten sind beschädigt.'); }
+      if (!undo || undo.type !== 'import' || !Array.isArray(undo.entries)) {
+        throw new Error('Import-Rückgängig-Daten sind nicht verfügbar.');
+      }
+      const index = TStore.readIndexInView(view);
+      undo.entries.forEach(function (entry) {
+        if (view.getItem(entry.key) !== entry.value) {
+          throw new Error('Importierte Daten wurden inzwischen geändert; Rückgängig wurde abgebrochen.');
+        }
+      });
+      undo.entries.forEach(function (entry) {
+        const key = entry.key;
+        if (key.indexOf(TStore.PREFIX) === 0) {
+          const sheet = key.slice(TStore.PREFIX.length);
+          const record = JSON.parse(entry.value);
+          const revision = Math.max(TStore.revisionInView(view, sheet), Number(record._revision) || 0);
+          view.setItem(TStore.REVISION_PREFIX + sheet, String(revision));
+          delete index[sheet];
+        } else if (key.indexOf(TStore.ARCHIVE_PREFIX) === 0) {
+          if (index.__archives) delete index.__archives[key];
+        }
+        view.removeItem(key);
+      });
+      if (index.__archives && !Object.keys(index.__archives).length) delete index.__archives;
+      view.setItem(TStore.INDEX_KEY, JSON.stringify(index));
+      view.removeItem(undoKey);
+      return { removed: undo.entries.length };
+    });
+  }
+
   return {
     FORMAT: FORMAT, VERSION: VERSION, MAX_BYTES: MAX_BYTES,
-    exportAll: exportAll, importAll: importAll,
+    exportAll: exportAll, importAll: importAll, undoImport: undoImport,
     validateBackup: validateBackup, importInView: importInView
   };
 });

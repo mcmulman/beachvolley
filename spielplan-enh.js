@@ -26,7 +26,7 @@
     + '#bl-toast.error{background:#a61b1b;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
     + '#bl-toast.warning{background:#8a4b08;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
     + '#bl-toast button{margin-left:10px;padding:5px 9px;border:1px solid currentColor;border-radius:5px;'
-    + 'background:#fff;color:#761010;font:inherit;cursor:pointer}'
+    + 'min-height:44px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
     + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
     + '@media screen{td.bl-open .psets{background:#f3e6e8;border-bottom:3px solid #925d68;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
@@ -40,13 +40,60 @@
   var toast = document.createElement('div');
   toast.id = 'bl-toast';
   toast.textContent = '✓ gespeichert';
-  var toastT = null, armed = false;
+  var toastT = null, armed = false, undoSequence = 0, undoBusy = false;
   function showToast() {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
+    while (toast.firstChild) toast.removeChild(toast.firstChild);
+    toast.textContent = '✓ gespeichert';
     toast.classList.remove('error', 'warning');
     toast.classList.add('show');
     clearTimeout(toastT);
     toastT = setTimeout(function () { toast.classList.remove('show'); }, 1400);
+  }
+  function showUndoToast(sheetId) {
+    var sequence = ++undoSequence;
+    if (!window.TStore || !sheetId || typeof window.TStore.hasBackup !== 'function') {
+      showToast();
+      return;
+    }
+    window.TStore.hasBackup(sheetId).then(function (available) {
+      if (sequence !== undoSequence) return;
+      if (!available) { showToast(); return; }
+      if (!toast.isConnected && document.body) document.body.appendChild(toast);
+      while (toast.firstChild) toast.removeChild(toast.firstChild);
+      toast.appendChild(document.createTextNode('✓ gespeichert'));
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'bl-undo-button';
+      button.textContent = 'Rückgängig';
+      button.setAttribute('aria-label', 'Letzten gespeicherten Stand wiederherstellen');
+      button.addEventListener('click', function () {
+        button.disabled = true;
+        undoBusy = true;
+        window.TStore.restorePrevious(sheetId).then(function (restored) {
+          if (!restored) {
+            undoBusy = false;
+            showStorageNotice('Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.', 'error');
+            return;
+          }
+          while (toast.firstChild) toast.removeChild(toast.firstChild);
+          toast.textContent = 'Voriger Stand wiederhergestellt. Seite wird neu geladen …';
+          setTimeout(function () { window.location.reload(); }, 300);
+        }, function () {
+          undoBusy = false;
+          showStorageNotice('Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.', 'error');
+        });
+      });
+      toast.appendChild(button);
+      toast.classList.remove('error', 'warning');
+      toast.classList.add('show');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () {
+        toast.classList.remove('show');
+        while (toast.firstChild) toast.removeChild(toast.firstChild);
+        toast.textContent = '✓ gespeichert';
+      }, 10000);
+    });
   }
   function showStorageNotice(message, kind, issue) {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
@@ -112,10 +159,11 @@
     delete unsaved._unknown;
     if (Object.keys(unsaved).length || (window.TStore && window.TStore.isPending())) return;
     window.__BL_UNSAVED_SHEETS__ = {};
+    if (undoBusy) return;
     clearTimeout(toastT);
     toast.classList.remove('show', 'error', 'warning');
-    toast.textContent = '✓ gespeichert';
-    if (armed) showToast();
+    if (armed && typeof detail.revision === 'number' && detail.sheetId) showUndoToast(detail.sheetId);
+    else if (armed) showToast();
   }
   window.addEventListener('beachl:storage-error', handleStorageError);
   window.addEventListener('beachl:storage-saved', handleStorageSaved);
@@ -457,6 +505,7 @@
     }
   });
   document.addEventListener('input', function () { armed = true; schedule(); }, true);
+  document.addEventListener('click', function () { armed = true; }, true);
   document.addEventListener('change', schedule, true);
 
   /* Die dynamischen Boegen bauen den Spielplan bei jeder Aenderung neu auf –
