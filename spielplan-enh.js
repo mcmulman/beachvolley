@@ -95,6 +95,31 @@
       }, 10000);
     });
   }
+  function showArchiveUndo(detail) {
+    if (!detail || !detail.key || !window.TArchive || typeof window.TArchive.restoreUrl !== 'function') return;
+    var url = window.TArchive.restoreUrl(detail.file, detail.sheet, detail.key);
+    if (!toast.isConnected && document.body) document.body.appendChild(toast);
+    while (toast.firstChild) toast.removeChild(toast.firstChild);
+    toast.appendChild(document.createTextNode('Bisheriger Stand archiviert. '));
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'bl-archive-undo-button';
+    button.textContent = 'Neues Turnier rückgängig';
+    button.setAttribute('aria-label', 'Bisheriges Turnier wiederherstellen');
+    button.addEventListener('click', function () {
+      button.disabled = true;
+      window.location.href = url;
+    });
+    toast.appendChild(button);
+    toast.classList.remove('error', 'warning');
+    toast.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () {
+      toast.classList.remove('show');
+      while (toast.firstChild) toast.removeChild(toast.firstChild);
+      toast.textContent = '✓ gespeichert';
+    }, 15000);
+  }
   function showStorageNotice(message, kind, issue) {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
     while (toast.firstChild) toast.removeChild(toast.firstChild);
@@ -167,6 +192,9 @@
   }
   window.addEventListener('beachl:storage-error', handleStorageError);
   window.addEventListener('beachl:storage-saved', handleStorageSaved);
+  window.addEventListener('beachl:tournament-archived', function (event) {
+    showArchiveUndo(event.detail || {});
+  });
   window.addEventListener('beachl:storage-external-change', function () {
     showStorageNotice(storageErrors['external-change'], 'warning');
   });

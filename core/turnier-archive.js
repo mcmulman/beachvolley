@@ -442,7 +442,15 @@
         }
       }
       return { archived: archived, title: title, blocked: false, tournament: tournament };
-    })).then(res => { notifyTabs([o.sheet]); return res; }, err => ({ archived: null, title: title, blocked: true, error: err }));
+    })).then(res => {
+      notifyTabs([o.sheet]);
+      if (res.archived && root && typeof root.dispatchEvent === 'function' && typeof root.CustomEvent === 'function') {
+        root.dispatchEvent(new root.CustomEvent('beachl:tournament-archived', {
+          detail: { key: res.archived, file: o.file || '', sheet: o.sheet || '' }
+        }));
+      }
+      return res;
+    }, err => ({ archived: null, title: title, blocked: true, error: err }));
   }
 
   return {
