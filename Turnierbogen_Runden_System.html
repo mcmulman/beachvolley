@@ -814,7 +814,11 @@
       return { team: e.team, i, effPts: e.stat.pts + dPts, effBd: e.stat.bd + dBd };
     });
     rows.slice().sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i))
-      .forEach((row, i) => { row.place = i + 1; });
+      .forEach((row, i, sorted) => {
+        const prev = sorted[i - 1];
+        row.place = prev && row.effPts === prev.effPts && row.effBd === prev.effBd
+          ? prev.place : i + 1;
+      });
     rows.sort((a, b) => (a.place - b.place) || (a.i - b.i));
     rows.forEach((row, i) => {
       const prev = rows[i - 1], next = rows[i + 1];

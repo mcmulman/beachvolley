@@ -1109,7 +1109,7 @@
       const d=directResult(a,b); if(d!==0) return -d;
       return a-b;
     });
-    const sameW = (a,b)=> st[a].pts===st[b].pts && st[a].bd===st[b].bd && st[a].sc===st[b].sc;
+    const sameW = (a,b)=> st[a].pts===st[b].pts && st[a].bd===st[b].bd;
     const rankOf={};
     ranked.forEach((t,idx)=>{ rankOf[t] = (idx>0 && sameW(ranked[idx-1],t)) ? rankOf[ranked[idx-1]] : idx+1; });
     ranked.forEach((t,idx)=>{

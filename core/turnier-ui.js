@@ -377,51 +377,17 @@
       const effBd = (per ? r.stat.bdPer : r.stat.bd) + dBd;
       return { orig: r, i, team: r.team, dPts, dBd, hasPlace, overridePlace, effPts, effBd };
     });
-    /* Zweistufige Sortierung:
-       1) Rein rechnerischer Rang nach den korrigierten Werten (effPts/effBd –
-          Punkte, dann Ball-Differenz, dieselbe Hauptkriterien-Reihenfolge wie
-          die Berechnung selbst). Eine Δ-Korrektur wirkt sich hier direkt aus:
-          zieht man einem Team Punkte ab, rutscht die Zeile automatisch
-          herunter. Ohne jede Δ-Korrektur bleibt exakt die ursprüngliche
-          Reihung (inkl. weiterer Tie-Break-Kriterien wie direkter Vergleich)
-          erhalten, weil dann effPts/effBd mit den Basiswerten übereinstimmen
-          und der stabile Index i als letzter Vergleich greift.
-       2) Ein manuell gesetzter Platz überschreibt diesen rechnerischen Rang
-          zusätzlich (fester Wert, siehe placeListHtml-Pendant); beide Werte
-          sind einfache Zahlen 1..n und lassen sich daher direkt mischen.     */
-    /* Zweistufige Sortierung:
-       1) Rein rechnerischer Rang nach den korrigierten Werten (effPts/effBd –
-          Punkte, dann Ball-Differenz, dieselbe Hauptkriterien-Reihenfolge wie
-          die Berechnung selbst). Eine Δ-Korrektur wirkt sich hier direkt aus:
-          zieht man einem Team Punkte ab, rutscht die Zeile automatisch
-          herunter. Ohne jede Δ-Korrektur bleibt exakt die ursprüngliche
-          Reihung (inkl. weiterer Tie-Break-Kriterien wie direkter Vergleich)
-          erhalten, weil dann effPts/effBd mit den Basiswerten übereinstimmen
-          und der stabile Index i als letzter Vergleich greift.
-       2) Ein manuell gesetzter Platz überschreibt diesen rechnerischen Rang
-          zusätzlich (fester Wert, siehe placeListHtml-Pendant); beide Werte
-          sind einfache Zahlen 1..n und lassen sich daher direkt mischen.
-       Solange die Tabelle im Bearbeiten-Modus ist, bleiben die ZEILEN in
-       ihrer ursprünglichen Reihenfolge stehen (nur der Platz-Wert wird schon
-       aktualisiert angezeigt) – die eigentliche Neusortierung passiert erst,
-       wenn "Fertig" geklickt wird. So springen Zeilen nicht schon während der
-       Eingabe hin und her. */
-    const hasScoreDeltas = rows.some(row => row.dPts || row.dBd);
-    if (!hasScoreDeltas) {
-      rows.forEach(row => {
-        row.calcPlace = Number.isFinite(Number(row.orig.place)) ? Number(row.orig.place) : row.i + 1;
-      });
-    } else {
-      const recalculated = rows.slice().sort((a, b) =>
-        (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i));
-      let place = 1;
-      recalculated.forEach((row, i) => {
-        if (i && (row.effPts !== recalculated[i - 1].effPts || row.effBd !== recalculated[i - 1].effBd)) {
-          place = i + 1;
-        }
-        row.calcPlace = place;
-      });
-    }
+    /* The displayed place shares ties on points and ball difference while
+       preserving the ranking engine's order as the stable tie-breaker. */
+    const recalculated = rows.slice().sort((a, b) =>
+      (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i));
+    let place = 1;
+    recalculated.forEach((row, i) => {
+      if (i && (row.effPts !== recalculated[i - 1].effPts || row.effBd !== recalculated[i - 1].effBd)) {
+        place = i + 1;
+      }
+      row.calcPlace = place;
+    });
     rows.forEach(row => { row.place = row.hasPlace ? row.overridePlace : row.calcPlace; });
     const sortedRows = rows.slice().sort((a, b) => (a.place - b.place) || (a.i - b.i));
     sortedRows.forEach((row, i) => {
