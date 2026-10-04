@@ -18,7 +18,83 @@
     return (t && t.trim()) ? t.trim() : cleanTitle(document.title);
   }
 
+  function groupConfigActions() {
+    document.querySelectorAll('.cfgcard-actions').forEach(function (toolbar, index) {
+      if (toolbar.querySelector('.cfg-actions-toggle')) return;
+      var card = toolbar.closest('.cfgcard');
+      if (!card) return;
+      var buttons = Array.prototype.slice.call(toolbar.querySelectorAll('button'));
+      var content = document.createElement('div');
+      content.className = 'cfg-actions-content';
+      content.id = 'configActions' + index;
+      content.hidden = false;
+
+      var groups = document.createElement('div');
+      groups.className = 'cfg-action-groups';
+      content.appendChild(groups);
+      function makeGroup(label, danger) {
+        var group = document.createElement('div');
+        group.className = 'cfg-action-group' + (danger ? ' cfg-action-group--danger' : '');
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', label);
+        var heading = document.createElement('div');
+        heading.className = 'cfg-action-group__label';
+        heading.textContent = label;
+        group.appendChild(heading);
+        var actions = document.createElement('div');
+        actions.className = 'cfg-action-group__buttons';
+        group.appendChild(actions);
+        groups.appendChild(group);
+        return actions;
+      }
+      var teams = makeGroup('Teams & Felder');
+      var planning = makeGroup('Spielplanung');
+      var reset = makeGroup('Zurücksetzen', true);
+      var primary = document.createElement('div');
+      primary.className = 'cfg-actions-primary';
+      primary.setAttribute('role', 'group');
+      primary.setAttribute('aria-label', 'Teilen und Speichern');
+
+      // Move the existing buttons so their handlers and state stay intact.
+      buttons.forEach(function (button) {
+        if (button.matches('#btnShare, #btnSave, [onclick*="shareTournament"], [onclick*="manualSave"]')) {
+          primary.appendChild(button);
+        } else if (button.matches('#btnClearScores, #btnReset, [onclick*="clearScores"], [onclick*="resetTournament"]')) {
+          reset.appendChild(button);
+        } else if (button.matches('#btnToggleNames, #btnToggleFields, #btnToggleAbsent, #btnToggleDropout, [onclick*="toggleNames"], [onclick*="toggleFields"], [onclick*="toggleAbsent"], [onclick*="toggleDropout"]')) {
+          teams.appendChild(button);
+        } else {
+          planning.appendChild(button);
+        }
+      });
+      [teams, planning, reset].forEach(function (actions) {
+        if (!actions.children.length) groups.removeChild(actions.parentElement);
+      });
+      toolbar.querySelectorAll('.spacer').forEach(function (spacer) { spacer.remove(); });
+
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'nbtn cfg-actions-toggle';
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-controls', content.id);
+      toggle.innerHTML = '<svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'
+        + '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>'
+        + ' Konfiguration <span class="cfg-actions-chevron" aria-hidden="true"></span>';
+      toggle.addEventListener('click', function () {
+        content.hidden = !content.hidden;
+        toggle.setAttribute('aria-expanded', String(!content.hidden));
+      });
+      toolbar.appendChild(toggle);
+      if (primary.children.length) toolbar.appendChild(primary);
+      toolbar.parentNode.insertBefore(content, toolbar.nextSibling);
+      document.querySelectorAll('#namepanel, #fieldpanel, #absentpanel, #dropoutpanel').forEach(function (panel) {
+        if (!panel.closest('.cfgcard') || panel.closest('.cfgcard') === card) content.appendChild(panel);
+      });
+    });
+  }
+
   function build() {
+    groupConfigActions();
     if (document.querySelector('.app-bar')) return;
 
     // vorhandene Navizeile finden (enthält Link zur Übersicht)

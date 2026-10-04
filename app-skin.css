@@ -536,8 +536,49 @@
   }
   .cfgcard-actions .spacer { margin-left: auto; }
   .cfgcard-actions #session-title-input { min-width: 180px; }
+  .cfg-actions-primary {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+  .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
+  .cfgcard-actions .nbtn, .cfg-action-group__buttons > .nbtn { min-height: 44px; }
+  .cfg-actions-toggle[aria-expanded="true"] { background: #d8e8f8; }
+  .cfg-actions-chevron {
+    width: 7px; height: 7px; margin-left: 5px;
+    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+  }
+  .cfg-actions-toggle[aria-expanded="true"] .cfg-actions-chevron {
+    transform: rotate(225deg) translate(-2px, -1px);
+  }
+  .cfg-actions-content { margin-top: 12px; }
+  .cfg-actions-content[hidden] { display: none; }
+  .cfg-action-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .cfg-action-group {
+    min-width: 0; padding: 12px;
+    border: 1px solid var(--app-line-soft); border-radius: 10px;
+    background: var(--app-tint);
+  }
+  .cfg-action-group--danger { background: #fff8f8; border-color: #f3c9c9; }
+  .cfg-action-group__label {
+    margin-bottom: 10px; font-size: 12px; font-weight: 750;
+    color: var(--app-blue-dark);
+  }
+  .cfg-action-group--danger .cfg-action-group__label { color: #c02626; }
+  .cfg-action-group__buttons { display: flex; flex-wrap: wrap; margin: -4px; }
+  .cfg-action-group__buttons > .nbtn { margin: 4px; }
   @media (max-width: 560px) {
     .cfgres-item { flex-basis: calc(50% - 5px); }
+    .cfgcard-actions > .cfg-actions-toggle { flex: 1 1 100%; }
+    .cfg-actions-primary { width: 100%; }
+    .cfg-actions-primary > .nbtn { flex: 1 1 0; }
+    .cfg-action-groups { grid-template-columns: minmax(0, 1fr); }
+    .cfg-action-group__buttons > .nbtn { flex: 1 1 180px; }
   }
 
   /* Zweistufige Übersicht (spielplan-enh.js layoutKpis): große Key-Kacheln
