@@ -17,7 +17,18 @@
   if (window.__BL_ENH__) return;
   window.__BL_ENH__ = true;
 
-  var INVALID_TITLE = 'Ungültiges Ergebnis: Zielpunktzahl nicht erreicht oder kein 2-Punkte-Vorsprung.';
+  /* DE/EN-Prototyp (core/turnier-i18n.js): nur auf freigeschalteten Seiten
+     übersetzen; sonst bleiben exakt die bisherigen deutschen Texte. */
+  function tx(key, de, params) {
+    var I = window.TI18n && window.TI18n.active() ? window.TI18n : null;
+    if (I) return I.t(key, params);
+    return String(de).replace(/\{(\w+)\}/g, function (m, k) {
+      return params && params[k] != null ? String(params[k]) : m;
+    });
+  }
+
+  var INVALID_TITLE = tx('enh.invalid', 'Ungültiges Ergebnis: Zielpunktzahl nicht erreicht oder kein 2-Punkte-Vorsprung.');
+  var SAVED = tx('enh.saved', '✓ gespeichert');
 
   var css = ''
     + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
@@ -39,12 +50,12 @@
   /* ---------------------------------------------------- Speicher-Feedback */
   var toast = document.createElement('div');
   toast.id = 'bl-toast';
-  toast.textContent = '✓ gespeichert';
+  toast.textContent = SAVED;
   var toastT = null, armed = false, undoSequence = 0, undoBusy = false;
   function showToast() {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
     while (toast.firstChild) toast.removeChild(toast.firstChild);
-    toast.textContent = '✓ gespeichert';
+    toast.textContent = SAVED;
     toast.classList.remove('error', 'warning');
     toast.classList.add('show');
     clearTimeout(toastT);
@@ -61,27 +72,27 @@
       if (!available) { showToast(); return; }
       if (!toast.isConnected && document.body) document.body.appendChild(toast);
       while (toast.firstChild) toast.removeChild(toast.firstChild);
-      toast.appendChild(document.createTextNode('✓ gespeichert'));
+      toast.appendChild(document.createTextNode(SAVED));
       var button = document.createElement('button');
       button.type = 'button';
       button.id = 'bl-undo-button';
-      button.textContent = 'Rückgängig';
-      button.setAttribute('aria-label', 'Letzten gespeicherten Stand wiederherstellen');
+      button.textContent = tx('enh.undo', 'Rückgängig');
+      button.setAttribute('aria-label', tx('enh.undoAria', 'Letzten gespeicherten Stand wiederherstellen'));
       button.addEventListener('click', function () {
         button.disabled = true;
         undoBusy = true;
         window.TStore.restorePrevious(sheetId).then(function (restored) {
           if (!restored) {
             undoBusy = false;
-            showStorageNotice('Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.', 'error');
+            showStorageNotice(tx('enh.undoFailed', 'Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.'), 'error');
             return;
           }
           while (toast.firstChild) toast.removeChild(toast.firstChild);
-          toast.textContent = 'Voriger Stand wiederhergestellt. Seite wird neu geladen …';
+          toast.textContent = tx('enh.undoDone', 'Voriger Stand wiederhergestellt. Seite wird neu geladen …');
           setTimeout(function () { window.location.reload(); }, 300);
         }, function () {
           undoBusy = false;
-          showStorageNotice('Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.', 'error');
+          showStorageNotice(tx('enh.undoFailed', 'Der letzte Stand konnte nicht wiederhergestellt werden. Bitte Daten sichern.'), 'error');
         });
       });
       toast.appendChild(button);
@@ -91,7 +102,7 @@
       toastT = setTimeout(function () {
         toast.classList.remove('show');
         while (toast.firstChild) toast.removeChild(toast.firstChild);
-        toast.textContent = '✓ gespeichert';
+        toast.textContent = SAVED;
       }, 10000);
     });
   }
@@ -100,12 +111,12 @@
     var url = window.TArchive.restoreUrl(detail.file, detail.sheet, detail.key);
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
     while (toast.firstChild) toast.removeChild(toast.firstChild);
-    toast.appendChild(document.createTextNode('Bisheriger Stand archiviert. '));
+    toast.appendChild(document.createTextNode(tx('enh.archived', 'Bisheriger Stand archiviert. ')));
     var button = document.createElement('button');
     button.type = 'button';
     button.id = 'bl-archive-undo-button';
-    button.textContent = 'Neues Turnier rückgängig';
-    button.setAttribute('aria-label', 'Bisheriges Turnier wiederherstellen');
+    button.textContent = tx('enh.archiveUndo', 'Neues Turnier rückgängig');
+    button.setAttribute('aria-label', tx('enh.archiveUndoAria', 'Bisheriges Turnier wiederherstellen'));
     button.addEventListener('click', function () {
       button.disabled = true;
       window.location.href = url;
@@ -117,7 +128,7 @@
     toastT = setTimeout(function () {
       toast.classList.remove('show');
       while (toast.firstChild) toast.removeChild(toast.firstChild);
-      toast.textContent = '✓ gespeichert';
+      toast.textContent = SAVED;
     }, 15000);
   }
   function showStorageNotice(message, kind, issue) {
@@ -128,17 +139,17 @@
         && window.TStore) {
       var restore = document.createElement('button');
       restore.type = 'button';
-      restore.textContent = 'Vorversion wiederherstellen';
+      restore.textContent = tx('enh.restorePrevious', 'Vorversion wiederherstellen');
       restore.disabled = true;
       window.TStore.hasBackup(issue.sheetId).then(function (available) {
         restore.disabled = !available;
         if (!available && restore.parentNode) restore.parentNode.removeChild(restore);
       });
       restore.addEventListener('click', async function () {
-        if (!window.confirm('Die aktuelle Datei wird vorher separat aufbewahrt. Die letzte gültige Vorversion wird wiederhergestellt. Fortfahren?')) return;
+        if (!window.confirm(tx('enh.restoreConfirm', 'Die aktuelle Datei wird vorher separat aufbewahrt. Die letzte gültige Vorversion wird wiederhergestellt. Fortfahren?'))) return;
         restore.disabled = true;
         if (await window.TStore.restorePrevious(issue.sheetId)) {
-          toast.textContent = 'Vorversion wiederhergestellt. Seite wird neu geladen …';
+          toast.textContent = tx('enh.restoreDone', 'Vorversion wiederhergestellt. Seite wird neu geladen …');
           setTimeout(function () { window.location.reload(); }, 500);
         } else restore.disabled = false;
       });
@@ -150,21 +161,21 @@
     if (kind !== 'error') {
       toastT = setTimeout(function () {
         toast.classList.remove('show', kind);
-        toast.textContent = '✓ gespeichert';
+        toast.textContent = SAVED;
       }, 10000);
     }
   }
   var storageErrors = {
-    unavailable: 'Speicher nicht verfügbar. Änderungen werden nicht gespeichert.',
-    blocked: 'Turnierspeicher ist durch ein anderes Fenster blockiert. Andere BeachL-Tabs schließen und erneut versuchen.',
-    corrupt: 'Gespeicherte Daten sind beschädigt. Sie wurden nicht überschrieben. Bitte diese Seite nicht schließen.',
-    incompatible: 'Gespeicherte Daten sind nicht kompatibel. Sie wurden nicht überschrieben.',
-    conflict: 'Ein anderer Tab hat neuere Daten gespeichert. Bitte neu laden; dieser Stand wurde nicht gespeichert.',
-    'backup-failed': 'Sicherung fehlgeschlagen. Änderungen wurden vorsichtshalber nicht gespeichert.',
-    'write-failed': 'Speichern fehlgeschlagen (möglicherweise ist der Gerätespeicher voll). Bitte Daten sichern.',
-    'index-failed': 'Turnierübersicht konnte nicht gespeichert werden. Bitte Speicherplatz prüfen.',
-    'backup-corrupt': 'Die Vorversion ist beschädigt. Eine Wiederherstellung ist nicht möglich.',
-    'external-change': 'Dieses Turnier wurde in einem anderen Tab geändert. Vor weiteren Eingaben bitte neu laden.'
+    unavailable: tx('enh.storage.unavailable', 'Speicher nicht verfügbar. Änderungen werden nicht gespeichert.'),
+    blocked: tx('enh.storage.blocked', 'Turnierspeicher ist durch ein anderes Fenster blockiert. Andere BeachL-Tabs schließen und erneut versuchen.'),
+    corrupt: tx('enh.storage.corrupt', 'Gespeicherte Daten sind beschädigt. Sie wurden nicht überschrieben. Bitte diese Seite nicht schließen.'),
+    incompatible: tx('enh.storage.incompatible', 'Gespeicherte Daten sind nicht kompatibel. Sie wurden nicht überschrieben.'),
+    conflict: tx('enh.storage.conflict', 'Ein anderer Tab hat neuere Daten gespeichert. Bitte neu laden; dieser Stand wurde nicht gespeichert.'),
+    'backup-failed': tx('enh.storage.backupFailed', 'Sicherung fehlgeschlagen. Änderungen wurden vorsichtshalber nicht gespeichert.'),
+    'write-failed': tx('enh.storage.writeFailed', 'Speichern fehlgeschlagen (möglicherweise ist der Gerätespeicher voll). Bitte Daten sichern.'),
+    'index-failed': tx('enh.storage.indexFailed', 'Turnierübersicht konnte nicht gespeichert werden. Bitte Speicherplatz prüfen.'),
+    'backup-corrupt': tx('enh.storage.backupCorrupt', 'Die Vorversion ist beschädigt. Eine Wiederherstellung ist nicht möglich.'),
+    'external-change': tx('enh.storage.externalChange', 'Dieses Turnier wurde in einem anderen Tab geändert. Vor weiteren Eingaben bitte neu laden.')
   };
   function handleStorageError(event) {
     var issue = event.detail || {};
@@ -175,7 +186,7 @@
       window.__BL_UNSAVED_SHEETS__ = window.__BL_UNSAVED_SHEETS__ || {};
       window.__BL_UNSAVED_SHEETS__[issue.sheetId || '_unknown'] = true;
     }
-    showStorageNotice(storageErrors[issue.code] || 'Speicherfehler. Änderungen wurden nicht sicher gespeichert.', 'error', issue);
+    showStorageNotice(storageErrors[issue.code] || tx('enh.storage.generic', 'Speicherfehler. Änderungen wurden nicht sicher gespeichert.'), 'error', issue);
   }
   function handleStorageSaved(event) {
     var detail = event.detail || {};
@@ -402,8 +413,8 @@
       btn.type = 'button';
       btn.className = 'nbtn rconfirm bl-rdone noprint';
       btn.setAttribute('data-bl-round-done', '');
-      btn.setAttribute('aria-label', 'Runde abschließen');
-      btn.title = 'Runde abschließen';
+      btn.setAttribute('aria-label', tx('enh.roundDone', 'Runde abschließen'));
+      btn.title = tx('enh.roundDone', 'Runde abschließen');
       btn.textContent = '✓';
       head.appendChild(btn);
     });
@@ -566,15 +577,19 @@
      Die bestehenden Elemente (#rv-…) werden nur umsortiert, damit die
      bogeneigene Befüllung inkl. is-warn unverändert weiterarbeitet.       */
   var KPI_MAIN = [
-    ['rv-teams', 'Teams'], ['rv-participants', 'Teilnehmer:innen'], ['rv-groups', 'Gruppen'],
-    ['rv-fields', 'Felder'], ['rv-perTeam', 'Spiele pro Team'], ['rv-perPerson', 'Spiele pro Person'],
-    ['rv-fitEnd', 'Ende ca.'], ['rv-buffer', 'Zeitreserve']
+    ['rv-teams', tx('enh.kpi.teams', 'Teams')], ['rv-participants', tx('enh.kpi.participants', 'Teilnehmer:innen')],
+    ['rv-groups', tx('enh.kpi.groups', 'Gruppen')],
+    ['rv-fields', tx('enh.kpi.fields', 'Felder')], ['rv-perTeam', tx('enh.kpi.perTeam', 'Spiele pro Team')],
+    ['rv-perPerson', tx('enh.kpi.perPerson', 'Spiele pro Person')],
+    ['rv-fitEnd', tx('enh.kpi.fitEnd', 'Ende ca.')], ['rv-buffer', tx('enh.kpi.buffer', 'Zeitreserve')]
   ];
   var KPI_MORE = [
-    ['rv-mode', 'Modus'], ['rv-rounds', 'Runden'], ['rv-size', 'Baumgröße'], ['rv-byes', 'Freilose Runde 1'],
-    ['rv-games', 'Spiele'], ['rv-grpGames', 'Spiele Vorrunde'], ['rv-finGames', 'Spiele Finalrunde'],
-    ['rv-subsets', 'Sätze'], ['rv-perGame', 'Zeit pro Spiel (verfügbar / nötig)'],
-    ['rv-duration', 'Zeitfenster / Bedarf']
+    ['rv-mode', tx('enh.kpi.mode', 'Modus')], ['rv-rounds', tx('enh.kpi.rounds', 'Runden')],
+    ['rv-size', tx('enh.kpi.size', 'Baumgröße')], ['rv-byes', tx('enh.kpi.byes', 'Freilose Runde 1')],
+    ['rv-games', tx('enh.kpi.games', 'Spiele')], ['rv-grpGames', tx('enh.kpi.grpGames', 'Spiele Vorrunde')],
+    ['rv-finGames', tx('enh.kpi.finGames', 'Spiele Finalrunde')],
+    ['rv-subsets', tx('enh.kpi.subsets', 'Sätze')], ['rv-perGame', tx('enh.kpi.perGame', 'Zeit pro Spiel (verfügbar / nötig)')],
+    ['rv-duration', tx('enh.kpi.duration', 'Zeitfenster / Bedarf')]
   ];
   function layoutKpis() {
     var box = document.querySelector('.cfgresult');

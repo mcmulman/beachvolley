@@ -26,6 +26,30 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  /* DE/EN-Prototyp (core/turnier-i18n.js): Nur Seiten mit <html data-i18n>
+     übersetzen. Ohne TI18n bzw. auf nicht freigeschalteten Seiten gilt der
+     deutsche Fallback – exakt der bisherige Text (Test: i18n.test.mjs). */
+  function i18n() {
+    return typeof TI18n !== 'undefined' && TI18n && TI18n.active() ? TI18n : null;
+  }
+  function tx(key, de, params) {
+    const I = i18n();
+    if (I) return I.t(key, params);
+    const s = de && typeof de === 'object'
+      ? (params && Number(params.count) === 1 ? de.one : de.other) : de;
+    return String(s).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? String(params[k]) : m));
+  }
+  function term(s) {
+    const I = i18n();
+    return I ? I.term(s) : s;
+  }
+  /* Titel eines Zeitslots ("Halbfinale", "Runde 3 · Teil 1/2") – gemeinsam
+     für Spielplan-Kopf und Zeitplan-Tabelle. */
+  function slotTitle(s) {
+    const base = s.title ? term(s.title) : tx('ui.round.n', 'Runde {n}', { n: s.round });
+    return base + (s.of > 1 ? tx('ui.round.part', ' · Teil {part}/{of}', { part: s.part, of: s.of }) : '');
+  }
+
   function fmtTime(min) { return TC.fromMin(min); }
   function fmtDiff(n) {
     if (n == null || Number.isNaN(n)) return '';
@@ -34,11 +58,12 @@
 
   function teamNameHtml(team, teamNames, absent) {
     const n = team == null ? '' : String(team).trim();
-    if (!n) return absent ? '<span class="abt">ausgefallen</span>' : '';
+    const absentHtml = '<span class="abt">' + esc(tx('ui.absent', 'ausgefallen')) + '</span>';
+    if (!n) return absent ? absentHtml : '';
     const nm = ((teamNames && teamNames[n]) || '').trim();
     const label = '<span class="t-line">Team ' + esc(n) + '</span>'
       + (nm ? '<span class="tnm t-nm">(' + esc(nm) + ')</span>' : '');
-    return absent ? label + ' <span class="abt">ausgefallen</span>' : label;
+    return absent ? label + ' ' + absentHtml : label;
   }
 
   /* ================================================================ 1. NAMEN
@@ -58,7 +83,11 @@
      Der ausgedruckte Plan ist dadurch ohne Gerät verständlich.               */
   function sideLabel(ref, resolved, ctx) {
     if (resolved != null) return ctx.teamLabel(resolved);
-    return TC.refLabel(ref, ctx) || '–';
+    const label = TC.refLabel(ref, ctx);
+    if (!label) return '–';
+    /* Herkunftstexte der Engine ("Sieger HF1") nur zur Anzeige übersetzen;
+       Team-Referenzen tragen Nutzerdaten und bleiben unverändert. */
+    return ref && typeof ref === 'object' && ref.k !== 'team' ? term(label) : label;
   }
 
   /* Turnierbaum-Spalten (Gewinner-/Verlierer-Runde, Grand Final …) als
@@ -67,11 +96,11 @@
   function bracketColumnsHtml(rounds) {
     let html = '';
     (rounds || []).forEach(rd => {
-      html += '<div class="brcol"><div class="brhead">' + esc(rd.title || rd.label || '') + '</div>';
+      html += '<div class="brcol"><div class="brhead">' + esc(term(rd.title || rd.label || '')) + '</div>';
       (rd.matches || []).forEach(m => {
         const cls = 'brm' + (m.places ? ' is-p3' : '') + (m.reset ? ' is-reset' : '');
         html += '<div class="' + cls + '" data-br="' + esc(m.id) + '">'
-          + '<div class="brname">' + esc(m.name || '') + '</div>'
+          + '<div class="brname">' + esc(term(m.name || '')) + '</div>'
           + '<div class="brside" data-br-side="a"><span class="n"></span><span class="s"></span></div>'
           + '<div class="brside" data-br-side="b"><span class="n"></span><span class="s"></span></div>'
           + '</div>';
@@ -128,7 +157,7 @@
        Tab muss immer direkt vom linken ins rechte Kaestchen und von dort ins
        naechste Spiel springen, ohne hier "haengenzubleiben". */
     const okBtn = '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
-      + ' aria-label="Eingabe bestätigen und weiter">✓</button>';
+      + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '">✓</button>';
     return '<span class="sset" data-set="' + setNo + '">'
       + '<span class="slbl">' + esc(label) + '</span>'
       + '<span class="sbox">' + inp('a') + '<span class="vs">:</span>' + inp('b') + okBtn + '</span>'
@@ -143,9 +172,10 @@
     const isBye = (m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye');
 
     const inputNames = { a: sideLabel(m.a, ta, ctx), b: sideLabel(m.b, tb, ctx) };
-    let sets = setColumnHtml(m.id, 1, setCnt <= 1 ? 'Punkte' : 'Satz 1', null, inputNames);
-    if (setCnt >= 2) sets += setColumnHtml(m.id, 2, 'Satz 2', null, inputNames);
-    if (deciding) sets += setColumnHtml(m.id, 3, 'Entsch.', 'TB', inputNames);
+    let sets = setColumnHtml(m.id, 1, setCnt <= 1 ? tx('ui.score.points', 'Punkte')
+      : tx('ui.score.setN', 'Satz {n}', { n: 1 }), null, inputNames);
+    if (setCnt >= 2) sets += setColumnHtml(m.id, 2, tx('ui.score.setN', 'Satz {n}', { n: 2 }), null, inputNames);
+    if (deciding) sets += setColumnHtml(m.id, 3, tx('ui.score.decider', 'Entsch.'), 'TB', inputNames);
 
     /* t-a/t-b richten die Namen nach aussen aus, .t-line haelt "Team 12"
        einzeilig – beides wie im Bogen "Alle gegen Alle".                     */
@@ -155,11 +185,12 @@
       + (team != null ? 'data-team="' + team + '"' : '') + '>'
       + cardNameHtml(ref, team, ctx) + '</span></span>';
 
-    const extra = m.label ? '<span class="mnote-slot">' + esc(m.label) + '</span>' : '';
+    const extra = m.label ? '<span class="mnote-slot">' + esc(term(m.label)) + '</span>' : '';
     /* Nur EINE Beschriftung: ein sprechender Titel ("Spiel um Platz 3") ersetzt
        die technische Platzangabe, sonst stünde beides doppelt auf dem Bogen. */
     const places = (m.places && !m.label)
-      ? '<span class="mnote-slot">um Platz ' + m.places.join('/') + '</span>' : '';
+      ? '<span class="mnote-slot">' + esc(tx('ui.match.places', 'um Platz {places}', { places: m.places.join('/') }))
+        + '</span>' : '';
 
     return '<td class="match' + (isBye ? ' is-bye' : '') + '"'
       + ' data-mid="' + esc(m.id) + '"'
@@ -176,7 +207,7 @@
       + side('pside-b', m.b, tb)
       + '</span>'
       + (isBye
-        ? '<span class="bye-tag">Freilos</span>'
+        ? '<span class="bye-tag">' + esc(tx('ui.bye', 'Freilos')) + '</span>'
         : '<span class="psets">' + sets + '</span>'
         + '<span class="presult">'
         + '<span class="mres mres-a"><span class="mscore" data-score="a"></span><span class="tdiff" data-diff="a"></span></span>'
@@ -212,16 +243,16 @@
       return;
     }
     if (pair) pair.hidden = true;
-    if (note) note.innerHTML = dead ? '' : '<span class="mwin-note">(kampflos)</span>';
+    if (note) note.innerHTML = dead ? '' : '<span class="mwin-note">' + esc(tx('ui.bye.walkover', '(kampflos)')) + '</span>';
 
     let html;
     if (dead) {
-      html = '<span class="bye-tag">beide Teams ausgefallen</span>';
+      html = '<span class="bye-tag">' + esc(tx('ui.bye.bothAbsent', 'beide Teams ausgefallen')) + '</span>';
     } else {
       const nameHtml = ctx.teamNameHtml ? ctx.teamNameHtml(winner) : esc(ctx.teamLabel(winner));
       const onLeft = !!td.querySelector('.pside-a [data-team="' + winner + '"]');
       const name = '<span class="t">' + nameHtml + '</span>';
-      const tag = '<span class="bye-tag">Freilos</span>';
+      const tag = '<span class="bye-tag">' + esc(tx('ui.bye', 'Freilos')) + '</span>';
       html = onLeft ? name + tag : tag + name;
       const sideEl = td.querySelector(onLeft ? '.pside-a' : '.pside-b');
       if (sideEl) sideEl.classList.add('is-winner');
@@ -236,17 +267,17 @@
     const nf = ctx.fields;
     let html = '';
     slots.forEach(s => {
-      const parts = s.of > 1 ? ' · Teil ' + s.part + '/' + s.of : '';
-      const title = (s.title || ('Runde ' + s.round)) + parts;
+      const title = slotTitle(s);
       const nextBtn = '<button type="button" class="nbtn rnext noprint"'
         + ' data-round-next-from="' + s.round + '"'
         + ' data-round-step="1"'
-        + ' aria-label="Zur nächsten Runde springen"><span class="chev chev-right" aria-hidden="true"></span> Runde</button>';
+        + ' aria-label="' + esc(tx('ui.round.nextAria', 'Zur nächsten Runde springen')) + '">'
+        + '<span class="chev chev-right" aria-hidden="true"></span> ' + esc(tx('ui.round.word', 'Runde')) + '</button>';
       const confirmBtn = '<button type="button" class="nbtn rconfirm noprint"'
         + ' data-round-confirm="' + s.round + '"'
         + ' data-round-confirm-slot="' + s.slot + '"'
-        + ' aria-label="Aktuelles Feld validieren und zum nächsten Feld springen"'
-        + ' title="Aktuelles Feld validieren und weiter">✓</button>';
+        + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Aktuelles Feld validieren und zum nächsten Feld springen')) + '"'
+        + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '">✓</button>';
       const meta = '<span class="rhead-meta">'
         + '<span class="rlabel">' + esc(title) + '</span>'
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
@@ -261,7 +292,7 @@
         + '<span class="rhead-actions">' + confirmBtn + '</span>';
       const byes = (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
       if (byes.length) {
-        head += '<span class="rbye">spielfrei: '
+        head += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
           + byes.map(t => '<span data-team="' + t + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
           + '</span>';
       }
@@ -320,7 +351,7 @@
     if (db) { db.textContent = fmtDiff(-diff); db.className = 'tdiff ' + (diff < 0 ? 'pos' : diff > 0 ? 'neg' : ''); }
     if (res.winner === 'a' && sa) sa.classList.add('is-winner');
     if (res.winner === 'b' && sb) sb.classList.add('is-winner');
-    if (note) note.textContent = res.draw ? 'Unentschieden – je 1 Punkt' : '';
+    if (note) note.textContent = res.draw ? tx('ui.match.drawNote', 'Unentschieden – je 1 Punkt') : '';
   }
 
   /* Markiert die Eingabekaestchen einer Spielkarte: gruen beim Satzgewinner,
@@ -487,8 +518,10 @@
     const topCls = p >= 1 && p <= 3 ? ' rank-top rank-' + p : '';
     const medal = RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
     const label = (o.prefix || '') + p + '.' + (o.shared ? '=' : '');
-    const title = (o.title || (fin ? 'Endplatzierung' : o.final === false ? 'Aktueller Platz (laufend)' : 'Platz')) + ': ' + label
-      + (o.shared ? ' (geteilt)' : '') + (o.manual ? ' – manuell gesetzt' : '');
+    const kind = o.title || (fin ? tx('ui.rank.final', 'Endplatzierung')
+      : o.final === false ? tx('ui.rank.live', 'Aktueller Platz (laufend)') : tx('ui.rank.place', 'Platz'));
+    const title = kind + ': ' + label
+      + (o.shared ? tx('ui.rank.shared', ' (geteilt)') : '') + (o.manual ? tx('ui.rank.manual', ' – manuell gesetzt') : '');
     return '<span class="rank-badge ' + (fin ? 'rank-final' : 'rank-live') + topCls + extra
       + '" title="' + esc(title) + '">' + medal + esc(label) + '</span>';
   }
@@ -517,7 +550,7 @@
       const hasPlace = ov.place != null && Number.isFinite(Number(ov.place));
       const place = hasPlace ? Number(ov.place) : p.place;
       const hasSource = ov.source != null && ov.source !== '';
-      const source = hasSource ? ov.source : (p.source || '');
+      const source = hasSource ? ov.source : term(p.source || '');
       return { p, i, place, hasPlace, hasSource, source };
     });
     /* Im Bearbeiten-Modus bleibt die Zeilenreihenfolge stehen (nur der Platz-
@@ -529,7 +562,7 @@
     let html = '';
     rows.forEach(row => {
       const p = row.p;
-      const placeLabel = row.hasPlace ? (row.place + '.') : (p.rangeLabel ? p.rangeLabel : (p.place + '.'));
+      const placeLabel = row.hasPlace ? (row.place + '.') : (p.rangeLabel ? term(p.rangeLabel) : (p.place + '.'));
       const teamHtml = p.team != null
         ? (ctx && ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : esc(ctx ? ctx.teamLabel(p.team) : String(p.team)))
         : '&nbsp;';
@@ -541,7 +574,8 @@
           + '<td class="src mstd-cell' + (row.hasSource ? ' is-manual' : '') + '">'
           + '<input type="text" class="mstd-in mstd-text" data-field="source" value="' + esc(row.source) + '">'
           + (p.team != null && (row.hasPlace || row.hasSource)
-              ? ' <button type="button" class="mstd-reset-row" data-team="' + p.team + '" title="Zurücksetzen">↺</button>'
+              ? ' <button type="button" class="mstd-reset-row" data-team="' + p.team + '" title="'
+                + esc(tx('ui.manual.resetRow', 'Zurücksetzen')) + '">↺</button>'
               : '')
           + '</td>';
       } else {
@@ -573,8 +607,9 @@
       const on = editing.has(key);
       return '<span class="mstd-toolbar noprint">'
         + '<button type="button" class="mstd-toggle" data-mstd-toggle="' + esc(key) + '">'
-        + (on ? 'Fertig' : 'Tabelle korrigieren') + '</button>'
-        + (on ? ' <button type="button" class="mstd-reset-all" data-mstd-reset="' + esc(key) + '">Korrekturen zurücksetzen</button>' : '')
+        + esc(on ? tx('ui.manual.done', 'Fertig') : tx('ui.manual.edit', 'Tabelle korrigieren')) + '</button>'
+        + (on ? ' <button type="button" class="mstd-reset-all" data-mstd-reset="' + esc(key) + '">'
+          + esc(tx('ui.manual.resetAll', 'Korrekturen zurücksetzen')) + '</button>' : '')
         + '</span>';
     };
     root.addEventListener('click', e => {
@@ -656,14 +691,14 @@
     const o = opts || {};
     const sets = o.sets ? o.sets + ' – ' : '';
     const add = t => (t ? ' ' + t : '');
-    const screen = 'So trägst du ein: ' + sets
+    const screen = tx('ui.hint.screen', 'So trägst du ein: {sets}'
       + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
       + 'Nur Zahlen; mit „:“ oder Enter springst du ins nächste Kästchen. '
-      + 'Der Sieger wird hervorgehoben.'
+      + 'Der Sieger wird hervorgehoben.', { sets: sets })
       + add(o.screenAdd);
-    const print = 'So ausfüllen: ' + sets
+    const print = tx('ui.hint.print', 'So ausfüllen: {sets}'
       + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
-      + 'Satzergebnis direkt nach dem Spiel mit dem Stift eintragen und den Namen des Siegers einkreisen.'
+      + 'Satzergebnis direkt nach dem Spiel mit dem Stift eintragen und den Namen des Siegers einkreisen.', { sets: sets })
       + add(o.printAdd);
     return hintHtml(screen, print);
   }
@@ -751,8 +786,9 @@
   function teamDelBtnHtml(t, label, canRemove) {
     return '<button type="button" class="team-del" data-remove-team="' + t + '"'
       + (canRemove ? '' : ' disabled')
-      + ' title="' + (canRemove ? 'Team endgültig löschen' : 'Mindestanzahl an Teams erreicht')
-      + '" aria-label="' + esc(label) + ' löschen">'
+      + ' title="' + esc(canRemove ? tx('ui.team.deleteTitle', 'Team endgültig löschen')
+        : tx('ui.team.deleteMin', 'Mindestanzahl an Teams erreicht'))
+      + '" aria-label="' + esc(tx('ui.team.deleteAria', '{label} löschen', { label: label })) + '">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
       + '</button>';
   }
@@ -773,7 +809,7 @@
     for (let f = 0; f < count; f++) {
       html += '<label class="nrow"><span class="nnum">' + (f + 1) + '</span>'
         + '<input type="text" data-field-input="' + f + '" value="' + esc(fieldNames[f] || '')
-        + '" placeholder="Feld ' + (f + 1) + '" autocomplete="off" spellcheck="false"></label>';
+        + '" placeholder="' + esc(tx('ui.field.n', 'Feld {n}', { n: f + 1 })) + '" autocomplete="off" spellcheck="false"></label>';
     }
     return html;
   }
@@ -792,13 +828,13 @@
   /* Rückfrage vor dem endgültigen Löschen eines Teams. */
   function confirmRemoveTeam(label, o) {
     o = o || {};
-    let msg = '„' + label + '“ endgültig aus dem Turnier löschen?\n\n'
-      + 'Alle nachfolgenden Teams rücken eine Nummer nach vorn';
+    let msg = tx('ui.team.confirmRemove', '„{label}“ endgültig aus dem Turnier löschen?\n\n'
+      + 'Alle nachfolgenden Teams rücken eine Nummer nach vorn', { label: label });
     msg += o.hasResults
-      ? ', der Spielplan wird neu erstellt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten; Spiele mit diesem Team entfallen.'
-      : ' und der Spielplan wird neu erstellt.';
+      ? tx('ui.team.confirmRemoveResults', ', der Spielplan wird neu erstellt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten; Spiele mit diesem Team entfallen.')
+      : tx('ui.team.confirmRemoveNoResults', ' und der Spielplan wird neu erstellt.');
     if (o.extra) msg += '\n\n' + o.extra;
-    msg += '\n\nTipp: Soll das Team nur pausieren, stattdessen „ausgefallen“ ankreuzen.';
+    msg += '\n\n' + tx('ui.team.confirmRemoveTip', 'Tipp: Soll das Team nur pausieren, stattdessen „ausgefallen“ ankreuzen.');
     return (typeof confirm === 'function') ? confirm(msg) : true;
   }
 
@@ -815,30 +851,33 @@
     const atFirst = cur === 'all' || idx <= 0;
     const atLast = cur === 'all' || idx < 0 || idx >= rounds.length - 1;
 
-    let opts = '<option value="all"' + (cur === 'all' ? ' selected' : '') + '>Alle Runden</option>';
+    let opts = '<option value="all"' + (cur === 'all' ? ' selected' : '') + '>'
+      + esc(tx('ui.roundbar.allRounds', 'Alle Runden')) + '</option>';
     rounds.forEach(r => {
       opts += '<option value="' + r + '"' + (cur === String(r) ? ' selected' : '')
-        + '>Runde ' + r + '</option>';
+        + '>' + esc(tx('ui.round.n', 'Runde {n}', { n: r })) + '</option>';
     });
 
     const state = cur === 'all'
-      ? 'Alle ' + rounds.length + (rounds.length === 1 ? ' Runde' : ' Runden') + ' sichtbar'
-      : 'Runde ' + cur + ' von ' + rounds.length;
+      ? tx('ui.roundbar.allVisible', { one: 'Alle {count} Runde sichtbar', other: 'Alle {count} Runden sichtbar' },
+        { count: rounds.length })
+      : tx('ui.roundbar.current', 'Runde {n} von {total}', { n: cur, total: rounds.length });
 
     const allActive = cur === 'all';
     const ICON_LAYERS = '<svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>';
-    return '<label>Runde<select data-round-select>' + opts + '</select></label>'
+    return '<label>' + esc(tx('ui.round.word', 'Runde')) + '<select data-round-select>' + opts + '</select></label>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-prev" data-round-step="-1"'
-      + (atFirst ? ' disabled' : '') + ' aria-label="Vorherige Runde">'
-      + '<span class="chev chev-left" aria-hidden="true"></span> Zurück</button>'
+      + (atFirst ? ' disabled' : '') + ' aria-label="' + esc(tx('ui.roundbar.prevAria', 'Vorherige Runde')) + '">'
+      + '<span class="chev chev-left" aria-hidden="true"></span> ' + esc(tx('ui.roundbar.prev', 'Zurück')) + '</button>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-next" data-round-step="1"'
-      + (atLast ? ' disabled' : '') + ' aria-label="Nächste Runde">'
-      + 'Weiter <span class="chev chev-right" aria-hidden="true"></span></button>'
+      + (atLast ? ' disabled' : '') + ' aria-label="' + esc(tx('ui.roundbar.nextAria', 'Nächste Runde')) + '">'
+      + esc(tx('ui.roundbar.next', 'Weiter')) + ' <span class="chev chev-right" aria-hidden="true"></span></button>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-all'
         + (allActive ? ' roundall-active' : '') + '" data-round-all'
         + ' aria-pressed="' + allActive + '"'
-        + ' title="Alle Runden gleichzeitig anzeigen">'
-        + ICON_LAYERS + (allActive ? ' Einzelne Runde' : ' Alle Runden') + '</button>'
+        + ' title="' + esc(tx('ui.roundbar.allTitle', 'Alle Runden gleichzeitig anzeigen')) + '">'
+        + ICON_LAYERS + ' ' + esc(allActive ? tx('ui.roundbar.single', 'Einzelne Runde') : tx('ui.roundbar.allRounds', 'Alle Runden'))
+        + '</button>'
       + '<span class="state" aria-live="polite">' + esc(state) + '</span>';
   }
 
@@ -946,11 +985,11 @@
     const btn = (id, label) => id
       ? '<button type="button" class="nbtn" data-jump="' + esc(id) + '">' + esc(label) + '</button>'
       : '';
-    return btn(t.setup || 'configSection', '⚙️ Setup')
-      + btn(t.guide || 'guideContainer', '📖 Anleitung')
-      + btn(t.schedule || 'scheduleSection', '📋 Spielplan')
-      + btn(t.standings || 'standingsSection', '🏁 Tabelle')
-      + '<button type="button" class="nbtn" data-jump-print>🖨️ Drucken</button>';
+    return btn(t.setup || 'configSection', tx('ui.jump.setup', '⚙️ Setup'))
+      + btn(t.guide || 'guideContainer', tx('ui.jump.guide', '📖 Anleitung'))
+      + btn(t.schedule || 'scheduleSection', tx('ui.jump.schedule', '📋 Spielplan'))
+      + btn(t.standings || 'standingsSection', tx('ui.jump.standings', '🏁 Tabelle'))
+      + '<button type="button" class="nbtn" data-jump-print>' + esc(tx('ui.jump.print', '🖨️ Drucken')) + '</button>';
   }
 
   /* Ein delegierter Listener genuegt fuer die ganze Leiste. */
@@ -1213,7 +1252,7 @@
     const max = maxParallelFields(teams);
     const val = Math.max(1, Math.min(+current || 1, max));
     sel.innerHTML = '';
-    for (let n = 1; n <= max; n++) sel.add(new Option(n + (n === 1 ? ' Feld' : ' Felder'), n));
+    for (let n = 1; n <= max; n++) sel.add(new Option(tx('ui.field.count', { one: '{count} Feld', other: '{count} Felder' }, { count: n }), n));
     sel.value = String(val);
     return val;
   }
@@ -1221,14 +1260,13 @@
   /* Kompakte Zeitplan-Uebersicht (zweispaltig): auf dem Ausdruck sieht die
      Turnierleitung auf einen Blick, wann welche Runde startet.              */
   function timeTableHtml(slots, endLabel) {
-    const rows = (slots || []).map(s => {
-      const parts = s.of > 1 ? ' · Teil ' + s.part + '/' + s.of : '';
-      return { t: fmtTime(s.startMin), n: (s.title || ('Runde ' + s.round)) + parts };
-    });
+    const rows = (slots || []).map(s => ({ t: fmtTime(s.startMin), n: slotTitle(s) }));
     if (endLabel) rows.push({ t: endLabel.time, n: endLabel.text });
     const half = Math.ceil(rows.length / 2);
-    let html = '<table class="timeplan"><caption>Zeitplan</caption><thead><tr>'
-      + '<th>Zeit</th><th>Runde</th><th>Zeit</th><th>Runde</th></tr></thead><tbody>';
+    const thTime = esc(tx('ui.timeplan.time', 'Zeit'));
+    const thRound = esc(tx('ui.round.word', 'Runde'));
+    let html = '<table class="timeplan"><caption>' + esc(tx('ui.timeplan.caption', 'Zeitplan')) + '</caption><thead><tr>'
+      + '<th>' + thTime + '</th><th>' + thRound + '</th><th>' + thTime + '</th><th>' + thRound + '</th></tr></thead><tbody>';
     for (let i = 0; i < half; i++) {
       const a = rows[i], b = rows[i + half];
       html += '<tr><td>' + (a ? esc(a.t) : '') + '</td><td>' + (a ? esc(a.n) : '') + '</td>'
@@ -1272,8 +1310,9 @@
     if (o.teams != null) set('rv-teams', o.teams);
     set('rv-fitEnd', fmtTime(o.needEndMin), o.needEndMin > o.windowEndMin);
     set('rv-subsets', (setsLo === setsHi ? setsLo : setsLo + '–' + setsHi)
-      + ' · ≈' + perSet + ' Min/Satz');
-    set('rv-perGame', availPerGame + ' / ' + minPerGame + ' Min', availPerGame < minPerGame);
+      + tx('ui.kpi.perSet', ' · ≈{min} Min/Satz', { min: perSet }));
+    set('rv-perGame', tx('ui.kpi.perGame', '{avail} / {min} Min', { avail: availPerGame, min: minPerGame }),
+      availPerGame < minPerGame);
     set('rv-duration', fmtDur(winMin) + ' / ' + fmtDur(needMin), needMin > winMin);
     set('rv-buffer', (winMin - needMin >= 0 ? '+' : '−') + fmtDur(Math.abs(winMin - needMin)),
       winMin < needMin);

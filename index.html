@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-i18n>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -117,6 +117,21 @@
       max-width: 600px;
       margin: 0 auto;
       line-height: 1.5;
+    }
+
+    /* DE/EN-Prototyp: Hinweis nur in der englischen Ansicht (data-i18n-only). */
+    .i18n-preview-note {
+      box-sizing: border-box;
+      width: calc(100% - 32px);
+      max-width: 1100px;
+      margin: 16px auto 0;
+      padding: 10px 14px;
+      background: #fff8e1;
+      border: 1px solid #f0d58a;
+      border-radius: 8px;
+      color: #5c4700;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
     /* ── Wizard: kompakte Format-Empfehlung für Einsteiger ── */
@@ -694,6 +709,10 @@
   <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
+  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
   <script src="core/turnier-share.js"></script>
   <script src="core/turnier-store.js"></script>
   <script src="core/turnier-backup.js"></script>
@@ -702,22 +721,26 @@
 <body>
 
 <div class="appbar noprint">
-  <a class="brand" href="index.html" aria-label="Startseite">
+  <a class="brand" href="index.html" aria-label="Startseite" data-i18n-attr="aria-label:home.brandAria">
     <img src="icon.svg" alt="">
-    <span class="brand-title">Beach-Volleyball<span class="brand-sub">Turniervorlagen</span></span>
+    <span class="brand-title"><span data-i18n="home.brandTitle">Beach-Volleyball</span><span class="brand-sub" data-i18n="home.brandSub">Turniervorlagen</span></span>
   </a>
   <div class="appbar-spacer"></div>
   <div class="appbar-actions">
+    <span class="i18n-slot" data-i18n-switch="pill"></span>
     <span id="offline-status" class="pill" style="display:none"></span>
-    <button id="install-btn" class="pill pill--primary" style="display:none">⬇︎ <span class="lbl">Installieren</span></button>
+    <button id="install-btn" class="pill pill--primary" style="display:none">⬇︎ <span class="lbl" data-i18n="home.install">Installieren</span></button>
   </div>
 </div>
 
 <header>
   <div class="logo">🏐</div>
-  <h1>Beach-Volleyball Turniervorlagen</h1>
-  <p>Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
+  <h1 data-i18n="home.title">Beach-Volleyball Turniervorlagen</h1>
+  <p data-i18n="home.subtitle">Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
 </header>
+
+<!-- DE/EN-Prototyp: Hinweis nur in der englischen Ansicht. -->
+<p class="i18n-preview-note noprint" data-i18n-only="en" lang="en" role="note" hidden>English preview: so far only parts of this home page and the <strong>Knockout</strong> tournament sheet are translated. All other sheets, the setup wizard, saved-tournament and backup messages and the format documentation are still in German.</p>
 
 <div class="wizard-wrap noprint">
   <details class="wizard" id="wizard">
@@ -796,13 +819,13 @@
 
 <div class="filterbar">
   <div class="mobile-filter-grid" aria-label="Mobile Filter">
-    <label class="mf-field">Format
+    <label class="mf-field"><span data-i18n="home.filter.format">Format</span>
       <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
-        <option value="">Alle Formate</option>
+        <option value="" data-i18n="home.filter.allFormats">Alle Formate</option>
         <option value="rr">Jeder gegen Jeden</option>
         <option value="gruppen">Gruppen</option>
         <option value="swiss">Schweizer System</option>
-        <option value="ko">KO-System</option>
+        <option value="ko" data-i18n="home.filter.ko">KO-System</option>
         <option value="de">Doppel-K.-o.</option>
         <option value="mpp">Modified Pool Play</option>
         <option value="koc">King/Queen of the Court</option>
@@ -814,15 +837,15 @@
         <option value="daviscup">Davis Cup</option>
       </select>
     </label>
-    <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()">Alle anzeigen</button>
+    <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
   </div>
   <div class="filterbar-desktop">
-    <button class="filter-btn active" onclick="filter('all', this)">Alle</button>
+    <button class="filter-btn active" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
     <div class="filter-sep"></div>
     <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
     <button class="filter-btn" onclick="filter('gruppen', this)">Gruppen</button>
     <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
-    <button class="filter-btn" onclick="filter('ko', this)">KO-System</button>
+    <button class="filter-btn" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
     <button class="filter-btn" onclick="filter('de', this)">Doppel-K.-o.</button>
     <button class="filter-btn" onclick="filter('mpp', this)">Modified Pool Play</button>
     <button class="filter-btn" onclick="filter('koc', this)">King/Queen of the Court</button>
@@ -838,18 +861,18 @@
 <main>
 
   <!-- ── Geteiltes Turnier per Code öffnen ── -->
-  <div class="section-label noprint">Geteiltes Turnier öffnen</div>
+  <div class="section-label noprint" data-i18n="home.code.label">Geteiltes Turnier öffnen</div>
   <form class="code-open-box noprint" id="code-open-form" onsubmit="return handleOpenByCode(event)">
-    <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" autocomplete="off"
+    <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" data-i18n-attr="placeholder:home.code.placeholder" autocomplete="off"
            autocapitalize="off" spellcheck="false" inputmode="text">
-    <button type="submit">Öffnen</button>
+    <button type="submit" data-i18n="home.code.open">Öffnen</button>
   </form>
 
   <!-- ── Gespeicherte Turniere ── -->
   <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleSessions()" id="sessions-label">
-    <span>Gespeicherte Turniere <span id="sessions-count" style="font-weight:400;color:#aaa;font-size:12px"></span></span>
+    <span><span data-i18n="home.sessions.label">Gespeicherte Turniere</span> <span id="sessions-count" style="font-weight:400;color:#aaa;font-size:12px"></span></span>
     <span style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:11px;font-weight:400;color:#bbb">Nur verfügbar wenn über Webserver geöffnet</span>
+      <span style="font-size:11px;font-weight:400;color:#bbb" data-i18n="home.sessions.serverOnly">Nur verfügbar wenn über Webserver geöffnet</span>
       <span id="sessions-toggle-icon" style="font-size:13px;color:#999;transition:transform .2s">▾</span>
     </span>
   </div>
@@ -859,20 +882,20 @@
     <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()">Speicher schützen</button>
     <input id="backup-file" type="file" accept="application/json,.json" hidden onchange="importTournamentBackup(event)">
     <span id="storage-status" role="status" style="font-size:12px;color:#5a6375">Speicherstatus wird geprüft …</span>
-    <span style="flex-basis:100%;font-size:11px;color:#6b7280">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</span>
+    <span style="flex-basis:100%;font-size:11px;color:#6b7280" data-i18n="home.backup.privacy">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</span>
   </div>
   <div id="saved-sessions" style="margin-bottom:40px">
-    <div id="no-sessions" style="color:#999;font-size:13px;padding:12px 0">Keine gespeicherten Turniere gefunden.</div>
+    <div id="no-sessions" style="color:#999;font-size:13px;padding:12px 0" data-i18n="home.sessions.none">Keine gespeicherten Turniere gefunden.</div>
     <div id="sessions-bulk-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding:6px 10px;background:#fdf3f3;border:1px solid #f0caca;border-radius:8px;font-size:12.5px">
       <span id="sessions-bulk-count"></span>
       <span style="display:flex;gap:10px">
-        <button type="button" onclick="clearSessionSelection()" style="background:none;border:none;color:#667;font-size:12.5px;cursor:pointer;text-decoration:underline;padding:0">Auswahl aufheben</button>
-        <button type="button" onclick="bulkDeleteSessions()" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12.5px;font-weight:600;cursor:pointer">Löschen</button>
+        <button type="button" onclick="clearSessionSelection()" style="background:none;border:none;color:#667;font-size:12.5px;cursor:pointer;text-decoration:underline;padding:0" data-i18n="home.sessions.clearSelection">Auswahl aufheben</button>
+        <button type="button" onclick="bulkDeleteSessions()" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12.5px;font-weight:600;cursor:pointer" data-i18n="home.sessions.delete">Löschen</button>
       </span>
     </div>
     <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
       <span id="sessions-undo-message"></span>
-      <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer">Rückgängig</button>
+      <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer" data-i18n="home.sessions.undo">Rückgängig</button>
     </div>
     <div id="sessions-list-wrap"></div>
     <div id="sessions-more" style="display:none;margin-top:4px">
@@ -882,8 +905,8 @@
     </div>
   </div>
 
-  <div class="section-label">Turnierbögen</div>
-  <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em">
+  <div class="section-label" data-i18n="home.sheets.label">Turnierbögen</div>
+  <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em" data-i18n="home.sheets.features">
     Alle Bögen: Teamnamen · Feldnamen · Zeiten konfigurierbar · Freilos/Ausfall · Druckvorlage A4 quer · Ergebnisse im Browser gespeichert
   </p>
   <div class="grid">
@@ -978,28 +1001,28 @@
 
 
     <!-- ── Card: KO-System (Ausscheidungsturnier, deshalb am Ende) ── -->
-    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag.">
+    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-i18n-attr="data-desc:home.ko.desc" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 4–32 Teams</span>
-        <h2>KO-System</h2>
-        <div class="sub">Turnierbaum mit Freilosen · ideal als Playoff</div>
+        <span class="format-tag" data-i18n="home.ko.tag">dynamisch · 4–32 Teams</span>
+        <h2 data-i18n="home.ko.title">KO-System</h2>
+        <div class="sub" data-i18n="home.ko.sub">Turnierbaum mit Freilosen · ideal als Playoff</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–32 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 2–5 Runden</span>
-          <span class="stat"><span class="icon">⏱</span> kurz · 1–5 Spiele/Team</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.ko.statTeams">4–32 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.ko.statFields">1–10 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.ko.statRounds">2–5 Runden</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.ko.statLength">kurz · 1–5 Spiele/Team</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ Spiel um Platz 3 optional</span>
-          <span class="feat">✓ Setzliste &amp; Freilose</span>
-          <span class="feat">✓ Platzbereiche statt Rangliste</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.ko.feat1">✓ Spiel um Platz 3 optional</span>
+          <span class="feat" data-i18n="home.ko.feat2">✓ Setzliste &amp; Freilose</span>
+          <span class="feat" data-i18n="home.ko.feat3">✓ Platzbereiche statt Rangliste</span>
+          <span class="feat" data-i18n="home.ko.feat4">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_KO_System.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_KO_System.html" target="_blank" data-i18n="home.ko.open">
           Öffnen ↗
         </a>
       </div>
@@ -1285,13 +1308,13 @@
 </main>
 
 <footer>
-  Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser
+  <span data-i18n="home.footer">Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser</span>
   <div class="footer-legal">
     © <span id="cpYear"></span> ·
-    <button type="button" id="btnShowContact" class="footer-contact-btn">Copyright/Kontakt</button>
+    <button type="button" id="btnShowContact" class="footer-contact-btn" data-i18n="chrome.contact">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
     <span id="cpPrint" class="footer-print-only"></span>
-    <span class="footer-amazon">· Unterstütze das Projekt: <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored">kaufe bei Amazon ein</a></span>
+    <span class="footer-amazon"><span data-i18n="chrome.supportProject">· Unterstütze das Projekt:</span> <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored" data-i18n="chrome.amazonLink">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
 
@@ -1391,7 +1414,7 @@
         docLink.href = docUrl;
         docLink.target = '_blank';
         docLink.rel = 'noopener';
-        docLink.textContent = '📖 Doku';
+        docLink.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('home.docLink') : '📖 Doku';
         footer.insertBefore(docLink, footer.firstChild);
       }
 
@@ -1405,6 +1428,9 @@
     });
   }
 
+  /* DE/EN-Prototyp: Texte (inkl. data-desc der KO-Karte) vor dem Aufbau der
+     Kartendetails übersetzen; auf Deutsch bleibt das Markup unverändert. */
+  if (typeof TI18n !== 'undefined') TI18n.apply(document);
   initCardDetails();
 
   const SESSIONS_PREVIEW = 3;
@@ -1798,7 +1824,7 @@
       const countEl = document.getElementById('sessions-count');
       if (countEl) countEl.textContent = sessions.length > 1 ? '(' + sessions.length + ')' : '';
       document.getElementById('sessions-more').style.display = 'none';
-      noSessions.textContent = 'Keine gespeicherten Turniere gefunden.';
+      noSessions.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('home.sessions.none') : 'Keine gespeicherten Turniere gefunden.';
       if (!sessions.length) { noSessions.style.display = ''; return; }
       noSessions.style.display = 'none';
       sessions.sort((a, b) => b.savedAt - a.savedAt);

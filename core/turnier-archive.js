@@ -23,6 +23,23 @@
   const LIVE_PREFIX = 'beachl.t.';
   const SCHEMA = 2;
 
+  /* DE/EN-Prototyp (core/turnier-i18n.js): übersetzt nur Anzeigetexte auf
+     freigeschalteten Seiten. Gespeicherte Titel und Typen bleiben deutsch. */
+  function i18n() {
+    return typeof TI18n !== 'undefined' && TI18n && TI18n.active() ? TI18n : null;
+  }
+  function tx(key, de, params) {
+    const I = i18n();
+    if (I) return I.t(key, params);
+    const s = de && typeof de === 'object'
+      ? (params && Number(params.count) === 1 ? de.one : de.other) : de;
+    return String(s).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? String(params[k]) : m));
+  }
+  function term(s) {
+    const I = i18n();
+    return I ? I.term(s) : s;
+  }
+
   /* Titelvorschlag für ein neues Turnier: Typ und Datum, z. B.
      "Schweizer System – 19.08.2026". */
   function newTitle(type, date) {
@@ -40,13 +57,22 @@
     const m = AUTO_TITLE_RE.exec(String(title || '').trim());
     return !!(m && type && m[1] === type);
   }
+  /* Anzeige eines automatischen Titels: nur der Typ-Anteil wird übersetzt
+     ("KO-System – 19.08.2026" → "Knockout – 19.08.2026"); gespeichert
+     bleibt der deutsche Titel. */
+  function displayAutoTitle(title) {
+    const m = AUTO_TITLE_RE.exec(String(title || '').trim());
+    return m ? term(m[1]) + ' – ' + m[2] : String(title || '').trim();
+  }
   function docTitle(title, type, info) {
     const t = String(title || '').trim();
     const add = String(info || '').trim();
     const tail = add ? ' (' + add + ')' : '';
-    if (!t) return 'Turnierbogen' + (type ? ' – ' + type : '') + tail;
-    if (isAutoTitle(t, type)) return t + ' – Turnierbogen' + tail;
-    return t + ' – Turnierbogen' + (type ? ' – ' + type : '') + tail;
+    const sheet = tx('archive.sheet', 'Turnierbogen');
+    const typeLabel = type ? term(type) : type;
+    if (!t) return sheet + (type ? ' – ' + typeLabel : '') + tail;
+    if (isAutoTitle(t, type)) return displayAutoTitle(t) + ' – ' + sheet + tail;
+    return t + ' – ' + sheet + (type ? ' – ' + typeLabel : '') + tail;
   }
   /* Ueberschrift im Bogen (unten): der eigene Turniertitel, sonst Turniertyp
      und Datum ("KO-System – 19.08.2026"). Der Turniertyp allein steht oben in
@@ -62,19 +88,22 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const t = String(title || '').trim();
     const ty = String(type || '').trim();
-    if (!t || !ty || t === ty || isAutoTitle(t, ty)) return esc(headTitle(t, ty));
-    return esc(t) + ' <span class="h1-type">' + esc(ty) + '</span>';
+    if (!t) return esc(newTitle(term(ty)));
+    if (isAutoTitle(t, ty)) return esc(displayAutoTitle(t));
+    if (!ty) return esc(t);
+    if (t === ty) return esc(term(t));
+    return esc(t) + ' <span class="h1-type">' + esc(term(ty)) + '</span>';
   }
   /* Titel der App-Leiste (oben): Turniertyp mit Team- und Feldzahl. */
   function barTitle(type, teams, fields) {
     const info = sizeInfo(teams, fields);
-    return String(type || 'Turnierbogen') + (info ? ' · ' + info : '');
+    return String(type ? term(type) : tx('archive.sheet', 'Turnierbogen')) + (info ? ' · ' + info : '');
   }
   /* Einheitliche Kurzangabe fuer die Ueberschrift: "12 Teams · 6 Felder". */
   function sizeInfo(teams, fields) {
     const parts = [];
-    if (+teams > 0) parts.push(teams + ' Teams');
-    if (+fields > 0) parts.push(fields + (+fields === 1 ? ' Feld' : ' Felder'));
+    if (+teams > 0) parts.push(tx('archive.teams', '{count} Teams', { count: teams }));
+    if (+fields > 0) parts.push(tx('archive.fields', { one: '{count} Feld', other: '{count} Felder' }, { count: +fields }));
     return parts.join(' · ');
   }
 
@@ -333,7 +362,7 @@
     const S = store();
     const keys = Object.keys(data || {});
     const invalid = function () {
-      const err = new Error('Der Link enthält keine gültigen Turnierdaten.');
+      const err = new Error(tx('archive.invalidSnapshot', 'Der Link enthält keine gültigen Turnierdaten.'));
       err.code = 'invalid-snapshot';
       return Promise.reject(err);
     };

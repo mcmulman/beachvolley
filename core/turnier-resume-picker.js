@@ -21,11 +21,29 @@
 
   const BASE_ID = '_base_';
 
+  /* DE/EN-Prototyp (core/turnier-i18n.js): nur auf freigeschalteten Seiten
+     übersetzen, sonst exakt die bisherigen deutschen Texte. */
+  function i18n() {
+    return typeof TI18n !== 'undefined' && TI18n && TI18n.active() ? TI18n : null;
+  }
+  function tx(key, de, params) {
+    const I = i18n();
+    if (I) return I.t(key, params);
+    const s = de && typeof de === 'object'
+      ? (params && Number(params.count) === 1 ? de.one : de.other) : de;
+    return String(s).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? String(params[k]) : m));
+  }
+  function term(s) {
+    const I = i18n();
+    return I ? I.term(s) : s;
+  }
+
   function fmtDate(ts) {
     if (!ts) return '';
     const d = new Date(ts);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const I = i18n();
+    return d.toLocaleString(I ? I.locale() : 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   /* Alle Index-Einträge, die zu diesem Bogen gehören: der unverzweigte
@@ -53,8 +71,9 @@
         params: spec.params,
         title: idx[k].title || '',
         meta: [
-          idx[k].teams ? idx[k].teams + ' Teams' : '',
-          idx[k].filled ? idx[k].filled + ' Ergebnis' + (idx[k].filled === 1 ? '' : 'se') : '',
+          idx[k].teams ? tx('picker.teams', '{count} Teams', { count: idx[k].teams }) : '',
+          idx[k].filled ? tx('picker.results', { one: '{count} Ergebnis', other: '{count} Ergebnisse' },
+            { count: idx[k].filled }) : '',
           fmtDate(idx[k].updated)
         ].filter(Boolean).join(' · '),
         updated: idx[k].updated ? new Date(idx[k].updated).getTime() : 0
@@ -142,13 +161,14 @@
     overlay.className = 'trp-overlay';
     overlay.innerHTML =
       '<div class="trp-box">' +
-        '<h2>Welches Turnier?</h2>' +
-        '<p>Für „' + esc(typeLabel || 'diesen Bogen') + '“ liegen bereits gespeicherte Turniere vor. ' +
-        'Welches möchtest du weiterbearbeiten?</p>' +
+        '<h2>' + esc(tx('picker.title', 'Welches Turnier?')) + '</h2>' +
+        '<p>' + esc(tx('picker.intro', 'Für „{type}“ liegen bereits gespeicherte Turniere vor. ' +
+          'Welches möchtest du weiterbearbeiten?', { type: typeLabel ? term(typeLabel) : tx('picker.thisSheet', 'diesen Bogen') })) + '</p>' +
         '<div class="trp-list"></div>' +
-        '<button type="button" class="trp-new">＋ Neues Turnier starten</button>' +
-        '<a href="index.html" class="trp-home">← Zur Startseite' +
-          (otherCount > 0 ? (otherCount === 1 ? ' (dort 1 weiteres gespeichertes Turnier)' : ' (dort ' + otherCount + ' weitere gespeicherte Turniere)') : '') +
+        '<button type="button" class="trp-new">' + esc(tx('picker.new', '＋ Neues Turnier starten')) + '</button>' +
+        '<a href="index.html" class="trp-home">' + esc(tx('picker.home', '← Zur Startseite')) +
+          (otherCount > 0 ? esc(tx('picker.homeOthers', { one: ' (dort 1 weiteres gespeichertes Turnier)',
+            other: ' (dort {count} weitere gespeicherte Turniere)' }, { count: otherCount })) : '') +
         '</a>' +
       '</div>';
 
@@ -161,7 +181,7 @@
         row.type = 'button';
         row.className = 'trp-item';
         row.innerHTML =
-          '<span class="trp-title">' + esc(e.title || 'Turnier ohne Titel') + '</span>' +
+          '<span class="trp-title">' + esc(e.title || tx('picker.untitled', 'Turnier ohne Titel')) + '</span>' +
           '<span class="trp-meta">' + esc(e.meta) + '</span>';
         row.addEventListener('click', function () { gotoId(e); });
         list.appendChild(row);

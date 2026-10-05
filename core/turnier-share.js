@@ -53,6 +53,30 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  /* DE/EN-Prototyp (core/turnier-i18n.js): Dialoge/Meldungen nur auf
+     freigeschalteten Seiten übersetzen; sonst exakt die bisherigen Texte.
+     Server-Fehlermeldungen (data.message) werden unverändert angezeigt. */
+  function i18n() {
+    return typeof TI18n !== 'undefined' && TI18n && TI18n.active() ? TI18n : null;
+  }
+  function tx(key, de, params) {
+    const I = i18n();
+    if (I) return I.t(key, params);
+    const s = de && typeof de === 'object'
+      ? (params && Number(params.count) === 1 ? de.one : de.other) : de;
+    return String(s).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? String(params[k]) : m));
+  }
+  function term(s) {
+    const I = i18n();
+    return I ? I.term(s) : s;
+  }
+  function errMsg(err) { return String(err && err.message); }
+  /* Anzeigename eines geteilten Turniers für Rückfragen. */
+  function shareInfo(env) {
+    return (env.title || (env.type ? term(env.type) : '') || tx('share.tournament', 'Turnier'))
+      + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
+  }
+
   /* Adresse des eigenen Backends (siehe backend/README.md für das Deployment).
      Muss https:// sein - hier laufen Passwörter/Turnierdaten durch. */
   const API_BASE = 'https://beachvolley.klickdienst-server.de/api';
@@ -78,8 +102,8 @@
     } catch (e) {
       const err = new Error(
         (e && e.name === 'AbortError')
-          ? 'Zeitüberschreitung - der Server hat nicht rechtzeitig geantwortet.'
-          : 'Keine Verbindung zum Server (offline oder nicht erreichbar).'
+          ? tx('share.err.timeout', 'Zeitüberschreitung - der Server hat nicht rechtzeitig geantwortet.')
+          : tx('share.err.offline', 'Keine Verbindung zum Server (offline oder nicht erreichbar).')
       );
       err.network = true;
       throw err;
@@ -89,7 +113,7 @@
     let data = null;
     try { data = await res.json(); } catch (e) { /* leere/kaputte Antwort */ }
     if (!res.ok) {
-      const err = new Error((data && data.message) || ('Serverfehler (' + res.status + ')'));
+      const err = new Error((data && data.message) || tx('share.err.server', 'Serverfehler ({status})', { status: res.status }));
       err.code = data && data.error;
       err.status = res.status;
       throw err;
@@ -316,7 +340,7 @@
     root.innerHTML =
       '<div class="tshare-panel" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '">' +
       '<div class="tshare-head"><h3>' + escapeHtml(title) + '</h3>' +
-      '<button type="button" class="tshare-x" aria-label="Schließen">&times;</button></div>' +
+      '<button type="button" class="tshare-x" aria-label="' + escapeHtml(tx('share.close', 'Schließen')) + '">&times;</button></div>' +
       '<div class="tshare-body">' + bodyHtml + '</div>' +
       (footerHtml ? '<div class="tshare-foot">' + footerHtml + '</div>' : '') +
       '</div>';
@@ -333,8 +357,8 @@
      opts: { title, bodyHtml, confirmLabel, cancelLabel, onConfirm } */
   function openInfoDialog(opts) {
     opts = opts || {};
-    const confirmLabel = opts.confirmLabel || 'Weiter';
-    const cancelLabel = opts.cancelLabel || 'Abbrechen';
+    const confirmLabel = opts.confirmLabel || tx('share.continue', 'Weiter');
+    const cancelLabel = opts.cancelLabel || tx('share.cancel', 'Abbrechen');
     const root = openShareModalShell(
       opts.title || '',
       opts.bodyHtml || '',
@@ -351,21 +375,23 @@
 
   function renderShareForm(o) {
     const root = openShareModalShell(
-      'Turnier teilen',
+      tx('share.title', 'Turnier teilen'),
       '<div class="tshare-options">' +
         '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="server" checked>' +
-        '<span><strong>Server-Link <em>Empfohlen</em></strong>' +
-        '<small>Kurzer Link über den eigenen Server. Zum Erstellen &amp; Öffnen ist Internet nötig.</small></span>' +
+        '<span><strong>' + escapeHtml(tx('share.server.title', 'Server-Link')) + ' <em>'
+          + escapeHtml(tx('share.server.badge', 'Empfohlen')) + '</em></strong>' +
+        '<small>' + escapeHtml(tx('share.server.desc', 'Kurzer Link über den eigenen Server. Zum Erstellen & Öffnen ist Internet nötig.')) + '</small></span>' +
         '</label>' +
         '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
-        '<span><strong>Offline-Link</strong>' +
-        '<small>Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.</small></span>' +
+        '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
+        '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.')) + '</small></span>' +
         '</label>' +
         '</div>' +
-      '<label class="tshare-field">Passwort (optional)' +
-        '<input type="password" id="tshare-pw" placeholder="Leer lassen für keinen Passwortschutz" autocomplete="new-password"></label>',
-      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">Abbrechen</button>' +
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">Link erstellen</button>'
+      '<label class="tshare-field">' + escapeHtml(tx('share.password', 'Passwort (optional)')) +
+        '<input type="password" id="tshare-pw" placeholder="' + escapeHtml(tx('share.passwordPlaceholder', 'Leer lassen für keinen Passwortschutz'))
+        + '" autocomplete="new-password"></label>',
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">' + escapeHtml(tx('share.create', 'Link erstellen')) + '</button>'
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
     /* Ersatz fuer ".tshare-opt:has(input:checked)" (Safari erst ab 15.4, siehe
@@ -394,29 +420,31 @@
   }
 
   function renderShareLoading() {
-    openShareModalShell('Turnier teilen',
-      '<div class="tshare-loading"><div class="tshare-spinner"></div><p style="margin:0">Link wird erstellt…</p></div>', '');
+    openShareModalShell(tx('share.title', 'Turnier teilen'),
+      '<div class="tshare-loading"><div class="tshare-spinner"></div><p style="margin:0">'
+        + escapeHtml(tx('share.loading', 'Link wird erstellt…')) + '</p></div>', '');
   }
 
   function renderShareResult(url, pw, longWarnLen, code) {
     const root = openShareModalShell(
-      'Link zum Teilen',
-      '<p class="tshare-hint">Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
-        'Spätere Änderungen sind erst in einem neuen Link sichtbar.' +
-        (pw ? ' Mit Passwort geschützt – bitte separat mitteilen.' : '') + '</p>' +
-        (longWarnLen ? '<p class="tshare-error">Hinweis: Der Link ist sehr lang (' + longWarnLen + ' Zeichen) und wird evtl. '
+      tx('share.result.title', 'Link zum Teilen'),
+      '<p class="tshare-hint">' + escapeHtml(tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
+        'Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
+        (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
+        (longWarnLen ? '<p class="tshare-error">' + escapeHtml(tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
           + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
-          + 'oder den kürzeren Server-Link verwenden.</p>' : '') +
-      '<label class="tshare-field" style="margin-bottom:8px">Link' +
+          + 'oder den kürzeren Server-Link verwenden.', { len: longWarnLen })) + '</p>' : '') +
+      '<label class="tshare-field" style="margin-bottom:8px">' + escapeHtml(tx('share.result.link', 'Link')) +
       '<div class="tshare-linkrow"><input type="text" id="tshare-url" readonly>' +
-      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">Kopieren</button></div></label>' +
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>' +
       (code
-        ? '<label class="tshare-field">Code <small style="font-weight:400;color:#5a6375">(zum Eingeben auf der Startseite, statt den Link zu öffnen)</small>' +
+        ? '<label class="tshare-field">' + escapeHtml(tx('share.result.code', 'Code')) + ' <small style="font-weight:400;color:#5a6375">'
+          + escapeHtml(tx('share.result.codeHint', '(zum Eingeben auf der Startseite, statt den Link zu öffnen)')) + '</small>' +
           '<div class="tshare-linkrow"><input type="text" id="tshare-code" readonly>' +
-          '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">Kopieren</button></div></label>'
+          '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>'
         : '') +
-      '<p class="tshare-copied" id="tshare-copied-msg" hidden>In die Zwischenablage kopiert ✓</p>',
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="done">Fertig</button>'
+      '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>',
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="done">' + escapeHtml(tx('share.done', 'Fertig')) + '</button>'
     );
     const urlInput = root.querySelector('#tshare-url');
     urlInput.value = url; // per JS statt HTML-Attribut, um Escaping-Probleme bei Sonderzeichen zu vermeiden
@@ -447,12 +475,13 @@
   function renderShareError(message, cfg) {
     const c = cfg || {};
     const root = openShareModalShell(
-      'Link konnte nicht erstellt werden',
+      tx('share.error.title', 'Link konnte nicht erstellt werden'),
       '<p class="tshare-error">' + escapeHtml(message) + '</p>' +
-      '<p class="tshare-hint">Dein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.</p>',
-      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">Abbrechen</button>' +
-      (c.showOfflineFallback ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="offline">Offline-Link stattdessen</button>' : '') +
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="retry">Erneut versuchen</button>'
+      '<p class="tshare-hint">' + escapeHtml(tx('share.error.safe', 'Dein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.')) + '</p>',
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
+      (c.showOfflineFallback ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="offline">'
+        + escapeHtml(tx('share.error.offlineFallback', 'Offline-Link stattdessen')) + '</button>' : '') +
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="retry">' + escapeHtml(tx('share.error.retry', 'Erneut versuchen')) + '</button>'
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
     root.querySelector('[data-act="retry"]').addEventListener('click', c.onRetry);
@@ -465,7 +494,7 @@
            ({ sheet, file, type, keys, title, teams, empty }). */
   function openShareDialog(opts) {
     const o = opts || {};
-    if (o.empty) { alert('Dieses Turnier ist noch leer – es gibt noch nichts zu teilen.'); return; }
+    if (o.empty) { alert(tx('share.empty', 'Dieses Turnier ist noch leer – es gibt noch nichts zu teilen.')); return; }
     renderShareForm(o);
   }
 
@@ -494,10 +523,10 @@
     }).catch(function (err) {
       // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
       const msg = err.network
-        ? ('Der Link konnte nicht erstellt werden: ' + err.message)
+        ? tx('share.create.network', 'Der Link konnte nicht erstellt werden: {message}', { message: errMsg(err) })
         : (err.status
-          ? ('Der Link konnte nicht erstellt werden (Serverfehler): ' + err.message)
-          : ('Der Turnierstand konnte nicht gelesen werden: ' + (err && err.message)));
+          ? tx('share.create.server', 'Der Link konnte nicht erstellt werden (Serverfehler): {message}', { message: errMsg(err) })
+          : tx('share.create.read', 'Der Turnierstand konnte nicht gelesen werden: {message}', { message: errMsg(err) }));
       renderShareError(msg, {
         showOfflineFallback: true,
         onRetry: function () { renderShareLoading(); createServerShare(o, pw); },
@@ -515,7 +544,7 @@
       }, pw || null);
       renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null);
     }).catch(function (err) {
-      renderShareError('Der Turnierstand konnte nicht gelesen werden: ' + (err && err.message), {
+      renderShareError(tx('share.create.read', 'Der Turnierstand konnte nicht gelesen werden: {message}', { message: errMsg(err) }), {
         onRetry: function () { createOfflineShare(o, pw); }
       });
     });
@@ -544,7 +573,7 @@
       ? function () { return applyOfflineShare(pending.value, opts); }
       : function () { return applyServerShare(pending.value, opts); };
     return Promise.resolve().then(run).then(function (r) { return !!r; }, function (err) {
-      alert('Das geteilte Turnier konnte nicht übernommen werden:\n' + (err && err.message));
+      alert(tx('share.apply.failed', 'Das geteilte Turnier konnte nicht übernommen werden:\n{message}', { message: errMsg(err) }));
       return false;
     });
   }
@@ -590,7 +619,7 @@
       return 'redirect';
     }
     clearHash();
-    alert('Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.');
+    alert(tx('share.mismatch', 'Dieser Link gehört zu einem anderen Turnierbogen und kann hier nicht übernommen werden.'));
     return 'rejected';
   }
 
@@ -598,24 +627,22 @@
     return apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
       const mismatch = handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id));
       if (mismatch) return mismatch === 'redirect';
-      const info = (env.title || env.type || 'Turnier')
-        + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
+      const info = shareInfo(env);
       return serverUnlockLoop(id, env, info, opts, 0);
     }, function (err) {
       if (err.network) {
         // Link bleibt bewusst stehen: Dein Turnier auf diesem Gerät bleibt
         // unverändert; ein Neuladen der Seite versucht es automatisch
         // erneut, z. B. sobald wieder eine Internetverbindung besteht.
-        alert(
-          'Der geteilte Turnierlink konnte gerade nicht geladen werden:\n' + err.message
+        alert(tx('share.load.network',
+          'Der geteilte Turnierlink konnte gerade nicht geladen werden:\n{message}'
           + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
-          + ' Bitte Internetverbindung prüfen und die Seite neu laden, um es erneut zu versuchen.'
-        );
+          + ' Bitte Internetverbindung prüfen und die Seite neu laden, um es erneut zu versuchen.', { message: errMsg(err) }));
         return false;
       }
       clearHash();
-      if (err.status === 404) alert('Der Link enthält keine gültigen Turnierdaten (oder wurde bereits gelöscht).');
-      else alert('Das geteilte Turnier konnte nicht geladen werden (Serverfehler):\n' + err.message);
+      if (err.status === 404) alert(tx('share.invalid404', 'Der Link enthält keine gültigen Turnierdaten (oder wurde bereits gelöscht).'));
+      else alert(tx('share.load.server', 'Das geteilte Turnier konnte nicht geladen werden (Serverfehler):\n{message}', { message: errMsg(err) }));
       return false;
     });
   }
@@ -623,7 +650,7 @@
   function serverUnlockLoop(id, env, info, opts, tries) {
     let pw = '';
     if (env.protected) {
-      pw = prompt('Geteiltes Turnier "' + info + '" ist passwortgeschützt.\nBitte Passwort eingeben:', '');
+      pw = prompt(tx('share.pwPrompt', 'Geteiltes Turnier "{info}" ist passwortgeschützt.\nBitte Passwort eingeben:', { info: info }), '');
       if (pw === null) { clearHash(); return Promise.resolve(false); } // abgebrochen
     }
 
@@ -636,39 +663,37 @@
         // Link bleibt stehen, kein lokaler Datenverlust - siehe Kommentar
         // in applyServerShare(). Der Nutzer kann die Seite neu laden,
         // sobald wieder eine Verbindung besteht.
-        alert(
-          'Konnte den Server gerade nicht erreichen:\n' + err.message
+        alert(tx('share.unlock.network',
+          'Konnte den Server gerade nicht erreichen:\n{message}'
           + '\n\nDein aktuelles Turnier auf diesem Gerät ist davon nicht betroffen.'
-          + ' Bitte Internetverbindung prüfen und die Seite neu laden.'
-        );
+          + ' Bitte Internetverbindung prüfen und die Seite neu laden.', { message: errMsg(err) }));
         return false;
       }
       if (err.code === 'wrong_password' && tries + 1 < MAX_PW_TRIES) {
-        alert('Falsches Passwort, bitte erneut versuchen.');
+        alert(tx('share.pwRetry', 'Falsches Passwort, bitte erneut versuchen.'));
         return serverUnlockLoop(id, env, info, opts, tries + 1);
       }
       clearHash();
-      if (err.code === 'wrong_password') alert('Falsches Passwort – Übernahme abgebrochen.');
-      else if (err.code === 'too_many_attempts') alert('Zu viele Versuche – bitte später erneut versuchen.');
-      else alert('Das geteilte Turnier konnte nicht geladen werden:\n' + err.message);
+      if (err.code === 'wrong_password') alert(tx('share.pwAbort', 'Falsches Passwort – Übernahme abgebrochen.'));
+      else if (err.code === 'too_many_attempts') alert(tx('share.tooMany', 'Zu viele Versuche – bitte später erneut versuchen.'));
+      else alert(tx('share.load.failed', 'Das geteilte Turnier konnte nicht geladen werden:\n{message}', { message: errMsg(err) }));
       return false;
     });
   }
 
   function applyOfflineShare(hashValue, opts) {
     const env = offlineDecodeEnvelope(hashValue);
-    if (!env) { clearHash(); alert('Der Link enthält keine gültigen Turnierdaten.'); return false; }
+    if (!env) { clearHash(); alert(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.')); return false; }
     const mismatch = handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue);
     if (mismatch) return mismatch === 'redirect';
 
-    const info = (env.title || env.type || 'Turnier')
-      + (env.teams && env.teams.length ? ' (' + shortTeams(env.teams) + ')' : '');
+    const info = shareInfo(env);
 
     let snapshot = null, tries = 0;
     while (snapshot == null) {
       let pw = '';
       if (env.enc) {
-        pw = prompt('Geteiltes Turnier "' + info + '" ist passwortgeschützt.\nBitte Passwort eingeben:', '');
+        pw = prompt(tx('share.pwPrompt', 'Geteiltes Turnier "{info}" ist passwortgeschützt.\nBitte Passwort eingeben:', { info: info }), '');
         if (pw === null) { clearHash(); return false; } // abgebrochen
       }
       try { snapshot = offlineResolveSnapshot(env, pw); }
@@ -676,10 +701,11 @@
         tries++;
         if (!env.enc || tries >= MAX_PW_TRIES) {
           clearHash();
-          alert(env.enc ? 'Falsches Passwort – Übernahme abgebrochen.' : 'Der Link enthält keine gültigen Turnierdaten.');
+          alert(env.enc ? tx('share.pwAbort', 'Falsches Passwort – Übernahme abgebrochen.')
+            : tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
           return false;
         }
-        alert('Falsches Passwort, bitte erneut versuchen.');
+        alert(tx('share.pwRetry', 'Falsches Passwort, bitte erneut versuchen.'));
       }
     }
 
@@ -693,14 +719,14 @@
      bleibt der Link in der Adresszeile (Neuladen = neuer Versuch) und der
      bisherige Stand ist unverändert. → Promise<boolean> */
   function confirmAndApplySnapshot(info, snapshot, opts) {
-    const ok = confirm(
-      'Geteiltes Turnier gefunden: "' + info + '".\n\n'
+    const ok = confirm(tx('share.confirmApply',
+      'Geteiltes Turnier gefunden: "{info}".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
-      + 'gesichert und bleibt über die Startseite abrufbar.'
+      + 'gesichert und bleibt über die Startseite abrufbar.', { info: info })
     );
     if (!ok) { clearHash(); return Promise.resolve(false); }
     if (typeof TArchive === 'undefined' || !TArchive.importSnapshot) {
-      alert('Das geteilte Turnier konnte nicht übernommen werden: Speicher nicht verfügbar.');
+      alert(tx('share.noStorage', 'Das geteilte Turnier konnte nicht übernommen werden: Speicher nicht verfügbar.'));
       return Promise.resolve(false);
     }
 
@@ -716,12 +742,12 @@
     }, function (err) {
       if (err && err.code === 'invalid-snapshot') {
         clearHash();
-        alert('Der Link enthält keine gültigen Turnierdaten.');
+        alert(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
         return false;
       }
-      alert('Das geteilte Turnier konnte nicht gespeichert werden:\n' + (err && err.message)
+      alert(tx('share.saveFailed', 'Das geteilte Turnier konnte nicht gespeichert werden:\n{message}'
         + '\n\nDein bisheriges Turnier auf diesem Gerät ist unverändert.'
-        + ' Bitte Speicherplatz prüfen und die Seite neu laden, um es erneut zu versuchen.');
+        + ' Bitte Speicherplatz prüfen und die Seite neu laden, um es erneut zu versuchen.', { message: errMsg(err) }));
       return false;
     });
   }
@@ -747,12 +773,12 @@
 
   function openByCode(input) {
     const id = extractServerCode(input);
-    if (!id) { alert('Bitte einen gültigen Code oder Link eingeben.'); return; }
+    if (!id) { alert(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.')); return; }
 
     apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
       const file = env && env.file;
       if (!file) {
-        alert('Zu diesem Code konnte keine passende Turnierseite gefunden werden.');
+        alert(tx('code.noPage', 'Zu diesem Code konnte keine passende Turnierseite gefunden werden.'));
         return;
       }
       /* Der Code kennt nur die Datei – der Snapshot liegt aber unter den
@@ -768,12 +794,12 @@
       location.href = target + SERVER_PREFIX + encodeURIComponent(id);
     }).catch(function (err) {
       if (err.network) {
-        alert('Der Code konnte gerade nicht überprüft werden:\n' + err.message
-          + '\n\nBitte Internetverbindung prüfen und erneut versuchen.');
+        alert(tx('code.network', 'Der Code konnte gerade nicht überprüft werden:\n{message}'
+          + '\n\nBitte Internetverbindung prüfen und erneut versuchen.', { message: errMsg(err) }));
         return;
       }
-      if (err.status === 404) alert('Dieser Code ist ungültig oder das Turnier wurde bereits gelöscht.');
-      else alert('Der Code konnte nicht geladen werden (Serverfehler):\n' + err.message);
+      if (err.status === 404) alert(tx('code.notFound', 'Dieser Code ist ungültig oder das Turnier wurde bereits gelöscht.'));
+      else alert(tx('code.server', 'Der Code konnte nicht geladen werden (Serverfehler):\n{message}', { message: errMsg(err) }));
     });
   }
 
