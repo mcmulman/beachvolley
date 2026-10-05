@@ -458,8 +458,6 @@
     (B.warnings||[]).forEach(w => { notice += '<div class="notebox is-warn">⚠️ ' + TUI.esc(w) + '</div>'; });
     (B.notes||[]).forEach(n => { notice += '<div class="notebox">ℹ️ ' + TUI.esc(n) + '</div>'; });
     $('noticeBox').innerHTML = notice;
-
-    TStore.save(S);
   }
 
   /* -------------------------------------------------------------- Eingabe */
@@ -581,6 +579,10 @@
   fillSelects();
   wire();
   rebuild();
+  /* Einmal beim Laden speichern (bisher Nebenwirkung von paint()). Aktionen
+     speichern selbst genau einmal – ein zusätzlicher Speichervorgang in
+     paint() hätte die Vorversion überschrieben und „Rückgängig“ ausgehebelt. */
+  TStore.save(S);
   applyDocTitle();
 })().catch(function(err){
   console.error(err);

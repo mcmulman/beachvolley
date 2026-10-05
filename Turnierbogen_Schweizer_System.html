@@ -648,7 +648,25 @@
     }
 
     function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-    function saveStore(){ return TStore.save(STORE); }
+    /* Eine Bedienaktion = genau ein Speichervorgang. Folgespeicherungen aus
+       rebuild()/buildMatches() würden sonst die Vorversion mit einem
+       Zwischenstand überschreiben, und „Rückgängig“ stellte nicht mehr den
+       Stand vor der Aktion her. */
+    let saveBatch = null;
+    function saveStore(){
+      if(saveBatch){ saveBatch.dirty = true; return saveBatch.promise; }
+      return TStore.save(STORE);
+    }
+    function withSingleSave(fn){
+      if(saveBatch) return fn();
+      let resolve;
+      const batch = saveBatch = { dirty:false, promise:new Promise(r => { resolve = r; }) };
+      try { return fn(); }
+      finally {
+        saveBatch = null;
+        resolve(batch.dirty ? TStore.save(STORE) : true);
+      }
+    }
     function fromMin(min){ const m = ((Math.round(min) % 1440) + 1440) % 1440; const h = Math.floor(m / 60); const mm = m % 60; return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0'); }
     function toMin(text){ const m = /^(\d{1,2}):(\d{2})$/.exec(String(text || '').trim()); return m ? (+m[1] * 60 + +m[2]) : null; }
     function fmtMin(t){ t=((t%1440)+1440)%1440; const H=Math.floor(t/60),M=t%60; return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
@@ -1131,9 +1149,11 @@
     }
     function clearDropouts(){
       if(!confirm('Alle Ausfälle wirklich zurücksetzen?')) return;
-      saveDroppedTeams(new Set());
-      document.querySelectorAll('input.drop-check').forEach(cb => cb.checked = false);
-      rebuild();
+      withSingleSave(() => {
+        saveDroppedTeams(new Set());
+        document.querySelectorAll('input.drop-check').forEach(cb => cb.checked = false);
+        rebuild();
+      });
     }
     function rebuild(){
       fillTeamSelect();
@@ -1194,30 +1214,30 @@
         const el = document.getElementById('teamCount'); if(el) el.value = String(NTEAMS);
         return;
       }
-      STORE.teamNames = {};
-      STORE.results = {};
-      STORE.round1 = null;
-      STORE.frozen = {};
-      STORE.fieldNames = {};
-      STORE.absent = [];
-      STORE.config.startTime = '10:00';
-      STORE.config.endTime = '14:00';
-      STORE.frozenModes = {};
-      ROUND_MODES = {};
-      saveCfg({t:next, r:defaultRoundsForTeams(next)});
-      namesVisible = fieldsVisible = dropoutVisible = false;
-      ['btnToggleNames','btnToggleFields','btnToggleDropout'].forEach(id => { const b=document.getElementById(id); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); } });
-      rebuild();
+      withSingleSave(() => {
+        STORE.teamNames = {};
+        STORE.results = {};
+        STORE.round1 = null;
+        STORE.frozen = {};
+        STORE.fieldNames = {};
+        STORE.absent = [];
+        STORE.config.startTime = '10:00';
+        STORE.config.endTime = '14:00';
+        STORE.frozenModes = {};
+        ROUND_MODES = {};
+        saveCfg({t:next, r:defaultRoundsForTeams(next)});
+        namesVisible = fieldsVisible = dropoutVisible = false;
+        ['btnToggleNames','btnToggleFields','btnToggleDropout'].forEach(id => { const b=document.getElementById(id); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); } });
+        rebuild();
+      });
     }
     function onRoundCountChange(value){
       const next = clampRounds(value);
-      saveCfg({t:NTEAMS, r:next});
-      rebuild();
+      withSingleSave(() => { saveCfg({t:NTEAMS, r:next}); rebuild(); });
     }
     function onPointTargetChange(value){
       const def = SET_MODES.find(m => m.id === String(value)) || SET_MODES[0];
-      saveCfg({t:NTEAMS, r:NROUNDS, p:def.id});
-      rebuild();
+      withSingleSave(() => { saveCfg({t:NTEAMS, r:NROUNDS, p:def.id}); rebuild(); });
     }
     function onStartTime(){ STORE.config.startTime = document.getElementById('startTime').value || '10:00'; saveStore(); applyTimes(); computeTimes(); }
     function onEndTime(){ STORE.config.endTime = document.getElementById('endTime').value || '14:00'; saveStore(); applyTimes(); computeTimes(); }
@@ -1227,12 +1247,11 @@
     function onNameInput(team){ const names = loadNames(); names[team] = document.getElementById('tn' + team).value || ''; saveNames(names); computeAll(); }
     function clearNames(){ if(!confirm('Alle Teamnamen wirklich löschen?')) return; saveNames(defaultNames()); hydratePanels(); computeAll(); }
     function onFieldInput(idx){ const fields = loadFieldNames(); fields[idx] = document.getElementById('fni_' + idx).value || ''; saveFieldNames(fields); rebuild(); }
-    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; STORE.fieldNames = {}; saveStore(); rebuild(); }
+    function clearFields(){ if(!confirm('Alle Feldnamen zurücksetzen?')) return; withSingleSave(() => { STORE.fieldNames = {}; saveStore(); rebuild(); }); }
     function onDropoutChange(){
       const set = new Set();
       for(let t=1;t<=NTEAMS;t++){ const cb = document.getElementById('drop_' + t); if(cb && cb.checked) set.add(t); }
-      saveDroppedTeams(set);
-      computeAll();
+      withSingleSave(() => { saveDroppedTeams(set); computeAll(); });
     }
     function drawStart(){
       if(!confirm('Startrunde neu auslosen? Die bestehende Runde 1 wird überschrieben.')) return;
@@ -2054,6 +2073,9 @@
     };
     window.saveSwissRoundPreference = function(round, showAll){
       if(!STORE) return;
+      // Unveränderte Ansicht nicht erneut speichern: Ein solcher Leer-Speichervorgang
+      // nach rebuild() würde sonst die Vorversion überschreiben und „Rückgängig“ wirkungslos machen.
+      if(STORE.config.roundFilter === String(round) && STORE.config.showAllRounds === !!showAll) return;
       STORE.config.roundFilter = String(round);
       STORE.config.showAllRounds = !!showAll;
       saveStore();
