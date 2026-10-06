@@ -1,10 +1,12 @@
 /* ============================================================================
    turnier-i18n.js – schlankes DE/EN-Sprachmodul (Prototyp, PRODUKTPLAN §6.1)
 
-   Umfang des Prototyps: Startseite (Kopf, Code-Öffnen, Sicherung, KO-Karte,
-   Fußzeile) und der Bogen Turnierbogen_KO_System.html inklusive der von ihm
-   genutzten Core-Ausgaben (turnier-ui, -archive, -share, -resume-picker,
-   spielplan-enh). Alle anderen Seiten bleiben vollständig deutsch.
+   Umfang: die Startseite (vollständig, inkl. turnier-backup.js-Meldungen)
+   und alle dort verlinkten Bögen (KO, Gruppen + Finalrunde, Modified Pool
+   Play, Doppel-KO, Runden-System, Flex-Turnier, King & Queen, King/Queen of
+   the Court) inklusive der von ihnen genutzten Core-Ausgaben (turnier-ui,
+   -archive, -share, -resume-picker, spielplan-enh). Alle anderen Seiten
+   (Formatbeschreibungen unter docs/) bleiben vollständig deutsch.
 
    Grundsätze
    - Deutsch ist IMMER der Standard. Englisch nur nach ausdrücklicher Wahl

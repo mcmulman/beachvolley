@@ -131,22 +131,6 @@
   .no-flexgap .nactions > * { margin-bottom: 8px; }
   .no-flexgap .nactions { margin-bottom: -8px; }
 
-  /* Aeltere Leisten (Flexibel- und Schweizer-Bogen) */
-  .no-flexgap .digitalbar > *:not(:last-child),
-  .no-flexgap .digbar > *:not(:last-child) { margin-right: 10px; }
-  .no-flexgap .digitalbar > *,
-  .no-flexgap .digbar > * { margin-bottom: 8px; }
-  .no-flexgap .digitalbar,
-  .no-flexgap .digbar { margin-bottom: 4px; }                         /* eigene 12px */
-  .no-flexgap .topbar > *:not(:last-child) { margin-right: 8px; }
-  .no-flexgap .topbar > * { margin-bottom: 8px; }
-  .no-flexgap .topbar { margin-bottom: 4px; }                         /* eigene 12px */
-  .no-flexgap .setupbar > *:not(:last-child) { margin-right: 14px; }
-  .no-flexgap .setupbar > * { margin-bottom: 14px; }
-  .no-flexgap .setupbar { margin-bottom: -2px; }                      /* eigene 12px */
-  .no-flexgap .setupbar label > * + * { margin-left: 6px; }
-  .no-flexgap .setupbar label > select:first-child { margin-left: 6px; } /* Muster c */
-
   /* Zurueck-/Navigationszeile ganz oben */
   /* Topbar der Turnierboegen. ":not(.appbar)" haelt die Regeln von der
      Startseite fern – deren erste .noprint-Leiste ist die .appbar und hat

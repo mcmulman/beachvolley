@@ -768,19 +768,9 @@
     TUI.wireScoreInputs($('schedFinBody'), onScore);
   }
 
-  /* Migration des alten 8-Team-KO-Bogens anbieten, ohne etwas zu überschreiben. */
-  async function offerLegacy(){
-    if(!await TStore.hasLegacy('ko-8') || Object.keys(S.results).length) return;
-    const box = document.createElement('div');
-    box.className = 'notebox noprint';
-    box.textContent = T('ko.legacy');
-    $('noticeBox').parentNode.insertBefore(box, $('noticeBox'));
-  }
-
   fillSelects();
   wire();
   rebuild();
-  await offerLegacy();
 })().catch(function(err){
   console.error(err);
   const box = document.createElement('div');

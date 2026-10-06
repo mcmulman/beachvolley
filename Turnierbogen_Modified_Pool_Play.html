@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-i18n>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -97,118 +97,122 @@
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px">
-  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a>
-  <a href="docs/format-modified-pool-play.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a>
+  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
+  <a href="docs/format-modified-pool-play.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">📖 Format-Info</a>
 </div>
 
-<h1 id="h-title">Modified Pool Play (MPP)</h1>
+<h1 id="h-title" data-i18n="mpp.title">Modified Pool Play (MPP)</h1>
 <p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
-  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <ol>
-    <li><span class="hi">Modified Pool Play:</span> <span id="g-groups">–</span> In einer 4er-Gruppe spielt Setzplatz 1 gegen 4 und 2 gegen 3;
+    <li><span class="hi" data-i18n="mpp.guide.mppLabel">Modified Pool Play:</span> <span id="g-groups">–</span> <span data-i18n="mpp.guide.mppText">In einer 4er-Gruppe spielt Setzplatz 1 gegen 4 und 2 gegen 3;
       danach die beiden Sieger um den Gruppensieg (Platz 1/2), die beiden Verlierer um den Verbleib (Platz 3/4) – 4 statt 6 Spiele.
-      3er-Gruppen spielen komplettes Round-Robin (3 Spiele, Setzplatz 1 mit Freilos in Runde 1).</li>
-    <li><span class="hi">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi">Ablauf je Runde:</span> Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</li>
-    <li><span class="hi">Platzierung in der Gruppe:</span> In 4er-Gruppen steht der Platz direkt durch das Bracket fest (kein Gleichstand möglich).
-      In 3er-Gruppen wie gewohnt: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand Ball-Differenz, dann Ballpunkte, dann direkter Vergleich, zuletzt das Los.</li>
-    <li><span class="hi">Finalrunde:</span> <span id="g-final">–</span></li>
-    <li><span class="hi">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li><span class="hi">Ausdruck:</span> Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</li>
+      3er-Gruppen spielen komplettes Round-Robin (3 Spiele, Setzplatz 1 mit Freilos in Runde 1).</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</span></li>
+    <li><span class="hi" data-i18n="mpp.guide.groupPlaceLabel">Platzierung in der Gruppe:</span> <span data-i18n="mpp.guide.groupPlaceText">In 4er-Gruppen steht der Platz direkt durch das Bracket fest (kein Gleichstand möglich).
+      In 3er-Gruppen wie gewohnt: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand Ball-Differenz, dann Ballpunkte, dann direkter Vergleich, zuletzt das Los.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span id="g-final">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="mpp.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
   </ol>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="sheet.cfg.title">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide">📝 Turniertitel
-      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+    <label class="cfgfield cfgfield--wide"><span data-i18n="sheet.cfg.titleLabel">📝 Turniertitel</span>
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:sheet.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
     </label>
     <div class="cfgfield-row">
-      <label class="cfgfield">👥 Teams
+      <label class="cfgfield"><span data-i18n="sheet.cfg.teams">👥 Teams</span>
         <select id="teamCount"></select>
       </label>
-      <label class="cfgfield">🅰 Gruppen
+      <label class="cfgfield"><span data-i18n="mpp.cfg.groups">🅰 Gruppen</span>
         <select id="groupCount"></select>
       </label>
-      <label class="cfgfield">🏖️ Felder
+      <label class="cfgfield"><span data-i18n="sheet.cfg.fields">🏖️ Felder</span>
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--wide">🏆 Finalrunde
+    <label class="cfgfield cfgfield--wide"><span data-i18n="mpp.cfg.finalMode">🏆 Finalrunde</span>
       <select id="finalMode"></select>
     </label>
-    <label class="cfgfield cfgfield--mode">🎯 Vorrunde
+    <label class="cfgfield cfgfield--mode"><span data-i18n="mpp.cfg.setMode">🎯 Vorrunde</span>
       <select id="setMode"></select>
     </label>
-    <label class="cfgfield cfgfield--mode">🎯 Finalrunde
+    <label class="cfgfield cfgfield--mode"><span data-i18n="mpp.cfg.finalSetMode">🎯 Finalrunde</span>
       <select id="finalSetMode"></select>
     </label>
-    <label class="cfgfield cfgfield--start">⏱ Start
+    <label class="cfgfield cfgfield--start"><span data-i18n="sheet.cfg.start">⏱ Start</span>
       <input type="time" id="startTime" value="10:00">
     </label>
-    <label class="cfgfield cfgfield--end">🏁 Ende
+    <label class="cfgfield cfgfield--end"><span data-i18n="sheet.cfg.end">🏁 Ende</span>
       <input type="time" id="endTime" value="14:30">
     </label>
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-groups">–</span><span class="cfgres-lbl">Gruppen</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-grpGames">–</span><span class="cfgres-lbl">Spiele Vorrunde</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-finGames">–</span><span class="cfgres-lbl">Spiele Finalrunde</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-groups">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.groups">Gruppen</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-grpGames">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.grpGames">Spiele Vorrunde</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-finGames">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.finGames">Spiele Finalrunde</span></div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-perTeam">–</span>
       <span class="cfgres-val cfgres-val--sub" id="rv-perTeamBreak">–</span>
-      <span class="cfgres-lbl">Spiele pro Team (gesamt)</span>
+      <span class="cfgres-lbl" data-i18n="sheet.kpi.perTeamTotal">Spiele pro Team (gesamt)</span>
     </div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-fields">–</span>
       <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
-      <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+      <span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder (gewählt · benötigt)</span>
     </div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende (Mindestbedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit/Spiel (verfügbar · mind.)</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Gesamtzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.buffer">Zeitreserve</span></div>
   </div>
   <p class="input-hint" id="gamesBreakdown"></p>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen</button>
-    <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Team ausgefallen</button>
-    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
-    <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Teamnamen</span></button>
+    <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
+    <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
     <span class="spacer"></span>
-    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Teilen</button>
-    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
+    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> <span data-i18n="sheet.btn.share">Teilen</span></button>
+    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern" data-i18n-attr="title:sheet.btn.saveTitle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> <span data-i18n="sheet.btn.save">Speichern</span></button>
   </div>
 
   <div id="namepanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="nameGrid"></div>
     <div class="nactions">
-      <button type="button" class="nbtn" id="btnShuffle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> Teams mischen</button>
-      <button type="button" class="nbtn" id="btnClearNames">Namen leeren</button>
+      <button type="button" class="nbtn" id="btnShuffle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> <span data-i18n="sheet.btn.shuffleTeams">Teams mischen</span></button>
+      <button type="button" class="nbtn" id="btnClearNames" data-i18n="sheet.btn.clearNames">Namen leeren</button>
     </div>
   </div>
   <div id="fieldpanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="fieldGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearFields">Felder zurücksetzen</button></div>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearFields" data-i18n="sheet.btn.clearFields">Felder zurücksetzen</button></div>
   </div>
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
-    <p class="nhint">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.</p>
-    <p class="nhint">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
+    <p class="nhint" data-i18n-html="mpp.hint.absent">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.</p>
+    <p class="nhint" data-i18n-html="sheet.hint.delete">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -217,13 +221,13 @@
 <div class="row" id="livebox">
   <div style="flex:0 0 46%">
     <table class="teams">
-      <caption>Teams (Namen eintragen)</caption>
+      <caption data-i18n="sheet.teams.caption">Teams (Namen eintragen)</caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
   <div class="grow">
     <table class="teams" id="groupOverview">
-      <caption>Gruppeneinteilung</caption>
+      <caption data-i18n="mpp.groups.caption">Gruppeneinteilung</caption>
       <tbody id="groupBody"></tbody>
     </table>
     <div id="timeplanBox"></div>
@@ -232,9 +236,9 @@
 
 <div class="noprint schedule-roundbar" id="roundbarGrp"></div>
 <div class="table-scroll is-wide" id="scheduleSection">
-  <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
+  <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="schedGrp">
-    <caption><span class="cap-title" id="capGrp">Spielplan &amp; Ergebnisse – Vorrunde</span><span class="cap-hint" id="hintGrp"></span></caption>
+    <caption><span class="cap-title" id="capGrp" data-i18n="mpp.schedule.groupTitle">Spielplan &amp; Ergebnisse – Vorrunde</span><span class="cap-hint" id="hintGrp"></span></caption>
     <thead id="schedGrpHead"></thead>
     <tbody id="schedGrpBody"></tbody>
   </table>
@@ -242,9 +246,9 @@
 
 <div id="finalSection">
   <div class="table-scroll is-wide">
-    <p class="mobile-schedule-title noprint" id="mobileFinTitle">Spielplan &amp; Ergebnisse – Finalrunde</p>
+    <p class="mobile-schedule-title noprint" id="mobileFinTitle" data-i18n="sheet.schedule.finalTitle">Spielplan &amp; Ergebnisse – Finalrunde</p>
     <table class="sched" id="schedFin">
-      <caption><span class="cap-title" id="capFin">Spielplan &amp; Ergebnisse – Finalrunde</span><span class="cap-hint" id="hintFin"></span></caption>
+      <caption><span class="cap-title" id="capFin" data-i18n="sheet.schedule.finalTitle">Spielplan &amp; Ergebnisse – Finalrunde</span><span class="cap-hint" id="hintFin"></span></caption>
       <thead id="schedFinHead"></thead>
       <tbody id="schedFinBody"></tbody>
     </table>
@@ -254,29 +258,29 @@
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
-<h1 id="standingsSection">Gruppenauswertung</h1>
-<p class="sub">Nach jeder Vorrunden-Runde: Ergebnis in die Spielplan-Kästchen (Seite 1) eintragen, dann hier Punkte und Ball-Differenz nachführen.</p>
+<h1 id="standingsSection" data-i18n="mpp.eval.title">Gruppenauswertung</h1>
+<p class="sub" data-i18n="mpp.eval.sub">Nach jeder Vorrunden-Runde: Ergebnis in die Spielplan-Kästchen (Seite 1) eintragen, dann hier Punkte und Ball-Differenz nachführen.</p>
 
 <!-- Nur Bildschirm: im Druck steht die Ausfuellanleitung als .cap-hint unter dem
      jeweiligen Tabellentitel (hintGroups, trackHint, hintFin, hintRank). -->
 <div class="guide only-screen blk" id="sheet2Guide">
-  <h2>So arbeitest du mit Seite 2 (online)</h2>
+  <h2 data-i18n="mpp.s2.title">So arbeitest du mit Seite 2 (online)</h2>
   <ol>
-    <li><span class="hi">Vorrunde eintragen:</span> Alle Satzergebnisse auf Seite 1 in die Spielkarten tippen – mehr ist nicht nötig.</li>
-    <li><span class="hi">Gruppentabellen lesen:</span> Punkte, Ball-Differenz und Platz berechnet der Bogen automatisch; bis zum ersten Ergebnis bleiben die Tabellen leer.</li>
-    <li><span class="hi">Laufende Tabelle:</span> Die kumulierten Werte je Runde schreiben sich selbst fort – nur zur Kontrolle da.</li>
-    <li><span class="hi">Finalrunde:</span> Die Paarungen erscheinen automatisch, sobald die Vorrunde entschieden ist. Ergebnisse ebenfalls auf Seite 1 eintragen.</li>
-    <li><span class="hi">Endstand:</span> Wird laufend aus den Finalspielen abgeleitet – die Spalte „entschieden durch“ zeigt, woher der Platz kommt.</li>
+    <li><span class="hi" data-i18n="mpp.s2.enterLabel">Vorrunde eintragen:</span> <span data-i18n="mpp.s2.enterText">Alle Satzergebnisse auf Seite 1 in die Spielkarten tippen – mehr ist nicht nötig.</span></li>
+    <li><span class="hi" data-i18n="mpp.s2.tablesLabel">Gruppentabellen lesen:</span> <span data-i18n="mpp.s2.tablesText">Punkte, Ball-Differenz und Platz berechnet der Bogen automatisch; bis zum ersten Ergebnis bleiben die Tabellen leer.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="mpp.s2.trackText">Die kumulierten Werte je Runde schreiben sich selbst fort – nur zur Kontrolle da.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span data-i18n="mpp.s2.finalText">Die Paarungen erscheinen automatisch, sobald die Vorrunde entschieden ist. Ergebnisse ebenfalls auf Seite 1 eintragen.</span></li>
+    <li><span class="hi" data-i18n="mpp.s2.placeLabel">Endstand:</span> <span data-i18n="mpp.s2.placeText">Wird laufend aus den Finalspielen abgeleitet – die Spalte „entschieden durch“ zeigt, woher der Platz kommt.</span></li>
   </ol>
 </div>
 
-<h2>Gruppentabellen</h2>
+<h2 data-i18n="mpp.groupTables.title">Gruppentabellen</h2>
 <p class="input-hint hint-top hint-section" id="hintGroups"></p>
 <div class="grpwrap" id="groupTables"></div>
 
 <div class="table-scroll is-track">
   <table class="track" id="trackTable">
-    <caption><span class="cap-title">Laufende Tabelle der Vorrunde (kumulierte Punkte und Ball-Differenz je Runde)</span><span class="cap-hint" id="trackHint"></span></caption>
+    <caption><span class="cap-title" data-i18n="mpp.track.caption">Laufende Tabelle der Vorrunde (kumulierte Punkte und Ball-Differenz je Runde)</span><span class="cap-hint" id="trackHint"></span></caption>
     <tbody id="trackBody"></tbody>
   </table>
 </div>
@@ -284,8 +288,8 @@
 <div id="mainTables"></div>
 
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
-  <caption><span class="cap-title" id="capPlace">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
-  <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th class="src">entschieden durch</th></tr></thead>
+  <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
+  <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 
@@ -305,6 +309,10 @@
 <script>
 (async function(){
   'use strict';
+  /* DE/EN-Prototyp: statische Texte vor dem ersten Zeichnen übersetzen. */
+  const T = TI18n.t, term = TI18n.term;
+  const modeLabel = id => T('setMode.' + TC.modeDef(id).id);
+  TI18n.apply(document);
   if (await TResumePicker.maybePrompt('mpp', 'Modified Pool Play')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('mpp');
@@ -367,12 +375,12 @@
 
   /* ------------------------------------------------------------ Kontext */
   function labeler(){ return TUI.makeLabeler(S.teamNames); }
-  function fieldLabel(i){ return S.fieldNames[i] || ('Feld ' + (i+1)); }
+  function fieldLabel(i){ return S.fieldNames[i] || T('ui.field.n', { n: i+1 }); }
   function ctxFor(mode){
     return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
-             fields: S.config.fields, modeLabel: TC.modeDef(mode).label };
+             fields: S.config.fields, modeLabel: modeLabel(mode) };
   }
   function activeTeams(){
     const out = []; for(let i=1;i<=S.config.teams;i++) out.push(i); return out;
@@ -387,15 +395,15 @@
          §1) – 6…24 Teams sind in diesem Bereich IMMER in reine 3er-/4er-
          Gruppen zerlegbar (TFormat.mppGroupCount(), geprüft für n=3…60 in
          test/core/modified-pool-play.test.mjs; einzige Lücke ist n=5). */
-      for(let n=MIN_TEAMS;n<=24;n++) t.add(new Option(n + ' Teams', n));
+      for(let n=MIN_TEAMS;n<=24;n++) t.add(new Option(T('common.teams', { count: n }), n));
       const g = $('groupCount');
-      g.add(new Option('automatisch', 'auto'));
-      for(let n=2;n<=6;n++) g.add(new Option(n + ' Gruppen', n));
+      g.add(new Option(T('mpp.cfg.groupsAuto'), 'auto'));
+      for(let n=2;n<=6;n++) g.add(new Option(T('mpp.groupsN', { n: n }), n));
 
-      TFormat.FINAL_MODES.forEach(m => $('finalMode').add(new Option(m.label, m.id)));
-      TC.SET_MODES.forEach(m => $('setMode').add(new Option(m.label, m.id)));
-      $('finalSetMode').add(new Option('wie Vorrunde', ''));
-      TC.SET_MODES.forEach(m => $('finalSetMode').add(new Option(m.label, m.id)));
+      TFormat.FINAL_MODES.forEach(m => $('finalMode').add(new Option(term(m.label), m.id)));
+      TC.SET_MODES.forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
+      $('finalSetMode').add(new Option(T('mpp.cfg.finalSetModeSame'), ''));
+      TC.SET_MODES.forEach(m => $('finalSetMode').add(new Option(modeLabel(m.id), m.id)));
     }
     t.value = S.config.teams;
     $('groupCount').value = String(S.config.groups);
@@ -458,8 +466,8 @@
     if(B.finSlots.length){
       $('finalSection').hidden = false;
       $('schedFinBody').innerHTML = TUI.scheduleBodyHtml(B.finSlots, cf);
-      $('capFin').textContent = 'Spielplan & Ergebnisse – ' + B.finalTitle;
-      $('mobileFinTitle').textContent = 'Spielplan & Ergebnisse – ' + B.finalTitle;
+      $('capFin').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
+      $('mobileFinTitle').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
     } else {
       $('finalSection').hidden = true;
       $('schedFinBody').innerHTML = '';
@@ -513,7 +521,7 @@
     document.querySelectorAll('[data-group-list]').forEach(td => {
       const g = td.getAttribute('data-group-list');
       td.textContent = (B.groups[g] || [])
-        .map(t => lbl(t) + (S.absent.includes(t) ? ' (ausgefallen)' : '')).join(' · ');
+        .map(t => lbl(t) + (S.absent.includes(t) ? ' (' + T('ui.absent') + ')' : '')).join(' · ');
     });
 
     // Spielkarten
@@ -568,7 +576,7 @@
       TUI.markScoreInputs(td, ctx.setMode);
       TUI.paintByeCard(td, { winner: bye ? m.bye : null }, ctx);
       const note = td.querySelector('[data-note]');
-      if(note && m.needsDecision) note.textContent = 'Unentschieden – Entscheidungssatz nötig';
+      if(note && m.needsDecision) note.textContent = T('mpp.match.needsDecision');
     });
   }
 
@@ -577,9 +585,12 @@
     const showDraw = TC.isMulti(S.config.setMode) && !TC.hasDecidingSet(S.config.setMode);
 
     function emptyGroupTableHtml(teams){
+      const E = k => TUI.esc(T(k));
       let th = '<thead><tr>'
-        + '<th class="pl">Pl.</th><th class="nm">Team</th><th>Sp.</th><th>S</th>'
-        + (showDraw ? '<th>U</th>' : '') + '<th>N</th><th>Pkt</th><th>Bälle</th><th>Diff</th>'
+        + '<th class="pl">' + E('sheet.place.colPlace') + '</th><th class="nm">' + E('sheet.place.colTeam') + '</th>'
+        + '<th>' + E('mpp.table.games') + '</th><th>' + E('mpp.table.wins') + '</th>'
+        + (showDraw ? '<th>' + E('mpp.table.draws') + '</th>' : '') + '<th>' + E('mpp.table.losses') + '</th>'
+        + '<th>' + E('mpp.table.points') + '</th><th>' + E('mpp.table.balls') + '</th><th>' + E('mpp.table.diff') + '</th>'
         + '</tr></thead><tbody>';
       teams.forEach(t => {
         th += '<tr>'
@@ -598,7 +609,7 @@
        docs/format-modified-pool-play.html. */
     function bracketGroupHtml(g){
       const rounds = [1, 2].map(rn => ({
-        title: rn === 1 ? 'Setzplatz-Runde' : 'Gewinner-/Verliererspiel',
+        title: rn === 1 ? T('mpp.bracket.round1') : T('mpp.bracket.round2'),
         matches: B.groupRounds.reduce((acc, rd) =>
           acc.concat(rd.matches.filter(m => m.group === g && m.round === rn)), [])
       }));
@@ -607,7 +618,7 @@
     }
     function placeListForGroup(g){
       const t = B.groupTables[g];
-      if (!t.complete) return '<p class="input-hint" style="margin:4px 0 0">Platzierung steht erst nach beiden Runden fest.</p>';
+      if (!t.complete) return '<p class="input-hint" style="margin:4px 0 0">' + TUI.esc(T('mpp.group.placePending')) + '</p>';
       let rows = '';
       for (let p = 1; p <= B.groups[g].length; p++) {
         const e = t.ranked.find(x => x.place === p);
@@ -628,16 +639,16 @@
       const isBracket = B.mppMeta && B.mppMeta[g] && B.mppMeta[g].mode === 'bracket';
 
       if (isBracket) {
-        html += '<div class="mppgrp"><div class="mppgrp-cap">Gruppe ' + g + ' – Modified Pool Play (4er-Bracket)</div>'
+        html += '<div class="mppgrp"><div class="mppgrp-cap">' + TUI.esc(T('mpp.group.bracketCaption', { group: g })) + '</div>'
           + bracketGroupHtml(g) + placeListForGroup(g) + '</div>';
         return;
       }
 
       const key = 'group-' + g;
       const editable = MSTD.isEditing(key);
-      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Gruppe ' + g
-        + ' (Round-Robin – 3er-Gruppe)'
-        + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">(Wertung pro Spiel – ungleiche Spielzahl)</span>' : '')
+      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>'
+        + TUI.esc(T('mpp.group.rrCaption', { group: g }))
+        + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">' + TUI.esc(T('mpp.group.perGame')) + '</span>' : '')
         + (hasResult ? MSTD.toolbarHtml(key) : '')
         + '</caption>'
         + (hasResult
@@ -658,17 +669,13 @@
     const rrGroupNames = B.groupNames.filter(g => !(B.mppMeta && B.mppMeta[g] && B.mppMeta[g].mode === 'bracket'));
     const baseHint = rrGroupNames.length ? TUI.criteriaHint(B.groupTables[rrGroupNames[0]].criteria) : '';
     $('hintGroups').innerHTML = TUI.hintHtml(
-      (anyGroupResult
-        ? 'In 4er-Gruppen steht der Platz direkt aus Sieg/Niederlage im Bracket fest. 3er-Gruppen (Round-Robin) rechnen Punkte und Ball-Differenz automatisch. '
-        : 'Die Gruppenauswertung bleibt bis zum ersten eingetragenen Ergebnis leer und rechnet danach automatisch mit. ')
-        + baseHint,
-      'So ausfüllen: In 4er-Gruppen Sieger/Verlierer aus dem Setzplatz-Spiel in das Gewinner-/Verliererspiel übertragen – der Platz ergibt sich automatisch. '
-        + 'In 3er-Gruppen Punkte und Ball-Differenz eintragen und die Plätze mit Punkt vergeben (1., 2., …). '
-        + baseHint
-        + ' Danach die Finalpaarungen bestimmen und die Teamnamen in die Finalspiele auf Seite 1 eintragen.');
+      anyGroupResult
+        ? T('mpp.hintGroups.screenResult', { criteria: baseHint })
+        : T('mpp.hintGroups.screenEmpty', { criteria: baseHint }),
+      T('mpp.hintGroups.print', { criteria: baseHint }));
     $('hintRank').innerHTML = TUI.hintHtml(
-      'Der Endstand wird aus Vor- und Finalrunde automatisch abgeleitet; die Spalte „entschieden durch“ nennt das jeweils entscheidende Spiel.',
-      'So ausfüllen: Plätze aus den Finalspielen übernehmen und in der Spalte „entschieden durch“ das entscheidende Spiel notieren.');
+      T('mpp.hintRank.screen'),
+      T('mpp.hintRank.print'));
   }
 
   function paintMainTables(){
@@ -679,7 +686,7 @@
       const t = B.mainTables[n];
       const key = 'main-' + n;
       const editable = MSTD.isEditing(key);
-      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>Hauptrunde ' + TUI.esc(n) + MSTD.toolbarHtml(key) + '</caption>'
+      html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>' + TUI.esc(T('mpp.main.caption', { name: term(n) })) + MSTD.toolbarHtml(key) + '</caption>'
         + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw:true,
             editable, manual: TStore.getManualStandings(S, key) })
         + '</table></div>';
@@ -693,7 +700,7 @@
     const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
     const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
-    $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">Noch keine Platzierung – zuerst die Vorrunde eintragen.</td></tr>';
+    $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('mpp.place.empty')) + '</td></tr>';
   }
 
   /* Kumulierte Punkte/Ball-Differenz je Vorrunden-Runde. */
@@ -747,16 +754,14 @@
 
   function paintNotices(){
     const items = [];
-    B.notes.forEach(n => items.push({ txt:n, warn:false }));
-    B.warnings.forEach(w => items.push({ txt:w, warn:true }));
+    B.notes.forEach(n => items.push({ txt:term(n), warn:false }));
+    B.warnings.forEach(w => items.push({ txt:term(w), warn:true }));
     if(S.absent.length){
-      items.push({ txt: 'Ausgefallen: ' + S.absent.map(labeler()).join(', ')
-        + '. Deren Gegner erhalten ein Freilos (Sieg ohne Ball-Differenz).', warn:false });
+      items.push({ txt: T('mpp.notice.absent', { list: S.absent.map(labeler()).join(', ') }), warn:false });
     }
     const overEnd = TC.toMin(S.config.endTime);
     if(overEnd != null && B.endMin > overEnd){
-      items.push({ txt:'Der Zeitplan endet um ' + TC.fromMin(B.endMin) + ' und überschreitet damit die geplante Endzeit '
-        + S.config.endTime + '. Mehr Felder wählen oder einen kürzeren Satzmodus.', warn:true });
+      items.push({ txt: T('mpp.notice.overEnd', { end: TC.fromMin(B.endMin), planned: S.config.endTime }), warn:true });
     }
     $('noticeBox').innerHTML = items.length
       ? '<div class="notebox' + (items.some(i=>i.warn) ? ' is-warn' : '') + '"><ul>'
@@ -772,7 +777,7 @@
 
   function finalPerTeam(){
     const mode = S.config.finalMode;
-    if (mode === 'none') return { lo:0, hi:0, name:'Finalrunde', note:'keine Finalrunde' };
+    if (mode === 'none') return { lo:0, hi:0, name:T('mpp.perTeam.nameFinal'), note:T('mpp.perTeam.noteNone') };
     if (mode === 'placement') {
       /* Über-Kreuz-Block: 4er-Block = Kreuzspiel + Platzierungsspiel (2),
          3er-Block = jeder gegen jeden (2), 2er-Block = ein Platzspiel (1),
@@ -782,10 +787,10 @@
         if (bl.roundRobin) return bl.matches.length - 1;
         return bl.matches.length >= 4 ? 2 : bl.matches.length;
       });
-      if (!per.length) return { lo:0, hi:0, name:'Platzierungsrunde', note:'' };
+      if (!per.length) return { lo:0, hi:0, name:T('mpp.perTeam.namePlacement'), note:'' };
       const lo = Math.min.apply(null, per), hi = Math.max.apply(null, per);
-      return { lo, hi, name:'Platzierungsrunde',
-        note: lo === hi ? 'jedes Team spielt weiter' : 'je nach Blockgröße' };
+      return { lo, hi, name:T('mpp.perTeam.namePlacement'),
+        note: lo === hi ? T('mpp.perTeam.notePlacementAll') : T('mpp.perTeam.notePlacementBlock') };
     }
     if (mode === 'ko') {
       const rounds = B.bracket ? B.bracket.rounds.length : 0;
@@ -795,22 +800,20 @@
       const all = S.config.teams;
       const lo = qual < all ? 0 : 1;
       const out = all - qual;
-      return { lo, hi: rounds, name:'KO-Runde',
-        note: (out > 0 ? (out === 1 ? '1 Team ist' : out + ' Teams sind')
-                + ' nach der Vorrunde platziert (kein KO-Spiel), ' : '')
-              + qual + ' qualifizierte Teams: 1 Spiel bei Niederlage im ersten KO-Spiel, '
-              + rounds + ' Spiele für Finalisten und die Teams im Spiel um Platz 3' };
+      const koNote = T('mpp.perTeam.noteKo', { qual: qual, rounds: rounds });
+      return { lo, hi: rounds, name:T('mpp.perTeam.nameKo'),
+        note: out > 0 ? T('mpp.perTeam.noteKoPlaced', { count: out, rest: koNote }) : koNote };
     }
     if (mode === 'main') {
       const per = Object.keys(B.mainGroups || {})
         .map(n => B.mainGroups[n].length)
         .filter(n => n >= 2)
         .map(n => n - 1);
-      if (!per.length) return { lo:0, hi:0, name:'Hauptrunde', note:'' };
+      if (!per.length) return { lo:0, hi:0, name:T('mpp.perTeam.nameMain'), note:'' };
       const lo = Math.min.apply(null, per), hi = Math.max.apply(null, per);
-      return { lo, hi, name:'Hauptrunde', note:'zweite Gruppenphase, jeder gegen jeden' };
+      return { lo, hi, name:T('mpp.perTeam.nameMain'), note:T('mpp.perTeam.noteMain') };
     }
-    return { lo:0, hi:0, name:'Finalrunde', note:'' };
+    return { lo:0, hi:0, name:T('mpp.perTeam.nameFinal'), note:'' };
   }
 
   function perTeamGames(){
@@ -821,11 +824,11 @@
     const tLo = gLo + fin.lo, tHi = gHi + fin.hi;
     const grpLabel = rangeLabel(gLo, gHi);
     const finLabel = rangeLabel(fin.lo, fin.hi);
-    const text = 'Spiele pro Team: Vorrunde ' + grpLabel + ' · ' + fin.name + ' ' + finLabel
-      + ' · gesamt ' + rangeLabel(tLo, tHi)
-      + (fin.note ? ' (' + fin.note + ')' : '') + '.';
+    const body = T('mpp.perTeam.body', { grp: grpLabel, name: fin.name, fin: finLabel, total: rangeLabel(tLo, tHi) })
+      + (fin.note ? T('mpp.perTeam.noteSuffix', { note: fin.note }) : '') + '.';
+    const text = T('mpp.perTeam.prefix') + body;
     return { grpLo:gLo, grpHi:gHi, fin, totalLabel: rangeLabel(tLo, tHi),
-      shortBreak: grpLabel + ' + ' + finLabel, text };
+      shortBreak: grpLabel + ' + ' + finLabel, text, body };
   }
 
 
@@ -836,7 +839,7 @@
     if(!box) return;
     const slots = B.grpSlots.concat(B.finSlots);
     box.innerHTML = TUI.timeTableHtml(slots,
-      { time: TC.fromMin(B.endMin), text: 'Auswertung' });
+      { time: TC.fromMin(B.endMin), text: T('mpp.timeplan.end') });
   }
 
   function paintSummary(){
@@ -853,68 +856,72 @@
     $('rv-fields').textContent = c.fields;
     const win = (TC.toMin(c.endTime) - TC.toMin(c.startTime));
     const need = TC.neededFields(B.groupRounds.concat(B.finalRounds), win, TC.MODE_MIN[c.setMode], 10);
-    $('rv-fitFields').textContent = need ? ('mind. ' + need) : 'passt nicht';
+    $('rv-fitFields').textContent = need ? T('sheet.kpi.minFields', { n: need }) : T('sheet.kpi.noFit');
     TUI.fillTimeKpis({
       slots: B.grpSlots.concat(B.finSlots), startMin: B.startMin, needEndMin: B.endMin,
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: c.setMode, games: grpGames + finGames
     });
-    $('h-sub').textContent = c.teams + ' Teams · ' + B.groupNames.length + ' Gruppen · '
-      + c.fields + (c.fields===1?' Feld':' Felder') + ' · ' + TC.modeDef(c.setMode).label
+    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · ' + T('mpp.groupsN', { n: B.groupNames.length }) + ' · '
+      + T('ui.field.count', { count: c.fields }) + ' · ' + modeLabel(c.setMode)
       + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
-    $('capGrp').textContent = 'Spielplan & Ergebnisse – Vorrunde (' + TC.modeDef(c.setMode).label + ')';
+    $('capGrp').textContent = T('mpp.schedule.groupCaption', { mode: modeLabel(c.setMode) });
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
-      screenAdd: 'Gruppentabellen und laufende Tabelle rechnen automatisch mit.',
-      printAdd: 'Nach jeder Runde die laufende Tabelle auf Seite 2 fortschreiben; die Gruppentabellen erst nach der letzten Vorrunden-Runde ausfüllen.'
+      screenAdd: T('mpp.schedule.groupScreenAdd'),
+      printAdd: T('mpp.schedule.groupPrintAdd')
     });
     $('hintFin').innerHTML = B.finSlots.length
       ? TUI.scoreHintHtml({
-          screenAdd: 'Die Finalpaarungen ergeben sich automatisch aus der Vorrunde; steht ein Team noch nicht fest, zeigt der Bogen die Herkunft an.',
-          printAdd: 'Die Finalpaarungen ergeben sich aus der Vorrunde: die Herkunft steht in der Spielkarte – Teamnamen vor dem Spiel eintragen.'
+          screenAdd: T('mpp.schedule.finalScreenAdd'),
+          printAdd: T('mpp.schedule.finalPrintAdd')
         })
       : '';
     $('trackHint').innerHTML = TUI.hintHtml(
-      'Die kumulierten Punkte und die Ball-Differenz je Runde werden automatisch fortgeschrieben; die letzte gefüllte Spalte ist der Vorrunden-Abschluss.',
-      'So ausfüllen: nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren. Die letzte ausgefüllte Spalte ist der Vorrunden-Abschluss.');
+      T('mpp.track.hintScreen'),
+      T('mpp.track.hintPrint'));
 
     const crit = B.groupNames.length ? B.groupTables[B.groupNames[0]].criteria : null;
     $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, crit);
     const fm = TFormat.FINAL_MODES.find(m => m.id === c.finalMode);
-    $('h-legend').innerHTML = '<b>Modus:</b> ' + B.groupNames.length + ' Gruppen · '
-      + TUI.esc(fm ? fm.label : '') + ' · pro Spiel '
-      + '<span class="rmode">' + TUI.esc(TC.modeDef(c.setMode).label) + '</span>'
-      + ' mit 2 Punkten Vorsprung.';
+    const E = k => TUI.esc(T(k));
+    $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> '
+      + TUI.esc(T('mpp.groupsN', { n: B.groupNames.length })) + ' · '
+      + TUI.esc(fm ? term(fm.label) : '') + ' · ' + E('sheet.legend.perGame') + ' '
+      + '<span class="rmode">' + TUI.esc(modeLabel(c.setMode)) + '</span>'
+      + ' ' + E('mpp.legend.rule');
 
     const noFinal = c.finalMode === 'none';
     const fsSub   = $('finalStandingsSub');
     const capPlace = $('capPlace');
     if (fsSub) fsSub.textContent = noFinal
-      ? 'Endstand nach der Gruppenphase (keine Finalrunde):'
-      : 'Endstand – aus den Ergebnissen der Finalrunde (Seite 1) ableiten:';
-    if (capPlace) capPlace.textContent = 'Endstand';
+      ? T('mpp.place.subNoFinal')
+      : T('mpp.place.subFinal');
+    if (capPlace) capPlace.textContent = T('sheet.place.caption');
 
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ standings: 'standingsSection', schedule: 'scheduleSection' });
   }
 
   function paintGuide(){
-    $('g-groups').textContent = B.groupNames.length + ' Gruppen zu '
-      + B.groupNames.map(g=>B.groups[g].length).join('/') + ' Teams ('
-      + B.groupNames.map(g => (B.mppMeta && B.mppMeta[g] && B.mppMeta[g].mode === 'bracket') ? 'Bracket' : 'Round-Robin').join('/') + ').';
-    $('g-mode').textContent = TC.modeDef(S.config.setMode).label
-      + ', Sieg nur mit 2 Punkten Vorsprung (z. B. ' + (TC.modeDef(S.config.setMode).target+1)
-      + ':' + (TC.modeDef(S.config.setMode).target-1) + ').';
+    $('g-groups').textContent = T('mpp.guide.groups', {
+      n: B.groupNames.length,
+      sizes: B.groupNames.map(g=>B.groups[g].length).join('/'),
+      modes: B.groupNames.map(g => (B.mppMeta && B.mppMeta[g] && B.mppMeta[g].mode === 'bracket')
+        ? T('mpp.guide.modeBracket') : T('mpp.guide.modeRr')).join('/')
+    });
+    const md = TC.modeDef(S.config.setMode);
+    $('g-mode').textContent = T('mpp.guide.mode', { mode: modeLabel(md.id), win: md.target+1, lose: md.target-1 });
     const fm = TFormat.FINAL_MODES.find(m => m.id === S.config.finalMode);
-    let txt = fm ? fm.label : '';
+    const fmLabel = fm ? term(fm.label) : '';
+    let txt = fmLabel;
     if(S.config.finalMode === 'placement'){
-      txt += ' – je vier benachbarte Gruppenplätze bilden einen Block: A1–B2 und B1–A2, '
-        + 'danach Sieger gegen Sieger um den oberen, Verlierer gegen Verlierer um den unteren Platz.';
+      txt = T('mpp.guide.finalPlacement', { mode: fmLabel });
     } else if(S.config.finalMode === 'ko'){
-      txt += ' – Gruppensieger treffen erst im Finale aufeinander.';
+      txt = T('mpp.guide.finalKo', { mode: fmLabel });
     } else if(S.config.finalMode === 'main'){
-      txt += ' – die obere Hälfte spielt um die Plätze 1 ff., die untere um die hinteren Plätze.';
+      txt = T('mpp.guide.finalMain', { mode: fmLabel });
     }
     $('g-final').textContent = txt;
-    $('g-games').textContent = perTeamGames().text.replace('Spiele pro Team: ', '');
+    $('g-games').textContent = perTeamGames().body;
   }
 
   /* -------------------------------------------------------------- Aktionen */
@@ -924,7 +931,7 @@
      in derselben Phase weiterhin gibt, bleiben erhalten.                  */
   function removeTeam(t){
     const n = S.config.teams;
-    if(n - 1 < MIN_TEAMS){ alert('Mindestens ' + MIN_TEAMS + ' Teams erforderlich.'); return; }
+    if(n - 1 < MIN_TEAMS){ alert(T('sheet.alert.minTeams', { n: MIN_TEAMS })); return; }
     if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
     const listMatches = () => (B.allMatches || []).map(m => ({ id: m.id, a: m.ta, b: m.tb }));
     const map = TStore.teamRemap(t);
@@ -961,9 +968,10 @@
       applyDocTitle();
     });
 
-    $('btnToggleNames').addEventListener('click', e => toggle('namepanel', e.target));
-    $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.target));
-    $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.target));
+    /* currentTarget: der Klick kann auf dem Text-<span> im Button landen. */
+    $('btnToggleNames').addEventListener('click', e => toggle('namepanel', e.currentTarget));
+    $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.currentTarget));
+    $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.currentTarget));
 
     $('nameGrid').addEventListener('input', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
@@ -1001,25 +1009,25 @@
       save(); structureKey=''; rebuild();
     });
     $('btnClearNames').addEventListener('click', () => {
-      if(!confirm('Alle Teamnamen löschen?')) return;
+      if(!confirm(T('sheet.confirm.clearNames'))) return;
       S.teamNames = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
     $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
 
     $('btnClearScores').addEventListener('click', () => {
-      if(!confirm('Alle Ergebnisse löschen? Namen und Konfiguration bleiben erhalten.')) return;
+      if(!confirm(T('sheet.confirm.clearScores'))) return;
       TStore.clearScores(S); save(); rebuild();
     });
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
     $('btnReset').addEventListener('click', async () => {
-      if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+      if(!confirm(T('sheet.confirm.reset'))) return;
       if(!await save()) return;
       const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
-        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        alert(T('sheet.alert.archiveBlocked'));
         return;
       }
       S = started.tournament;
@@ -1028,14 +1036,14 @@
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
+      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
       setTimeout(()=>{ b.textContent = old; }, 1500);
     });
 
     $('btnTimefit').addEventListener('click', () => {
       const win = TC.toMin(S.config.endTime) - TC.toMin(S.config.startTime);
       const need = TC.neededFields(B.groupRounds.concat(B.finalRounds), win, TC.MODE_MIN[S.config.setMode], 10);
-      if(!need){ alert('Auch mit 10 Feldern passt der Plan nicht in das Zeitfenster. Kürzeren Satzmodus oder weniger Teams wählen.'); return; }
+      if(!need){ alert(T('sheet.alert.timefit')); return; }
       S.config.fields = need; $('fieldCount').value = need;
       save(); rebuild();
     });
@@ -1065,29 +1073,16 @@
     TUI.wireScoreInputs($('schedFinBody'), onScoreFin);
   }
 
-  /* Migration alter Bögen anbieten, ohne etwas zu überschreiben. */
-  async function offerLegacy(){
-    const ids = ['gruppen-6','gruppen-8','gruppen-10','gruppen-12','gruppen-16','gruppen-ko-8'];
-    const exists = await Promise.all(ids.map(id => TStore.hasLegacy(id)));
-    const src = ids.filter((id, i) => exists[i]);
-    if(!src.length || Object.keys(S.results).length) return;
-    const box = document.createElement('div');
-    box.className = 'notebox noprint';
-    box.innerHTML = 'Es liegen noch Daten aus den alten Turnierbögen vor ('
-      + TUI.esc(src.join(', ')) + '). Diese bleiben dort erhalten – dieser Bogen startet leer.';
-    $('noticeBox').parentNode.insertBefore(box, $('noticeBox'));
-  }
-
   fillSelects();
   wire();
   rebuild();
-  await offerLegacy();
 })().catch(function(err){
   console.error(err);
   const box = document.createElement('div');
   box.className = 'notebox noprint';
   box.setAttribute('role', 'alert');
-  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  const fallback = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  box.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('sheet.loadError') : fallback;
   document.body.insertBefore(box, document.body.firstChild);
 });
 </script>
@@ -1100,10 +1095,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">
   <div class="footer-legal" style="margin-top:4px;">
     © <span id="cpYear"></span> ·
-    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;">Copyright/Kontakt</button>
+    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;" data-i18n="chrome.contact">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
     <span id="cpPrint" class="footer-print-only"></span>
-    <span class="footer-amazon">· Unterstütze das Projekt: <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored">kaufe bei Amazon ein</a></span>
+    <span class="footer-amazon"><span data-i18n="chrome.supportProject">· Unterstütze das Projekt:</span> <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored" data-i18n="chrome.amazonLink">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
 <style>

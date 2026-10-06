@@ -71,9 +71,8 @@
      ======================================================================== */
 
   /* --- 3.1 Round-Robin (Circle-Methode) -----------------------------------
-     Portiert aus Turnierbogen_Flexibel_Alle_gegen_Alle.html (genSchedule).
-     Verhalten bewusst identisch, damit bestehende Pläne unverändert bleiben.
-     Bei ungerader Teamzahl rotiert genau ein Freilos durch alle Teams.        */
+     Verhalten bewusst stabil halten, damit gespeicherte Pläne unverändert
+     bleiben. Bei ungerader Teamzahl rotiert genau ein Freilos durch alle Teams.        */
   function genRoundRobin(teams, opts) {
     const o = opts || {};
     const list = normalizeTeamList(teams);
@@ -160,7 +159,6 @@
   }
 
   /* --- 3.3 Schweizer System ------------------------------------------------
-     Portiert aus Turnierbogen_Schweizer_System.html (buildMatches).
      Paart rangnah, vermeidet Wiederholungen und stellt per Lookahead sicher,
      dass auch alle FOLGENDEN Runden noch wiederholungsfrei planbar bleiben.
 

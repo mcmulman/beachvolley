@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-i18n>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -67,89 +67,93 @@
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px">
-  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a>
-  <a id="formatDoc" href="docs/format-king-queen.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px">📖 Format-Info</a>
+  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
+  <a id="formatDoc" href="docs/format-king-queen.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">📖 Format-Info</a>
 </div>
 
-<h1 id="h-title">King &amp; Queen</h1>
-<p class="sub" id="h-sub">Mixed-Event · Einzelpersonen · 2 gegen 2 mit rotierenden Team-Partner:innen · getrennte Herren-/Damen-Rangliste</p>
+<h1 id="h-title" data-i18n="kq.title">King &amp; Queen</h1>
+<p class="sub" id="h-sub" data-i18n="kq.sub">Mixed-Event · Einzelpersonen · 2 gegen 2 mit rotierenden Team-Partner:innen · getrennte Herren-/Damen-Rangliste</p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
-  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <ol>
-    <li><span class="hi">Prinzip:</span> Alle Personen treten <b>einzeln</b> an. Jede Runde bilden sich neue
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Jede Runde bilden sich neue
       2er-Teams: die aktuell stärkste Person spielt mit der aktuell schwächsten zusammen (Ausgleichs-Team),
-      Herren, Damen und Niveaustufen werden dabei gemeinsam berücksichtigt.</li>
-    <li><span class="hi">Niveau:</span> <span id="g-level">–</span></li>
-    <li><span class="hi">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi">Ablauf je Runde:</span> Paarungen laut Plan aufrufen, alle Spiele gleichzeitig
-      austragen, danach das Ergebnis in die Kästchen eintragen.</li>
-    <li><span class="hi">Wertung je Person:</span> Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0
+      Herren, Damen und Niveaustufen werden dabei gemeinsam berücksichtigt.</span></li>
+    <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen laut Plan aufrufen, alle Spiele gleichzeitig
+      austragen, danach das Ergebnis in die Kästchen eintragen.</span></li>
+    <li><span class="hi" data-i18n="kq.guide.scoringLabel">Wertung je Person:</span> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0
       (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei Gleichstand entscheidet die Ball-Differenz.
-      Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</li>
-    <li><span class="hi">Freilos:</span> <span id="g-bye">–</span></li>
+      Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="sheet.cfg.title">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Turniertitel</span>
-      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+    <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="kq.cfg.titleLabel">Turniertitel</span></span>
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:sheet.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
     </label>
     <div class="cfgfield-row">
-      <label class="cfgfield"><span class="cfg-lbl">♂ Herren</span><select id="menCount"></select></label>
-      <label class="cfgfield"><span class="cfg-lbl">♀ Damen</span><select id="womenCount"></select></label>
-      <label class="cfgfield" id="roundCountField"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> Runden</span>
+      <label class="cfgfield"><span class="cfg-lbl" data-i18n="kq.cfg.men">♂ Herren</span><select id="menCount"></select></label>
+      <label class="cfgfield"><span class="cfg-lbl" data-i18n="kq.cfg.women">♀ Damen</span><select id="womenCount"></select></label>
+      <label class="cfgfield" id="roundCountField"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> <span data-i18n="kq.cfg.rounds">Runden</span></span>
         <select id="roundCount"></select>
       </label>
-      <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder</span>
+      <label class="cfgfield"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="kq.cfg.fields">Felder</span></span>
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--mode"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> Satzmodus</span>
+    <label class="cfgfield cfgfield--mode"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> <span data-i18n="kq.cfg.setMode">Satzmodus</span></span>
       <select id="setMode"></select>
     </label>
-    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Start</span>
+    <label class="cfgfield cfgfield--start"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="kq.cfg.start">Start</span></span>
       <input type="time" id="startTime" value="10:00">
     </label>
-    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> Ende</span>
+    <label class="cfgfield cfgfield--end"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18"/><path d="M6 4h11l-2 4 2 4H6"/></svg> <span data-i18n="kq.cfg.end">Ende</span></span>
       <input type="time" id="endTime" value="14:00">
     </label>
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl">Spielmodus</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-participants">–</span><span class="cfgres-lbl">Teilnehmer:innen</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl">Spiele gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perPerson">–</span><span class="cfgres-lbl">Spiele pro Person (ca.)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.mode">Spielmodus</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-participants">–</span><span class="cfgres-lbl" data-i18n="kq.kpi.participants">Teilnehmer:innen</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.games">Spiele gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perPerson">–</span><span class="cfgres-lbl" data-i18n="kq.kpi.perPerson">Spiele pro Person (ca.)</span></div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-fields">–</span>
       <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
-      <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+      <span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder (gewählt · benötigt)</span>
     </div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende (Mindestbedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit/Spiel (verfügbar · mind.)</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Gesamtzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.buffer">Zeitreserve</span></div>
   </div>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Namen &amp; Niveau</button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Person ausgefallen</button>
-    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
-    <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="kq.btn.names">Namen &amp; Niveau</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="kq.btn.absent">Person ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
+    <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
     <span class="spacer"></span>
-    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Teilen</button>
-    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
+    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> <span data-i18n="sheet.btn.share">Teilen</span></button>
+    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern" data-i18n-attr="title:sheet.btn.saveTitle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> <span data-i18n="sheet.btn.save">Speichern</span></button>
   </div>
 </div>
 
@@ -158,51 +162,51 @@
 <div class="row" id="rosterSection" hidden>
   <div style="flex:0 0 48%">
     <table class="roster" id="menRoster">
-      <caption><span class="cap-title">Herren</span></caption>
-      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th><th class="rdel"><span class="sr-only">Löschen</span></th></tr></thead>
+      <caption><span class="cap-title" data-i18n="kq.roster.men">Herren</span></caption>
+      <thead><tr><th data-i18n="kq.col.nr">Nr</th><th data-i18n="kq.col.name">Name</th><th data-i18n="kq.col.level">Niveau</th><th data-i18n="kq.col.absent">Ausgef.</th><th class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
       <tbody id="menRosterBody"></tbody>
     </table>
   </div>
   <div style="flex:0 0 48%">
     <table class="roster" id="womenRoster">
-      <caption><span class="cap-title">Damen</span></caption>
-      <thead><tr><th>Nr</th><th>Name</th><th>Niveau</th><th>Ausgef.</th><th class="rdel"><span class="sr-only">Löschen</span></th></tr></thead>
+      <caption><span class="cap-title" data-i18n="kq.roster.women">Damen</span></caption>
+      <thead><tr><th data-i18n="kq.col.nr">Nr</th><th data-i18n="kq.col.name">Name</th><th data-i18n="kq.col.level">Niveau</th><th data-i18n="kq.col.absent">Ausgef.</th><th class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
       <tbody id="womenRosterBody"></tbody>
     </table>
   </div>
 </div>
 <div class="nactions noprint" id="rosterActions" hidden>
-  <button type="button" class="nbtn" id="btnClearNames">Namen zurücksetzen</button>
-  <button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button>
+  <button type="button" class="nbtn" id="btnClearNames" data-i18n="kq.btn.clearNames">Namen zurücksetzen</button>
+  <button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button>
 </div>
 
-<h2>Spielplan &amp; Ergebnisse</h2>
+<h2 data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
 <div id="roundsContainer"></div>
 
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
-<h1 id="standingsSection">Endwertung</h1>
-<p class="sub">King (Herren) und Queen (Damen) werden getrennt gewertet – es gibt keine gemeinsame Mixed-Rangliste.</p>
+<h1 id="standingsSection" data-i18n="kq.standings.title">Endwertung</h1>
+<p class="sub" data-i18n="kq.standings.sub">King (Herren) und Queen (Damen) werden getrennt gewertet – es gibt keine gemeinsame Mixed-Rangliste.</p>
 
 <div class="row" id="standingsTables">
   <div class="table-scroll" style="flex:1 1 40%">
     <table class="stand" id="menStandTable" data-mstd-key="kq-men">
-      <caption><span class="cap-title">King – Herren</span></caption>
+      <caption><span class="cap-title" data-i18n="kq.standings.men">King – Herren</span></caption>
       <tbody></tbody>
     </table>
     <p class="input-hint" id="hintMen"></p>
   </div>
   <div class="table-scroll" style="flex:1 1 40%">
     <table class="stand" id="womenStandTable" data-mstd-key="kq-women">
-      <caption><span class="cap-title">Queen – Damen</span></caption>
+      <caption><span class="cap-title" data-i18n="kq.standings.women">Queen – Damen</span></caption>
       <tbody></tbody>
     </table>
     <p class="input-hint" id="hintWomen"></p>
   </div>
   <div class="table-scroll" style="flex:0 0 200px; max-width:200px;">
     <table class="stand" id="overallStandTable" style="font-size:11px; width:100%; min-width:0;">
-      <caption><span class="cap-title">Gesamtwertung</span></caption>
+      <caption><span class="cap-title" data-i18n="kq.standings.overall">Gesamtwertung</span></caption>
       <tbody></tbody>
     </table>
   </div>
@@ -220,6 +224,10 @@
 <script>
 (async function(){
   'use strict';
+  /* DE/EN-Prototyp: statische Texte vor dem ersten Zeichnen übersetzen. */
+  const T = TI18n.t, term = TI18n.term;
+  const modeLabel = id => T('setMode.' + TC.modeDef(id).id);
+  TI18n.apply(document);
   if (await TResumePicker.maybePrompt('kingqueen', 'King & Queen')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('kingqueen');
@@ -263,11 +271,11 @@
 
   function applyDocTitle(){
     const total = getMenCount() + getWomenCount();
-    const info = total + ' Pers.';
+    const info = T('kq.docInfo', { n: total });
     document.title = TArchive.docTitle(S.title, SHEET_TYPE, info);
     const h = $('h-title');
     if(h) h.innerHTML = TArchive.headTitleHtml(S.title, SHEET_TYPE);
-    document.body.setAttribute('data-bar-title', SHEET_TYPE + ' · ' + info);
+    document.body.setAttribute('data-bar-title', term(SHEET_TYPE) + ' · ' + info);
   }
   const AUTO_TITLE_RE = /^King & Queen – (\d{2}\.\d{2}\.\d{4})$/;
   function syncAutoTitle(){
@@ -280,14 +288,14 @@
 
   function getMenCount(){ return +$('menCount').value; }
   function getWomenCount(){ return +$('womenCount').value; }
-  function playerName(id){ return (S.teamNames && S.teamNames[id]) || (id <= getMenCount() ? 'Herr ' + id : 'Dame ' + (id - getMenCount())); }
+  function playerName(id){ return (S.teamNames && S.teamNames[id]) || (id <= getMenCount() ? T('kq.player.man', { n: id }) : T('kq.player.woman', { n: id - getMenCount() })); }
   function playerLevel(id){ return (S.config.levels && S.config.levels[id]) || TFormat.KQ_LEVEL_DEFAULT; }
   function playerLabel(id){ return playerName(id) + ' (N' + playerLevel(id) + ')'; }
   function playerNameHtml(id){
     const abs = (S.absent || []).includes(id);
     return '<span class="t-line">' + esc(playerName(id)) + '</span>'
       + '<span class="lvbadge">N' + playerLevel(id) + '</span>'
-      + (abs ? ' <span class="abt">ausgefallen</span>' : '');
+      + (abs ? ' <span class="abt">' + esc(T('ui.absent')) + '</span>' : '');
   }
   function ctxFor(setMode){
     return {
@@ -302,10 +310,10 @@
   function fillSelects(){
     const m = $('menCount'), w = $('womenCount'), rc = $('roundCount'), sm = $('setMode');
     if(!m.options.length){
-      for(let n=0;n<=16;n++) m.add(new Option(n + (n===1?' Herr':' Herren'), n));
-      for(let n=0;n<=16;n++) w.add(new Option(n + (n===1?' Dame':' Damen'), n));
-      for(let n=1;n<=10;n++) rc.add(new Option(n + (n===1?' Runde':' Runden'), n));
-      TC.SET_MODES.forEach(md => sm.add(new Option(md.label, md.id)));
+      for(let n=0;n<=16;n++) m.add(new Option(T('kq.opt.men', { count: n }), n));
+      for(let n=0;n<=16;n++) w.add(new Option(T('kq.opt.women', { count: n }), n));
+      for(let n=1;n<=10;n++) rc.add(new Option(T('kq.opt.rounds', { count: n }), n));
+      TC.SET_MODES.forEach(md => sm.add(new Option(modeLabel(md.id), md.id)));
     }
     m.value = String(S.config.men);
     w.value = String(S.config.women);
@@ -365,7 +373,7 @@
   const MIN_PLAYERS = 4;
   function removePlayer(id){
     const men = getMenCount(), women = getWomenCount();
-    if(men + women - 1 < MIN_PLAYERS){ alert('Mindestens ' + MIN_PLAYERS + ' Personen erforderlich.'); return; }
+    if(men + women - 1 < MIN_PLAYERS){ alert(T('kq.alert.minPlayers', { n: MIN_PLAYERS })); return; }
     const label = playerName(id);
     if(!TUI.confirmRemoveTeam(label, { hasResults: TStore.anyResults(S) })) return;
     const map = TStore.teamRemap(id);
@@ -444,9 +452,9 @@
     const setCnt = TC.modeDef(ctx.setMode).sets;
     const deciding = TC.hasDecidingSet(ctx.setMode);
     const names = { a: m.teamA.map(playerName).join(' & '), b: m.teamB.map(playerName).join(' & ') };
-    let sets = TUI.setColumnHtml(m.id, 1, setCnt <= 1 ? 'Punkte' : 'Satz 1', null, names);
-    if(setCnt >= 2) sets += TUI.setColumnHtml(m.id, 2, 'Satz 2', null, names);
-    if(deciding) sets += TUI.setColumnHtml(m.id, 3, 'Entsch.', 'TB', names);
+    let sets = TUI.setColumnHtml(m.id, 1, setCnt <= 1 ? T('ui.score.points') : T('ui.score.setN', { n: 1 }), null, names);
+    if(setCnt >= 2) sets += TUI.setColumnHtml(m.id, 2, T('ui.score.setN', { n: 2 }), null, names);
+    if(deciding) sets += TUI.setColumnHtml(m.id, 3, T('ui.score.decider'), 'TB', names);
 
     const side = (cls, players) => '<span class="pside ' + cls + '">'
       + '<span class="t ' + (cls === 'pside-a' ? 't-a' : 't-b') + '">'
@@ -470,14 +478,14 @@
     let html = '';
     B.rounds.forEach(rd => {
       const byeNote = (rd.bye && rd.bye.length)
-        ? '<span class="kq-bye">Pause: ' + rd.bye.map(p => esc(playerName(p))).join(', ') + '</span>' : '';
+        ? '<span class="kq-bye">' + esc(T('kq.round.bye', { list: rd.bye.map(p => playerName(p)).join(', ') })) + '</span>' : '';
       html += '<div class="kq-round" data-round-block="' + rd.round + '">'
-        + '<div class="kq-round-title">Runde ' + rd.round + byeNote + '</div>'
+        + '<div class="kq-round-title">' + esc(T('ui.round.n', { n: rd.round })) + byeNote + '</div>'
         + '<table class="kq-cards"><tbody><tr>'
         + rd.matches.map(m => kqCellHtml(m, ctx)).join('')
         + '</tr></tbody></table></div>';
     });
-    $('roundsContainer').innerHTML = html || '<p class="notebox">Zu wenige Teilnehmer:innen für ein Match.</p>';
+    $('roundsContainer').innerHTML = html || '<p class="notebox">' + esc(T('kq.round.tooFew')) + '</p>';
     buildRoster();
   }
 
@@ -491,12 +499,12 @@
       TFormat.KQ_LEVELS.forEach(l => { opts += '<option value="' + l + '"' + (l === lvl ? ' selected' : '') + '>N' + l + '</option>'; });
       return '<tr data-player-row="' + id + '"' + (absentSet.has(id) ? ' class="is-absent"' : '') + '>'
         + '<td class="num">' + label + '</td>'
-        + '<td class="rname"><input data-name-input="' + id + '" value="' + esc((S.teamNames && S.teamNames[id]) || '') + '" placeholder="' + (id <= men ? 'Herr ' : 'Dame ') + label + '" autocomplete="off" spellcheck="false"></td>'
+        + '<td class="rname"><input data-name-input="' + id + '" value="' + esc((S.teamNames && S.teamNames[id]) || '') + '" placeholder="' + esc(T(id <= men ? 'kq.player.man' : 'kq.player.woman', { n: label })) + '" autocomplete="off" spellcheck="false"></td>'
         + '<td class="rlevel"><select data-level-input="' + id + '">' + opts + '</select></td>'
         + '<td class="rabsent"><input type="checkbox" data-absent-input="' + id + '"' + (absentSet.has(id) ? ' checked' : '') + '></td>'
         + '<td class="rdel"><button type="button" class="team-del" data-remove-player="' + id + '"'
-        + (canRemove ? ' title="Person endgültig löschen"' : ' disabled title="Mindestens ' + MIN_PLAYERS + ' Personen erforderlich"')
-        + ' aria-label="' + esc(playerName(id)) + ' löschen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td>'
+        + (canRemove ? ' title="' + esc(T('kq.remove.title')) + '"' : ' disabled title="' + esc(T('kq.remove.min', { n: MIN_PLAYERS })) + '"')
+        + ' aria-label="' + esc(T('ui.team.deleteAria', { label: playerName(id) })) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td>'
         + '</tr>';
     };
     let menHtml = '';
@@ -512,7 +520,7 @@
       const block = $('roundsContainer').querySelector('[data-round-block="' + rd.round + '"]');
       const byeEl = block && block.querySelector('.kq-round-title .kq-bye');
       if(byeEl && rd.bye && rd.bye.length){
-        byeEl.textContent = 'Pause: ' + rd.bye.map(p => playerName(p)).join(', ');
+        byeEl.textContent = T('kq.round.bye', { list: rd.bye.map(p => playerName(p)).join(', ') });
       }
     });
     B.rounds.forEach(rd => rd.matches.forEach(m => {
@@ -551,8 +559,8 @@
       const hint = $(hintId);
       if(hint) hint.innerHTML = MSTD.toolbarHtml(tableKey);
     };
-    paintOne('kq-men', B.men, 'menStandTable', 'King – Herren', 'hintMen');
-    paintOne('kq-women', B.women, 'womenStandTable', 'Queen – Damen', 'hintWomen');
+    paintOne('kq-men', B.men, 'menStandTable', esc(T('kq.standings.men')), 'hintMen');
+    paintOne('kq-women', B.women, 'womenStandTable', esc(T('kq.standings.women')), 'hintWomen');
 
     const all = [...(B.men || []), ...(B.women || [])]
       .filter(item => item && item.team != null)
@@ -567,15 +575,16 @@
 
     const overallTable = $('overallStandTable');
     if(overallTable){
-      overallTable.innerHTML = '<caption><span class="cap-title">Gesamtwertung</span></caption>'
-        + '<thead><tr><th class="pl">Pl.</th><th class="nm">Name</th><th>P</th><th>Diff</th></tr></thead><tbody>'
+      overallTable.innerHTML = '<caption><span class="cap-title">' + esc(T('kq.standings.overall')) + '</span></caption>'
+        + '<thead><tr><th class="pl">' + esc(T('sheet.place.colPlace')) + '</th><th class="nm">' + esc(T('kq.col.name')) + '</th><th>'
+        + esc(T('kq.col.pts')) + '</th><th>' + esc(T('kq.col.diff')) + '</th></tr></thead><tbody>'
         + all.map((row, idx) => {
             const diff = Number(row.stat.bd || 0);
             const diffHtml = diff > 0 ? '+' + diff : String(diff);
-            const badge = row.gender === 'm' ? 'H' : row.gender === 'f' ? 'D' : '—';
+            const badge = row.gender === 'm' ? T('kq.badge.man') : row.gender === 'f' ? T('kq.badge.woman') : '—';
             return '<tr data-team="' + row.team + '">'
               + '<td class="pl">' + (idx + 1) + '.</td>'
-              + '<td class="nm"><span class="t-line">' + esc(playerName(row.team)) + '</span><span class="tnm"> ' + badge + '</span></td>'
+              + '<td class="nm"><span class="t-line">' + esc(playerName(row.team)) + '</span><span class="tnm"> ' + esc(badge) + '</span></td>'
               + '<td><b>' + (row.stat.pts || 0) + '</b></td>'
               + '<td class="' + (diff > 0 ? 'pos' : diff < 0 ? 'neg' : '') + '">' + diffHtml + '</td>'
               + '</tr>';
@@ -585,25 +594,22 @@
   }
 
   function paintGuide(){
-    $('g-level').textContent = 'Jede Person hat ein Niveau (N2 schwächste bis N5 stärkste). Die '
-      + 'Ausgleichs-Teams berücksichtigen Punktestand, Ball-Differenz und Niveau, damit jedes Team '
-      + 'im Schnitt ähnlich stark ist.';
-    $('g-mode').textContent = TC.modeDef(S.config.setMode).label + '.';
-    $('g-bye').textContent = 'Bei ungerader Teilnehmerzahl pausiert automatisch eine Person bzw. ein Team.';
+    $('g-level').textContent = T('kq.guide.level');
+    $('g-mode').textContent = modeLabel(S.config.setMode) + '.';
+    $('g-bye').textContent = T('kq.guide.bye');
   }
 
   function paintNotices(){
     const box = $('noticeBox');
-    const msgs = (B.warnings || []).concat(B.notes || []);
+    const msgs = (B.warnings || []).concat(B.notes || []).map(s => term(s));
     if((S.absent || []).length){
-      msgs.push('Ausgefallen: ' + S.absent.map(playerName).join(', ') + '.');
+      msgs.push(T('kq.notice.absent', { list: S.absent.map(playerName).join(', ') }));
     }
     const overEnd = TC.toMin(S.config.endTime);
     let overflow = false;
     if(overEnd != null && B.endMin > overEnd){
       overflow = true;
-      msgs.push('Der Zeitplan endet um ' + TC.fromMin(B.endMin) + ' und überschreitet damit die geplante Endzeit '
-        + S.config.endTime + '. Mehr Felder wählen oder einen kürzeren Satzmodus.');
+      msgs.push(T('kq.notice.overEnd', { end: TC.fromMin(B.endMin), planned: S.config.endTime }));
     }
     if(!msgs.length){ box.innerHTML = ''; return; }
     box.innerHTML = '<div class="notebox noprint' + ((B.warnings || []).length || overflow ? ' is-warn' : '') + '"><ul>'
@@ -611,20 +617,14 @@
   }
 
   function paintLegend(){
-    $('h-legend').innerHTML = '<strong>Regel:</strong> jede Runde bilden Ausgleichs-Teams aus 2 Personen '
-      + '(stärkste/r + schwächste/r der aktuellen Rangliste – Niveau fließt als zusätzliches Kriterium ein), '
-      + 'Teams treten 2 gegen 2 gegeneinander an. Punkte des Team-Ergebnisses zählen für <em>beide</em> '
-      + 'Team-Mitglieder einzeln (Sieg = 2, Unentschieden = 1, Niederlage = 0; bei Gleichstand entscheidet '
-      + 'die Ball-Differenz). Es gibt <strong>getrennte Einzel-Ranglisten</strong> (King = Herren, Queen = Damen) '
-      + '– keine gemeinsame Mixed-Wertung. Bei ungerader Teilnehmerzahl pausiert je Runde automatisch eine '
-      + 'Person bzw. ein Team.';
+    $('h-legend').innerHTML = T('kq.legend');
   }
 
   function paintCfgResult(){
     const menCnt = getMenCount(), womenCnt = getWomenCount();
     const total = menCnt + womenCnt;
     const c = S.config;
-    $('rv-mode').textContent = TC.modeDef(c.setMode).label;
+    $('rv-mode').textContent = modeLabel(c.setMode);
     $('rv-participants').textContent = '♂' + menCnt + ' · ♀' + womenCnt + ' (' + total + ')';
     $('rv-rounds').textContent = String(B.rounds.length);
     const gamesTotal = B.rounds.reduce((n, r) => n + r.matches.length, 0);
@@ -635,11 +635,11 @@
     $('rv-fields').textContent = c.fields;
     const win = TC.toMin(c.endTime) - TC.toMin(c.startTime);
     const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[c.setMode], 10);
-    $('rv-fitFields').textContent = need ? ('mind. ' + need) : 'passt nicht';
+    $('rv-fitFields').textContent = need ? T('sheet.kpi.minFields', { n: need }) : T('sheet.kpi.noFit');
     TUI.fillTimeKpis({
       slots: B.slots, startMin: B.startMin, needEndMin: B.endMin,
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
-      setMode: c.setMode, games: gamesTotal, modeLabel: TC.modeDef(c.setMode).label
+      setMode: c.setMode, games: gamesTotal, modeLabel: modeLabel(c.setMode)
     });
   }
 
@@ -699,36 +699,35 @@
       const maxSelectable = Math.max.apply(null, Array.prototype.map.call($('fieldCount').options, o => +o.value));
       const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[S.config.setMode], maxSelectable);
       if(!need){
-        alert('Auch mit der maximal möglichen Feldzahl (' + maxSelectable + ') passt der Plan nicht in das '
-          + 'Zeitfenster. Kürzeren Satzmodus, weniger Runden oder mehr Teilnehmer:innen (schaltet mehr Felder frei) wählen.');
+        alert(T('kq.alert.timefit', { n: maxSelectable }));
         return;
       }
       S.config.fields = need; $('fieldCount').value = need;
       save(); structureKey=''; rebuild();
     });
     $('btnClearNames').addEventListener('click', () => {
-      if(!confirm('Alle eingetragenen Namen zurücksetzen? Niveau, Ausfälle und Ergebnisse bleiben erhalten.')) return;
+      if(!confirm(T('kq.confirm.clearNames'))) return;
       S.teamNames = {};
       save(); structureKey=''; rebuild();
     });
     $('btnClearAbsent').addEventListener('click', () => {
-      if(!confirm('Alle Ausfälle zurücksetzen? Alle Personen gelten wieder als anwesend.')) return;
+      if(!confirm(T('kq.confirm.clearAbsent'))) return;
       S.absent = [];
       save(); structureKey=''; rebuild();
     });
     $('btnClearScores').addEventListener('click', () => {
-      if(!confirm('Alle eingetragenen Ergebnisse löschen? Namen und Konfiguration bleiben erhalten.')) return;
+      if(!confirm(T('kq.confirm.clearScores'))) return;
       TStore.clearScores(S); save(); structureKey=''; rebuild();
     });
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
     $('btnReset').addEventListener('click', async () => {
-      if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+      if(!confirm(T('sheet.confirm.reset'))) return;
       if(!await save()) return;
       const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
-        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        alert(T('sheet.alert.archiveBlocked'));
         return;
       }
       S = started.tournament;
@@ -737,7 +736,7 @@
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
+      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
       setTimeout(()=>{ b.textContent = old; }, 1500);
     });
 
@@ -789,7 +788,8 @@
   const box = document.createElement('div');
   box.className = 'notebox noprint';
   box.setAttribute('role', 'alert');
-  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  const fallback = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  box.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('sheet.loadError') : fallback;
   document.body.insertBefore(box, document.body.firstChild);
 });
 </script>
@@ -802,10 +802,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">
   <div class="footer-legal" style="margin-top:4px;">
     © <span id="cpYear"></span> ·
-    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;">Copyright/Kontakt</button>
+    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;" data-i18n="chrome.contact">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
     <span id="cpPrint" class="footer-print-only"></span>
-    <span class="footer-amazon">· Unterstütze das Projekt: <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored">kaufe bei Amazon ein</a></span>
+    <span class="footer-amazon"><span data-i18n="chrome.supportProject">· Unterstütze das Projekt:</span> <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored" data-i18n="chrome.amazonLink">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
 <style>

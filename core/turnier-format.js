@@ -852,7 +852,10 @@
           const used = new Set();
           pairs.forEach(p => { used.add(p[0]); used.add(p[1]); });
           const left = all.filter(t => !used.has(t));
-          bye = left.length === 1 ? left[0] : null;
+          /* Ausgefallene Teams sind nie gepaart und dürfen das Freilos der
+             eingefrorenen Runde nicht verdecken. */
+          const leftActive = left.filter(t => !absent.has(t));
+          bye = leftActive.length === 1 ? leftActive[0] : (left.length === 1 ? left[0] : null);
         } else if (r === 1 && c.round1 && c.round1.length) {
           pairs = c.round1.map(p => [p[0], p[1]]);
           const used = new Set();

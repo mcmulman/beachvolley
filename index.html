@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Beach-Volleyball Turniervorlagen</title>
+  <title data-i18n="home.title">Beach-Volleyball Turniervorlagen</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -739,9 +739,6 @@
   <p data-i18n="home.subtitle">Interaktive Turnierbögen – digital auswertbar am Bildschirm und als Druckvorlage für A4 quer.</p>
 </header>
 
-<!-- DE/EN-Prototyp: Hinweis nur in der englischen Ansicht. -->
-<p class="i18n-preview-note noprint" data-i18n-only="en" lang="en" role="note" hidden>English preview: so far only parts of this home page and the <strong>Knockout</strong> tournament sheet are translated. All other sheets, the setup wizard, saved-tournament and backup messages and the format documentation are still in German.</p>
-
 <div class="wizard-wrap noprint">
   <details class="wizard" id="wizard">
     <summary class="wizard-summary">
@@ -752,8 +749,8 @@
         </svg>
       </span>
       <span class="wizard-summary-title">
-        <span>Nicht sicher, welches Format passt?</span>
-        <span class="wizard-summary-sub">Kurzer Wizard – wenige Klicks zur Empfehlung</span>
+        <span data-i18n="home.wizard.summary">Nicht sicher, welches Format passt?</span>
+        <span class="wizard-summary-sub" data-i18n="home.wizard.summarySub">Kurzer Wizard – wenige Klicks zur Empfehlung</span>
       </span>
       <span class="wizard-chevron" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -763,78 +760,78 @@
     </summary>
     <div class="wizard-body">
       <div class="wizard-row" data-q="participants">
-        <span class="wizard-q">Wer spielt?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.participants">Wer spielt?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="teams">Feste Zweier-Teams</button>
-          <button type="button" class="wizard-opt" data-val="individuals">Einzelpersonen (Partner wechselt)</button>
+          <button type="button" class="wizard-opt" data-val="teams" data-i18n="home.wizard.a.teams">Feste Zweier-Teams</button>
+          <button type="button" class="wizard-opt" data-val="individuals" data-i18n="home.wizard.a.individuals">Einzelpersonen (Partner wechselt)</button>
         </div>
       </div>
       <div class="wizard-row" data-q="count">
-        <span class="wizard-q">Wie viele Teams/Personen?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.count">Wie viele Teams/Personen?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="klein">bis 8</button>
-          <button type="button" class="wizard-opt" data-val="mittel">8–16</button>
-          <button type="button" class="wizard-opt" data-val="gross">über 16</button>
+          <button type="button" class="wizard-opt" data-val="klein" data-i18n="home.wizard.a.klein">bis 8</button>
+          <button type="button" class="wizard-opt" data-val="mittel" data-i18n="home.wizard.a.mittel">8–16</button>
+          <button type="button" class="wizard-opt" data-val="gross" data-i18n="home.wizard.a.gross">über 16</button>
         </div>
       </div>
       <div class="wizard-row" data-q="niveau">
-        <span class="wizard-q">Spielniveau im Feld?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.niveau">Spielniveau im Feld?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="gleich">Ähnlich stark</button>
-          <button type="button" class="wizard-opt" data-val="gemischt">Unterschiedlich / gemischt</button>
+          <button type="button" class="wizard-opt" data-val="gleich" data-i18n="home.wizard.a.gleich">Ähnlich stark</button>
+          <button type="button" class="wizard-opt" data-val="gemischt" data-i18n="home.wizard.a.gemischt">Unterschiedlich / gemischt</button>
         </div>
       </div>
       <div class="wizard-row" data-q="repeats">
-        <span class="wizard-q">Sollen sich Begegnungen wiederholen dürfen?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.repeats">Sollen sich Begegnungen wiederholen dürfen?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="nein">Nein, jede Begegnung nur einmal</button>
-          <button type="button" class="wizard-opt" data-val="egal">Ist mir egal</button>
+          <button type="button" class="wizard-opt" data-val="nein" data-i18n="home.wizard.a.nein">Nein, jede Begegnung nur einmal</button>
+          <button type="button" class="wizard-opt" data-val="egal" data-i18n="home.wizard.a.egal">Ist mir egal</button>
         </div>
       </div>
       <div class="wizard-row" data-q="goal">
-        <span class="wizard-q">Was ist wichtiger?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.goal">Was ist wichtiger?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="alle">Alle spielen viel, keiner scheidet aus</button>
-          <button type="button" class="wizard-opt" data-val="sieger">Klarer Sieger/Playoff, Ausscheiden ok</button>
+          <button type="button" class="wizard-opt" data-val="alle" data-i18n="home.wizard.a.alle">Alle spielen viel, keiner scheidet aus</button>
+          <button type="button" class="wizard-opt" data-val="sieger" data-i18n="home.wizard.a.sieger">Klarer Sieger/Playoff, Ausscheiden ok</button>
         </div>
       </div>
       <div class="wizard-row" data-q="time" id="wizardTimeRow" hidden>
-        <span class="wizard-q">Ist die Zeit knapp?</span>
+        <span class="wizard-q" data-i18n="home.wizard.q.time">Ist die Zeit knapp?</span>
         <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="knapp">Ja, eher knapp</button>
-          <button type="button" class="wizard-opt" data-val="viel">Nein, genug Zeit</button>
+          <button type="button" class="wizard-opt" data-val="knapp" data-i18n="home.wizard.a.knapp">Ja, eher knapp</button>
+          <button type="button" class="wizard-opt" data-val="viel" data-i18n="home.wizard.a.viel">Nein, genug Zeit</button>
         </div>
       </div>
       <div class="wizard-result" id="wizardResult" hidden>
         <div class="wizard-result-text" id="wizardResultText"></div>
-        <button type="button" class="btn-open wizard-result-btn" id="wizardResultBtn">Bogen anzeigen ↓</button>
+        <button type="button" class="btn-open wizard-result-btn" id="wizardResultBtn" data-i18n="home.wizard.resultBtn">Bogen anzeigen ↓</button>
       </div>
-      <p class="wizard-hint">Herren-, Damen- und Mixed-Teams gemeinsam in einer Rangliste? → <a href="#" onclick="wizardJumpToTag('flex');return false;">Flex-Turnier</a></p>
-      <p class="wizard-hint">Feld-Leiter mit Auf-/Abstieg statt Rangliste, Runden nach Zeitlimit? → <a href="#" onclick="wizardJumpToTag('koc');return false;">King/Queen of the Court</a></p>
-      <p class="wizard-hint">Playoff mit bekannt unterschiedlich starken Teams? Setzliste in KO/Doppel-K.-o. nutzen, um Favoriten gezielt zu verteilen.</p>
-      <p class="wizard-hint">Genaue Rundenzahl/Zeitplanung: Jeder Bogen berechnet sie automatisch über Start-/Endzeit + „Zeit optimieren".</p>
+      <p class="wizard-hint"><span data-i18n="home.wizard.hintFlex">Herren-, Damen- und Mixed-Teams gemeinsam in einer Rangliste? →</span> <a href="#" onclick="wizardJumpToTag('flex');return false;" data-i18n="home.format.flex">Flex-Turnier</a></p>
+      <p class="wizard-hint"><span data-i18n="home.wizard.hintKoc">Feld-Leiter mit Auf-/Abstieg statt Rangliste, Runden nach Zeitlimit? →</span> <a href="#" onclick="wizardJumpToTag('koc');return false;" data-i18n="home.format.koc">King/Queen of the Court</a></p>
+      <p class="wizard-hint" data-i18n="home.wizard.hintSeed">Playoff mit bekannt unterschiedlich starken Teams? Setzliste in KO/Doppel-K.-o. nutzen, um Favoriten gezielt zu verteilen.</p>
+      <p class="wizard-hint" data-i18n="home.wizard.hintTime">Genaue Rundenzahl/Zeitplanung: Jeder Bogen berechnet sie automatisch über Start-/Endzeit + „Zeit optimieren".</p>
     </div>
   </details>
 </div>
 
 <div class="filterbar">
-  <div class="mobile-filter-grid" aria-label="Mobile Filter">
+  <div class="mobile-filter-grid" aria-label="Mobile Filter" data-i18n-attr="aria-label:home.filter.mobileAria">
     <label class="mf-field"><span data-i18n="home.filter.format">Format</span>
       <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
         <option value="" data-i18n="home.filter.allFormats">Alle Formate</option>
-        <option value="rr">Jeder gegen Jeden</option>
-        <option value="gruppen">Gruppen</option>
-        <option value="swiss">Schweizer System</option>
+        <option value="rr" data-i18n="home.format.rr">Jeder gegen Jeden</option>
+        <option value="gruppen" data-i18n="home.format.gruppen">Gruppen</option>
+        <option value="swiss" data-i18n="home.format.swiss">Schweizer System</option>
         <option value="ko" data-i18n="home.filter.ko">KO-System</option>
-        <option value="de">Doppel-K.-o.</option>
-        <option value="mpp">Modified Pool Play</option>
-        <option value="koc">King/Queen of the Court</option>
-        <option value="kingqueen">King &amp; Queen</option>
-        <option value="flex">Flex-Turnier</option>
-        <option value="tandem">Tandem</option>
-        <option value="elternkind">Eltern-Kind-Turnier</option>
-        <option value="meisterschaften">Meisterschaften</option>
-        <option value="daviscup">Davis Cup</option>
+        <option value="de" data-i18n="home.format.de">Doppel-K.-o.</option>
+        <option value="mpp" data-i18n="home.format.mpp">Modified Pool Play</option>
+        <option value="koc" data-i18n="home.format.koc">King/Queen of the Court</option>
+        <option value="kingqueen" data-i18n="home.format.kingqueen">King &amp; Queen</option>
+        <option value="flex" data-i18n="home.format.flex">Flex-Turnier</option>
+        <option value="tandem" data-i18n="home.format.tandem">Tandem</option>
+        <option value="elternkind" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</option>
+        <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften</option>
+        <option value="daviscup" data-i18n="home.format.daviscup">Davis Cup</option>
       </select>
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
@@ -842,19 +839,19 @@
   <div class="filterbar-desktop">
     <button class="filter-btn active" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
     <div class="filter-sep"></div>
-    <button class="filter-btn" onclick="filter('rr', this)">Jeder gegen Jeden</button>
-    <button class="filter-btn" onclick="filter('gruppen', this)">Gruppen</button>
-    <button class="filter-btn" onclick="filter('swiss', this)">Schweizer System</button>
+    <button class="filter-btn" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
+    <button class="filter-btn" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
+    <button class="filter-btn" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
     <button class="filter-btn" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
-    <button class="filter-btn" onclick="filter('de', this)">Doppel-K.-o.</button>
-    <button class="filter-btn" onclick="filter('mpp', this)">Modified Pool Play</button>
-    <button class="filter-btn" onclick="filter('koc', this)">King/Queen of the Court</button>
-    <button class="filter-btn" onclick="filter('kingqueen', this)">King &amp; Queen</button>
-    <button class="filter-btn" onclick="filter('flex', this)">Flex-Turnier</button>
-    <button class="filter-btn" onclick="filter('tandem', this)">Tandem</button>
-    <button class="filter-btn" onclick="filter('elternkind', this)">Eltern-Kind-Turnier</button>
-    <button class="filter-btn" onclick="filter('meisterschaften', this)">Meisterschaften</button>
-    <button class="filter-btn" onclick="filter('daviscup', this)">Davis Cup</button>
+    <button class="filter-btn" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
+    <button class="filter-btn" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
+    <button class="filter-btn" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
+    <button class="filter-btn" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
+    <button class="filter-btn" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
+    <button class="filter-btn" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
+    <button class="filter-btn" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
+    <button class="filter-btn" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften</button>
+    <button class="filter-btn" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup</button>
   </div>
 </div>
 
@@ -877,11 +874,11 @@
     </span>
   </div>
   <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-8px 0 12px">
-    <button class="pill" type="button" onclick="exportTournamentBackup()">Sicherung herunterladen</button>
-    <button class="pill" type="button" onclick="document.getElementById('backup-file').click()">Sicherung importieren</button>
-    <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()">Speicher schützen</button>
+    <button class="pill" type="button" onclick="exportTournamentBackup()" data-i18n="home.backup.download">Sicherung herunterladen</button>
+    <button class="pill" type="button" onclick="document.getElementById('backup-file').click()" data-i18n="home.backup.import">Sicherung importieren</button>
+    <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()" data-i18n="home.backup.persist">Speicher schützen</button>
     <input id="backup-file" type="file" accept="application/json,.json" hidden onchange="importTournamentBackup(event)">
-    <span id="storage-status" role="status" style="font-size:12px;color:#5a6375">Speicherstatus wird geprüft …</span>
+    <span id="storage-status" role="status" style="font-size:12px;color:#5a6375" data-i18n="home.storage.checking">Speicherstatus wird geprüft …</span>
     <span style="flex-basis:100%;font-size:11px;color:#6b7280" data-i18n="home.backup.privacy">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</span>
   </div>
   <div id="saved-sessions" style="margin-bottom:40px">
@@ -912,88 +909,89 @@
   <div class="grid">
 
     <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
-    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht.">
+    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 4–24 Teams</span>
-        <h2>Gruppen + Finalrunde</h2>
-        <div class="sub">Gruppen, Platzierungsrunde, KO oder Hauptrunde – frei kombinierbar</div>
+        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <h2 data-i18n="home.card.gruppen.title">Gruppen + Finalrunde</h2>
+        <div class="sub" data-i18n="home.card.gruppen.sub">Gruppen, Platzierungsrunde, KO oder Hauptrunde – frei kombinierbar</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> 2–6 Gruppen o. automatisch</span>
-          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.gruppen.stat3">2–6 Gruppen o. automatisch</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ 5 Finalmodi wählbar</span>
-          <span class="feat">✓ Über-Kreuz-Setzung</span>
-          <span class="feat">✓ Freilos &amp; Ausfall</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.card.gruppen.feat1">✓ 5 Finalmodi wählbar</span>
+          <span class="feat" data-i18n="home.card.gruppen.feat2">✓ Über-Kreuz-Setzung</span>
+          <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+          <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
         <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html?finalMode=blocks" target="_blank"
+           data-i18n="home.card.gruppen.blocks" data-i18n-attr="title:home.card.gruppen.blocksTitle"
            title="Finalrunde für eine bereits gespielte Rangliste (z. B. nach „Jeder gegen Jeden“): Teams in Platzierungsblöcke einteilen, jeder Block spielt um seine eigenen Plätze.">
           🏅 Als Finalrunde aus Rangliste ↗
         </a>
       </div>
     </div>
 
-    <!-- ── Card: Flexibel ── -->
-    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen.">
+    <!-- ── Card: Jeder gegen Jeden ── -->
+    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-i18n-attr="data-desc:home.card.rr.desc" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 4–24 Teams</span>
-        <h2>Jeder gegen Jeden</h2>
-        <div class="sub">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
+        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <h2 data-i18n="home.format.rr">Jeder gegen Jeden</h2>
+        <div class="sub" data-i18n="home.card.rr.sub">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> Teams − 1 Spiele/Team</span>
-          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.rr.stat3">Teams − 1 Spiele/Team</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ Ungerade Teamzahl (Freilos)</span>
-          <span class="feat">✓ Laufende Tabelle je Runde</span>
-          <span class="feat">✓ Freilos &amp; Ausfall</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.oddBye">✓ Ungerade Teamzahl (Freilos)</span>
+          <span class="feat" data-i18n="home.card.rr.feat2">✓ Laufende Tabelle je Runde</span>
+          <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+          <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
       </div>
     </div>
 
     <!-- ── Card: Schweizer System ── -->
-    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden.">
+    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-i18n-attr="data-desc:home.card.swiss.desc" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 4–24 Teams</span>
-        <h2>Schweizer System</h2>
-        <div class="sub">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
+        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <h2 data-i18n="home.format.swiss">Schweizer System</h2>
+        <div class="sub" data-i18n="home.card.swiss.sub">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–24 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> Rundenzahl wählbar</span>
-          <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.swiss.stat3">Rundenzahl wählbar</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ Keine Paarung wiederholt sich</span>
-          <span class="feat">✓ Ungerade Teamzahl (Freilos)</span>
-          <span class="feat">✓ Freilos &amp; Ausfall</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.card.swiss.feat1">✓ Keine Paarung wiederholt sich</span>
+          <span class="feat" data-i18n="home.feat.oddBye">✓ Ungerade Teamzahl (Freilos)</span>
+          <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+          <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=swiss" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=swiss" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
       </div>
@@ -1031,29 +1029,29 @@
     <!-- ── Card: Doppel-KO-System (eigener Filter-Tag "de", zusaetzlich
          "ko"/"bracket"/"turnierbaum", damit der Bogen auch beim generischen
          KO-Filter auftaucht – siehe applyCardFilters() weiter unten). ── -->
-    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance. Fairer als das einfache KO-System, braucht dafür deutlich mehr Spiele und eignet sich besonders für größere Turniere mit ernsthafter Qualifikationslogik.">
+    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-i18n-attr="data-desc:home.card.de.desc" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance. Fairer als das einfache KO-System, braucht dafür deutlich mehr Spiele und eignet sich besonders für größere Turniere mit ernsthafter Qualifikationslogik.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 4–16 Teams</span>
-        <h2>Doppel-K.-o.-System</h2>
-        <div class="sub">Turnierbaum mit Verlierer-Runde · erst die 2. Niederlage scheidet aus</div>
+        <span class="format-tag" data-i18n="home.card.de.tag">dynamisch · 4–16 Teams</span>
+        <h2 data-i18n="home.card.de.title">Doppel-K.-o.-System</h2>
+        <div class="sub" data-i18n="home.card.de.sub">Turnierbaum mit Verlierer-Runde · erst die 2. Niederlage scheidet aus</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 4–16 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–8 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> bis zu 2× so viele Runden wie beim KO-System</span>
-          <span class="stat"><span class="icon">⏱</span> länger · 2–7 Spiele/Team</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.de.stat1">4–16 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields8">1–8 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.de.stat3">bis zu 2× so viele Runden wie beim KO-System</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.de.stat4">länger · 2–7 Spiele/Team</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ Gewinner- &amp; Verlierer-Runde</span>
-          <span class="feat">✓ Grand Final mit Entscheidungsspiel (Reset)</span>
-          <span class="feat">✓ Setzliste &amp; Freilose</span>
-          <span class="feat">✓ Platzbereiche statt Rangliste</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.card.de.feat1">✓ Gewinner- &amp; Verlierer-Runde</span>
+          <span class="feat" data-i18n="home.card.de.feat2">✓ Grand Final mit Entscheidungsspiel (Reset)</span>
+          <span class="feat" data-i18n="home.feat.seedByes">✓ Setzliste &amp; Freilose</span>
+          <span class="feat" data-i18n="home.feat.placeRanges">✓ Platzbereiche statt Rangliste</span>
+          <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Doppel_KO_System.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Doppel_KO_System.html" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
       </div>
@@ -1062,29 +1060,29 @@
     <!-- ── Card: Modified Pool Play (eigener Filter-Tag "mpp", zusaetzlich
          "gruppen", damit der Bogen auch beim generischen Gruppen-Filter
          auftaucht – analog zur "de"/"ko"-Doppelverschlagwortung oben). ── -->
-    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand.">
+    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-i18n-attr="data-desc:home.card.mpp.desc" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand.">
       <div class="card-header">
-        <span class="format-tag">dynamisch · 6–24 Teams</span>
-        <h2>Modified Pool Play</h2>
-        <div class="sub">4er-Gruppen als Mini-Bracket · nur 4 statt 6 Gruppenspiele</div>
+        <span class="format-tag" data-i18n="home.card.mpp.tag">dynamisch · 6–24 Teams</span>
+        <h2 data-i18n="home.format.mpp">Modified Pool Play</h2>
+        <div class="sub" data-i18n="home.card.mpp.sub">4er-Gruppen als Mini-Bracket · nur 4 statt 6 Gruppenspiele</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 6–24 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> reine 3er-/4er-Gruppen</span>
-          <span class="stat"><span class="icon">⏱</span> kürzer · mind. 2 Spiele/Team</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.stat.teams6to24">6–24 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.mpp.stat3">reine 3er-/4er-Gruppen</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.mpp.stat4">kürzer · mind. 2 Spiele/Team</span></span>
         </div>
         <div class="features">
-          <span class="feat">✓ Setzplatz 1 vs. 4, 2 vs. 3</span>
-          <span class="feat">✓ Gewinner-/Verliererspiel je Gruppe</span>
-          <span class="feat">✓ 4 Finalmodi wählbar</span>
-          <span class="feat">✓ Freilos &amp; Ausfall</span>
-          <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.card.mpp.feat1">✓ Setzplatz 1 vs. 4, 2 vs. 3</span>
+          <span class="feat" data-i18n="home.card.mpp.feat2">✓ Gewinner-/Verliererspiel je Gruppe</span>
+          <span class="feat" data-i18n="home.card.mpp.feat3">✓ 4 Finalmodi wählbar</span>
+          <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+          <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Modified_Pool_Play.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Modified_Pool_Play.html" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
       </div>
@@ -1094,55 +1092,55 @@
          KEINE Doppelverschlagwortung mit rr/gruppen/swiss/ko/de/mpp, da diese
          Sonderform strukturell zu keinem der anderen Formate passt – siehe
          AGENTS.md §1 "Eigene Spielregeln – nicht mit Gruppen/KO vermischen"). ── -->
-    <div class="card" data-tags="koc" data-doc="docs/format-king-of-the-court.html" data-desc="Klassische Feld-Leiter mit zeitlimitierten Runden, Auf-/Abstiegen und einer klaren Leistungsabfolge. Das ist kein custom mixed Event, sondern ein eigener Court-Ladder-Modus mit offenem Feld-Aufstieg und klarer Reihenfolge über mehrere Runden.">
+    <div class="card" data-tags="koc" data-doc="docs/format-king-of-the-court.html" data-i18n-attr="data-desc:home.card.koc.desc" data-desc="Klassische Feld-Leiter mit zeitlimitierten Runden, Auf-/Abstiegen und einer klaren Leistungsabfolge. Das ist kein custom mixed Event, sondern ein eigener Court-Ladder-Modus mit offenem Feld-Aufstieg und klarer Reihenfolge über mehrere Runden.">
       <div class="card-header">
-        <span class="format-tag">Sonderform · 6–24 Teams</span>
-        <h2>King/Queen of the Court</h2>
-        <div class="sub">Feld-Leiter · Auf-/Abstieg je Runde · keine feste Partnerrotation</div>
+        <span class="format-tag" data-i18n="home.card.koc.tag">Sonderform · 6–24 Teams</span>
+        <h2 data-i18n="home.format.koc">King/Queen of the Court</h2>
+        <div class="sub" data-i18n="home.card.koc.sub">Feld-Leiter · Auf-/Abstieg je Runde · keine feste Partnerrotation</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon">👥</span> 6–24 Teams</span>
-          <span class="stat"><span class="icon">🏖️</span> 1–5 Felder</span>
-          <span class="stat"><span class="icon">🎯</span> Rundenzahl wählbar/automatisch</span>
-          <span class="stat"><span class="icon">⏱</span> Zeitlimit statt Zielpunktzahl</span>
+          <span class="stat"><span class="icon">👥</span> <span data-i18n="home.stat.teams6to24">6–24 Teams</span></span>
+          <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields5">1–5 Felder</span></span>
+          <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.koc.stat3">Rundenzahl wählbar/automatisch</span></span>
+          <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.koc.stat4">Zeitlimit statt Zielpunktzahl</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ Königs-/Königinnenfeld</span>
-         <span class="feat">✓ Feld-Leiter mit Auf-/Abstieg</span>
-         <span class="feat">✓ Kumulierte Punktwertung</span>
-         <span class="feat">✓ eigenes Format, nicht King &amp; Queen</span>
+         <span class="feat" data-i18n="home.card.koc.feat1">✓ Königs-/Königinnenfeld</span>
+         <span class="feat" data-i18n="home.card.koc.feat2">✓ Feld-Leiter mit Auf-/Abstieg</span>
+         <span class="feat" data-i18n="home.card.koc.feat3">✓ Kumulierte Punktwertung</span>
+         <span class="feat" data-i18n="home.card.koc.feat4">✓ eigenes Format, nicht King &amp; Queen</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_King_Queen_of_the_Court.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_King_Queen_of_the_Court.html" target="_blank" data-i18n="home.card.open">
           Öffnen ↗
         </a>
       </div>
     </div>
 
-    <div class="card" data-tags="kingqueen" data-doc="docs/format-king-queen.html" data-desc="Eigenes Mixed-Event für Einzelpersonen: Pro Runde werden faire 2er-Teams (stärkste/r + schwächste/r der aktuellen Rangliste) neu gebildet und treten 2 gegen 2 an. Es zählt die reine Einzelleistung – am Ende stehen getrennte King- (Herren) und Queen- (Damen) Ranglisten, keine gemeinsame Mixed-Wertung.">
+    <div class="card" data-tags="kingqueen" data-doc="docs/format-king-queen.html" data-i18n-attr="data-desc:home.card.kingqueen.desc" data-desc="Eigenes Mixed-Event für Einzelpersonen: Pro Runde werden faire 2er-Teams (stärkste/r + schwächste/r der aktuellen Rangliste) neu gebildet und treten 2 gegen 2 an. Es zählt die reine Einzelleistung – am Ende stehen getrennte King- (Herren) und Queen- (Damen) Ranglisten, keine gemeinsame Mixed-Wertung.">
       <div class="card-header">
-        <span class="format-tag">Custom Event · Einzelwertung</span>
-        <h2>King &amp; Queen</h2>
-        <div class="sub">Mixed Event · 2 gegen 2 · rotierende Team-Partner:innen · getrennte Herren-/Damen-Rangliste</div>
+        <span class="format-tag" data-i18n="home.card.kingqueen.tag">Custom Event · Einzelwertung</span>
+        <h2 data-i18n="home.format.kingqueen">King &amp; Queen</h2>
+        <div class="sub" data-i18n="home.card.kingqueen.sub">Mixed Event · 2 gegen 2 · rotierende Team-Partner:innen · getrennte Herren-/Damen-Rangliste</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> ab 4 Personen, Herren/Damen frei wählbar</span>
-         <span class="stat"><span class="icon">🏖️</span> 1–5 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> Faire 2er-Team-Rotation</span>
-         <span class="stat"><span class="icon">⏱</span> Anpassbar</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.kingqueen.stat1">ab 4 Personen, Herren/Damen frei wählbar</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields5">1–5 Felder</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.kingqueen.stat3">Faire 2er-Team-Rotation</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.kingqueen.stat4">Anpassbar</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ 2 gegen 2 pro Match</span>
-         <span class="feat">✓ Team-Score zählt für beide Mitglieder</span>
-         <span class="feat">✓ King-/Queen-Einzelwertung getrennt (kein Mixed-Ranking)</span>
-         <span class="feat">✓ custom Event, nicht K.-o.-C.</span>
+         <span class="feat" data-i18n="home.card.kingqueen.feat1">✓ 2 gegen 2 pro Match</span>
+         <span class="feat" data-i18n="home.card.kingqueen.feat2">✓ Team-Score zählt für beide Mitglieder</span>
+         <span class="feat" data-i18n="home.card.kingqueen.feat3">✓ King-/Queen-Einzelwertung getrennt (kein Mixed-Ranking)</span>
+         <span class="feat" data-i18n="home.card.kingqueen.feat4">✓ custom Event, nicht K.-o.-C.</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_King_Queen.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_King_Queen.html" target="_blank" data-i18n="home.card.open">
          Öffnen ↗
         </a>
       </div>
@@ -1152,28 +1150,28 @@
          faire Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
          Team-Rangliste – NICHT zu verwechseln mit King & Queen, das
          Einzelpersonen und getrennte Geschlechter-Ranglisten hat). ── -->
-    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein.">
+    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-i18n-attr="data-desc:home.card.flex.desc" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein.">
       <div class="card-header">
-        <span class="format-tag">Custom Event · Team-Wertung</span>
-        <h2>Flex-Turnier</h2>
-        <div class="sub">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
+        <span class="format-tag" data-i18n="home.card.flex.tag">Custom Event · Team-Wertung</span>
+        <h2 data-i18n="home.format.flex">Flex-Turnier</h2>
+        <div class="sub" data-i18n="home.card.flex.sub">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> 4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span>
-         <span class="stat"><span class="icon">🏖️</span> 1–8 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> Schweizer System (Standard) oder Jeder-gegen-Jeden</span>
-         <span class="stat"><span class="icon">⏱</span> Satzmodus wählbar</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.flex.stat1">4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields8">1–8 Felder</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.flex.stat3">Schweizer System (Standard) oder Jeder-gegen-Jeden</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.flex.stat4">Satzmodus wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
-         <span class="feat">✓ faire Startrunden-Auslosung nach Team-Art</span>
-         <span class="feat">✓ Schweizer System bei breitem Niveau-Spektrum</span>
-         <span class="feat">✓ eine gemeinsame Team-Rangliste</span>
+         <span class="feat" data-i18n="home.card.flex.feat1">✓ Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
+         <span class="feat" data-i18n="home.card.flex.feat2">✓ faire Startrunden-Auslosung nach Team-Art</span>
+         <span class="feat" data-i18n="home.card.flex.feat3">✓ Schweizer System bei breitem Niveau-Spektrum</span>
+         <span class="feat" data-i18n="home.card.flex.feat4">✓ eine gemeinsame Team-Rangliste</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Flex_Turnier.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Flex_Turnier.html" target="_blank" data-i18n="home.card.open">
          Öffnen ↗
         </a>
       </div>
@@ -1182,28 +1180,28 @@
     <!-- ── Card: Tandem (eigener Filter-Tag "tandem"; nutzt den bestehenden
          Universalbogen "Gruppen + Finalrunde" – Tandem ändert nur die
          Team-Bildung bei der Anmeldung, nicht den Spielmodus). ── -->
-    <div class="card" data-tags="tandem" data-doc="docs/format-tandem.html" data-desc="Tandem-Turnier für alle Niveaus, Anmeldung als Team zu zweit: Ein Tandem besteht entweder aus einem fortgeschrittenen Spieler (N4/N5) und einem Anfänger (N1/N2) oder aus zwei N3-Spielern. Erlaubt sind ausschließlich die Konstellationen N5+N1, N5+N2, N4+N1, N4+N2 sowie N3+N3, damit die Teams untereinander möglichst homogen und die Spiele ausgeglichen sind. Gespielt wird danach mit dem gewohnten Gruppen- oder Rundenmodus.">
+    <div class="card" data-tags="tandem" data-doc="docs/format-tandem.html" data-i18n-attr="data-desc:home.card.tandem.desc" data-desc="Tandem-Turnier für alle Niveaus, Anmeldung als Team zu zweit: Ein Tandem besteht entweder aus einem fortgeschrittenen Spieler (N4/N5) und einem Anfänger (N1/N2) oder aus zwei N3-Spielern. Erlaubt sind ausschließlich die Konstellationen N5+N1, N5+N2, N4+N1, N4+N2 sowie N3+N3, damit die Teams untereinander möglichst homogen und die Spiele ausgeglichen sind. Gespielt wird danach mit dem gewohnten Gruppen- oder Rundenmodus.">
       <div class="card-header">
-        <span class="format-tag">Sonderform · Team-Anmeldung</span>
-        <h2>Tandem</h2>
-        <div class="sub">Team-Anmeldung zu zweit · feste Niveau-Konstellationen für ausgeglichene Teams</div>
+        <span class="format-tag" data-i18n="home.tag.teamEntry">Sonderform · Team-Anmeldung</span>
+        <h2 data-i18n="home.format.tandem">Tandem</h2>
+        <div class="sub" data-i18n="home.card.tandem.sub">Team-Anmeldung zu zweit · feste Niveau-Konstellationen für ausgeglichene Teams</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team, alle Niveaus</span>
-         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> 5 erlaubte Konstellationen (N5+N1 … N3+N3)</span>
-         <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.tandem.stat1">Anmeldung als 2er-Team, alle Niveaus</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.tandem.stat3">5 erlaubte Konstellationen (N5+N1 … N3+N3)</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ homogene Teamstärke durch feste Niveau-Paarung</span>
-         <span class="feat">✓ läuft auf Basis von „Gruppen + Finalrunde“</span>
-         <span class="feat">✓ Freilos &amp; Ausfall</span>
-         <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+         <span class="feat" data-i18n="home.card.tandem.feat1">✓ homogene Teamstärke durch feste Niveau-Paarung</span>
+         <span class="feat" data-i18n="home.card.tandem.feat2">✓ läuft auf Basis von „Gruppen + Finalrunde“</span>
+         <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+         <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank" data-i18n="home.card.open">
          Öffnen ↗
         </a>
       </div>
@@ -1212,28 +1210,28 @@
     <!-- ── Card: Eltern-Kind-Turnier (eigener Filter-Tag "elternkind"; nutzt
          den Universalbogen "Gruppen + Finalrunde" mit finalMode=none, da
          explizit im reinen Gruppenmodus (ohne Finalrunde) gespielt wird). ── -->
-    <div class="card" data-tags="elternkind" data-doc="docs/format-eltern-kind.html" data-desc="Eltern-Kind-Turnier, Anmeldung als Team: Ein Team besteht aus einem Kind (u15 bzw. 10–14 Jahre, Niveau 1–3) und einer erwachsenen Person. Die erwachsene Person sollte fortgeschritten sein (Niveau 3–5) und muss nicht zwangsläufig Elternteil sein. Es können sich Mixed-, Damen- und Herrenteams anmelden. Gespielt wird im reinen Gruppenmodus, ohne anschließende Finalrunde.">
+    <div class="card" data-tags="elternkind" data-doc="docs/format-eltern-kind.html" data-i18n-attr="data-desc:home.card.elternkind.desc" data-desc="Eltern-Kind-Turnier, Anmeldung als Team: Ein Team besteht aus einem Kind (u15 bzw. 10–14 Jahre, Niveau 1–3) und einer erwachsenen Person. Die erwachsene Person sollte fortgeschritten sein (Niveau 3–5) und muss nicht zwangsläufig Elternteil sein. Es können sich Mixed-, Damen- und Herrenteams anmelden. Gespielt wird im reinen Gruppenmodus, ohne anschließende Finalrunde.">
       <div class="card-header">
-        <span class="format-tag">Sonderform · Team-Anmeldung</span>
-        <h2>Eltern-Kind-Turnier</h2>
-        <div class="sub">Team aus Kind (10–14 J., N1–3) + erwachsener Person (N3–5) · reiner Gruppenmodus</div>
+        <span class="format-tag" data-i18n="home.tag.teamEntry">Sonderform · Team-Anmeldung</span>
+        <h2 data-i18n="home.format.elternkind">Eltern-Kind-Turnier</h2>
+        <div class="sub" data-i18n="home.card.elternkind.sub">Team aus Kind (10–14 J., N1–3) + erwachsener Person (N3–5) · reiner Gruppenmodus</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team, Mixed/Damen/Herren</span>
-         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> Kind (N1–3) + fortgeschrittene Person (N3–5)</span>
-         <span class="stat"><span class="icon">⏱</span> nur Gruppenphase, keine Finalrunde</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.elternkind.stat1">Anmeldung als 2er-Team, Mixed/Damen/Herren</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.elternkind.stat3">Kind (N1–3) + fortgeschrittene Person (N3–5)</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.elternkind.stat4">nur Gruppenphase, keine Finalrunde</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ homogene Teamstärke durch Kind-Erwachsenen-Paarung</span>
-         <span class="feat">✓ läuft auf Basis von „Gruppen + Finalrunde“ (Finalmodus: keine Finalrunde)</span>
-         <span class="feat">✓ Freilos &amp; Ausfall</span>
-         <span class="feat">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+         <span class="feat" data-i18n="home.card.elternkind.feat1">✓ homogene Teamstärke durch Kind-Erwachsenen-Paarung</span>
+         <span class="feat" data-i18n="home.card.elternkind.feat2">✓ läuft auf Basis von „Gruppen + Finalrunde“ (Finalmodus: keine Finalrunde)</span>
+         <span class="feat" data-i18n="home.feat.byeAbsent">✓ Freilos &amp; Ausfall</span>
+         <span class="feat" data-i18n="home.feat.setModes">✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html?finalMode=none" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html?finalMode=none" target="_blank" data-i18n="home.card.open">
          Öffnen ↗
         </a>
       </div>
@@ -1244,28 +1242,28 @@
          Finalrunde", die parallelen Zusatzdisziplinen (z.B. Spikeball,
          Wikingerschach, Mini-Tischtennis – austauschbare Beispiele) werden
          getrennt erfasst und in der Doku erklärt). ── -->
-    <div class="card" data-tags="meisterschaften" data-doc="docs/format-meisterschaften.html" data-desc="Bei den BeachL-Meisterschaften wird das vielseitigste Team gesucht: Parallel zum Beachvolleyball-Turnier laufen weitere Turnierformate in zusätzlichen Disziplinen (z.B. Spikeball, Wikingerschach oder Mini-Tischtennis – die konkrete Auswahl kann von Event zu Event variieren). Mit der Anmeldung als 2er-Team (Herren, Damen oder Mixed) bestätigt ihr die Teilnahme an allen parallel stattfindenden Disziplinen. Die besten Turnierergebnisse (i.d.R. 3 von 4) zählen für die Gesamtwertung, zusätzlich gibt es Preise pro Disziplin.">
+    <div class="card" data-tags="meisterschaften" data-doc="docs/format-meisterschaften.html" data-i18n-attr="data-desc:home.card.meisterschaften.desc" data-desc="Bei den BeachL-Meisterschaften wird das vielseitigste Team gesucht: Parallel zum Beachvolleyball-Turnier laufen weitere Turnierformate in zusätzlichen Disziplinen (z.B. Spikeball, Wikingerschach oder Mini-Tischtennis – die konkrete Auswahl kann von Event zu Event variieren). Mit der Anmeldung als 2er-Team (Herren, Damen oder Mixed) bestätigt ihr die Teilnahme an allen parallel stattfindenden Disziplinen. Die besten Turnierergebnisse (i.d.R. 3 von 4) zählen für die Gesamtwertung, zusätzlich gibt es Preise pro Disziplin.">
       <div class="card-header">
-        <span class="format-tag">Sonderform · Multi-Disziplin</span>
-        <h2>Meisterschaften</h2>
-        <div class="sub">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · beste Ergebnisse zählen</div>
+        <span class="format-tag" data-i18n="home.card.meisterschaften.tag">Sonderform · Multi-Disziplin</span>
+        <h2 data-i18n="home.format.meisterschaften">Meisterschaften</h2>
+        <div class="sub" data-i18n="home.card.meisterschaften.sub">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · beste Ergebnisse zählen</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> Anmeldung als 2er-Team (Herren/Damen/Mixed)</span>
-         <span class="stat"><span class="icon">🏖️</span> mehrere parallele Disziplinen (Auswahl variabel)</span>
-         <span class="stat"><span class="icon">🎯</span> beste Ergebnisse zählen (i.d.R. 3 von 4)</span>
-         <span class="stat"><span class="icon">⏱</span> paralleler Zeitplan über alle Disziplinen</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.meisterschaften.stat1">Anmeldung als 2er-Team (Herren/Damen/Mixed)</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.card.meisterschaften.stat2">mehrere parallele Disziplinen (Auswahl variabel)</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.meisterschaften.stat3">beste Ergebnisse zählen (i.d.R. 3 von 4)</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.card.meisterschaften.stat4">paralleler Zeitplan über alle Disziplinen</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ Beachvolleyball-Teil per „Gruppen + Finalrunde“</span>
-         <span class="feat">✓ eigene Einzelwertung je Disziplin</span>
-         <span class="feat">✓ Gesamtwertung aus den besten Einzelergebnissen</span>
-         <span class="feat">✓ Preise pro Disziplin + Gesamtsieger</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat1">✓ Beachvolleyball-Teil per „Gruppen + Finalrunde“</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat2">✓ eigene Einzelwertung je Disziplin</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat3">✓ Gesamtwertung aus den besten Einzelergebnissen</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat4">✓ Preise pro Disziplin + Gesamtsieger</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html" target="_blank" data-i18n="home.card.meisterschaften.open">
          Öffnen ↗ (Beachvolleyball-Teil)
         </a>
       </div>
@@ -1275,28 +1273,28 @@
          bestehenden Universalbogen "Jeder gegen Jeden" – eine Begegnung
          fasst die 3 Teilspiele (2× 2vs2 + 1× 4vs4) zu einem Match-Ergebnis
          zusammen, siehe Doku). ── -->
-    <div class="card" data-tags="daviscup" data-doc="docs/format-davis-cup.html" data-desc="Anmeldung erfolgt als Einzelperson. Vor Ort werden die Spieler nach Niveau eingeteilt und den Teams (je vier Spieler) zugelost. Jede Begegnung zwischen zwei Teams besteht aus drei Teilspielen: zwei Spielen 2 gegen 2 und einem Spiel 4 gegen 4. Das Team mit den meisten gewonnenen Teilspielen gewinnt die Begegnung.">
+    <div class="card" data-tags="daviscup" data-doc="docs/format-davis-cup.html" data-i18n-attr="data-desc:home.card.daviscup.desc" data-desc="Anmeldung erfolgt als Einzelperson. Vor Ort werden die Spieler nach Niveau eingeteilt und den Teams (je vier Spieler) zugelost. Jede Begegnung zwischen zwei Teams besteht aus drei Teilspielen: zwei Spielen 2 gegen 2 und einem Spiel 4 gegen 4. Das Team mit den meisten gewonnenen Teilspielen gewinnt die Begegnung.">
       <div class="card-header">
-        <span class="format-tag">Sonderform · Team-Auslosung</span>
-        <h2>Davis Cup</h2>
-        <div class="sub">Einzelanmeldung · Auslosung zu 4er-Teams nach Niveau · 2× 2vs2 + 1× 4vs4</div>
+        <span class="format-tag" data-i18n="home.card.daviscup.tag">Sonderform · Team-Auslosung</span>
+        <h2 data-i18n="home.format.daviscup">Davis Cup</h2>
+        <div class="sub" data-i18n="home.card.daviscup.sub">Einzelanmeldung · Auslosung zu 4er-Teams nach Niveau · 2× 2vs2 + 1× 4vs4</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon">👥</span> Einzelanmeldung, 4er-Teams vor Ort gelost</span>
-         <span class="stat"><span class="icon">🏖️</span> 1–10 Felder</span>
-         <span class="stat"><span class="icon">🎯</span> 3 Teilspiele je Begegnung</span>
-         <span class="stat"><span class="icon">⏱</span> Zeitfenster wählbar</span>
+         <span class="stat"><span class="icon">👥</span> <span data-i18n="home.card.daviscup.stat1">Einzelanmeldung, 4er-Teams vor Ort gelost</span></span>
+         <span class="stat"><span class="icon">🏖️</span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+         <span class="stat"><span class="icon">🎯</span> <span data-i18n="home.card.daviscup.stat3">3 Teilspiele je Begegnung</span></span>
+         <span class="stat"><span class="icon">⏱</span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat">✓ niveaubasierte Auslosung der Teams vor Ort</span>
-         <span class="feat">✓ 3 Teilspiele je Begegnung (2× 2vs2 + 1× 4vs4)</span>
-         <span class="feat">✓ Begegnung entscheidet die Mehrheit der Teilspiele</span>
-         <span class="feat">✓ läuft auf Basis von „Jeder gegen Jeden“</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat1">✓ niveaubasierte Auslosung der Teams vor Ort</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat2">✓ 3 Teilspiele je Begegnung (2× 2vs2 + 1× 4vs4)</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat3">✓ Begegnung entscheidet die Mehrheit der Teilspiele</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat4">✓ läuft auf Basis von „Jeder gegen Jeden“</span>
         </div>
       </div>
       <div class="card-footer">
-        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank">
+        <a class="btn-open" href="Turnierbogen_Runden_System.html?mode=rr" target="_blank" data-i18n="home.card.open">
          Öffnen ↗
         </a>
       </div>
@@ -1369,6 +1367,38 @@
 </script>
 
 <script>
+  /* DE/EN: Texte der Startseite über TI18n (Deutsch == de.js == bisheriger Text). */
+  function T(key, params) {
+    return (typeof TI18n !== 'undefined') ? TI18n.t(key, params) : key;
+  }
+  /* Fehlerdetail für Meldungen: Deutsch unverändert error.message; auf Englisch
+     werden technische TStore-Fehler ("TStore storage <code>…") durch den
+     übersetzten Speicherhinweis ersetzt. Browser-eigene Meldungen bleiben. */
+  const STORAGE_ERROR_KEYS = {
+    unavailable: 'unavailable', blocked: 'blocked', 'write-failed': 'writeFailed',
+    conflict: 'conflict', corrupt: 'corrupt', incompatible: 'incompatible',
+    'backup-corrupt': 'backupCorrupt'
+  };
+  function errDetail(error) {
+    const message = String(error && error.message);
+    if (typeof TI18n === 'undefined' || TI18n.lang() === 'de') return message;
+    if (message.indexOf('TStore storage ') !== 0) return message;
+    const code = error && error.code;
+    return T('enh.storage.' + (Object.prototype.hasOwnProperty.call(STORAGE_ERROR_KEYS, code)
+      ? STORAGE_ERROR_KEYS[code] : 'generic'));
+  }
+  /* Anzeige des Turniertitels: automatisch erzeugte Titel ("<Typ> – <Datum>")
+     und reine Typnamen werden übersetzt, eigene Titel bleiben unverändert.
+     Gespeichert wird weiterhin der deutsche Titel. */
+  function displayTitle(title, type) {
+    const s = String(title || '');
+    if (!s) return T('home.sessions.untitled');
+    if (typeof TI18n === 'undefined' || !type) return s;
+    if (s === type) return TI18n.term(type);
+    const m = /^(.+) – (\d{2}\.\d{2}\.\d{4})$/.exec(s);
+    return m && m[1] === type ? TI18n.term(type) + ' – ' + m[2] : s;
+  }
+
   function applyCardFilters(teamTag, formatTag) {
     document.querySelectorAll('.card').forEach(card => {
       const tags = (card.dataset.tags || '').split(' ');
@@ -1456,7 +1486,7 @@
         await loadSessions();
       } catch (error) {
         button.disabled = false;
-        alert('Rückgängig fehlgeschlagen: ' + error.message);
+        alert(T('home.sessions.undoFailed', { message: errDetail(error) }));
       }
     };
     clearTimeout(sessionUndoTimer);
@@ -1511,7 +1541,7 @@
     const bar = document.getElementById('sessions-bulk-bar');
     const n = selectedSessionKeys.size;
     bar.style.display = n ? 'flex' : 'none';
-    if (n) document.getElementById('sessions-bulk-count').textContent = n + ' ausgewählt';
+    if (n) document.getElementById('sessions-bulk-count').textContent = T('home.sessions.selected', { count: n });
   }
   function clearSessionSelection() {
     selectedSessionKeys.clear();
@@ -1520,7 +1550,7 @@
   }
   async function bulkDeleteSessions() {
     if (!selectedSessionKeys.size) return;
-    if (!confirm(selectedSessionKeys.size + ' ausgewählte Turniere löschen?')) return;
+    if (!confirm(T('home.sessions.confirmDelete', { count: selectedSessionKeys.size }))) return;
     try {
       const keys = Array.from(selectedSessionKeys);
       const undoKey = await TStore.transaction(function (view) {
@@ -1546,9 +1576,9 @@
       });
       selectedSessionKeys.clear();
       await loadSessions();
-      if (undoKey) showSessionUndo(keys.length + ' Turnier(e) gelöscht.', undoKey, undoDeletedSessions);
+      if (undoKey) showSessionUndo(T('home.sessions.deleted', { count: keys.length }), undoKey, undoDeletedSessions);
     } catch (error) {
-      alert('Turniere konnten nicht gelöscht werden. Es wurde nichts geändert: ' + error.message);
+      alert(T('home.sessions.deleteFailed', { message: errDetail(error) }));
     }
   }
 
@@ -1556,12 +1586,12 @@
     await TStore.transaction(function (view) {
       let undo;
       try { undo = JSON.parse(view.getItem(undoKey) || 'null'); }
-      catch (error) { throw new Error('Die Rückgängig-Sicherung ist beschädigt.'); }
+      catch (error) { throw new Error(T('home.undo.corrupt')); }
       if (!undo || undo.type !== 'session-delete' || undo.expiresAt <= Date.now()
-          || !Array.isArray(undo.entries)) throw new Error('Die Rückgängig-Sicherung ist abgelaufen oder fehlt.');
+          || !Array.isArray(undo.entries)) throw new Error(T('home.undo.expired'));
       undo.entries.forEach(function (entry) {
         if (view.getItem(entry.storageKey) != null) {
-          throw new Error('Ein Eintrag wurde inzwischen neu angelegt; es wurde nichts wiederhergestellt.');
+          throw new Error(T('home.undo.conflict'));
         }
       });
       const index = TStore.readIndexInView(view);
@@ -1569,7 +1599,7 @@
         if (entry.sessionKey.indexOf('store:') === 0) {
           const sheet = entry.sessionKey.slice(6);
           const parsed = TStore.parseRecord(entry.value, sheet);
-          if (!parsed.ok) throw new Error('Ein Turnierdatensatz ist beschädigt; es wurde nichts wiederhergestellt.');
+          if (!parsed.ok) throw new Error(T('home.undo.recordCorrupt'));
           const tournament = parsed.data;
           tournament._revision = Math.max(TStore.revisionInView(view, sheet), Number(tournament._revision) || 0) + 1;
           view.setItem(entry.storageKey, JSON.stringify(tournament));
@@ -1600,7 +1630,7 @@
     if (typeof TShare !== 'undefined' && TShare.openByCode) {
       TShare.openByCode(value);
     } else {
-      alert('Diese Funktion ist gerade nicht verfügbar.');
+      alert(T('home.code.unavailable'));
     }
     return false;
   }
@@ -1627,11 +1657,10 @@
       link.click();
       document.body.removeChild(link);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      alert((backup.storage === 'localStorage-readonly'
-        ? 'IndexedDB ist nicht verfügbar: Diese Rettungssicherung enthält nur lesbare localStorage-Altdaten, nicht möglicherweise neuere IndexedDB-Stände. '
-        : '') + 'Sicherung heruntergeladen. Sie enthält personenbezogene Turnierdaten und ist nicht verschlüsselt. Bitte vertraulich und getrennt vom Gerät aufbewahren.');
+      alert(backup.storage === 'localStorage-readonly'
+        ? T('home.backup.downloadedReadonly') : T('home.backup.downloaded'));
     } catch (error) {
-      alert('Sicherung konnte nicht erstellt werden: ' + error.message);
+      alert(T('home.backup.exportFailed', { message: errDetail(error) }));
     }
   }
 
@@ -1641,21 +1670,29 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onerror = function () {
-      alert('Die Sicherungsdatei konnte nicht gelesen werden.');
+      alert(T('home.backup.readFailed'));
       input.value = '';
     };
     reader.onload = async function () {
       try {
         const backup = JSON.parse(String(reader.result || ''));
-        if (!confirm('Die Sicherung wird hinzugefügt. Vorhandene Einträge werden niemals überschrieben; bei gleichen Schlüsseln bleibt der aktuelle Stand erhalten. Fortfahren?')) return;
+        /* Verworfene Einträge nicht mehr unterstützter Bögen schon in der
+           Rückfrage ankündigen; Prüffehler meldet anschließend importAll(). */
+        let discardedNote = '';
+        try {
+          const plan = TBackup.validateBackup(backup);
+          if (plan.discarded) discardedNote = '\n\n' + T('home.backup.importDiscarded', { count: plan.discarded });
+        } catch (validationError) { /* wird von importAll() gemeldet */ }
+        if (!confirm(T('home.backup.confirmImport') + discardedNote)) return;
         const result = await TBackup.importAll(backup);
-        alert('Import abgeschlossen: ' + result.added + ' Einträge hinzugefügt, ' + result.skipped + ' bereits vorhandene Einträge übersprungen.');
+        alert(T('home.backup.importDone', { added: result.added, skipped: result.skipped })
+          + (result.discarded ? '\n\n' + T('home.backup.importDiscarded', { count: result.discarded }) : ''));
         await loadSessions();
         if (result.undoKey) {
-          showSessionUndo(result.added + ' Sicherungseintrag(e) importiert.', result.undoKey, TBackup.undoImport);
+          showSessionUndo(T('home.backup.imported', { count: result.added }), result.undoKey, TBackup.undoImport);
         }
       } catch (error) {
-        alert('Sicherung konnte nicht importiert werden: ' + error.message);
+        alert(T('home.backup.importFailed', { message: errDetail(error) }));
       } finally {
         input.value = '';
       }
@@ -1668,24 +1705,24 @@
     const button = document.getElementById('persist-storage-button');
     const manager = navigator.storage;
     if (!manager || typeof manager.persisted !== 'function') {
-      status.textContent = 'Dieser Browser bietet keinen dauerhaften Speicher an. Bitte regelmäßig exportieren.';
+      status.textContent = T('home.storage.noPersist');
       button.disabled = true;
       return;
     }
     manager.persisted().then(function (persistent) {
       status.textContent = persistent
-        ? 'Dauerhafter Speicher ist aktiv.'
-        : 'Speicher kann vom Browser gelöscht werden. Regelmäßig exportieren.';
+        ? T('home.storage.persistent')
+        : T('home.storage.notPersistent');
       button.disabled = persistent || typeof manager.persist !== 'function';
     }, function () {
-      status.textContent = 'Speicherstatus nicht verfügbar. Bitte regelmäßig exportieren.';
+      status.textContent = T('home.storage.unknown');
     });
     if (typeof manager.estimate === 'function') {
       manager.estimate().then(function (estimate) {
         if (!estimate || !estimate.quota) return;
         const used = Math.round((estimate.usage || 0) / 1024 / 1024);
         const quota = Math.round(estimate.quota / 1024 / 1024);
-        status.textContent += ' Belegt: ca. ' + used + ' MB von ' + quota + ' MB.';
+        status.textContent += ' ' + T('home.storage.usage', { used: used, quota: quota });
       }, function () {});
     }
   }
@@ -1693,16 +1730,16 @@
   function requestPersistentStorage() {
     const manager = navigator.storage;
     if (!manager || typeof manager.persist !== 'function') {
-      alert('Dauerhafter Speicher wird von diesem Browser nicht angeboten. Bitte Sicherungsdateien regelmäßig extern aufbewahren.');
+      alert(T('home.storage.persistUnsupported'));
       return;
     }
     manager.persist().then(function (persistent) {
       refreshStorageStatus();
       alert(persistent
-        ? 'Der Browser hat dauerhaften Speicher zugesagt. Zusätzliche externe Sicherungen bleiben wichtig.'
-        : 'Der Browser hat den Antrag abgelehnt. Bitte Turniere regelmäßig als Datei sichern.');
+        ? T('home.storage.persistGranted')
+        : T('home.storage.persistDenied'));
     }, function () {
-      alert('Der Speicherstatus konnte nicht geändert werden. Bitte Turniere regelmäßig als Datei sichern.');
+      alert(T('home.storage.persistFailed'));
     });
   }
 
@@ -1710,7 +1747,6 @@
      je Bogen verwendet. */
   const STORE_BASE_MAP = {
     'de-flex': { file: 'Turnierbogen_Doppel_KO_System.html', type: 'Doppel-KO-System' },
-    'flex-rr': { file: 'Turnierbogen_Flexibel_Alle_gegen_Alle.html', type: 'Jeder gegen Jeden' },
     'flex_rr': { file: 'Turnierbogen_Flex_Turnier.html?mode=rr', type: 'Flex-Turnier' },
     'flex_swiss': { file: 'Turnierbogen_Flex_Turnier.html', type: 'Flex-Turnier' },
     'gruppen-final': { file: 'Turnierbogen_Gruppen_Finalrunde.html', type: 'Gruppen + Finalrunde' },
@@ -1718,7 +1754,6 @@
     'kingqueen': { file: 'Turnierbogen_King_Queen.html', type: 'King & Queen' },
     'koc': { file: 'Turnierbogen_King_Queen_of_the_Court.html', type: 'King/Queen of the Court' },
     'mpp': { file: 'Turnierbogen_Modified_Pool_Play.html', type: 'Modified Pool Play' },
-    'swiss': { file: 'Turnierbogen_Schweizer_System.html', type: 'Schweizer System' },
     /* Turnierbogen_Runden_System.html deckt zwei Turniertypen ab (?mode=rr/
        ?mode=swiss, siehe dortiges PICKER_BASE) – daher zwei Basis-Einträge
        statt einem, sonst würden Schweizer-System-Turniere hier fehlen bzw.
@@ -1740,6 +1775,7 @@
           const archive = JSON.parse(view.getItem(key) || 'null');
           if (!archive || !archive.sheet || !archive.file || !archive.data ||
               typeof archive.data !== 'object' || !Object.keys(archive.data).length) return;
+          if (!TStore.isCurrentSheet(archive.sheet)) return;
           archives[key] = {
             key: key,
             sheet: archive.sheet,
@@ -1758,11 +1794,17 @@
       }
       view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
   }
+  /* Nur aktuelle Bögen erscheinen in der Liste; Datensätze anderer Bogen-IDs
+     bleiben unverändert gespeichert (und in der Sicherung), werden aber nicht
+     als fortsetzbare Turniere angeboten. Ihre Indexzeilen entfernt
+     TStore.refreshIndexInView (nur Übersichtsdaten, nicht die Datensätze). */
+  function storeBaseOf(sheetId) {
+    const base = TStore.sheetBaseOf(String(sheetId));
+    return base && Object.prototype.hasOwnProperty.call(STORE_BASE_MAP, base) ? base : null;
+  }
   function storeSessions(idx) {
       return Object.keys(idx).map(function (sheetId) {
-        const baseName = Object.keys(STORE_BASE_MAP).filter(function (b) {
-          return sheetId === b || sheetId.indexOf(b + '.') === 0;
-        })[0];
+        const baseName = storeBaseOf(sheetId);
         if (!baseName) return null;
         const info = STORE_BASE_MAP[baseName];
         const suffix = sheetId === baseName ? '' : sheetId.slice(baseName.length + 1);
@@ -1772,7 +1814,8 @@
           key: 'store:' + sheetId,
           file: info.file + (suffix ? (sep + 'id=' + suffix) : ''),
           title: e.title || info.type,
-          teams: e.teams ? [e.teams + ' Teams'] : [],
+          type: info.type,
+          teams: e.teams ? [T('common.teams', { count: e.teams })] : [],
           savedAt: e.updated ? new Date(e.updated).getTime() : 0
         };
       }).filter(Boolean);
@@ -1782,7 +1825,7 @@
       ? idx[INDEX_ARCHIVES_KEY] : {};
     return Object.keys(archives).map(function (key) {
       const entry = archives[key];
-      if (!entry || !entry.archived) return null;
+      if (!entry || !entry.archived || !storeBaseOf(entry.sheet || '')) return null;
       try {
         const payload = JSON.parse(view.getItem(key) || 'null');
         if (!payload || !payload.data || typeof payload.data !== 'object' || !Object.keys(payload.data).length) return null;
@@ -1831,7 +1874,7 @@
       sessions.forEach((s, idx) => {
         const rawTs = s.savedAt || s.ts;
         const d = rawTs ? new Date(rawTs) : null;
-        const date = (d && !isNaN(d.getTime())) ? d.toLocaleString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        const date = (d && !isNaN(d.getTime())) ? d.toLocaleString((typeof TI18n !== 'undefined') ? TI18n.locale() : 'de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
         /* Eine bereits ausgeklappte Liste (sessionsExpanded) bleibt es auch
            nach einem Löschvorgang – sonst klappt sie bei jedem Neu-Rendern
            unerwartet wieder auf die Vorschau-Anzahl zusammen. */
@@ -1843,7 +1886,7 @@
         const check = document.createElement('input');
         check.type = 'checkbox';
         check.className = 'session-check';
-        check.title = 'Zum Löschen auswählen';
+        check.title = T('home.sessions.selectTitle');
         check.checked = selectedSessionKeys.has(s.key);
         check.onchange = function() {
           if (check.checked) selectedSessionKeys.add(s.key); else selectedSessionKeys.delete(s.key);
@@ -1854,7 +1897,7 @@
         info.className = 'session-info';
         const title = document.createElement('div');
         title.className = 'session-title';
-        title.textContent = s.title || 'Gespeichertes Turnier';
+        title.textContent = displayTitle(s.title, s.type);
         const teams = document.createElement('div');
         teams.className = 'session-teams';
         teams.textContent = Array.isArray(s.teams)
@@ -1862,14 +1905,14 @@
           : '';
         const meta = document.createElement('div');
         meta.className = 'session-date';
-        meta.textContent = date ? ('Zuletzt gespeichert: ' + date) : 'Gespeichert';
+        meta.textContent = date ? T('home.sessions.lastSaved', { date: date }) : T('home.sessions.saved');
         const actions = document.createElement('div');
         actions.className = 'session-actions';
         const resume = document.createElement('a');
         resume.className = 'btn-resume';
         resume.href = s.resumeUrl || s.file;
         resume.target = '_blank';
-        resume.textContent = 'Weiter ▶';
+        resume.textContent = T('home.sessions.resume');
 
         info.appendChild(title);
         info.appendChild(teams);
@@ -1884,14 +1927,14 @@
         const more = document.getElementById('sessions-more');
         more.style.display = '';
         const n = sessions.length - SESSIONS_PREVIEW;
-        document.getElementById('sessions-more-label').textContent = n + ' weitere gespeicherte Turnier' + (n === 1 ? '' : 'e') + ' anzeigen';
+        document.getElementById('sessions-more-label').textContent = T('home.sessions.more', { count: n });
       } else {
         document.getElementById('sessions-more').style.display = 'none';
       }
     } catch(error) {
       const notice = document.getElementById('no-sessions');
       notice.style.display = '';
-      notice.textContent = 'Turnierspeicher nicht verfügbar. Bestehende Daten bleiben erhalten; bitte eine Sicherung herunterladen. ' + error.message;
+      notice.textContent = T('home.sessions.loadFailed', { message: errDetail(error) });
     }
   }
 
@@ -1922,8 +1965,8 @@
     if (!pendingUndo) return;
     const record = JSON.parse(pendingUndo.value);
     showSessionUndo(record.type === 'import'
-      ? record.entries.length + ' Sicherungseintrag(e) importiert.'
-      : record.entries.length + ' Turnier(e) gelöscht.',
+      ? T('home.backup.imported', { count: record.entries.length })
+      : T('home.sessions.deleted', { count: record.entries.length }),
     pendingUndo.key, record.type === 'import' ? TBackup.undoImport : undoDeletedSessions);
   }).catch(function (error) {
     console.error('Temporäre Rückgängig-Sicherungen konnten nicht geprüft werden.', error);
@@ -1962,15 +2005,16 @@
       });
     });
 
-    const FORMAT_LABELS = {
-      kingqueen: 'King & Queen',
-      de: 'Doppel-K.-o.-System',
-      ko: 'KO-System',
-      swiss: 'Schweizer System',
-      rr: 'Jeder gegen Jeden',
-      gruppen: 'Gruppen + Finalrunde',
-      koc: 'King/Queen of the Court',
-      mpp: 'Modified Pool Play'
+    /* Format-Bezeichnungen als Textschlüssel (Deutsch == bisherige Labels). */
+    const FORMAT_LABEL_KEYS = {
+      kingqueen: 'home.format.kingqueen',
+      de: 'home.card.de.title',
+      ko: 'home.ko.title',
+      swiss: 'home.format.swiss',
+      rr: 'home.format.rr',
+      gruppen: 'home.card.gruppen.title',
+      koc: 'home.format.koc',
+      mpp: 'home.format.mpp'
     };
 
     /* Die Zeit-Frage ist nur relevant, wenn die Empfehlung sonst auf
@@ -1996,7 +2040,7 @@
       if (a.participants === 'individuals') {
         return {
           tag: 'kingqueen',
-          reason: 'Einzelpersonen mit wechselnden, fair gelosten 2er-Teams – niemand spielt dauerhaft mit derselben Person, Stärken gleichen sich pro Runde neu aus.'
+          reason: T('home.wizard.reason.kingqueen')
         };
       }
 
@@ -2006,12 +2050,12 @@
         if (a.niveau === 'gemischt') {
           return {
             tag: 'de',
-            reason: 'Playoff mit klarem Sieger – dank Verlierer-Runde entscheidet bei gemischtem Niveau nicht gleich die erste Niederlage über das Aus. Setzliste vor dem Start nutzen, um Favoriten zu verteilen.'
+            reason: T('home.wizard.reason.de')
           };
         }
         return {
           tag: 'ko',
-          reason: 'Ähnlich starke Teams, klarer Sieger gewünscht: das klassische KO-System liefert das schnell und einfach. Setzliste vor dem Start nutzen, um Favoriten zu verteilen.'
+          reason: T('home.wizard.reason.ko')
         };
       }
 
@@ -2020,26 +2064,26 @@
         if (a.count === 'klein') {
           return {
             tag: 'rr',
-            reason: 'Bis zu 8 Teams, keine Wiederholung gewünscht: Im Jeder-gegen-Jeden trifft jedes Team automatisch jedes andere genau einmal.'
+            reason: T('home.wizard.reason.rrNoRepeat')
           };
         }
         return {
           tag: 'swiss',
-          reason: 'Mehr Teams, keine Wiederholung gewünscht: Das Schweizer System verfolgt bereits gespielte Paarungen und vermeidet gezielt jede Wiederholung, während es nach Leistung ausgleicht.'
+          reason: T('home.wizard.reason.swissNoRepeat')
         };
       }
 
       if (a.niveau === 'gemischt') {
         return {
           tag: 'swiss',
-          reason: 'Gemischtes Niveau, alle sollen viel spielen: Das Schweizer System gleicht laufend aus und sorgt zusätzlich dafür, dass sich Paarungen nicht wiederholen.'
+          reason: T('home.wizard.reason.swissMixed')
         };
       }
 
       if (a.count === 'klein') {
         return {
           tag: 'rr',
-          reason: 'Bis zu 8 ähnlich starke Teams: Im Jeder-gegen-Jeden spielt wirklich jede/r gegen jede/n – einfach, fair, vollständige Rangliste.'
+          reason: T('home.wizard.reason.rrSmall')
         };
       }
 
@@ -2047,13 +2091,13 @@
       if (a.time === 'knapp') {
         return {
           tag: 'mpp',
-          reason: 'Größeres Feld, ähnliches Niveau, wenig Zeit: Modified Pool Play liefert die gleiche faire Gruppenstruktur mit nur 4 statt 6 Spielen je Gruppe.'
+          reason: T('home.wizard.reason.mpp')
         };
       }
 
       return {
         tag: 'gruppen',
-        reason: 'Mehr Teams, ähnliches Niveau, genug Zeit: Gruppen + Finalrunde gibt jedem viele Spiele und am Ende trotzdem eine klare Platzierung.'
+        reason: T('home.wizard.reason.gruppen')
       };
     }
 
@@ -2064,8 +2108,8 @@
       const btn = document.getElementById('wizardResultBtn');
       if (!rec) { box.hidden = true; return; }
       box.hidden = false;
-      const label = FORMAT_LABELS[rec.tag] || rec.tag;
-      text.innerHTML = '<strong>Empfehlung: ' + label + '</strong><br>' + rec.reason;
+      const label = FORMAT_LABEL_KEYS[rec.tag] ? T(FORMAT_LABEL_KEYS[rec.tag]) : rec.tag;
+      text.innerHTML = '<strong>' + T('home.wizard.recommendation', { label: label }) + '</strong><br>' + rec.reason;
       btn.onclick = function () { wizardJumpToTag(rec.tag); };
     }
 
@@ -2100,7 +2144,7 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').then(function (reg) {
-        function ready() { setStatus('✓ Offline verfügbar', true); }
+        function ready() { setStatus(T('home.pwa.ready'), true); }
         if (navigator.serviceWorker.controller) ready();
         else navigator.serviceWorker.addEventListener('controllerchange', ready);
         reg.addEventListener('updatefound', function () {
@@ -2108,12 +2152,12 @@
           if (!nw) return;
           nw.addEventListener('statechange', function () {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              setStatus('↻ Update verfügbar – Seite neu laden', false);
+              setStatus(T('home.pwa.update'), false);
             }
           });
         });
       }).catch(function () {
-        setStatus('Offline-Modus nicht verfügbar', false);
+        setStatus(T('home.pwa.unavailable'), false);
       });
     });
   }

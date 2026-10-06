@@ -1,8 +1,8 @@
 /* ============================================================================
    turnier-base.css – gemeinsames Grundlayout der Turnierbögen
    (Seitenrahmen, Teams-/Tabellen-/Track-Tabellen, Kurzanleitung, Druck A4 quer,
-    Mobil-Anpassungen). Extrahiert aus dem Bogen "Flexibel Alle-gegen-Alle",
-    damit neue Bögen dieses Layout nicht erneut duplizieren.
+    Mobil-Anpassungen). Gemeinsame Grundlage aller Bögen; Layout-Referenz ist
+    Turnierbogen_Runden_System.html.
    Einbindungsreihenfolge: turnier-base.css → spielplan.css → app-skin.css
    ========================================================================== */
   :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; }
@@ -169,7 +169,7 @@
   }
   /* Kompakte Einezeilen-Leiste: Teams · Runden · Felder nebeneinander.
      Spannt die ganze Grid-Breite und verteilt seine cfgfield-Kinder als
-     gleichbreite Flex-Items – wie die .setupbar der Vorlagenbögen. */
+     gleichbreite Flex-Items. */
   .cfgfield-row {
     grid-column: 1 / -1;
     display: flex;
@@ -464,8 +464,8 @@
       }}/* Print polish overrides */
     
   /* ============================================================ LAUFENDE TABELLE
-     Formatierung der kumulierten Runden-Tabelle (track). Kopiert aus der Vorlage
-     Turnierbogen_Flexibel_Alle_gegen_Alle.html, damit alle Bögen gleich aussehen. */
+     Formatierung der kumulierten Runden-Tabelle (track), für alle Bögen gleich
+     (Referenz: Turnierbogen_Runden_System.html). */
   .track th, .track td { padding:3px 4px; }
   .track .tname { width:120px; text-align:left; font-weight:bold; }
   .track .lbl { width:118px; text-align:left; font-size:11px; background:#fafafa; }

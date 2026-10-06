@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-i18n>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -74,108 +74,112 @@
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px">
-  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none">← Zur Übersicht</a>
+  <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
 </div>
 
-<h1 id="h-title">Doppel-K.-o.-System</h1>
+<h1 id="h-title" data-i18n="dko.legend.format">Doppel-K.-o.-System</h1>
 <p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
-  <h2>Kurzanleitung – so läuft das Turnier</h2>
+  <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <ol>
-    <li><span class="hi">Setzliste:</span> <span id="g-seed">–</span></li>
-    <li><span class="hi">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi">Ablauf:</span> Wer in der Gewinner-Runde verliert, fällt in die Verlierer-Runde und spielt dort weiter – <b>erst die zweite Niederlage</b> bedeutet das Ausscheiden.</li>
-    <li><span class="hi">Grand Final:</span> <span id="g-final">–</span></li>
-    <li><span class="hi">Platzierung:</span> <span id="g-places">–</span></li>
-    <li><span class="hi">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li><span class="hi">Ausdruck:</span> Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („Sieger VF1“, „Verlierer VF2“). Nach jeder Runde die Namen eintragen.</li>
+    <li><span class="hi" data-i18n="dko.guide.seedLabel">Setzliste:</span> <span id="g-seed">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.flowShortLabel">Ablauf:</span> <span data-i18n-html="dko.guide.flowText">Wer in der Gewinner-Runde verliert, fällt in die Verlierer-Runde und spielt dort weiter – <b>erst die zweite Niederlage</b> bedeutet das Ausscheiden.</span></li>
+    <li><span class="hi" data-i18n="dko.guide.finalLabel">Grand Final:</span> <span id="g-final">–</span></li>
+    <li><span class="hi" data-i18n="dko.guide.placesLabel">Platzierung:</span> <span id="g-places">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="dko.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („Sieger VF1“, „Verlierer VF2“). Nach jeder Runde die Namen eintragen.</span></li>
   </ol>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="sheet.cfg.title">⚙ Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide">📝 Turniertitel
-      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" autocomplete="off" spellcheck="false">
+    <label class="cfgfield cfgfield--wide"><span data-i18n="sheet.cfg.titleLabel">📝 Turniertitel</span>
+      <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:sheet.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
     </label>
     <div class="cfgfield-row">
-      <label class="cfgfield">👥 Teams
+      <label class="cfgfield"><span data-i18n="sheet.cfg.teams">👥 Teams</span>
         <select id="teamCount"></select>
       </label>
-      <label class="cfgfield">🏖️ Felder
+      <label class="cfgfield"><span data-i18n="sheet.cfg.fields">🏖️ Felder</span>
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--mode">🎯 Satzmodus
+    <label class="cfgfield cfgfield--mode"><span data-i18n="sheet.cfg.setMode">🎯 Satzmodus</span>
       <select id="setMode"></select>
     </label>
-    <label class="cfgfield cfgfield--start">⏱ Start
+    <label class="cfgfield cfgfield--start"><span data-i18n="sheet.cfg.start">⏱ Start</span>
       <input type="time" id="startTime" value="10:00">
     </label>
-    <label class="cfgfield cfgfield--end">🏁 Ende
+    <label class="cfgfield cfgfield--end"><span data-i18n="sheet.cfg.end">🏁 Ende</span>
       <input type="time" id="endTime" value="15:00">
     </label>
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-size">–</span><span class="cfgres-lbl">Baumgröße</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-byes">–</span><span class="cfgres-lbl">Freilose Runde 1</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl">Spiele gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl">Runden</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-size">–</span><span class="cfgres-lbl" data-i18n="dko.kpi.size">Baumgröße</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-byes">–</span><span class="cfgres-lbl" data-i18n="dko.kpi.byes">Freilose Runde 1</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.games">Spiele gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-perTeam">–</span>
       <span class="cfgres-val cfgres-val--sub" id="rv-perTeamBreak">–</span>
-      <span class="cfgres-lbl">Spiele pro Team (gesamt)</span>
+      <span class="cfgres-lbl" data-i18n="sheet.kpi.perTeamTotal">Spiele pro Team (gesamt)</span>
     </div>
     <div class="cfgres-item">
       <span class="cfgres-val" id="rv-fields">–</span>
       <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
-      <span class="cfgres-lbl">Felder (gewählt · benötigt)</span>
+      <span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder (gewählt · benötigt)</span>
     </div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl">Ende (Mindestbedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl">Sätze gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl">Zeit/Spiel (verfügbar · mind.)</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl">Gesamtzeit (Plan / Bedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl">Zeitreserve</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende (Mindestbedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit/Spiel (verfügbar · mind.)</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Gesamtzeit (Plan / Bedarf)</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.buffer">Zeitreserve</span></div>
   </div>
 
   <p class="input-hint" id="gamesBreakdown"></p>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Teamnamen</button>
-    <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Felder benennen</button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> Team ausgefallen</button>
-    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Zeit optimieren</button>
-    <button type="button" class="nbtn" id="btnClearScores">Ergebnisse löschen</button>
-    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Neues Turnier</button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Teamnamen</span></button>
+    <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
+    <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
+    <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
     <span class="spacer"></span>
-    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Teilen</button>
-    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Speichern</button>
+    <button type="button" class="nbtn" id="btnShare"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> <span data-i18n="sheet.btn.share">Teilen</span></button>
+    <button class="nbtn" id="btnSave" style="background:#0a7d2c;border-color:#0a7d2c;color:#fff;box-shadow:0 2px 8px rgba(10,125,44,.28)" title="Turnier speichern" data-i18n-attr="title:sheet.btn.saveTitle"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> <span data-i18n="sheet.btn.save">Speichern</span></button>
   </div>
 
   <div id="namepanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="nameGrid"></div>
     <div class="nactions">
-      <button type="button" class="nbtn" id="btnShuffle">🎲 Auslosen (Setzliste mischen)</button>
-      <button type="button" class="nbtn" id="btnClearNames">Namen leeren</button>
+      <button type="button" class="nbtn" id="btnShuffle" data-i18n="dko.btn.shuffle">🎲 Auslosen (Setzliste mischen)</button>
+      <button type="button" class="nbtn" id="btnClearNames" data-i18n="sheet.btn.clearNames">Namen leeren</button>
     </div>
-    <p class="nhint">ℹ️ Die Reihenfolge in dieser Liste ist die <b>Setzliste</b>. Nr. 1 ist der Favorit; Nr. 1 und Nr. 2 können sich in der Gewinner-Runde erst im Finale treffen. Wer nicht setzen will, drückt „Auslosen“.</p>
+    <p class="nhint" data-i18n-html="dko.hint.seed">ℹ️ Die Reihenfolge in dieser Liste ist die <b>Setzliste</b>. Nr. 1 ist der Favorit; Nr. 1 und Nr. 2 können sich in der Gewinner-Runde erst im Finale treffen. Wer nicht setzen will, drückt „Auslosen“.</p>
   </div>
   <div id="fieldpanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="fieldGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearFields">Felder zurücksetzen</button></div>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearFields" data-i18n="sheet.btn.clearFields">Felder zurücksetzen</button></div>
   </div>
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent">Ausfälle zurücksetzen</button></div>
-    <p class="nhint">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Der Gegner zieht kampflos in die nächste Runde ein.</p>
-    <p class="nhint">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
+    <p class="nhint" data-i18n-html="dko.hint.absent">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Der Gegner zieht kampflos in die nächste Runde ein.</p>
+    <p class="nhint" data-i18n-html="sheet.hint.delete">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -184,7 +188,7 @@
 <div class="row">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
-      <caption>Setzliste (Nr. 1 = Favorit)</caption>
+      <caption data-i18n="dko.teams.caption">Setzliste (Nr. 1 = Favorit)</caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -193,9 +197,9 @@
 
 <div class="noprint schedule-roundbar" id="roundbar"></div>
 <div class="table-scroll is-wide" id="scheduleSection">
-  <p class="mobile-schedule-title noprint">Spielplan &amp; Ergebnisse</p>
+  <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="schedFin">
-    <caption><span class="cap-title" id="capFin">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span></caption>
+    <caption><span class="cap-title" id="capFin" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span></caption>
     <thead id="schedFinHead"></thead>
     <tbody id="schedFinBody"></tbody>
   </table>
@@ -204,25 +208,25 @@
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
-<h1 id="standingsSection">Turnierbaum &amp; Endstand</h1>
+<h1 id="standingsSection" data-i18n="dko.standings.title">Turnierbaum &amp; Endstand</h1>
 
-<h2>Turnierbaum</h2>
-<p class="input-hint hint-top"><span class="only-screen">Der Turnierbaum füllt sich automatisch mit: Wer ein Spiel im Spielplan gewinnt, rückt in die nächste Spalte auf.</span><span class="only-print">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des jeweiligen Baums eintragen.</span></p>
+<h2 data-i18n="dko.bracket.title">Turnierbaum</h2>
+<p class="input-hint hint-top"><span class="only-screen" data-i18n="dko.bracket.hintScreen">Der Turnierbaum füllt sich automatisch mit: Wer ein Spiel im Spielplan gewinnt, rückt in die nächste Spalte auf.</span><span class="only-print" data-i18n="dko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des jeweiligen Baums eintragen.</span></p>
 <div class="table-scroll is-wide">
-  <div class="bracket-title">Gewinner-Runde</div>
+  <div class="bracket-title" data-i18n="dko.bracket.wb">Gewinner-Runde</div>
   <div class="bracket" id="bracketWB"></div>
-  <div class="bracket-title">Verlierer-Runde</div>
+  <div class="bracket-title" data-i18n="dko.bracket.lb">Verlierer-Runde</div>
   <div class="bracket" id="bracketLB"></div>
-  <div class="bracket-title">Grand Final</div>
+  <div class="bracket-title" data-i18n="dko.bracket.gf">Grand Final</div>
   <p class="reset-hint" id="resetHint"></p>
   <div class="bracket" id="bracketGF"></div>
 </div>
 
-<h2>Auswertung</h2>
+<h2 data-i18n="dko.eval.title">Auswertung</h2>
 
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
-  <caption><span class="cap-title">Endstand</span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
-  <thead><tr><th class="pl">Pl.</th><th class="nm">Team</th><th>entschieden durch</th></tr></thead>
+  <caption><span class="cap-title" data-i18n="sheet.place.caption">Endstand</span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
+  <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 
@@ -242,6 +246,10 @@
 <script>
 (async function(){
   'use strict';
+  /* DE/EN-Prototyp: statische Texte vor dem ersten Zeichnen übersetzen. */
+  const T = TI18n.t, term = TI18n.term;
+  const modeLabel = id => T('setMode.' + TC.modeDef(id).id);
+  TI18n.apply(document);
   if (await TResumePicker.maybePrompt('de-flex', 'Doppel-KO-System')) return;
   TResumePicker.autoId();
   const SHEET = TStore.sheetIdFrom('de-flex');
@@ -302,14 +310,14 @@
 
   /* ------------------------------------------------------------ Kontext */
   function labeler(){ return TUI.makeLabeler(S.teamNames); }
-  function fieldLabel(i){ return S.fieldNames[i] || ('Feld ' + (i+1)); }
+  function fieldLabel(i){ return S.fieldNames[i] || T('ui.field.n', { n: i+1 }); }
   function ctxFor(mode){
     return { setMode: mode, teamLabel: labeler(),
              teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)),
              fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
-             fields: S.config.fields, modeLabel: TC.modeDef(mode).label };
+             fields: S.config.fields, modeLabel: modeLabel(mode) };
   }
   function activeTeams(){
     const out = []; for(let i=1;i<=S.config.teams;i++) out.push(i); return out;
@@ -320,8 +328,8 @@
   function fillSelects(){
     const t = $('teamCount');
     if(!t.options.length){
-      for(let n=MIN_TEAMS;n<=16;n++) t.add(new Option(n + ' Teams', n));
-      TC.SET_MODES.forEach(m => $('setMode').add(new Option(m.label, m.id)));
+      for(let n=MIN_TEAMS;n<=16;n++) t.add(new Option(T('common.teams', { count: n }), n));
+      TC.SET_MODES.forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
     }
     t.value = S.config.teams;
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
@@ -395,8 +403,8 @@
     $('bracketLB').innerHTML = TUI.bracketColumnsHtml(bracket.lbRounds);
     if(bracket.grandFinal){
       $('bracketGF').innerHTML = TUI.bracketColumnsHtml([
-        { title: 'Spiel 1', matches: [bracket.grandFinal.m1] },
-        { title: 'Reset (falls nötig)', matches: [bracket.grandFinal.m2] }
+        { title: T('dko.gf.game1'), matches: [bracket.grandFinal.m1] },
+        { title: T('dko.gf.reset'), matches: [bracket.grandFinal.m2] }
       ]);
     } else {
       $('bracketGF').innerHTML = '';
@@ -479,8 +487,8 @@
     const rh = $('resetHint');
     if(B.bracket && B.bracket.grandFinal){
       rh.textContent = B.deResetNeeded
-        ? 'Der Verlierer-Runden-Champion hat Spiel 1 gewonnen – das Reset-Spiel entscheidet.'
-        : 'Das Reset-Spiel wird nur benötigt, wenn der Verlierer-Runden-Champion Spiel 1 gewinnt.';
+        ? T('dko.resetHint.needed')
+        : T('dko.resetHint.ifNeeded');
     } else {
       rh.textContent = '';
     }
@@ -492,26 +500,23 @@
     const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
     const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
-    $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">Noch keine Platzierung – zuerst Ergebnisse eintragen.</td></tr>';
-    const placeRule = 'Platz 3 ist der Verlierer des Verlierer-Finales. Ab Platz 4 teilen sich alle Teams, '
-      + 'die in derselben Verlierer-Runde ihre zweite Niederlage kassiert haben, denselben Platzbereich.';
+    $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('dko.place.empty')) + '</td></tr>';
+    const placeRule = T('dko.place.rule');
     $('hintRank').innerHTML = TUI.hintHtml(
-      'Der Endstand wird laufend aus den Ergebnissen abgeleitet – die Spalte „entschieden durch“ nennt das entscheidende Spiel. ' + placeRule,
-      'So ausfüllen: Sieger/Verlierer aus dem Grand Final sowie die Verlierer der Verlierer-Runde aus dem Turnierbaum übernehmen. ' + placeRule);
+      T('dko.place.hintScreen', { rule: placeRule }),
+      T('dko.place.hintPrint', { rule: placeRule }));
   }
 
   function paintNotices(){
     const items = [];
-    B.notes.forEach(n => items.push({ txt:n, warn:false }));
-    B.warnings.forEach(w => items.push({ txt:w, warn:true }));
+    B.notes.forEach(n => items.push({ txt:term(n), warn:false }));
+    B.warnings.forEach(w => items.push({ txt:term(w), warn:true }));
     if(S.absent.length){
-      items.push({ txt: 'Ausgefallen: ' + S.absent.map(labeler()).join(', ')
-        + '. Der jeweilige Gegner zieht kampflos in die nächste Runde ein.', warn:false });
+      items.push({ txt: T('dko.notice.absent', { list: S.absent.map(labeler()).join(', ') }), warn:false });
     }
     const overEnd = TC.toMin(S.config.endTime);
     if(overEnd != null && B.endMin > overEnd){
-      items.push({ txt:'Der Zeitplan endet um ' + TC.fromMin(B.endMin) + ' und überschreitet damit die geplante Endzeit '
-        + S.config.endTime + '. Mehr Felder wählen oder einen kürzeren Satzmodus.', warn:true });
+      items.push({ txt: T('dko.notice.overEnd', { end: TC.fromMin(B.endMin), planned: S.config.endTime }), warn:true });
     }
     $('noticeBox').innerHTML = items.length
       ? '<div class="notebox' + (items.some(i=>i.warn) ? ' is-warn' : '') + '"><ul>'
@@ -531,28 +536,26 @@
     first.forEach(m => { if (m.a.k === 'bye' || m.b.k === 'bye') byeTeams++; });
     const label = '1–' + maxGames;
     $('rv-perTeam').textContent = label;
-    $('rv-perTeamBreak').textContent = 'Finalisten max. ' + maxGames;
-    const txt = 'Spiele pro Team: mind. 1 (Niederlage im ersten Spiel beider Runden), '
-      + 'max. ' + maxGames + ' für die Finalisten (inkl. eines möglichen Reset-Spiels)'
-      + (byeTeams ? '. ' + (byeTeams === 1 ? '1 Team mit Freilos in Runde 1 der Gewinner-Runde spielt'
-            : byeTeams + ' Teams mit Freilos in Runde 1 der Gewinner-Runde spielen')
-          + ' ein Spiel weniger.' : '.');
-    $('gamesBreakdown').textContent = txt;
+    $('rv-perTeamBreak').textContent = T('dko.kpi.finalistsMax', { n: maxGames });
+    const body = byeTeams
+      ? T('dko.perTeam.textByes', { max: maxGames, count: byeTeams })
+      : T('dko.perTeam.text', { max: maxGames });
+    $('gamesBreakdown').textContent = T('dko.perTeam.full', { text: body });
     const gg = $('g-games');
-    if (gg) gg.textContent = txt.replace('Spiele pro Team: ', '');
+    if (gg) gg.textContent = body;
   }
 
   function paintTimeplan(){
     const box = $('timeplanBox');
     if(!box) return;
     box.innerHTML = TUI.timeTableHtml(B.finSlots,
-      { time: TC.fromMin(B.endMin), text: 'Siegerehrung' });
+      { time: TC.fromMin(B.endMin), text: T('sheet.timeplan.ceremony') });
   }
 
   function paintSummary(){
     const c = S.config;
     const games = B.finalRounds.reduce((a,r)=>a+r.matches.length,0);
-    $('rv-size').textContent = B.bracket ? (B.bracket.size + 'er-Baum') : '–';
+    $('rv-size').textContent = B.bracket ? T('dko.kpi.treeSize', { n: B.bracket.size }) : '–';
     $('rv-byes').textContent = B.bracket ? B.bracket.byes : '–';
     $('rv-games').textContent = games;
     $('rv-rounds').textContent = B.finalRounds.length;
@@ -560,56 +563,52 @@
     $('rv-fields').textContent = c.fields;
     const win = TC.toMin(c.endTime) - TC.toMin(c.startTime);
     const need = TC.neededFields(B.finalRounds, win, TC.MODE_MIN[B.finalSetMode], 10);
-    $('rv-fitFields').textContent = need ? ('mind. ' + need) : 'passt nicht';
+    $('rv-fitFields').textContent = need ? T('sheet.kpi.minFields', { n: need }) : T('sheet.kpi.noFit');
     TUI.fillTimeKpis({
       slots: B.finSlots, startMin: B.startMin, needEndMin: B.endMin,
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: B.finalSetMode, games: games
     });
-    $('h-sub').textContent = c.teams + ' Teams · ' + (B.bracket ? B.bracket.size + 'er-Baum · ' : '')
-      + c.fields + (c.fields===1?' Feld':' Felder') + ' · ' + TC.modeDef(B.finalSetMode).label
+    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · '
+      + (B.bracket ? T('dko.kpi.treeSize', { n: B.bracket.size }) + ' · ' : '')
+      + T('ui.field.count', { count: c.fields }) + ' · ' + modeLabel(B.finalSetMode)
       + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
-    $('capFin').textContent = 'Spielplan & Ergebnisse (' + TC.modeDef(B.finalSetMode).label + ')';
+    $('capFin').textContent = T('sheet.schedule.captionMode', { mode: modeLabel(B.finalSetMode) });
     $('hintFin').innerHTML = TUI.scoreHintHtml({
-      screenAdd: 'Der Sieger rückt automatisch in die nächste Runde bzw. in die Verlierer-Runde und in den Turnierbaum auf Seite 2.',
-      printAdd: 'Danach den Sieger in die nächste Runde des Turnierbaums auf Seite 2 übertragen; Verlierer der Gewinner-Runde in die Verlierer-Runde.'
+      screenAdd: T('dko.schedule.screenAdd'),
+      printAdd: T('dko.schedule.printAdd')
     });
 
+    const E = k => TUI.esc(T(k));
     $('scoringTables').innerHTML =
-      '<div style="flex:0 0 46%"><table><caption>Wertung pro Spiel</caption>'
-      + '<tr><th>Ergebnis</th><th>Folge</th></tr>'
-      + '<tr><td>1. Niederlage</td><td>fällt in die Verlierer-Runde</td></tr>'
-      + '<tr><td>2. Niederlage</td><td>ausgeschieden</td></tr>'
-      + '<tr><td>Freilos</td><td>kampflos weiter (nur Gewinner-Runde, Runde 1)</td></tr>'
+      '<div style="flex:0 0 46%"><table><caption>' + E('dko.scoring.perGame') + '</caption>'
+      + '<tr><th>' + E('dko.scoring.result') + '</th><th>' + E('dko.scoring.consequence') + '</th></tr>'
+      + '<tr><td>' + E('dko.scoring.loss1') + '</td><td>' + E('dko.scoring.loss1Text') + '</td></tr>'
+      + '<tr><td>' + E('dko.scoring.loss2') + '</td><td>' + E('dko.scoring.loss2Text') + '</td></tr>'
+      + '<tr><td>' + E('ui.bye') + '</td><td>' + E('dko.scoring.byeText') + '</td></tr>'
       + '</table></div>'
-      + '<div class="grow"><table><caption>So ergeben sich die Plätze</caption>'
-      + '<tr><th>Platz</th><th>Ermittlung</th></tr>'
-      + '<tr><td>1 / 2</td><td>Sieger/Verlierer des entscheidenden Grand-Final-Spiels (Spiel 1 oder Reset)</td></tr>'
-      + '<tr><td>3</td><td>Verlierer des Verlierer-Finales</td></tr>'
-      + '<tr><td>ab 4</td><td>Verlierer derselben Verlierer-Runde teilen sich einen Platzbereich</td></tr>'
+      + '<div class="grow"><table><caption>' + E('dko.scoring.placesCaption') + '</caption>'
+      + '<tr><th>' + E('ui.rank.place') + '</th><th>' + E('dko.scoring.method') + '</th></tr>'
+      + '<tr><td>1 / 2</td><td>' + E('dko.scoring.p12') + '</td></tr>'
+      + '<tr><td>3</td><td>' + E('dko.scoring.p3') + '</td></tr>'
+      + '<tr><td>' + E('dko.scoring.from4') + '</td><td>' + E('dko.scoring.from4Text') + '</td></tr>'
       + '</table></div>';
-    $('h-legend').innerHTML = '<b>Modus:</b> Doppel-K.-o.-System · '
-      + (B.bracket ? B.bracket.size + 'er-Baum · ' : '')
-      + B.finalRounds.length + ' Runden · pro Spiel '
-      + '<span class="rmode">' + TUI.esc(TC.modeDef(B.finalSetMode).label) + '</span>'
-      + ' mit 2 Punkten Vorsprung · Entscheidungssatz zwingend.';
+    $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + E('dko.legend.format') + ' · '
+      + (B.bracket ? TUI.esc(T('dko.kpi.treeSize', { n: B.bracket.size })) + ' · ' : '')
+      + TUI.esc(T('dko.legend.rounds', { count: B.finalRounds.length })) + ' · ' + E('sheet.legend.perGame') + ' '
+      + '<span class="rmode">' + TUI.esc(modeLabel(B.finalSetMode)) + '</span>'
+      + ' ' + E('dko.legend.rule');
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ schedule:'scheduleSection', standings:'standingsSection' });
   }
 
   function paintGuide(){
     const byes = B.bracket ? B.bracket.byes : 0;
-    $('g-seed').textContent = S.config.teams + ' Teams in einem ' + (B.bracket ? B.bracket.size : '–')
-      + 'er-Baum. Nr. 1 spielt in der Gewinner-Runde gegen den Letztgesetzten, Nr. 1 und Nr. 2 können sich dort erst im Finale treffen.'
-      + (byes ? ' ' + byes + ' Freilos' + (byes===1?'':'e') + ' geht' + (byes===1?'':'en')
-          + ' an die bestgesetzten Teams.' : '');
+    $('g-seed').textContent = T('dko.guide.seed', { teams: S.config.teams, size: B.bracket ? B.bracket.size : '–' })
+      + (byes ? T('dko.guide.seedByes', { count: byes }) : '');
     const d = TC.modeDef(B.finalSetMode);
-    $('g-mode').textContent = d.label + ', Sieg nur mit 2 Punkten Vorsprung (z. B. '
-      + (d.target+1) + ':' + (d.target-1) + ').';
-    $('g-final').textContent = 'Der ungeschlagene Gewinner-Runden-Champion trifft auf den Verlierer-Runden-Champion (1 Niederlage). '
-      + 'Gewinnt der Gewinner-Runden-Champion, ist das Turnier entschieden. Gewinnt der Verlierer-Runden-Champion, '
-      + 'hat der Gegner nun ebenfalls erst eine Niederlage – ein zweites Spiel (Reset) entscheidet dann endgültig.';
-    $('g-places').textContent = 'Platz 1/2 aus dem entscheidenden Grand-Final-Spiel, Platz 3 aus dem Verlierer-Finale. '
-      + 'Alle übrigen Teams teilen sich den Platzbereich ihrer letzten Verlierer-Runde (z. B. „4.–5.“).';
+    $('g-mode').textContent = T('dko.guide.mode', { mode: modeLabel(d.id), win: d.target+1, lose: d.target-1 });
+    $('g-final').textContent = T('dko.guide.final');
+    $('g-places').textContent = T('dko.guide.places');
   }
 
   /* -------------------------------------------------------------- Aktionen */
@@ -619,7 +618,7 @@
      in derselben Phase weiterhin gibt, bleiben erhalten.                  */
   function removeTeam(t){
     const n = S.config.teams;
-    if(n - 1 < MIN_TEAMS){ alert('Mindestens ' + MIN_TEAMS + ' Teams erforderlich.'); return; }
+    if(n - 1 < MIN_TEAMS){ alert(T('sheet.alert.minTeams', { n: MIN_TEAMS })); return; }
     if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
     const listMatches = () => (B.allMatches || []).map(m => ({ id: m.id, a: m.ta, b: m.tb }));
     const map = TStore.teamRemap(t);
@@ -654,9 +653,10 @@
       applyDocTitle();
     });
 
-    $('btnToggleNames').addEventListener('click', e => toggle('namepanel', e.target));
-    $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.target));
-    $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.target));
+    /* currentTarget: der Klick kann auf dem Text-<span> im Button landen. */
+    $('btnToggleNames').addEventListener('click', e => toggle('namepanel', e.currentTarget));
+    $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.currentTarget));
+    $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.currentTarget));
 
     $('nameGrid').addEventListener('input', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
@@ -694,25 +694,25 @@
       save(); structureKey=''; rebuild();
     });
     $('btnClearNames').addEventListener('click', () => {
-      if(!confirm('Alle Teamnamen löschen?')) return;
+      if(!confirm(T('sheet.confirm.clearNames'))) return;
       S.teamNames = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
     $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
 
     $('btnClearScores').addEventListener('click', () => {
-      if(!confirm('Alle Ergebnisse löschen? Namen und Konfiguration bleiben erhalten.')) return;
+      if(!confirm(T('sheet.confirm.clearScores'))) return;
       TStore.clearScores(S); save(); rebuild();
     });
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
     });
     $('btnReset').addEventListener('click', async () => {
-      if(!confirm('Neues Turnier anlegen? Das bisherige Turnier wird gespeichert und bleibt über die Startseite abrufbar.')) return;
+      if(!confirm(T('sheet.confirm.reset'))) return;
       if(!await save()) return;
       const started = await TArchive.startNew(archiveOpts());
       if (started.blocked) {
-        alert('Das Turnier konnte nicht sicher archiviert werden. Der bisherige Stand bleibt unverändert; bitte Speicherplatz prüfen und erneut versuchen.');
+        alert(T('sheet.alert.archiveBlocked'));
         return;
       }
       S = started.tournament;
@@ -721,14 +721,14 @@
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
       const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? '✓ Gespeichert' : '⚠ Speichern fehlgeschlagen';
+      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
       setTimeout(()=>{ b.textContent = old; }, 1500);
     });
 
     $('btnTimefit').addEventListener('click', () => {
       const win = TC.toMin(S.config.endTime) - TC.toMin(S.config.startTime);
       const need = TC.neededFields(B.finalRounds, win, TC.MODE_MIN[B.finalSetMode], 10);
-      if(!need){ alert('Auch mit 10 Feldern passt der Plan nicht in das Zeitfenster. Kürzeren Satzmodus oder weniger Teams wählen.'); return; }
+      if(!need){ alert(T('sheet.alert.timefit')); return; }
       S.config.fields = need; $('fieldCount').value = need;
       save(); rebuild();
     });
@@ -762,7 +762,8 @@
   const box = document.createElement('div');
   box.className = 'notebox noprint';
   box.setAttribute('role', 'alert');
-  box.textContent = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  const fallback = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
+  box.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('sheet.loadError') : fallback;
   document.body.insertBefore(box, document.body.firstChild);
 });
 </script>
@@ -775,10 +776,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">
   <div class="footer-legal" style="margin-top:4px;">
     © <span id="cpYear"></span> ·
-    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;">Copyright/Kontakt</button>
+    <button type="button" id="btnShowContact" style="font-size:11px;color:#5a6375;background:none;border:1px solid #d8e1ec;border-radius:999px;padding:2px 10px;cursor:pointer;" data-i18n="chrome.contact">Copyright/Kontakt</button>
     <span id="cpContact" hidden></span>
     <span id="cpPrint" class="footer-print-only"></span>
-    <span class="footer-amazon">· Unterstütze das Projekt: <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored">kaufe bei Amazon ein</a></span>
+    <span class="footer-amazon"><span data-i18n="chrome.supportProject">· Unterstütze das Projekt:</span> <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored" data-i18n="chrome.amazonLink">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
 <style>

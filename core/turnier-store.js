@@ -1,21 +1,19 @@
 /* ============================================================================
    turnier-store.js – Persistenz und Schema-Migration
 
-   Ein einziges, versioniertes Schema für ALLE Turnierbögen. Ersetzt die
-   bisher pro Bogen eigenen Schlüsselsätze (turnier6g_*, turnier8_*,
-   sw_univ_*, turnierflexrr_* …) und migriert sie verlustfrei.
+   Ein einziges, versioniertes Schema für ALLE Turnierbögen.
 
    Speicher: IndexedDB ist maßgeblich (Datenbank DB_NAME, EIN generischer
    Key/Value-Objektspeicher KV_STORE; Schlüssel wie früher im localStorage,
    Werte als JSON-Strings). Beim Anlegen der Datenbank werden alle bekannten
    localStorage-Schlüssel (Turniere, Vorversionen, Quarantäne, Archive, Index
-   inkl. Archiv-Metadaten, Altbögen) einmalig übernommen – die Originale bleiben
+   inkl. Archiv-Metadaten) einmalig übernommen – die Originale bleiben
    unangetastet. Es gibt KEINEN stillen Schreib-Rückfall auf localStorage:
-   Ist IndexedDB blockiert/nicht verfügbar, wird ein Fehler gemeldet, Altdaten
-   bleiben lesbar, Speichern liefert aber false.
+   Ist IndexedDB blockiert/nicht verfügbar, wird ein Fehler gemeldet,
+   gespeicherte Stände bleiben lesbar, Speichern liefert aber false.
 
    Alle speicherbezogenen Funktionen sind asynchron (Promise). Die reinen
-   Hilfsfunktionen (setScore, LEGACY, normalize …) bleiben synchron.
+   Hilfsfunktionen (setScore, normalize …) bleiben synchron.
    Kein DOM-Zugriff außer Events/localStorage(lesen)/IndexedDB.
    ========================================================================== */
 (function (root, factory) {
@@ -103,16 +101,47 @@
   function isKnownKey(key) {
     if (typeof key !== 'string') return false;
     if (key === INDEX_KEY || key === SESSIONS_KEY) return true;
-    if (/^beachl\.(t|b|r|q|arch)\./.test(key)) return true;
-    return Object.keys(LEGACY).some(function (sheet) {
-      const spec = LEGACY[sheet];
-      return Object.keys(spec).some(function (name) {
-        if (name === 'scoreKind' || name === 'teams') return false;
-        const value = spec[name];
-        if (typeof value !== 'string') return false;
-        return key === value || key.indexOf(value + '.') === 0;
-      });
+    return /^beachl\.(t|b|r|q|arch)\./.test(key);
+  }
+  /* Basis-IDs der aktuellen Bögen (sheetIdFrom(base), deckungsgleich mit
+     STORE_BASE_MAP in index.html). Datensätze anderer Bogen-IDs bleiben
+     unverändert gespeichert, erscheinen aber weder im Index noch werden sie
+     aus Sicherungen importiert. */
+  const SHEET_BASES = ['de-flex', 'flex_rr', 'flex_swiss', 'gruppen-final', 'ko-flex',
+    'kingqueen', 'koc', 'mpp', 'runden_rr', 'runden_swiss'];
+  function sheetBaseOf(sheetId) {
+    if (typeof sheetId !== 'string') return null;
+    for (let i = 0; i < SHEET_BASES.length; i++) {
+      const base = SHEET_BASES[i];
+      if (sheetId === base || sheetId.indexOf(base + '.') === 0) return base;
+    }
+    return null;
+  }
+  function isCurrentSheet(sheetId) { return sheetBaseOf(sheetId) !== null; }
+  /* Entfernt Indexzeilen nicht unterstützter Bogen-IDs (nur Übersichtsdaten;
+     die gespeicherten Datensätze selbst bleiben unangetastet). Archivzeilen
+     ohne eigene Bogen-ID werden über den gespeicherten Archiv-Eintrag geprüft
+     und bleiben erhalten, wenn sich keine Bogen-ID ermitteln lässt. */
+  function pruneUnsupportedIndex(idx, view) {
+    if (!idx || typeof idx !== 'object') return idx;
+    Object.keys(idx).forEach(function (name) {
+      if (name.indexOf('__') !== 0 && !isCurrentSheet(name)) delete idx[name];
     });
+    const archives = idx.__archives;
+    if (archives && typeof archives === 'object' && !Array.isArray(archives)) {
+      let removed = false;
+      Object.keys(archives).forEach(function (key) {
+        const row = archives[key];
+        let sheet = row && typeof row.sheet === 'string' && row.sheet ? row.sheet : null;
+        if (sheet == null && view) {
+          const stored = readJSON(view, key, null);
+          if (stored && typeof stored.sheet === 'string' && stored.sheet) sheet = stored.sheet;
+        }
+        if (sheet != null && !isCurrentSheet(sheet)) { delete archives[key]; removed = true; }
+      });
+      if (removed && !Object.keys(archives).length) delete idx.__archives;
+    }
+    return idx;
   }
   /* Synchrone, localStorage-ähnliche Sicht auf eine Momentaufnahme.
      data: { key: string }. Änderungen werden in changes protokolliert. */
@@ -508,23 +537,6 @@
       if (!parsed.ok) return { t: emptyTournament(sheetId, cfgDefaults), issue: parsed.code };
       return { t: normalize(parsed.data, sheetId, cfgDefaults) };
     }
-    if (view && (view.getItem(backupKeyFor(sheetId)) != null
-        || view.getItem(REVISION_PREFIX + sheetId) != null)) {
-      return { t: emptyTournament(sheetId, cfgDefaults) };
-    }
-    const migrated = view ? migrateView(view, sheetId, cfgDefaults) : null;
-    if (migrated) {
-      if (writable) {
-        const res = saveInView(view, migrated, sheetId, 0, new Date().toISOString());
-        if (res.ok) {
-          migrated._revision = res.revision;
-          migrated.updated = res.updated;
-          return { t: migrated, saved: res.revision };
-        }
-        return { t: migrated, issue: res.code };
-      }
-      return { t: migrated };
-    }
     return { t: emptyTournament(sheetId, cfgDefaults) };
   }
 
@@ -571,29 +583,11 @@
     };
   }
   function refreshIndexInView(view) {
-    const candidates = Object.create(null);
-    ['flex-rr', 'swiss'].forEach(function (sheet) {
-      if (hasLegacyInView(view, sheet)) candidates[sheet] = true;
-      const spec = LEGACY[sheet];
-      Object.keys(spec).forEach(function (name) {
-        if (name === 'scoreKind' || typeof spec[name] !== 'string') return;
-        const prefix = spec[name] + '.';
-        view.keys().forEach(function (key) {
-          if (key.indexOf(prefix) !== 0) return;
-          const suffix = key.slice(prefix.length);
-          if (/^[A-Za-z0-9_-]+$/.test(suffix)) candidates[sheet + '.' + suffix] = true;
-        });
-      });
-    });
-    Object.keys(candidates).forEach(function (sheet) {
-      if (view.getItem(keyFor(sheet)) != null) return;
-      const loaded = loadInView(view, sheet, null, true);
-      if (loaded.issue) throw storageError(loaded.issue);
-    });
-    const idx = readIndexInView(view);
+    const idx = pruneUnsupportedIndex(readIndexInView(view), view);
     view.keys().forEach(function (key) {
       if (key.indexOf(PREFIX) !== 0) return;
       const sheet = key.slice(PREFIX.length);
+      if (!isCurrentSheet(sheet)) return;
       const parsed = parseRecord(view.getItem(key), sheet);
       if (parsed.ok) idx[sheet] = indexEntry(parsed.data);
       else if (!idx[sheet]) idx[sheet] = { title: 'Nicht lesbarer Turnierstand', filled: 0 };
@@ -839,7 +833,8 @@
   function index() {
     return transaction(refreshIndexInView, { tracked: false }).then(null, function (err) {
       storageIssue(errorCode(err, 'unavailable'), null);
-      return readIndexInView(localStorageView());
+      const view = localStorageView();
+      return pruneUnsupportedIndex(readIndexInView(view), view);
     });
   }
 
@@ -1052,213 +1047,8 @@
     return Object.keys(t.results || {}).some(id => hasInput(t.results[id]));
   }
 
-  /* ------------------------------------------------------------ Migration
-     Liest die alten, bogenspezifischen Schlüssel und überführt sie in das
-     neue Schema. Die alten Schlüssel bleiben unangetastet, damit ein
-     zurückgerollter Bogen weiterhin funktioniert.
-     ------------------------------------------------------------------- */
-  const LEGACY = {
-    'flex-rr': {
-      prefix: 'turnierflexrr',
-      cfg: 'turnierflexrr_config', names: 'turnierflexrr_teamnames',
-      scores: 'turnierflexrr_scores', absent: 'turnierflexrr_absent',
-      fields: 'turnierflexrr_fields', start: 'turnierflexrr_start', end: 'turnierflexrr_end',
-      title: 'turnierflexrr', titleKey: 'turnierflexrr_title',
-      roundFilter: 'turnierflexrr_sched_round_filter',
-      scoreKind: 'flexrr'
-    },
-    'swiss': {
-      prefix: 'sw_univ',
-      cfg: 'sw_univ_cfg', names: 'sw_univ_names', scores: 'sw_univ_scores',
-      absent: 'sw_univ_dropout', fields: 'sw_univ_fields',
-      start: 'sw_univ_start', end: 'sw_univ_end',
-      frozen: 'sw_univ_matches', frozenModes: 'sw_univ_roundmode', round1: 'sw_univ_round1',
-      title: 'sw_univ', titleKey: 'sw_univ_title',
-      roundFilter: 'beachl_swiss_round',
-      roundFilterAll: 'beachl_swiss_round_showall', scoreKind: 'swiss'
-    },
-    'gruppen-6':   { prefix: 'turnier6g',   names: 'turnier6g_names',      scores: 'turnier6g_scores',   absent: 'turnier6g_absent',   fields: 'turnier6g_fields',   start: 'turnier6g_start',   end: 'turnier6g_end',   title: 'turnier6g',   teams: 6,  scoreKind: 'group' },
-    'gruppen-8':   { prefix: 'turnier8',    names: 'turnier8_teamnames',   scores: 'turnier8_scores',    absent: 'turnier8_absent',    fields: 'turnier8_fields',    start: 'turnier8_start',    end: 'turnier8_end',    title: 'turnier8',    teams: 8,  scoreKind: 'group' },
-    'gruppen-10':  { prefix: 'turnier10g',  names: 'turnier10g_names',     scores: 'turnier10g_scores',  absent: 'turnier10g_missing', fields: 'turnier10g_fields',  start: 'turnier10g_start',  end: 'turnier10g_end',  title: 'turnier10g',  teams: 10, scoreKind: 'group' },
-    'gruppen-12':  { prefix: 'turnier12',   names: 'turnier12_teamnames',  scores: 'turnier12_scores',   absent: 'turnier12_absent',   fields: 'turnier12_fields',   start: 'turnier12_start',   end: 'turnier12_end',   title: 'turnier12',   teams: 12, scoreKind: 'group' },
-    'gruppen-16':  { prefix: 'turnier16g',  names: 'turnier16g_names',     scores: 'turnier16g_scores',  absent: 'turnier16g_absent',  fields: 'turnier16g_fields',  start: 'turnier16g_start',  end: 'turnier16g_end',  title: 'title_16g',   teams: 16, scoreKind: 'group' },
-    'gruppen-ko-8':{ prefix: 'turnier8gko', names: 'turnier8gko_names',    scores: 'turnier8gko_scores', absent: 'turnier8gko_absent', fields: 'turnier8gko_fields', start: 'turnier8gko_start', end: 'turnier8gko_end', title: 'turnier8gko', teams: 8,  scoreKind: 'group' },
-    'ko-8':        { prefix: 'turnier8ko',  names: 'turnier8ko_names',     scores: 'turnier8ko_scores',  absent: 'turnier8ko_absent',  fields: 'turnier8ko_fields',  start: 'turnier8ko_start',  end: 'turnier8ko_end',  title: 'turnier8ko',  teams: 8,  scoreKind: 'ko' }
-  };
-
-  /* Alte Score-IDs → neue matchId + Satz + Seite.
-     flexrr : g<runde>_<team>      Satz1 | g2<runde>_<team> Satz2 | g3… Satz3
-     swiss  : s<A|B>_<runde>_<idx> Satz1 | s2A_… Satz2 | s3A_… Satz3          */
-  function parseLegacyScoreId(id, kind) {
-    let m;
-    if (kind === 'flexrr') {
-      m = /^g([23]?)(\d+)_(\d+)$/.exec(id);
-      if (!m) return null;
-      const setNo = m[1] === '' ? 1 : parseInt(m[1], 10);
-      return { matchId: 'rr_' + m[2], setNo, team: parseInt(m[3], 10), byTeam: true };
-    }
-    if (kind === 'swiss') {
-      m = /^s([23]?)([AB])_(\d+)_(\d+)$/.exec(id);
-      if (!m) return null;
-      const setNo = m[1] === '' ? 1 : parseInt(m[1], 10);
-      return { matchId: 'sw_' + m[3] + '_' + m[4], setNo, side: m[2] === 'A' ? 'a' : 'b' };
-    }
-    // Gruppen-/KO-Bögen: g<runde>_<team> bzw. <matchkey>_<h|a>
-    m = /^g([23]?)(\d+)_(\d+)$/.exec(id);
-    if (m) {
-      const setNo = m[1] === '' ? 1 : parseInt(m[1], 10);
-      return { matchId: 'grp_' + m[2], setNo, team: parseInt(m[3], 10), byTeam: true };
-    }
-    m = /^([a-z0-9]+)_([A-Z0-9]+)_(h|a)$/.exec(id);
-    if (m) return { matchId: m[1] + '_' + m[2], setNo: 1, side: m[3] === 'h' ? 'a' : 'b' };
-    return null;
-  }
-
-  /* Rein synchron: baut aus den Altschlüsseln einer Sicht (Transaktions-
-     sicht oder nur lesbares localStorage) ein neues Turnier. Schreibt nichts. */
-  function migrateView(s, sheetId, cfgDefaults) {
-    const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
-    const L = LEGACY[baseSheetId];
-    if (!L) return null;
-    if (!s) return null;
-    if (s.getItem(backupKeyFor(sheetId)) != null || s.getItem(REVISION_PREFIX + sheetId) != null) return null;
-    const readJSONs = function (key, fallback) { return readJSON(s, key, fallback); };
-    const suffix = String(sheetId).slice(baseSheetId.length);
-    const legacyKey = (key, shared) => key && (shared ? key : key + suffix);
-
-    const cfgRaw = L.cfg ? readJSONs(legacyKey(L.cfg), null) : null;
-    const names = L.names ? (readJSONs(legacyKey(L.names), null) || {}) : {};
-    const scores = L.scores ? (readJSONs(legacyKey(L.scores), null) || {}) : {};
-    const absentRaw = L.absent ? readJSONs(legacyKey(L.absent), null) : null;
-    const fields = L.fields ? (readJSONs(legacyKey(L.fields), null) || {}) : {};
-    let start = null, end = null, title = '';
-    let roundFilter = null, roundFilterAll = null;
-    try { start = s.getItem(legacyKey(L.start)); } catch (e) { }
-    try { end = s.getItem(legacyKey(L.end)); } catch (e) { }
-    try { title = s.getItem(legacyKey(L.titleKey)) || s.getItem(legacyKey(L.title)) || ''; } catch (e) { }
-    try { roundFilter = s.getItem(legacyKey(L.roundFilter, baseSheetId === 'swiss')); } catch (e) { }
-    try { roundFilterAll = s.getItem(legacyKey(L.roundFilterAll, true)); } catch (e) { }
-
-    const nothing = !cfgRaw && !Object.keys(names).length && !Object.keys(scores).length
-      && !absentRaw && !Object.keys(fields).length && !start && !end && !title
-      && !roundFilter && !roundFilterAll;
-    if (nothing) return null;
-
-    const t = emptyTournament(sheetId, cfgDefaults);
-    if (cfgRaw) {
-      if (cfgRaw.teams != null) t.config.teams = +cfgRaw.teams;
-      if (cfgRaw.t != null) t.config.teams = +cfgRaw.t;
-      if (cfgRaw.fields != null) t.config.fields = +cfgRaw.fields;
-      if (cfgRaw.r != null) t.config.rounds = +cfgRaw.r;
-      if (cfgRaw.points != null) t.config.setMode = String(cfgRaw.points);
-      if (cfgRaw.p != null) t.config.setMode = String(cfgRaw.p);
-    }
-    if (baseSheetId === 'swiss' && fields.count != null && Number.isFinite(+fields.count) && +fields.count > 0) {
-      t.config.fields = +fields.count;
-    }
-    if (roundFilter != null && roundFilter !== '') t.config.roundFilter = roundFilter;
-    if (roundFilterAll != null) t.config.showAllRounds = roundFilterAll === '1';
-    if (L.teams) t.config.teams = L.teams;
-    if (start) t.config.startTime = start;
-    if (end) t.config.endTime = end;
-    if (title && title.length < 200) t.title = title;
-
-    Object.keys(names).forEach(k => { if (names[k]) t.teamNames[k] = String(names[k]); });
-    Object.keys(fields).forEach(k => {
-      if (k === 'count') return;                 // Altlast: fehlgeleiteter Feldzähler
-      if (fields[k]) t.fieldNames[k] = String(fields[k]);
-    });
-
-    if (Array.isArray(absentRaw)) t.absent = absentRaw.map(Number).filter(Boolean);
-    else if (absentRaw && typeof absentRaw === 'object') {
-      t.absent = Object.keys(absentRaw).filter(k => absentRaw[k]).map(Number).filter(Boolean);
-    }
-
-    /* Ergebnisse: bei "byTeam"-IDs (g<runde>_<team>) ist die Seite nicht direkt
-       codiert. Wir sammeln sie je Match und ordnen sie nach Teamnummer –
-       welche Seite das ist, entscheidet der Bogen beim Laden über die
-       Paarung. Deshalb wird zusätzlich ein Rohbestand mitgeführt.            */
-    const raw = {};
-    Object.keys(scores).forEach(id => {
-      const p = parseLegacyScoreId(id, L.scoreKind);
-      if (!p) return;
-      const val = scores[id];
-      if (val === '' || val == null) return;
-      if (p.byTeam) {
-        raw[p.matchId] = raw[p.matchId] || {};
-        raw[p.matchId][p.setNo] = raw[p.matchId][p.setNo] || {};
-        raw[p.matchId][p.setNo][p.team] = parseInt(val, 10);
-      } else {
-        setScore(t, p.matchId, p.setNo, p.side, val);
-      }
-    });
-    if (Object.keys(raw).length) t.legacyByTeam = raw;
-
-    if (L.frozen) {
-      const fr = readJSONs(legacyKey(L.frozen), null);
-      if (fr && typeof fr === 'object') t.frozen = fr;
-    }
-    if (L.frozenModes) {
-      const fm = readJSONs(legacyKey(L.frozenModes), null);
-      if (fm && typeof fm === 'object') t.frozenModes = fm;
-    }
-    if (L.round1) {
-      const r1 = readJSONs(legacyKey(L.round1), null);
-      if (Array.isArray(r1)) t.round1 = r1;
-    }
-
-    t.migratedFrom = L.prefix;
-    return t;
-  }
-
-  /* Migriert Altdaten nach IndexedDB (nur, wenn noch kein Datensatz im neuen
-     Schema existiert). → Promise<Turnier|null>; die Altschlüssel bleiben. */
-  function migrate(sheetId, cfgDefaults) {
-    return transaction(function (view) {
-      const t = migrateView(view, sheetId, cfgDefaults);
-      if (!t) return { t: null };
-      const res = saveInView(view, t, sheetId, 0, new Date().toISOString());
-      if (!res.ok) return { t: t, issue: res.code };
-      t._revision = res.revision;
-      t.updated = res.updated;
-      return { t: t, saved: res.revision };
-    }).then(function (res) {
-      if (res.issue) storageIssue(res.issue, sheetId);
-      if (res.saved) notifyTabs(sheetId, res.saved);
-      return res.t;
-    }, function (err) {
-      storageIssue(errorCode(err, 'unavailable'), sheetId);
-      const t = migrateView(localStorageView(), sheetId, cfgDefaults);
-      if (t) Object.defineProperty(t, '_storageBlocked', { value: errorCode(err, 'unavailable') });
-      return t;
-    });
-  }
-
-  /* Prüft, ob für einen Bogen noch migrierbare Altdaten vorliegen. */
-  function hasLegacyInView(s, sheetId) {
-    const baseSheetId = String(sheetId).replace(/\.[^.]*$/, '');
-    const L = LEGACY[baseSheetId]; if (!L) return false;
-    if (!s) return false;
-    const suffix = String(sheetId).slice(baseSheetId.length);
-    return [L.cfg, L.names, L.scores, L.absent, L.fields, L.title, L.titleKey,
-      L.start, L.end, L.frozen, L.frozenModes, L.round1, L.roundFilter, L.roundFilterAll]
-      .filter(Boolean)
-      .some(k => {
-        const shared = baseSheetId === 'swiss' && (k === L.roundFilter || k === L.roundFilterAll);
-        try { return s.getItem(shared ? k : k + suffix) != null; } catch (e) { return false; }
-      });
-  }
-  function hasLegacy(sheetId) {
-    return withDb('readonly', function (view) {
-      return hasLegacyInView(view, sheetId);
-    }).then(null, function () {
-      return hasLegacyInView(localStorageView(), sheetId);
-    });
-  }
-
-  /* Voreinstellung über die URL (?teams=8&fields=4&…).
-     Die abgelösten Altbögen leiten als Stub hierher weiter und geben dabei ihre
-     frühere feste Konfiguration mit. Das darf einen laufenden Bogen niemals
+  /* Voreinstellung über die URL (?teams=8&fields=4&…), z. B. aus Links der
+     Startseite. Das darf einen laufenden Bogen niemals
      überschreiben – deshalb greift es nur, solange noch kein Ergebnis eingetragen
      ist. `spec` bildet Parametername auf einen Prüfer ab, der den fertigen Wert
      oder undefined liefert. */
@@ -1305,22 +1095,21 @@
 
   return {
     SCHEMA, PREFIX, BACKUP_PREFIX, REVISION_PREFIX, QUARANTINE_PREFIX, ARCHIVE_PREFIX, INDEX_KEY, SESSIONS_KEY, SYNC_KEY,
-    DB_NAME, DB_VERSION, STORE_NAME: KV_STORE, LEGACY,
-    sheetIdFrom, BASE_ID,
+    DB_NAME, DB_VERSION, STORE_NAME: KV_STORE,
+    sheetIdFrom, BASE_ID, SHEET_BASES: SHEET_BASES.slice(), sheetBaseOf, isCurrentSheet, pruneUnsupportedIndex,
     emptyTournament, normalize, parseRecord,
     // async (Promise) – IndexedDB maßgeblich
-    load, save, reset, hasBackup, restorePrevious, index, updateIndex, hasLegacy, migrate,
+    load, save, reset, hasBackup, restorePrevious, index, updateIndex,
     ready, readEntries, transaction, getItem, setItem, removeItem,
     isPending, whenIdle, storage,
     // synchron, rein (für transaction()-Callbacks und Tests)
-    isKnownKey, indexEntry, migrateView, hasLegacyInView,
+    isKnownKey, indexEntry,
     loadInView, saveInView, updateIndexInView, readIndexInView, refreshIndexInView, revisionInView,
     setScore, getSets, clearScores,
     setManualStanding, getManualStandings, resetManualStandingRow, resetManualStandings,
     setManualPlacement, getManualPlacements, resetManualPlacementRow, resetManualPlacements,
     applyUrlConfig, urlInt, urlOneOf, urlBool,
     teamRemap, remapKeys, remapList, remapCommon, repairPairs, matchPhase,
-    snapshotResults, restoreResults, anyResults, hasInput,
-    parseLegacyScoreId
+    snapshotResults, restoreResults, anyResults, hasInput
   };
 });

@@ -427,11 +427,14 @@
     });
     if (!editable) rows = sortedRows;
 
+    const perSfx = per ? tx('ui.stand.perGame', '/Sp') : '';
+    const deltaTitle = esc(tx('ui.manual.deltaTitle', 'Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert'));
     let html = '<thead><tr>'
-      + '<th class="pl">Pl.</th><th class="nm">Team</th>'
-      + '<th>Sp.</th><th>S</th>' + (o.showDraw ? '<th>U</th>' : '') + '<th>N</th>'
-      + '<th>Pkt' + (per ? '/Sp' : '') + '</th>'
-      + '<th>Bälle</th><th>Diff' + (per ? '/Sp' : '') + '</th>'
+      + '<th class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th class="nm">' + tx('ui.stand.team', 'Team') + '</th>'
+      + '<th>' + tx('ui.stand.games', 'Sp.') + '</th><th>' + tx('ui.stand.won', 'S') + '</th>'
+      + (o.showDraw ? '<th>' + tx('ui.stand.drawn', 'U') + '</th>' : '') + '<th>' + tx('ui.stand.lost', 'N') + '</th>'
+      + '<th>' + tx('ui.stand.pts', 'Pkt') + perSfx + '</th>'
+      + '<th>' + tx('ui.stand.balls', 'Bälle') + '</th><th>' + tx('ui.stand.diff', 'Diff') + perSfx + '</th>'
       + (editable ? '<th class="mstd-actcol noprint"></th>' : '')
       + '</tr></thead><tbody>';
 
@@ -461,7 +464,9 @@
           ? rankBadgeHtml(row.place + (Number(o.placeOffset) || 0), { final: o.isFinal, shared: row.shared, manual: row.hasPlace,
               cls: 'screen-place' + (row.shared ? ' pz-tie' : '') })
           : '<span class="screen-place' + (row.shared ? ' pz-tie' : '') + '"'
-            + ' title="Aktueller Platz: ' + row.place + (row.shared ? ' (geteilt)' : '') + (row.hasPlace ? ' – manuell gesetzt' : '') + '">'
+            + ' title="' + esc(tx('ui.stand.placeTitle', 'Aktueller Platz: {place}', { place: row.place })
+              + (row.shared ? tx('ui.rank.shared', ' (geteilt)') : '')
+              + (row.hasPlace ? tx('ui.rank.manual', ' – manuell gesetzt') : '')) + '">'
             + row.place + '.' + (row.shared ? '=' : '') + '</span>';
         html += '<td class="pl' + (row.shared ? ' pz-tie' : '') + (row.hasPlace ? ' is-manual' : '') + '">'
           + row.place + '.' + (row.shared ? '=' : '') + '</td>'
@@ -474,24 +479,25 @@
 
       if (editable) {
         html += '<td class="mstd-cell' + (row.dPts ? ' is-manual' : '') + '"><b>' + ptsDisp + '</b>'
-          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (row.dPts || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert"></td>';
+          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (row.dPts || '') + '" placeholder="±0" title="' + deltaTitle + '"></td>';
       } else {
-        html += '<td><b>' + ptsDisp + '</b>' + manualDeltaBadge('Punkte', row.dPts) + '</td>';
+        html += '<td><b>' + ptsDisp + '</b>' + manualDeltaBadge(tx('ui.manual.pts', 'Punkte'), row.dPts) + '</td>';
       }
 
       html += '<td>' + s.ballsFor + ':' + s.ballsAgainst + '</td>';
 
       if (editable) {
         html += '<td class="mstd-cell' + (row.dBd ? ' is-manual' : '') + '">' + fmtDiff(bdDisp)
-          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (row.dBd || '') + '" placeholder="±0" title="Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert"></td>';
+          + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (row.dBd || '') + '" placeholder="±0" title="' + deltaTitle + '"></td>';
       } else {
-        html += '<td class="' + (effBd > 0 ? 'pos' : effBd < 0 ? 'neg' : '') + '">' + fmtDiff(bdDisp) + manualDeltaBadge('Ball-Differenz', row.dBd) + '</td>';
+        html += '<td class="' + (effBd > 0 ? 'pos' : effBd < 0 ? 'neg' : '') + '">' + fmtDiff(bdDisp) + manualDeltaBadge(tx('ui.manual.bd', 'Ball-Differenz'), row.dBd) + '</td>';
       }
 
       if (editable) {
         const hasAny = row.hasPlace || row.dPts || row.dBd;
         html += '<td class="mstd-actcol noprint">' + (hasAny
-          ? '<button type="button" class="mstd-reset-row" data-team="' + r.team + '" title="Korrektur für dieses Team zurücksetzen">↺</button>'
+          ? '<button type="button" class="mstd-reset-row" data-team="' + r.team + '" title="'
+            + esc(tx('ui.manual.resetRowTitle', 'Korrektur für dieses Team zurücksetzen')) + '">↺</button>'
           : '') + '</td>';
       }
       html += '</tr>';
@@ -532,7 +538,8 @@
   function manualDeltaBadge(label, delta) {
     if (!delta) return '';
     const sign = delta > 0 ? '+' : '';
-    return ' <sup class="mstd-badge" title="Manuelle Korrektur ' + label + ': ' + sign + delta + '">Δ</sup>';
+    return ' <sup class="mstd-badge" title="'
+      + tx('ui.manual.badge', 'Manuelle Korrektur {label}: {delta}', { label: label, delta: sign + delta }) + '">Δ</sup>';
   }
 
   /* ================================================ 5a. PLATZIERUNGSLISTE
@@ -705,12 +712,12 @@
 
   /* Erklärt über der Tabelle, wonach gewertet wurde – auch im Ausdruck. */
   function criteriaHint(criteria) {
-    const names = { pts: 'Punkte', ptsPer: 'Punkte je Spiel', bd: 'Ball-Differenz',
-      bdPer: 'Ball-Differenz je Spiel', h2h: 'direkter Vergleich',
-      ballsFor: 'erzielte Bälle', ballsForPer: 'erzielte Bälle je Spiel' };
-    return 'Reihenfolge bei Gleichstand: '
-      + criteria.map(c => names[c] || c).join(' → ')
-      + ' → Losentscheid. Ein „=“ hinter dem Platz bedeutet: hier entscheidet das Los.';
+    const names = { pts: tx('ui.criteria.pts', 'Punkte'), ptsPer: tx('ui.criteria.ptsPer', 'Punkte je Spiel'),
+      bd: tx('ui.criteria.bd', 'Ball-Differenz'), bdPer: tx('ui.criteria.bdPer', 'Ball-Differenz je Spiel'),
+      h2h: tx('ui.criteria.h2h', 'direkter Vergleich'),
+      ballsFor: tx('ui.criteria.ballsFor', 'erzielte Bälle'), ballsForPer: tx('ui.criteria.ballsForPer', 'erzielte Bälle je Spiel') };
+    return tx('ui.criteria.hint', 'Reihenfolge bei Gleichstand: {list} → Losentscheid. Ein „=“ hinter dem Platz bedeutet: hier entscheidet das Los.',
+      { list: criteria.map(c => names[c] || c).join(' → ') });
   }
 
   /* ================================================== 6. LAUFENDE TABELLE
@@ -718,11 +725,13 @@
      Stift fortgeschrieben wird. Die blaue Musterzeile bleibt erhalten.       */
   function trackTableHtml(teams, roundCount, ctx, opts) {
     const o = opts || {};
-    const ptsLabel = o.ptsLabel || 'Punkte';
+    const ptsLabel = o.ptsLabel || tx('ui.track.pts', 'Punkte');
+    const bdLabel = tx('ui.track.bd', 'Ball-Differenz');
     const winPts = o.winPts || 1; // Punkte je Sieg (für Musterzeile)
-    let html = '<thead><tr><th class="tname teamcol">Team / Name</th><th class="lbl">kumuliert</th>';
+    let html = '<thead><tr><th class="tname teamcol">' + tx('ui.track.team', 'Team / Name') + '</th><th class="lbl">'
+      + tx('ui.track.cumulative', 'kumuliert') + '</th>';
     for (let r = 1; r <= roundCount; r++) html += '<th>R' + r + '</th>';
-    html += '<th class="mstd-actcol noprint">Korr.</th><th class="pos">Platz</th>'
+    html += '<th class="mstd-actcol noprint">' + tx('ui.track.corr', 'Korr.') + '</th><th class="pos">' + tx('ui.track.place', 'Platz') + '</th>'
       + '<th class="mstd-actcol noprint"></th></tr></thead><tbody>';
     /* Beispielzeile – zeigt wie man die Tabelle ausfüllt */
     let pEx = 0, bdEx = 0;
@@ -732,13 +741,13 @@
       bdEx += (i % 4 === 1 ? -3 : 4); bdExArr.push(bdEx);
     }
     html += '<tr class="grp ex ex-start"><td class="tname teamcol" rowspan="2">'
-      + '<span class="ex-badge">Beispiel</span>'
-      + '<span class="t-line">Team X</span><span class="tnm t-nm">(Teamname)</span>'
+      + '<span class="ex-badge">' + tx('ui.track.example', 'Beispiel') + '</span>'
+      + '<span class="t-line">Team X</span><span class="tnm t-nm">' + tx('ui.track.teamName', '(Teamname)') + '</span>'
       + '</td><td class="lbl">' + ptsLabel + '</td>';
     ptsEx.forEach(v => html += '<td>' + v + '</td>');
     html += '<td class="mstd-actcol noprint"></td><td class="pos" rowspan="2">3.</td>'
       + '<td class="mstd-actcol noprint" rowspan="2"></td></tr>';
-    html += '<tr class="ex ex-end"><td class="lbl">Ball-Differenz</td>';
+    html += '<tr class="ex ex-end"><td class="lbl">' + bdLabel + '</td>';
     bdExArr.forEach(v => html += '<td>' + (v > 0 ? '+' : '') + v + '</td>');
     html += '<td class="mstd-actcol noprint"></td></tr>';
     /* Team-Zeilen */
@@ -750,7 +759,7 @@
       html += '<td class="mstd-cell noprint" data-corr="dPts"></td>'
         + '<td class="pos" rowspan="2" data-pos></td>'
         + '<td class="mstd-actcol noprint" rowspan="2" data-actcol></td></tr>';
-      html += '<tr data-team="' + t + '" data-line="bd"><td class="lbl">Ball-Differenz</td>';
+      html += '<tr data-team="' + t + '" data-line="bd"><td class="lbl">' + bdLabel + '</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
       html += '<td class="mstd-cell noprint" data-corr="dBd"></td></tr>';
     });
@@ -955,24 +964,25 @@
      ueberhaupt zulaesst.                                                     */
   function scoringTablesHtml(setMode, criteria) {
     const drawPossible = TC.isMulti(setMode) && !TC.hasDecidingSet(setMode);
-    let w = '<table><caption>Wertung pro Spiel</caption>'
-      + '<tr><th>Ergebnis</th><th>Wertung</th></tr>'
-      + '<tr><td>Sieg</td><td>' + TC.WIN_PTS + ' Punkte</td></tr>';
-    if (drawPossible) w += '<tr><td>Unentschieden</td><td>' + TC.DRAW_PTS + ' Punkt</td></tr>';
-    w += '<tr><td>Niederlage</td><td>' + TC.LOSS_PTS + ' Punkte</td></tr>'
-      + '<tr><td>Freilos / spielfrei</td><td>' + TC.WIN_PTS + ' Punkte, ohne Ball-Differenz</td></tr>'
+    let w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
+      + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
+      + '<tr><td>' + tx('ui.scoring.win', 'Sieg') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.WIN_PTS }) + '</td></tr>';
+    if (drawPossible) w += '<tr><td>' + tx('ui.scoring.draw', 'Unentschieden') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.DRAW_PTS }) + '</td></tr>';
+    w += '<tr><td>' + tx('ui.scoring.loss', 'Niederlage') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.LOSS_PTS }) + '</td></tr>'
+      + '<tr><td>' + tx('ui.scoring.bye', 'Freilos / spielfrei') + '</td><td>' + tx('ui.scoring.byePts', '{count} Punkte, ohne Ball-Differenz', { count: TC.WIN_PTS }) + '</td></tr>'
       + '</table>';
 
-    const names = { pts: 'Punkte', ptsPer: 'Punkte je Spiel', bd: 'Ball-Differenz',
-      bdPer: 'Ball-Differenz je Spiel', h2h: 'direkter Vergleich',
-      ballsFor: 'erzielte Ballpunkte', ballsForPer: 'erzielte Ballpunkte je Spiel' };
+    const names = { pts: tx('ui.criteria.pts', 'Punkte'), ptsPer: tx('ui.criteria.ptsPer', 'Punkte je Spiel'),
+      bd: tx('ui.criteria.bd', 'Ball-Differenz'), bdPer: tx('ui.criteria.bdPer', 'Ball-Differenz je Spiel'),
+      h2h: tx('ui.criteria.h2h', 'direkter Vergleich'),
+      ballsFor: tx('ui.scoring.ballsFor', 'erzielte Ballpunkte'), ballsForPer: tx('ui.scoring.ballsForPer', 'erzielte Ballpunkte je Spiel') };
     const chain = (criteria || ['pts', 'bd', 'ballsFor', 'h2h']).slice();
-    let t = '<table><caption>Reihenfolge bei Gleichstand</caption>'
-      + '<tr><th>Rang</th><th>Kriterium</th></tr>';
+    let t = '<table><caption>' + tx('ui.scoring.tieCaption', 'Reihenfolge bei Gleichstand') + '</caption>'
+      + '<tr><th>' + tx('ui.scoring.rank', 'Rang') + '</th><th>' + tx('ui.scoring.criterion', 'Kriterium') + '</th></tr>';
     chain.forEach((c, i) => {
       t += '<tr><td>' + (i + 1) + '</td><td>' + esc(names[c] || c) + '</td></tr>';
     });
-    t += '<tr><td>' + (chain.length + 1) + '</td><td>Losentscheid («=» in der Tabelle)</td></tr></table>';
+    t += '<tr><td>' + (chain.length + 1) + '</td><td>' + tx('ui.scoring.lots', 'Losentscheid («=» in der Tabelle)') + '</td></tr></table>';
 
     return '<div style="flex:0 0 46%">' + w + '</div><div class="grow">' + t + '</div>';
   }
@@ -1240,7 +1250,7 @@
 
   /* ======================================================= FELDER & ZEITPLAN
      Mehr Felder als gleichzeitig moegliche Spiele bringen nichts – deshalb
-     richtet sich die Auswahl nach der Teamzahl (wie im Flexibel-Bogen).      */
+     richtet sich die Auswahl nach der Teamzahl (Teams ÷ 2, höchstens 10).   */
   function maxParallelFields(teams) {
     return Math.max(1, Math.min(10, Math.floor((teams || 0) / 2)));
   }
@@ -1341,7 +1351,7 @@
     (courtsData || []).forEach(cd => {
       const crownCls = cd.level === 1 ? ' is-king' : '';
       html += '<div class="kqcourt' + crownCls + '" data-kq-court="' + cd.level + '">'
-        + '<div class="kqcourt-head">' + (cd.level === 1 ? '👑 ' : '') + esc(cd.label) + '</div>'
+        + '<div class="kqcourt-head">' + (cd.level === 1 ? '👑 ' : '') + esc(term(cd.label)) + '</div>'
         + '<div class="kqcourt-matches">';
       (cd.matches || []).forEach(m => {
         html += '<div class="kqmatch sbox" data-kq-match="' + esc(m.id) + '">'
@@ -1357,11 +1367,11 @@
              auch hier das Kaestchenpaar finden, ohne KQ-Sonderfall im JS.
              tabindex="-1": nicht Teil der Tab-Reihenfolge (siehe oben). */
           + '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
-          + ' aria-label="Eingabe bestätigen und weiter">✓</button>'
+          + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '">✓</button>'
           + '</div>';
       });
       if (cd.bye != null) {
-        html += '<div class="kqbye" data-kq-bye="1"><span class="n"></span> <em>Feld-Freilos</em></div>';
+        html += '<div class="kqbye" data-kq-bye="1"><span class="n"></span> <em>' + tx('ui.kq.courtBye', 'Feld-Freilos') + '</em></div>';
       }
       html += '</div></div>';
     });
