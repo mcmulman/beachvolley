@@ -589,11 +589,12 @@
     ['rv-games', tx('enh.kpi.games', 'Spiele')], ['rv-grpGames', tx('enh.kpi.grpGames', 'Spiele Vorrunde')],
     ['rv-finGames', tx('enh.kpi.finGames', 'Spiele Finalrunde')],
     ['rv-subsets', tx('enh.kpi.subsets', 'Sätze')], ['rv-perGame', tx('enh.kpi.perGame', 'Zeit pro Spiel (verfügbar / nötig)')],
-    ['rv-duration', tx('enh.kpi.duration', 'Zeitfenster / Bedarf')]
+    ['rv-duration', tx('enh.kpi.duration', 'Zeitfenster / Bedarf')],
+    ['rv-roundMinutes', tx('kotc.kpi.roundMinutes', 'Min./Runde')]
   ];
   function layoutKpis() {
     var box = document.querySelector('.cfgresult');
-    if (!box || box.classList.contains('kpi2') || box.querySelectorAll('.cfgres-item').length < 7) return;
+    if (!box || box.classList.contains('kpi2') || box.querySelectorAll('.cfgres-item').length < 5) return;
     var main = document.createElement('div'); main.className = 'kpi-main';
     var more = document.createElement('div'); more.className = 'kpi-more';
     function move(list, target) {

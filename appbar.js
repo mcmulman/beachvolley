@@ -18,6 +18,58 @@
     return (t && t.trim()) ? t.trim() : cleanTitle(document.title);
   }
 
+  function addConfigToggle() {
+    document.querySelectorAll('.cfgcard').forEach(function (card, index) {
+      var grid = card.querySelector('.cfgcard-grid');
+      if (!grid || card.querySelector('.cfg-setup-toggle')) return;
+
+      var content = document.createElement('div');
+      content.className = 'cfg-setup-content cfg-actions-content';
+      content.id = 'configSetup' + index;
+      content.hidden = false;
+      grid.parentNode.insertBefore(content, grid);
+      content.appendChild(grid);
+
+      var actions = card.querySelector('.cfg-action-content');
+      if (actions && actions !== content) content.appendChild(actions);
+
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'nbtn cfg-setup-toggle cfg-actions-toggle';
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-controls', content.id);
+      // Die Kartenüberschrift wird zur Beschriftung des Umschalters (eine Zeile statt zwei).
+      var head = card.querySelector('.cfgcard-head');
+      var label = document.createElement('span');
+      label.className = 'cfg-setup-toggle__label';
+      if (head) {
+        if (head.hasAttribute('data-i18n')) label.setAttribute('data-i18n', head.getAttribute('data-i18n'));
+        label.textContent = head.textContent.trim();
+        head.parentNode.removeChild(head);
+      } else {
+        toggle.setAttribute('data-label-key', 'chrome.configToggle');
+        label.textContent = 'Konfiguration';
+      }
+      toggle.appendChild(label);
+      var chevron = document.createElement('span');
+      chevron.className = 'cfg-actions-chevron';
+      chevron.setAttribute('aria-hidden', 'true');
+      toggle.appendChild(chevron);
+      toggle.addEventListener('click', function () {
+        content.hidden = !content.hidden;
+        toggle.setAttribute('aria-expanded', String(!content.hidden));
+      });
+      var toolbar = card.querySelector('.cfgcard-actions');
+      card.classList.add('cfgcard--collapsible');
+      if (toolbar) {
+        toolbar.insertBefore(toggle, toolbar.firstChild);
+        card.insertBefore(toolbar, content);
+      } else {
+        card.insertBefore(toggle, content);
+      }
+    });
+  }
+
   function groupConfigActions() {
     document.querySelectorAll('.cfgcard-actions').forEach(function (toolbar, index) {
       if (toolbar.querySelector('.cfg-actions-toggle')) return;
@@ -25,7 +77,7 @@
       if (!card) return;
       var buttons = Array.prototype.slice.call(toolbar.querySelectorAll('button'));
       var content = document.createElement('div');
-      content.className = 'cfg-actions-content';
+      content.className = 'cfg-action-content';
       content.id = 'configActions' + index;
       content.hidden = false;
 
@@ -72,19 +124,6 @@
       });
       toolbar.querySelectorAll('.spacer').forEach(function (spacer) { spacer.remove(); });
 
-      var toggle = document.createElement('button');
-      toggle.type = 'button';
-      toggle.className = 'nbtn cfg-actions-toggle';
-      toggle.setAttribute('aria-expanded', 'true');
-      toggle.setAttribute('aria-controls', content.id);
-      toggle.innerHTML = '<svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'
-        + '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>'
-        + ' Konfiguration <span class="cfg-actions-chevron" aria-hidden="true"></span>';
-      toggle.addEventListener('click', function () {
-        content.hidden = !content.hidden;
-        toggle.setAttribute('aria-expanded', String(!content.hidden));
-      });
-      toolbar.appendChild(toggle);
       if (primary.children.length) toolbar.appendChild(primary);
       toolbar.parentNode.insertBefore(content, toolbar.nextSibling);
       document.querySelectorAll('#namepanel, #fieldpanel, #absentpanel, #dropoutpanel').forEach(function (panel) {
@@ -95,6 +134,7 @@
 
   function build() {
     groupConfigActions();
+    addConfigToggle();
     if (document.querySelector('.app-bar')) return;
 
     // vorhandene Navizeile finden (enthält Link zur Übersicht)

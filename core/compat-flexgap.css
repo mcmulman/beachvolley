@@ -119,6 +119,10 @@
   .no-flexgap .cfgcard-actions > *:not(:last-child) { margin-right: 10px; }
   .no-flexgap .cfgcard-actions > * { margin-bottom: 8px; }
   .no-flexgap .cfgcard-actions { margin-bottom: -8px; }
+  /* Feldraster ist ein Flex-Wrap (.cfgfield-row = display: contents). */
+  .no-flexgap .cfgcard-grid > *,
+  .no-flexgap .cfgcard-grid > .cfgfield-row > * { margin: 0 12px 10px 0; }
+  .no-flexgap .cfgcard-grid { margin-bottom: -10px; }
 
   /* Namens-, Feld- und Ausfall-Panel */
   .no-flexgap .namepanel label > * + * { margin-top: 3px; }

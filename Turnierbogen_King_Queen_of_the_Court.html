@@ -151,6 +151,7 @@
     <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
     <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.duration">Gesamtzeit (alle Runden)</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-end">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.end">Voraussichtliches Ende</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-roundMinutes">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.roundMinutes">Min./Runde</span></div>
   </div>
 
   <div class="cfgcard-actions">
@@ -449,6 +450,7 @@
     const totalMin = B.rounds.length * B.perRound;
     $('rv-duration').textContent = Math.floor(totalMin/60) + ':' + String(totalMin%60).padStart(2,'0') + ' h';
     $('rv-end').textContent = TUI.fmtTime(B.endMin);
+    $('rv-roundMinutes').textContent = T('kotc.kpi.roundMinutesValue', { minutes: B.perRound });
     $('g-roundmin').textContent = String(B.perRound);
     $('modeSummary').innerHTML = '<b>' + TUI.esc(T('ui.mode.prefix')) + '</b> '
       + TUI.esc(T('kotc.summary', {

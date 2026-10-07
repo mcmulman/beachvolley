@@ -924,6 +924,8 @@
     'kotc.kpi.perCourt': 'Teams/Feld',
     'kotc.kpi.duration': 'Gesamtzeit (alle Runden)',
     'kotc.kpi.end': 'Voraussichtliches Ende',
+    'kotc.kpi.roundMinutes': 'Min./Runde',
+    'kotc.kpi.roundMinutesValue': '{minutes} Min.',
     'kotc.hint.absent': 'ℹ️ Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.',
     'kotc.hint.delete': '🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, bereits gespielte Runden behalten ihre Feldbesetzung (ohne das gelöschte Team), die weiteren Runden werden neu eingeteilt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.',
     'kotc.round.time': '({time} Uhr)',

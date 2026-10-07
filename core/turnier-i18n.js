@@ -253,11 +253,13 @@
     each(d, '.cfg-actions-primary', function (p) {
       p.setAttribute('aria-label', t('chrome.group.primary'));
     });
-    each(d, '.cfg-actions-toggle', function (btn) {
+    each(d, '[data-label-key]', function (btn) {
+      const key = btn.getAttribute('data-label-key');
       const nodes = btn.childNodes;
       for (let i = 0; i < nodes.length; i++) {
-        if (nodes[i].nodeType === 3 && /Konfiguration/.test(nodes[i].nodeValue)) {
-          nodes[i].nodeValue = ' ' + t('chrome.configToggle') + ' ';
+        if (nodes[i].nodeType === 3 && nodes[i].nodeValue.trim()) {
+          nodes[i].nodeValue = ' ' + t(key) + ' ';
+          break;
         }
       }
     });

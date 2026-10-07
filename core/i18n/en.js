@@ -923,6 +923,8 @@
     'kotc.kpi.perCourt': 'Teams/court',
     'kotc.kpi.duration': 'Total time (all rounds)',
     'kotc.kpi.end': 'Expected end',
+    'kotc.kpi.roundMinutes': 'Round length',
+    'kotc.kpi.roundMinutesValue': '{minutes} min',
     'kotc.hint.absent': 'ℹ️ Withdrawn teams are removed from the court ladder; the remaining teams on the affected court close up according to the court-bye rule.',
     'kotc.hint.delete': '🗑 <b>Delete team</b> removes a team permanently: all following teams move up one number, rounds already played keep their court assignment (without the deleted team) and the remaining rounds are reassigned. Results of matches that still exist are kept.',
     'kotc.round.time': '({time})',

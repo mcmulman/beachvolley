@@ -482,28 +482,38 @@
     background: #fff;
     border-radius: var(--app-radius);
     box-shadow: var(--app-shadow);
-    padding: 14px 16px 12px;
-    margin: 0 0 16px;
+    padding: 12px 14px 10px;
+    margin: 0 0 14px;
   }
   .cfgcard-head {
     font-size: 12.5px; font-weight: 800; letter-spacing: .03em;
     color: var(--app-blue-dark);
     text-transform: uppercase;
     display: flex; align-items: center; gap: 8px;
-    margin: 0 0 12px;
+    margin: 0 0 9px;
   }
   .cfgcard-head::after { content: ""; flex: 1; height: 1px; background: var(--app-line-soft); }
+  /* Felder fliessen in kompakte Zeilen: Titel breit, Zahlen-Auswahlen schmal,
+     Modus mittel, Zeiten schmal. Auf breiten Bildschirmen passt alles in eine
+     Zeile; .cfgfield-row loest sich dafuer auf (display: contents). */
   .cfgcard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px 14px;
-    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
   }
-  .cfgfield { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--app-muted); }
-  .cfgfield--wide { grid-column: 1 / -1; }
+  .cfgcard-grid > .cfgfield-row { display: contents; }
+  .cfgcard-grid .cfgfield { flex: 1 1 112px; min-width: 0; max-width: 190px; }
+  .cfgcard-grid > .cfgfield--wide,
+  .cfgcard-grid > .cfgfield--mode { flex: 2 1 190px; max-width: 320px; }
+  .cfgcard-grid > .cfgfield--wide { flex-basis: 240px; max-width: 360px; }
+  .cfgcard-grid > .cfgfield--wide:first-child { flex: 3 1 280px; max-width: none; }
+  .cfgcard-grid > .cfgfield--start,
+  .cfgcard-grid > .cfgfield--end { flex: 1 1 108px; max-width: 150px; }
+  .cfgfield { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--app-muted); }
   .cfgfield > input, .cfgfield > select {
-    font-size: 14px; font-weight: 600; color: var(--app-ink);
-    padding: 8px 10px; border: 1px solid var(--app-line-soft); border-radius: 8px; background: #fff;
+    font-size: 13.5px; font-weight: 600; color: var(--app-ink);
+    padding: 7px 10px; border: 1px solid var(--app-line-soft); border-radius: 8px; background: #fff;
     min-height: 38px; width: 100%; box-sizing: border-box;
   }
   .cfgfield > select { cursor: pointer; }
@@ -512,7 +522,7 @@
   }
 
   /* Ergebnis-Readout – groß & gut sichtbar. */
-  .cfgresult { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 2px; }
+  .cfgresult { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
   .cfgres-item {
     flex: 1 1 120px; min-width: 108px;
     display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -532,7 +542,7 @@
 
   .cfgcard-actions {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
-    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--app-line-soft);
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--app-line-soft);
   }
   .cfgcard-actions .spacer { margin-left: auto; }
   .cfgcard-actions #session-title-input { min-width: 180px; }
@@ -543,7 +553,17 @@
   }
   .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
   .cfgcard-actions .nbtn, .cfg-action-group__buttons > .nbtn { min-height: 44px; }
-  .cfg-actions-toggle[aria-expanded="true"] { background: #d8e8f8; }
+  /* Kopfzeile = Umschalter (Kartentitel) links, Teilen/Speichern rechts. */
+  .cfgcard--collapsible > .cfgcard-actions { margin-top: 0; padding-top: 0; border-top: 0; }
+  .nbtn.cfg-setup-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin: 0 0 0 -8px; padding: 0 10px 0 8px; min-height: 44px;
+    background: transparent; border-color: transparent; box-shadow: none;
+    color: var(--app-blue-dark);
+    font-size: 13px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+  }
+  .nbtn.cfg-setup-toggle:hover { background: #eef4fb; }
+  .cfg-setup-toggle .cfg-actions-chevron { margin-left: 2px; }
   .cfg-actions-chevron {
     width: 7px; height: 7px; margin-left: 5px;
     border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
@@ -552,47 +572,60 @@
   .cfg-actions-toggle[aria-expanded="true"] .cfg-actions-chevron {
     transform: rotate(225deg) translate(-2px, -1px);
   }
-  .cfg-actions-content { margin-top: 12px; }
+  .cfg-setup-toggle[aria-expanded="true"] .cfg-actions-chevron {
+    transform: rotate(225deg) translate(-2px, -1px);
+  }
+  .cfg-setup-content[hidden] { display: none; }
+  .cfg-setup-content { margin-bottom: 2px; }
+  .cfg-actions-content { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--app-line-soft); }
   .cfg-actions-content[hidden] { display: none; }
+  .cfg-action-content { margin-top: 12px; }
   .cfg-action-groups {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
   .cfg-action-group {
-    min-width: 0; padding: 12px;
+    min-width: 0; padding: 10px;
     border: 1px solid var(--app-line-soft); border-radius: 10px;
     background: var(--app-tint);
   }
   .cfg-action-group--danger { background: #fff8f8; border-color: #f3c9c9; }
   .cfg-action-group__label {
-    margin-bottom: 10px; font-size: 12px; font-weight: 750;
+    margin-bottom: 8px; font-size: 12px; font-weight: 750;
     color: var(--app-blue-dark);
   }
   .cfg-action-group--danger .cfg-action-group__label { color: #c02626; }
   .cfg-action-group__buttons { display: flex; flex-wrap: wrap; margin: -4px; }
   .cfg-action-group__buttons > .nbtn { margin: 4px; }
+  @media (max-width: 640px) {
+    .cfgcard-grid .cfgfield { flex: 1 1 88px; max-width: none; }
+    .cfgcard-grid > .cfgfield--wide,
+    .cfgcard-grid > .cfgfield--mode { flex: 1 1 100%; max-width: none; }
+    .cfgcard-grid > .cfgfield--start,
+    .cfgcard-grid > .cfgfield--end { flex: 1 1 120px; max-width: none; }
+  }
   @media (max-width: 560px) {
     .cfgres-item { flex-basis: calc(50% - 5px); }
     .cfgcard-actions > .cfg-actions-toggle { flex: 1 1 100%; }
     .cfg-actions-primary { width: 100%; }
     .cfg-actions-primary > .nbtn { flex: 1 1 0; }
     .cfg-action-groups { grid-template-columns: minmax(0, 1fr); }
-    .cfg-action-group__buttons > .nbtn { flex: 1 1 180px; }
+    .cfg-action-group__buttons > .nbtn { flex: 1 1 140px; }
   }
 
   /* Zweistufige Übersicht (spielplan-enh.js layoutKpis): große Key-Kacheln
      + ruhige Detailzeile. Reserve grün, bei Zeitmangel rot (is-warn). */
   .cfgresult.kpi2 { display: block; }
-  .kpi2 .kpi-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
-  .kpi2 .kpi-main .cfgres-item { min-width: 0; padding: 12px 8px 10px; background: #fff; border: 1px solid #c9d6e6; }
+  .kpi2 .kpi-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+  .kpi2 .kpi-main .cfgres-item { min-width: 0; padding: 10px 7px 8px; background: #fff; border: 1px solid #c9d6e6; }
   .kpi2 .kpi-main .cfgres-val { font-size: 26px; }
   .kpi2 .kpi-main .cfgres-lbl { font-size: 11.5px; }
   .kpi2 .kpi-main .cfgres-val--sub { font-size: 13px; font-weight: 600; }
   .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) { background: #eaf5ee; border-color: #bfe0c8; }
   .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) .cfgres-val { color: var(--app-green); }
   .kpi2 .kpi-more {
-    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; padding: 9px 12px;
+    display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 8px; padding: 8px 10px;
     background: var(--app-tint); border: 1px solid var(--app-line-soft); border-radius: 10px;
   }
   .kpi2 .kpi-more .cfgres-item {
