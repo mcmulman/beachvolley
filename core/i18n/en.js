@@ -996,6 +996,18 @@
     'home.ko.feat4': '✓ 6 set formats (to 15/21, 1–3 sets)',
     'home.ko.open': 'Open ↗',
     'home.footer': 'Beach volleyball tournament templates · Fillable print templates · All sheets also work online or offline in the browser',
+    'home.affiliate.heading': 'Recommended for your beach volleyball tournament',
+    'home.affiliate.disclosure': 'As an Amazon Associate I earn from qualifying purchases.',
+    'home.affiliate.ball.title': 'Wilson OPTX beach volleyball',
+    'home.affiliate.ball.description': 'A high-visibility beach volleyball for training and play on the sand.',
+    'home.affiliate.ball.alt': 'Wilson OPTX beach volleyball',
+    'home.affiliate.socks.title': 'Neoprene socks for beach volleyball',
+    'home.affiliate.socks.description': 'Help protect your feet from hot sand and cold surfaces.',
+    'home.affiliate.socks.alt': 'Neoprene beach volleyball socks',
+    'home.affiliate.book.title': 'Beach Volleyball: Exercises for Winners',
+    'home.affiliate.book.description': 'Training ideas and exercises for varied beach volleyball sessions.',
+    'home.affiliate.book.alt': 'Beach Volleyball: Exercises for Winners',
+    'home.affiliate.cta': 'View on Amazon ↗',
 
     /* ── index.html: format names (filters, cards, wizard) ── */
     'home.filter.mobileAria': 'Mobile filters',

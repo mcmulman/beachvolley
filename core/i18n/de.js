@@ -997,6 +997,18 @@
     'home.ko.feat4': '✓ 6 Satzmodi (bis 15/21, 1–3 Sätze)',
     'home.ko.open': 'Öffnen ↗',
     'home.footer': 'Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser',
+    'home.affiliate.heading': 'Empfehlungen für dein Beachvolleyball-Turnier',
+    'home.affiliate.disclosure': 'Als Amazon-Partner verdiene ich an qualifizierten Verkäufen.',
+    'home.affiliate.ball.title': 'Wilson OPTX Beachvolleyball',
+    'home.affiliate.ball.description': 'Ein gut sichtbarer Beachvolleyball für Training und Spiel am Strand.',
+    'home.affiliate.ball.alt': 'Wilson OPTX Beachvolleyball',
+    'home.affiliate.socks.title': 'Neoprensocken für Beachvolleyball',
+    'home.affiliate.socks.description': 'Schützen die Füße vor heißem Sand und kaltem Untergrund.',
+    'home.affiliate.socks.alt': 'Beachvolleyball-Neoprensocken',
+    'home.affiliate.book.title': 'Beach-Volleyball: Übungen für Gewinner',
+    'home.affiliate.book.description': 'Trainingsideen und Übungen für abwechslungsreiche Beachvolleyball-Einheiten.',
+    'home.affiliate.book.alt': 'Beach-Volleyball: Übungen für Gewinner',
+    'home.affiliate.cta': 'Bei Amazon ansehen ↗',
 
     /* ── index.html: Formatnamen (Filter, Karten, Wizard) ── */
     'home.filter.mobileAria': 'Mobile Filter',
