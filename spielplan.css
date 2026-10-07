@@ -1226,6 +1226,27 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
   .central-table th:nth-child(1), .central-table th:nth-child(2),
   .central-table td:nth-child(1), .central-table td:nth-child(2) { font-size: 9px; }
   .rank-badge { min-width: 22px; padding: 2px 5px; font-size: 11px; }
+
+  /* Schmale Displays: Tabellen dürfen nicht breiter als der Bildschirm werden.
+     Der frei vergebene Teamname verbreitert die Spalte nicht mehr
+     (width:0 + min-width:100%), sondern wird gekürzt. */
+  .stand .nm .t-nm,
+  .teams .name .t-nm { width: 0; min-width: 100%; }
+  /* Gruppentabellen: "Team N" und Name untereinander, Rang-Badge rechts daneben
+     (statt alles in einer Zeile). Spezifischer als die .stand .nm-Flex-Regeln
+     der einzelnen Bögen. */
+  table.stand td.nm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-column-gap: 8px;
+    column-gap: 8px;
+    align-items: center;
+    align-content: center;
+  }
+  table.stand td.nm > * { grid-column: 1; }
+  table.stand td.nm > .screen-place { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
+  /* Gruppeneinteilung: Teamliste je Gruppe darf umbrechen. */
+  #groupOverview td.name { white-space: normal; overflow-wrap: break-word; word-wrap: break-word; }
 }
 
 @media print {
