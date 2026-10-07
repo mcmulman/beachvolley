@@ -110,11 +110,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="mpp.title">Modified Pool Play (MPP)</h1>
-<p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="mpp.guide.mppLabel">Modified Pool Play:</span> <span id="g-groups">–</span> <span data-i18n="mpp.guide.mppText">In einer 4er-Gruppe spielt Setzplatz 1 gegen 4 und 2 gegen 3;
       danach die beiden Sieger um den Gruppensieg (Platz 1/2), die beiden Verlierer um den Verbleib (Platz 3/4) – 4 statt 6 Spiele.
@@ -127,6 +127,10 @@
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="mpp.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content" id="scoringTables" hidden></div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -292,8 +296,6 @@
   <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
-
-<div class="row" id="scoringTables"></div>
 
 <div class="legend" id="h-legend"></div>
 
@@ -862,9 +864,6 @@
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: c.setMode, games: grpGames + finGames
     });
-    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · ' + T('mpp.groupsN', { n: B.groupNames.length }) + ' · '
-      + T('ui.field.count', { count: c.fields }) + ' · ' + modeLabel(c.setMode)
-      + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
     $('capGrp').textContent = T('mpp.schedule.groupCaption', { mode: modeLabel(c.setMode) });
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('mpp.schedule.groupScreenAdd'),
@@ -889,6 +888,7 @@
       + TUI.esc(fm ? term(fm.label) : '') + ' · ' + E('sheet.legend.perGame') + ' '
       + '<span class="rmode">' + TUI.esc(modeLabel(c.setMode)) + '</span>'
       + ' ' + E('mpp.legend.rule');
+    TUI.syncModeSummary(document);
 
     const noFinal = c.finalMode === 'none';
     const fsSub   = $('finalStandingsSub');

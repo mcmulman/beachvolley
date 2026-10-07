@@ -80,11 +80,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="kq.title">King &amp; Queen</h1>
-<p class="sub" id="h-sub" data-i18n="kq.sub">Mixed-Event · Einzelpersonen · 2 gegen 2 mit rotierenden Team-Partner:innen · getrennte Herren-/Damen-Rangliste</p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Jede Runde bilden sich neue
       2er-Teams: die aktuell stärkste Person spielt mit der aktuell schwächsten zusammen (Ausgleichs-Team),
@@ -93,11 +93,14 @@
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen laut Plan aufrufen, alle Spiele gleichzeitig
       austragen, danach das Ergebnis in die Kästchen eintragen.</span></li>
-    <li><span class="hi" data-i18n="kq.guide.scoringLabel">Wertung je Person:</span> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0
-      (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei Gleichstand entscheidet die Ball-Differenz.
-      Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content format-info-text" id="scoringTables" hidden>
+    <p><strong data-i18n="kq.guide.scoringLabel">Wertung je Person:</strong> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0 (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei Gleichstand entscheidet die Ball-Differenz. Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></p>
+  </div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -618,6 +621,11 @@
 
   function paintLegend(){
     $('h-legend').innerHTML = T('kq.legend');
+    $('modeSummary').innerHTML = '<b>' + esc(T('ui.mode.prefix')) + '</b> '
+      + esc(T('kq.summary', {
+        count: getMenCount() + getWomenCount(),
+        mode: modeLabel(S.config.setMode)
+      }));
   }
 
   function paintCfgResult(){

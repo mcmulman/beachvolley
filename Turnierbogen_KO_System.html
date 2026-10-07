@@ -80,11 +80,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="ko.legend.format">KO-System</h1>
-<p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="ko.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="ko.guide.seedLabel">Setzliste:</span> <span id="g-seed">–</span></li>
     <li><span class="hi" data-i18n="ko.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
@@ -94,6 +94,10 @@
     <li><span class="hi" data-i18n="ko.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
     <li><span class="hi" data-i18n="ko.guide.printLabel">Ausdruck:</span> <span data-i18n="ko.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („Sieger VF1“). Nach jeder Runde die Namen eintragen.</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content" id="scoringTables" hidden></div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -223,8 +227,6 @@
   <thead><tr><th class="pl" data-i18n="ko.place.colPlace">Pl.</th><th class="nm" data-i18n="ko.place.colTeam">Team</th><th data-i18n="ko.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
-
-<div class="row" id="scoringTables"></div>
 
 <div class="legend" id="h-legend"></div>
 
@@ -572,10 +574,6 @@
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: B.finalSetMode, games: games
     });
-    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · '
-      + (B.bracket ? T('ko.kpi.treeSize', { n: B.bracket.size }) + ' · ' : '')
-      + T('ui.field.count', { count: c.fields }) + ' · ' + modeLabel(B.finalSetMode)
-      + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
     $('capFin').textContent = T('ko.schedule.captionMode', { mode: modeLabel(B.finalSetMode) });
     $('hintFin').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('ko.schedule.screenAdd'),
@@ -586,7 +584,7 @@
        der Tie-Breaker-Kette erklärt, wie sich die Plätze ergeben. */
     const E = k => TUI.esc(T(k));
     $('scoringTables').innerHTML =
-      '<div style="flex:0 0 46%"><table><caption>' + E('ko.scoring.perGame') + '</caption>'
+      '<div class="row"><div style="flex:0 0 46%"><table><caption>' + E('ko.scoring.perGame') + '</caption>'
       + '<tr><th>' + E('ko.scoring.result') + '</th><th>' + E('ko.scoring.consequence') + '</th></tr>'
       + '<tr><td>' + E('ko.scoring.win') + '</td><td>' + E('ko.scoring.winNext') + '</td></tr>'
       + '<tr><td>' + E('ko.scoring.loss') + '</td><td>' + E('ko.scoring.lossOut') + '</td></tr>'
@@ -598,12 +596,13 @@
       + '<tr><td>3 / 4</td><td>' + (S.config.thirdPlace
           ? E('ko.scoring.p34Third') : E('ko.scoring.p34Shared')) + '</td></tr>'
       + '<tr><td>' + E('ko.scoring.from5') + '</td><td>' + E('ko.scoring.from5Text') + '</td></tr>'
-      + '</table></div>';
+      + '</table></div></div>';
     $('h-legend').innerHTML = '<b>' + E('ko.legend.label') + '</b> ' + E('ko.legend.format') + ' · '
       + (B.bracket ? TUI.esc(T('ko.kpi.treeSize', { n: B.bracket.size })) + ' · ' : '')
       + TUI.esc(T('ko.legend.rounds', { count: B.finalRounds.length })) + ' · ' + E('ko.legend.perGame') + ' '
       + '<span class="rmode">' + TUI.esc(modeLabel(B.finalSetMode)) + '</span>'
       + ' ' + E('ko.legend.rule');
+    TUI.syncModeSummary(document);
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ schedule:'scheduleSection', standings:'standingsSection' });
   }
 

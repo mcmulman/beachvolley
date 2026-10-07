@@ -85,11 +85,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="kotc.title">King/Queen of the Court</h1>
-<p class="sub" id="h-sub" data-i18n="kotc.sub">Feld-Leiter mit Auf-/Abstieg · Zeitlimit statt fester Satzlänge</p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Alle Teams stehen auf einer Feld-Leiter. Feld 1 ist das
       <b>King &amp; Queen Court</b>. Auf jedem Feld spielen (im Normalfall 4 Teams je Feld) zwei
@@ -102,8 +102,17 @@
       dazwischen steigen Sieger eine Stufe auf, Verlierer eine Stufe ab.</span></li>
     <li><span class="hi" data-i18n="kotc.guide.byeLabel">Feld-Freilos:</span> <span data-i18n="kotc.guide.bye">Ist die Teamzahl kein glattes Vielfaches von 4 je Feld,
       hat auf dem betroffenen Feld ein Team pro Runde ein Freilos (bleibt stehen, ohne Punkte).</span></li>
-    <li><span class="hi" data-i18n="kotc.guide.finalLabel">Endwertung:</span> <span id="g-final">–</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content format-info-text" id="scoringTables" data-i18n-html="kotc.legend" hidden>
+    <b>Wertung:</b> Primär entscheiden die <b>kumulierten Punkte</b> aus allen Runden (klassische
+    King-of-the-Court-Regel). Haben nicht alle Teams gleich viele Runden gespielt (Feld-Freilos), wird
+    auf <b>Punkte pro gespielter Runde</b> umgeschaltet – analog zur „ungleiche Spielanzahl"-Regel bei den
+    übrigen Formaten (AGENTS.md §4.2). Bei weiterhin gleichem Wert entscheidet das <b>höchste je erreichte
+    Feld</b>, zuletzt das Los.
+  </div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -195,14 +204,6 @@
     <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
     <tbody id="placeBody"></tbody>
   </table>
-</div>
-
-<div class="legend" id="h-legend" data-i18n-html="kotc.legend">
-  <b>Wertung:</b> Primär entscheiden die <b>kumulierten Punkte</b> aus allen Runden (klassische
-  King-of-the-Court-Regel). Haben nicht alle Teams gleich viele Runden gespielt (Feld-Freilos), wird
-  auf <b>Punkte pro gespielter Runde</b> umgeschaltet – analog zur „ungleiche Spielanzahl"-Regel bei den
-  übrigen Formaten (AGENTS.md §4.2). Bei weiterhin gleichem Wert entscheidet das <b>höchste je erreichte
-  Feld</b>, zuletzt das Los.
 </div>
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
@@ -449,8 +450,12 @@
     $('rv-duration').textContent = Math.floor(totalMin/60) + ':' + String(totalMin%60).padStart(2,'0') + ' h';
     $('rv-end').textContent = TUI.fmtTime(B.endMin);
     $('g-roundmin').textContent = String(B.perRound);
-    $('g-final').textContent = T('kotc.guide.final');
-
+    $('modeSummary').innerHTML = '<b>' + TUI.esc(T('ui.mode.prefix')) + '</b> '
+      + TUI.esc(T('kotc.summary', {
+        teams: S.config.teams,
+        rounds: B.rounds.length,
+        minutes: B.perRound
+      }));
     // Endstand
     const rows = B.placements.map(p => {
       return '<tr' + (p.team!=null?' data-team="'+p.team+'"':'') + '>'

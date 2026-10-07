@@ -85,11 +85,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="gf.title">Gruppen + Finalrunde</h1>
-<p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="gf.guide.groupsLabel">Vorrunde:</span> <span id="g-groups">–</span> <span data-i18n="gf.guide.groupsText">In jeder Gruppe spielt jeder gegen jeden.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
@@ -101,6 +101,10 @@
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="gf.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content" id="scoringTables" hidden></div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -278,8 +282,6 @@
   <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
-
-<div class="row" id="scoringTables"></div>
 
 <div class="legend" id="h-legend"></div>
 
@@ -913,9 +915,6 @@
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: c.setMode, games: grpGames + finGames
     });
-    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · ' + T('gf.groupsN', { n: B.groupNames.length }) + ' · '
-      + T('ui.field.count', { count: c.fields }) + ' · ' + modeLabel(c.setMode)
-      + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
     $('capGrp').textContent = T('gf.schedule.grpCaption', { mode: modeLabel(c.setMode) });
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('gf.schedule.grpScreenAdd'),
@@ -939,6 +938,7 @@
       + TUI.esc(fm ? term(fm.label) : '') + ' · ' + E('sheet.legend.perGame') + ' '
       + '<span class="rmode">' + TUI.esc(modeLabel(c.setMode)) + '</span>'
       + ' ' + E('gf.legend.rule');
+    TUI.syncModeSummary(document);
 
     const noFinal = c.finalMode === 'none';
     const isBlocks = c.finalMode === 'blocks';

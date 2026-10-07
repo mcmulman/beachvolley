@@ -16,7 +16,10 @@
     root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null)
   );
   if (typeof module === 'object' && module.exports) module.exports = api;
-  else root.TUI = api;
+  else {
+    root.TUI = api;
+    api.wireFormatInfo(root.document);
+  }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (TC, TStore) {
   'use strict';
 
@@ -957,6 +960,30 @@
     });
   }
 
+  function wireFormatInfo(doc) {
+    if (!doc || doc.__formatInfoWired) return;
+    doc.__formatInfoWired = true;
+    doc.addEventListener('click', event => {
+      const button = event.target.closest ? event.target.closest('[data-format-info-toggle]') : null;
+      if (!button) return;
+      const content = doc.getElementById(button.getAttribute('aria-controls'));
+      if (!content) return;
+      const expanded = button.getAttribute('aria-expanded') === 'true';
+      button.setAttribute('aria-expanded', String(!expanded));
+      content.hidden = expanded;
+      const label = button.querySelector('.format-info-toggle-label');
+      if (label) label.textContent = tx(expanded ? 'ui.format.details' : 'ui.format.hide',
+        expanded ? 'Wertung & Details anzeigen' : 'Wertung & Details ausblenden');
+    });
+  }
+
+  function syncModeSummary(doc) {
+    if (!doc) return;
+    const legend = doc.getElementById('h-legend');
+    const summary = doc.getElementById('modeSummary');
+    if (legend && summary) summary.innerHTML = legend.innerHTML;
+  }
+
   /* ============================================ 8b. WERTUNG UND TIE-BREAKER
      Beide Tabellen werden aus der Engine abgeleitet, damit der gedruckte
      Bogen nie eine andere Wertung behauptet als die, nach der gerechnet wird
@@ -984,7 +1011,7 @@
     });
     t += '<tr><td>' + (chain.length + 1) + '</td><td>' + tx('ui.scoring.lots', 'Losentscheid («=» in der Tabelle)') + '</td></tr></table>';
 
-    return '<div style="flex:0 0 46%">' + w + '</div><div class="grow">' + t + '</div>';
+    return '<div class="row"><div style="flex:0 0 46%">' + w + '</div><div class="grow">' + t + '</div></div>';
   }
 
   /* =========================================== 8c. MOBILE SPRUNGLEISTE
@@ -1410,7 +1437,7 @@
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
-    scoringTablesHtml, jumpBarHtml, wireJumpBar,
+    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,
     wireScoreInputs, courtLadderHtml, paintCourtLadder
   };

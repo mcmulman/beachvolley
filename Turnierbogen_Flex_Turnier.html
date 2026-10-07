@@ -102,11 +102,11 @@
 </div>
 
 <h1 id="h-title" data-i18n="flex.title">Flex-Turnier</h1>
-<p class="sub" id="h-sub"></p>
 
 <!-- ======================= SEITE 1 ======================= -->
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
+  <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="flex.guide.principle">Feste Teams (Herren-, Damen- oder Mixed-Teams) treten gemeinsam
       in <b>einem</b> fairen Turnier an – Team-Art (♂/♀/⚥) lässt sich direkt unter „Teamnamen“ je Team
@@ -129,6 +129,10 @@
     <li><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="flex.guide.track">Nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren – so ist der Zwischenstand ohne Gerät ablesbar.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
+  <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
+    <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
+  </button>
+  <div class="format-info-content" id="scoringTables" hidden></div>
 </div>
 
 <div class="noprint cfgcard" id="configSection">
@@ -253,8 +257,6 @@
     <tbody id="trackBody"></tbody>
   </table>
 </div>
-
-<div class="row" id="scoringTables"></div>
 
 <div class="legend" id="h-legend"></div>
 
@@ -1151,9 +1153,6 @@
     });
 
     applyDocTitle();
-    $('h-sub').textContent = T('common.teams', { count: c.teams }) + ' · ' + T('flex.rounds.n', { n: B.rounds.length }) + ' · '
-      + T('ui.field.count', { count: c.fields }) + ' · ' + setModeLabel(c.setMode)
-      + ' · ' + TC.fromMin(B.startMin) + '–' + TC.fromMin(B.endMin);
     $('capSched').textContent = T('sheet.schedule.title');
     $('capTeams').textContent = T('sheet.teams.caption');
     $('hintSched').innerHTML = TUI.scoreHintHtml({
@@ -1175,6 +1174,7 @@
       + ' · ' + TUI.esc(T('flex.rounds.n', { n: B.rounds.length })) + ' · ' + E('flex.legend.noKo') + ' · ' + E('sheet.legend.perGame') + ' '
       + '<span class="rmode">' + TUI.esc(setModeLabel(c.setMode)) + '</span>'
       + ' ' + E('flex.legend.winBy2');
+    TUI.syncModeSummary(document);
     $('jumpbar').innerHTML = TUI.jumpBarHtml();
   }
 
