@@ -186,9 +186,6 @@
 .no-flexgap .filterbar-desktop { margin-bottom: -6px; }
 .no-flexgap .mobile-filter-grid .mf-field > * + * { margin-top: 4px; }
 .no-flexgap .mobile-filter-grid .mf-field > select:first-child { margin-top: 4px; } /* Muster c */
-/* Inline gesetzte Flex-Container auf der Startseite (style="…gap:…") */
-.no-flexgap #sessions-label > span > * + * { margin-left: 12px; }
-.no-flexgap #sessions-more > button > * + * { margin-left: 6px; }
 .no-flexgap .card-body > * + * { margin-top: 12px; }
 .no-flexgap .card-footer > * + * { margin-left: 10px; }
 /* .btn-open enthaelt nur einen Textknoten – kein Ersatz noetig. */
@@ -199,7 +196,6 @@
 .no-flexgap .features > *:not(:last-child) { margin-right: 5px; }
 .no-flexgap .features > * { margin-bottom: 5px; }
 .no-flexgap .features { margin-bottom: -5px; }
-.no-flexgap .session-card > * + * { margin-left: 14px; }
 .no-flexgap .session-actions > * + * { margin-left: 8px; }
 @media (max-width: 560px) {
   /* .filterbar laeuft hier ohne Umbruch als Scroll-Leiste */
@@ -210,4 +206,3 @@
 /* ══ Turnier-Auswahl-Overlay (core/turnier-resume-picker.js) ═══════════ */
 .no-flexgap .trp-list > * + * { margin-top: 8px; }
 .no-flexgap .trp-item > * + * { margin-top: 2px; }
-

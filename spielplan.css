@@ -972,6 +972,11 @@ input.score { font-size:16px; }
 .table-scroll.is-wide table.sched > tbody > tr[data-round].round-hidden {
         display: none;
       }
+/* Mobile card rows have an explicit display value, which overrides the
+   browser's default handling of the HTML hidden attribute. */
+.table-scroll.is-wide table.sched > tbody > tr[data-round][hidden] {
+        display: none !important;
+      }
 .table-scroll.is-wide table.sched > tbody > tr[data-round] > td {
         display: block;
         width: 100%;

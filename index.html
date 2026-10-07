@@ -681,6 +681,48 @@
     .btn-delete:hover { border-color: #e74c3c; color: #e74c3c; }
     #sessions-list-wrap { position: relative; }
 
+    .home-management { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:24px; }
+    .management-summary { padding:14px 16px; min-height:48px; cursor:pointer; color:var(--blue-dark); font-size:15px; font-weight:700; }
+    .management-summary-note { display:block; margin-top:4px; font-size:12px; font-weight:400; color:var(--muted); }
+    .management-content { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; padding:0 12px 12px; }
+    .home-tools, #saved-sessions { display:contents; }
+    .home-panel { background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; min-width:0; }
+    .home-panel-heading { background:var(--blue-light); margin-bottom:12px; }
+    .management-badge { display:inline-block; padding:3px 8px; border-radius:6px; background:var(--blue-dark); color:var(--white); font-size:11px; margin-right:6px; }
+    .home-panel-heading { padding:12px 16px; font-size:14px; font-weight:700; color:var(--blue-dark); }
+    summary.home-panel-heading { cursor:pointer; min-height:44px; }
+    .home-panel-body { padding:0 16px 12px; }
+    .home-panel-note { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:12px; }
+    .home-tools .code-open-box { border:0; padding:0; margin:0; }
+    .home-tools .code-open-box input { font-size:16px; }
+    .home-tools .code-open-box button { min-height:44px; }
+    .home-tool-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:12px; }
+    .home-tool-actions .pill { white-space:normal; justify-content:center; min-height:44px; }
+    #storage-status { display:block; font-size:12px; color:var(--muted); margin-bottom:10px; }
+    .home-panel-body .privacy-note { margin:0; font-size:11px; }
+    #saved-sessions { margin:0; }
+    .session-count { display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--blue-light); font-size:12px; }
+    .session-count:empty { display:none; }
+    #sessions-panel { padding:0 16px 16px; }
+    #sessions-panel[hidden] { display:none; }
+    #archives-section { margin:0; }
+    #archives-section summary { color:var(--muted); }
+    .session-card { display:grid; grid-template-columns:24px minmax(0, 1fr) auto; padding:10px; }
+    .session-check { width:24px; height:24px; }
+    .session-title { overflow-wrap:break-word; }
+    .session-date { color:var(--muted); font-size:11px; }
+    .btn-resume { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; }
+    .sessions-more-button { width:100%; min-height:44px; border:1px solid var(--border); border-radius:8px; background:var(--white); color:var(--blue-dark); padding:8px 12px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+    #sessions-bulk-bar { flex-wrap:wrap; }
+    #sessions-bulk-bar { grid-column:1 / -1; }
+    #sessions-bulk-bar button { min-height:44px; }
+    @media (max-width:640px) {
+      .management-content { grid-template-columns:minmax(0, 1fr); }
+      .grid { grid-template-columns:minmax(0, 1fr); }
+      .session-card { grid-template-columns:24px minmax(0, 1fr); }
+      .session-actions { grid-column:2; justify-content:flex-start; }
+    }
+
     @media (max-width: 480px) {
       header h1 { font-size: 20px; }
       .card-footer { flex-direction: column; align-items: stretch; }
@@ -857,32 +899,46 @@
 
 <main>
 
-  <!-- ── Geteiltes Turnier per Code öffnen ── -->
-  <div class="section-label noprint" data-i18n="home.code.label">Geteiltes Turnier öffnen</div>
-  <form class="code-open-box noprint" id="code-open-form" onsubmit="return handleOpenByCode(event)">
-    <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" data-i18n-attr="placeholder:home.code.placeholder" autocomplete="off"
-           autocapitalize="off" spellcheck="false" inputmode="text">
-    <button type="submit" data-i18n="home.code.open">Öffnen</button>
-  </form>
+  <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
+    <span id="sessions-undo-message"></span>
+    <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer" data-i18n="home.sessions.undo">Rückgängig</button>
+  </div>
+  <details class="home-management" id="home-management">
+  <summary class="management-summary">
+    <span data-i18n="home.management.label">Meine Turniere &amp; Verwaltung</span>
+    <span class="management-summary-note"><strong data-i18n="home.management.hint">Geteiltes Turnier öffnen: Code eingeben oder Link einfügen.</strong></span>
+    <span class="management-summary-note" data-i18n="home.management.features">Gespeicherte Turniere fortsetzen · Archiv ansehen · Daten sichern und importieren</span>
+  </summary>
+  <div class="management-content">
+  <div class="home-tools noprint">
+    <section class="home-panel" id="shared-tools" aria-labelledby="shared-heading">
+      <h2 class="home-panel-heading" id="shared-heading"><span class="management-badge" data-i18n="home.management.shared">Code / Link</span><span data-i18n="home.code.label">Geteiltes Turnier öffnen</span></h2>
+      <div class="home-panel-body">
+        <p class="home-panel-note" data-i18n="home.code.hint">Code oder Link erhalten? Hier direkt zum Turnier wechseln.</p>
+        <form class="code-open-box" id="code-open-form" onsubmit="return handleOpenByCode(event)">
+          <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" aria-label="Code oder Link einfügen" data-i18n-attr="placeholder:home.code.placeholder;aria-label:home.code.placeholder" autocomplete="off"
+                 autocapitalize="off" spellcheck="false" inputmode="text">
+          <button type="submit" data-i18n="home.code.open">Öffnen</button>
+        </form>
+      </div>
+    </section>
+    <section class="home-panel" id="backup-tools" aria-labelledby="backup-heading">
+      <h2 class="home-panel-heading" id="backup-heading"><span class="management-badge" data-i18n="home.management.backup">Daten</span><span data-i18n="home.backup.label">Sicherung &amp; Speicher</span></h2>
+      <div class="home-panel-body">
+        <p class="home-panel-note" data-i18n="home.backup.hint">Turniere und Archiv sichern oder von einem anderen Gerät übernehmen.</p>
+        <div class="home-tool-actions">
+          <button class="pill" type="button" onclick="exportTournamentBackup()" data-i18n="home.backup.download">Sicherung herunterladen</button>
+          <button class="pill" type="button" onclick="document.getElementById('backup-file').click()" data-i18n="home.backup.import">Sicherung importieren</button>
+          <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()" data-i18n="home.backup.persist">Speicher schützen</button>
+        </div>
+        <input id="backup-file" type="file" accept="application/json,.json" hidden onchange="importTournamentBackup(event)">
+        <span id="storage-status" role="status" data-i18n="home.storage.checking">Speicherstatus wird geprüft …</span>
+        <p class="home-panel-note privacy-note" data-i18n="home.backup.privacy">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</p>
+      </div>
+    </section>
+  </div>
 
-  <!-- ── Gespeicherte Turniere ── -->
-  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleSessions()" id="sessions-label">
-    <span><span data-i18n="home.sessions.label">Gespeicherte Turniere</span> <span id="sessions-count" style="font-weight:400;color:#aaa;font-size:12px"></span></span>
-    <span style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:11px;font-weight:400;color:#bbb" data-i18n="home.sessions.serverOnly">Nur verfügbar wenn über Webserver geöffnet</span>
-      <span id="sessions-toggle-icon" style="font-size:13px;color:#999;transition:transform .2s">▾</span>
-    </span>
-  </div>
-  <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-8px 0 12px">
-    <button class="pill" type="button" onclick="exportTournamentBackup()" data-i18n="home.backup.download">Sicherung herunterladen</button>
-    <button class="pill" type="button" onclick="document.getElementById('backup-file').click()" data-i18n="home.backup.import">Sicherung importieren</button>
-    <button class="pill" id="persist-storage-button" type="button" onclick="requestPersistentStorage()" data-i18n="home.backup.persist">Speicher schützen</button>
-    <input id="backup-file" type="file" accept="application/json,.json" hidden onchange="importTournamentBackup(event)">
-    <span id="storage-status" role="status" style="font-size:12px;color:#5a6375" data-i18n="home.storage.checking">Speicherstatus wird geprüft …</span>
-    <span style="flex-basis:100%;font-size:11px;color:#6b7280" data-i18n="home.backup.privacy">Die Sicherungsdatei enthält Turniernamen, Teamnamen und Ergebnisse und ist nicht verschlüsselt. Bitte vertraulich aufbewahren.</span>
-  </div>
-  <div id="saved-sessions" style="margin-bottom:40px">
-    <div id="no-sessions" style="color:#999;font-size:13px;padding:12px 0" data-i18n="home.sessions.none">Keine gespeicherten Turniere gefunden.</div>
+  <div id="saved-sessions">
     <div id="sessions-bulk-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding:6px 10px;background:#fdf3f3;border:1px solid #f0caca;border-radius:8px;font-size:12.5px">
       <span id="sessions-bulk-count"></span>
       <span style="display:flex;gap:10px">
@@ -890,17 +946,35 @@
         <button type="button" onclick="bulkDeleteSessions()" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12.5px;font-weight:600;cursor:pointer" data-i18n="home.sessions.delete">Löschen</button>
       </span>
     </div>
-    <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
-      <span id="sessions-undo-message"></span>
-      <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer" data-i18n="home.sessions.undo">Rückgängig</button>
-    </div>
-    <div id="sessions-list-wrap"></div>
-    <div id="sessions-more" style="display:none;margin-top:4px">
-      <button onclick="expandSessions(event)" style="display:flex;align-items:center;gap:6px;background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--blue-dark);font-size:13px;cursor:pointer;padding:7px 14px;font-weight:600;width:100%;justify-content:center">
-        <span id="sessions-more-label"></span> <span style="font-size:16px">⌄</span>
-      </button>
-    </div>
+    <section class="home-panel" aria-labelledby="sessions-label">
+      <h2 class="home-panel-heading" id="sessions-label">
+          <span class="management-badge" data-i18n="home.management.saved">Weiter</span><span data-i18n="home.sessions.label">Gespeicherte Turniere</span><span id="sessions-count" class="session-count"></span>
+      </h2>
+      <div id="sessions-panel">
+        <p class="home-panel-note" data-i18n="home.sessions.hint">Auf diesem Gerät gespeichert. Mit „Weiter“ ein Turnier fortsetzen.</p>
+        <div id="no-sessions" class="home-panel-note" data-i18n="home.sessions.none">Keine gespeicherten Turniere gefunden.</div>
+        <div id="sessions-list-wrap"></div>
+        <div id="sessions-more" style="display:none;margin-top:4px">
+          <button type="button" class="sessions-more-button" onclick="expandSessions(event)">
+            <span id="sessions-more-label"></span> <span aria-hidden="true">⌄</span>
+          </button>
+        </div>
+      </div>
+    </section>
+    <section class="home-panel" id="archives-section" aria-labelledby="archives-heading">
+      <h2 class="home-panel-heading" id="archives-heading"><span class="management-badge" data-i18n="home.management.archive">Rückblick</span><span data-i18n="home.archives.label">Turnier-Archiv</span><span id="archives-count" class="session-count"></span></h2>
+      <div class="home-panel-body">
+        <p class="home-panel-note" data-i18n="home.archives.hint">Frühere Turnierstände. „Wiederherstellen“ öffnet einen archivierten Stand im Turnierbogen.</p>
+        <div id="no-archives" class="home-panel-note" data-i18n="home.archives.none">Noch keine archivierten Turniere.</div>
+        <div id="archives-list-wrap"></div>
+        <div id="archives-more" style="display:none;margin-top:4px">
+          <button type="button" class="sessions-more-button" onclick="expandSessions(event, true)"><span id="archives-more-label"></span> <span aria-hidden="true">⌄</span></button>
+        </div>
+      </div>
+    </section>
   </div>
+  </div>
+  </details>
 
   <div class="section-label" data-i18n="home.sheets.label">Turnierbögen</div>
   <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em" data-i18n="home.sheets.features">
@@ -1465,7 +1539,7 @@
 
   const SESSIONS_PREVIEW = 3;
   let sessionsExpanded = false;
-  let sessionsCollapsed = false;
+  let archivesExpanded = false;
   let selectedSessionKeys = new Set();
   let sessionUndoTimer = null;
 
@@ -1525,14 +1599,6 @@
         try { bt = JSON.parse(b.value).expiresAt || 0; } catch (error) {}
         return bt - at;
       })[0] || null;
-  }
-
-  function toggleSessions() {
-    const container = document.getElementById('saved-sessions');
-    const icon = document.getElementById('sessions-toggle-icon');
-    sessionsCollapsed = !sessionsCollapsed;
-    container.style.display = sessionsCollapsed ? 'none' : '';
-    icon.style.transform = sessionsCollapsed ? 'rotate(-90deg)' : '';
   }
 
   /* Mehrfachauswahl per Checkbox statt Einzel-Löschen mit Bestätigungsdialog
@@ -1635,13 +1701,14 @@
     return false;
   }
 
-  function expandSessions(e) {
+  function expandSessions(e, archived) {
     e.stopPropagation();
-    sessionsExpanded = true;
-    const wrap = document.getElementById('sessions-list-wrap');
+    if (archived) archivesExpanded = true; else sessionsExpanded = true;
+    const prefix = archived ? 'archives' : 'sessions';
+    const wrap = document.getElementById(prefix + '-list-wrap');
     wrap.classList.remove('has-more');
-    document.querySelectorAll('.session-card.session-hidden').forEach(c => c.style.display = '');
-    document.getElementById('sessions-more').style.display = 'none';
+    wrap.querySelectorAll('.session-card.session-hidden').forEach(c => c.style.display = '');
+    document.getElementById(prefix + '-more').style.display = 'none';
   }
 
   async function exportTournamentBackup() {
@@ -1859,78 +1926,76 @@
         const idx = TStore.readIndexInView(view);
         return storeSessions(idx).concat(archiveSessions(view, idx));
       });
-      const container = document.getElementById('saved-sessions');
-      const noSessions = document.getElementById('no-sessions');
-      const wrap = document.getElementById('sessions-list-wrap');
-      wrap.innerHTML = '';
+      const liveKeys = new Set(sessions.map(s => s.key));
+      selectedSessionKeys.forEach(key => { if (!liveKeys.has(key)) selectedSessionKeys.delete(key); });
       updateBulkBar();
-      const countEl = document.getElementById('sessions-count');
-      if (countEl) countEl.textContent = sessions.length > 1 ? '(' + sessions.length + ')' : '';
-      document.getElementById('sessions-more').style.display = 'none';
-      noSessions.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('home.sessions.none') : 'Keine gespeicherten Turniere gefunden.';
-      if (!sessions.length) { noSessions.style.display = ''; return; }
-      noSessions.style.display = 'none';
-      sessions.sort((a, b) => b.savedAt - a.savedAt);
-      sessions.forEach((s, idx) => {
-        const rawTs = s.savedAt || s.ts;
-        const d = rawTs ? new Date(rawTs) : null;
-        const date = (d && !isNaN(d.getTime())) ? d.toLocaleString((typeof TI18n !== 'undefined') ? TI18n.locale() : 'de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-        /* Eine bereits ausgeklappte Liste (sessionsExpanded) bleibt es auch
-           nach einem Löschvorgang – sonst klappt sie bei jedem Neu-Rendern
-           unerwartet wieder auf die Vorschau-Anzahl zusammen. */
-        const hidden = !sessionsExpanded && idx >= SESSIONS_PREVIEW;
-        const card = document.createElement('div');
-        card.className = 'session-card' + (hidden ? ' session-hidden' : '');
-        if (hidden) card.style.display = 'none';
+      [false, true].forEach(archived => {
+        const prefix = archived ? 'archives' : 'sessions';
+        const entries = sessions.filter(s => !!s.archived === archived);
+        const expanded = archived ? archivesExpanded : sessionsExpanded;
+        const wrap = document.getElementById(prefix + '-list-wrap');
+        wrap.innerHTML = '';
+        document.getElementById(prefix + '-count').textContent = String(entries.length);
+        const empty = document.getElementById(archived ? 'no-archives' : 'no-sessions');
+        empty.textContent = T(archived ? 'home.archives.none' : 'home.sessions.none');
+        empty.style.display = entries.length ? 'none' : '';
+        entries.sort((a, b) => (b.savedAt || b.ts || 0) - (a.savedAt || a.ts || 0));
+        entries.forEach((s, idx) => {
+          const rawTs = s.savedAt || s.ts;
+          const d = rawTs ? new Date(rawTs) : null;
+          const date = (d && !isNaN(d.getTime())) ? d.toLocaleString((typeof TI18n !== 'undefined') ? TI18n.locale() : 'de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+          /* Expanded previews stay expanded when deletion/undo reloads either list. */
+          const hidden = !expanded && idx >= SESSIONS_PREVIEW;
+          const card = document.createElement('div');
+          card.className = 'session-card' + (hidden ? ' session-hidden' : '');
+          if (hidden) card.style.display = 'none';
 
-        const check = document.createElement('input');
-        check.type = 'checkbox';
-        check.className = 'session-check';
-        check.title = T('home.sessions.selectTitle');
-        check.checked = selectedSessionKeys.has(s.key);
-        check.onchange = function() {
-          if (check.checked) selectedSessionKeys.add(s.key); else selectedSessionKeys.delete(s.key);
-          updateBulkBar();
-        };
+          const check = document.createElement('input');
+          check.type = 'checkbox';
+          check.className = 'session-check';
+          check.title = T('home.sessions.selectTitle');
+          check.setAttribute('aria-label', T('home.sessions.selectNamed', { title: displayTitle(s.title, s.type) }));
+          check.checked = selectedSessionKeys.has(s.key);
+          check.onchange = function() {
+            if (check.checked) selectedSessionKeys.add(s.key); else selectedSessionKeys.delete(s.key);
+            updateBulkBar();
+          };
 
-        const info = document.createElement('div');
-        info.className = 'session-info';
-        const title = document.createElement('div');
-        title.className = 'session-title';
-        title.textContent = displayTitle(s.title, s.type);
-        const teams = document.createElement('div');
-        teams.className = 'session-teams';
-        teams.textContent = Array.isArray(s.teams)
-          ? (s.teams.length > 4 ? s.teams.slice(0, 4).join(' · ') + ' · … (+' + (s.teams.length - 4) + ')' : s.teams.join(' · '))
-          : '';
-        const meta = document.createElement('div');
-        meta.className = 'session-date';
-        meta.textContent = date ? T('home.sessions.lastSaved', { date: date }) : T('home.sessions.saved');
-        const actions = document.createElement('div');
-        actions.className = 'session-actions';
-        const resume = document.createElement('a');
-        resume.className = 'btn-resume';
-        resume.href = s.resumeUrl || s.file;
-        resume.target = '_blank';
-        resume.textContent = T('home.sessions.resume');
+          const info = document.createElement('div');
+          info.className = 'session-info';
+          const title = document.createElement('div');
+          title.className = 'session-title';
+          title.textContent = displayTitle(s.title, s.type);
+          const teams = document.createElement('div');
+          teams.className = 'session-teams';
+          teams.textContent = Array.isArray(s.teams)
+            ? (s.teams.length > 4 ? s.teams.slice(0, 4).join(' · ') + ' · … (+' + (s.teams.length - 4) + ')' : s.teams.join(' · '))
+            : '';
+          const meta = document.createElement('div');
+          meta.className = 'session-date';
+          meta.textContent = date ? T('home.sessions.lastSaved', { date: date }) : T('home.sessions.saved');
+          const actions = document.createElement('div');
+          actions.className = 'session-actions';
+          const resume = document.createElement('a');
+          resume.className = 'btn-resume';
+          resume.href = s.resumeUrl || s.file;
+          resume.target = '_blank';
+          resume.textContent = T(archived ? 'home.archives.restore' : 'home.sessions.resume');
 
-        info.appendChild(title);
-        info.appendChild(teams);
-        info.appendChild(meta);
-        actions.appendChild(resume);
-        card.appendChild(check);
-        card.appendChild(info);
-        card.appendChild(actions);
-        wrap.appendChild(card);
+          info.appendChild(title);
+          info.appendChild(teams);
+          info.appendChild(meta);
+          actions.appendChild(resume);
+          card.appendChild(check);
+          card.appendChild(info);
+          card.appendChild(actions);
+          wrap.appendChild(card);
+        });
+        const more = document.getElementById(prefix + '-more');
+        more.style.display = !expanded && entries.length > SESSIONS_PREVIEW ? '' : 'none';
+        const n = entries.length - SESSIONS_PREVIEW;
+        if (n > 0) document.getElementById(prefix + '-more-label').textContent = T(archived ? 'home.archives.more' : 'home.sessions.more', { count: n });
       });
-      if (!sessionsExpanded && sessions.length > SESSIONS_PREVIEW) {
-        const more = document.getElementById('sessions-more');
-        more.style.display = '';
-        const n = sessions.length - SESSIONS_PREVIEW;
-        document.getElementById('sessions-more-label').textContent = T('home.sessions.more', { count: n });
-      } else {
-        document.getElementById('sessions-more').style.display = 'none';
-      }
     } catch(error) {
       const notice = document.getElementById('no-sessions');
       notice.style.display = '';

@@ -235,6 +235,10 @@
     .noprint { display:none !important; }
     .format-info-toggle { display:none !important; }
     .format-info-content[hidden] { display:block !important; }
+    /* Round selection is screen-only; a printed schedule includes every round.
+       Spacer rows (tr.rgap) stay hidden in print, see spielplan.css. */
+    .sched > tbody > tr[data-round][hidden]:not(.rgap) { display:table-row !important; }
+    #ladderSection .kq-round[data-round][hidden] { display:block !important; }
     .mstd-in {
       border:none !important; background:transparent !important; padding:0 !important;
       -moz-appearance:textfield;

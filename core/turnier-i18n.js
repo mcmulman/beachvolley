@@ -280,7 +280,7 @@
       'button.i18n-switch::after{content:"";position:absolute;top:50%;left:50%;' +
         'width:100%;height:100%;min-width:44px;min-height:44px;' +
         '-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);}' +
-      '.i18n-switch .ic{font-size:12.5px;letter-spacing:.5px;}' +
+      '.i18n-switch .ic{font-size:18px;line-height:1;letter-spacing:0;}' +
       '.i18n-switch .lbl{margin-left:6px;}' +
       '@media print{.i18n-switch{display:none !important;}}';
     (d.head || d.documentElement).appendChild(st);
@@ -303,7 +303,7 @@
     const ic = d.createElement('span');
     ic.className = 'ic';
     ic.setAttribute('aria-hidden', 'true');
-    ic.textContent = target.toUpperCase();
+    ic.textContent = target === 'de' ? '\uD83C\uDDE9\uD83C\uDDEA' : '\uD83C\uDDEC\uD83C\uDDE7';
     const lbl = d.createElement('span');
     lbl.className = 'lbl';
     lbl.setAttribute('aria-hidden', 'true');
