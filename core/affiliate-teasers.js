@@ -175,6 +175,11 @@
           try {
             var imageUrl = new URL(product.imageUrl);
             if (imageUrl.protocol === 'https:' && /\.media-amazon\.com$/.test(imageUrl.hostname)) {
+              var fallbackImage = image.src;
+              image.onerror = function () {
+                image.onerror = null;
+                image.src = fallbackImage;
+              };
               image.src = imageUrl.href;
             }
           } catch (error) {
