@@ -137,11 +137,24 @@
     });
   }
 
+  function hidePrices(cards) {
+    cards.forEach(function (card) {
+      ['.affiliate-price', '.affiliate-price-note'].forEach(function (selector) {
+        var node = card.querySelector(selector);
+        if (node) {
+          node.textContent = '';
+          node.removeAttribute('data-i18n');
+          node.hidden = true;
+        }
+      });
+    });
+  }
+
   function loadPrices(section, endpoint) {
     var cards = section.querySelectorAll('.affiliate-card[data-amazon-asin]');
     if (!cards.length) return;
     if (location.protocol === 'file:' || !navigator.onLine) {
-      unavailable(cards);
+      hidePrices(cards);
       return;
     }
 
@@ -215,7 +228,7 @@
         updated.hidden = false;
       }
     }).catch(function () {
-      unavailable(cards);
+      hidePrices(cards);
     }).finally(function () {
       clearTimeout(timeout);
     });
