@@ -723,19 +723,6 @@
       .session-actions { grid-column:2; justify-content:flex-start; }
     }
 
-    .affiliate-section { margin-top: 40px; }
-    .affiliate-heading { margin: 0 0 8px; color: var(--blue-dark); font-size: 20px; }
-    .affiliate-disclosure { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .affiliate-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .affiliate-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); color: var(--text); text-decoration: none; }
-    .affiliate-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(31,111,168,.2); }
-    .affiliate-image-wrap { display: flex; align-items: center; justify-content: center; height: 190px; padding: 16px; background: #fff; }
-    .affiliate-image { width: 100%; height: 100%; object-fit: contain; }
-    .affiliate-copy { padding: 14px 16px 16px; }
-    .affiliate-title { margin: 0 0 6px; color: var(--blue-dark); font-size: 16px; line-height: 1.35; }
-    .affiliate-description { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .affiliate-link-label { color: var(--blue); font-size: 13px; font-weight: 700; text-decoration: underline; }
-    @media (max-width: 760px) { .affiliate-grid { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 480px) {
       header h1 { font-size: 20px; }
       .card-footer { flex-direction: column; align-items: stretch; }
@@ -772,6 +759,7 @@
   <script src="core/turnier-store.js"></script>
   <script src="core/turnier-backup.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <link rel="stylesheet" href="core/affiliate-teasers.css">
 </head>
 <body>
 
@@ -1388,37 +1376,6 @@
     </div>
 
   </div><!-- /.grid -->
-
-  <section class="affiliate-section noprint" aria-labelledby="affiliate-heading">
-    <h2 class="affiliate-heading" id="affiliate-heading" data-i18n="home.affiliate.heading">Empfehlungen für dein Beachvolleyball-Turnier</h2>
-    <p class="affiliate-disclosure" data-i18n="home.affiliate.disclosure">Als Amazon-Partner verdiene ich an qualifizierten Verkäufen.</p>
-    <div class="affiliate-grid">
-      <a class="affiliate-card" href="https://www.amazon.de/dp/B07Z6VQ2ZG?tag=klicktips02-21" target="_blank" rel="nofollow noopener sponsored">
-        <span class="affiliate-image-wrap"><img class="affiliate-image" src="https://m.media-amazon.com/images/I/8111KcIjdIL._AC_SL1500_.jpg" alt="Wilson OPTX Beachvolleyball" data-i18n-attr="alt:home.affiliate.ball.alt" loading="lazy"></span>
-        <span class="affiliate-copy">
-          <strong class="affiliate-title" data-i18n="home.affiliate.ball.title">Wilson OPTX Beachvolleyball</strong>
-          <span class="affiliate-description" data-i18n="home.affiliate.ball.description">Ein gut sichtbarer Beachvolleyball für Training und Spiel am Strand.</span>
-          <span class="affiliate-link-label" data-i18n="home.affiliate.cta">Bei Amazon ansehen ↗</span>
-        </span>
-      </a>
-      <a class="affiliate-card" href="https://www.amazon.de/dp/B0F3284NK7?tag=klicktips02-21" target="_blank" rel="nofollow noopener sponsored">
-        <span class="affiliate-image-wrap"><img class="affiliate-image" src="https://m.media-amazon.com/images/I/61wAAWBj8HL._AC_SL1080_.jpg" alt="Beachvolleyball-Neoprensocken" data-i18n-attr="alt:home.affiliate.socks.alt" loading="lazy"></span>
-        <span class="affiliate-copy">
-          <strong class="affiliate-title" data-i18n="home.affiliate.socks.title">Neoprensocken für Beachvolleyball</strong>
-          <span class="affiliate-description" data-i18n="home.affiliate.socks.description">Schützen die Füße vor heißem Sand und kaltem Untergrund.</span>
-          <span class="affiliate-link-label" data-i18n="home.affiliate.cta">Bei Amazon ansehen ↗</span>
-        </span>
-      </a>
-      <a class="affiliate-card" href="https://www.amazon.de/dp/3964160601?tag=klicktips02-21" target="_blank" rel="nofollow noopener sponsored">
-        <span class="affiliate-image-wrap"><img class="affiliate-image" src="https://m.media-amazon.com/images/I/71VNHnabFSL._SL1436_.jpg" alt="Beach-Volleyball: Übungen für Gewinner" data-i18n-attr="alt:home.affiliate.book.alt" loading="lazy"></span>
-        <span class="affiliate-copy">
-          <strong class="affiliate-title" data-i18n="home.affiliate.book.title">Beach-Volleyball: Übungen für Gewinner</strong>
-          <span class="affiliate-description" data-i18n="home.affiliate.book.description">Trainingsideen und Übungen für abwechslungsreiche Beachvolleyball-Einheiten.</span>
-          <span class="affiliate-link-label" data-i18n="home.affiliate.cta">Bei Amazon ansehen ↗</span>
-        </span>
-      </a>
-    </div>
-  </section>
 
 </main>
 
@@ -2293,6 +2250,7 @@
   });
 })();
 </script>
+<script src="core/affiliate-teasers.js"></script>
 
 </body>
 </html>

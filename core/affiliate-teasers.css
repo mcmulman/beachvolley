@@ -1,0 +1,100 @@
+.affiliate-section {
+  max-width: 1080px;
+  margin: 36px auto 0;
+  padding: 0 20px;
+}
+.affiliate-heading {
+  margin: 0 0 8px;
+  color: var(--blue-dark, #1a3a5c);
+  font-size: 20px;
+}
+.affiliate-disclosure {
+  margin: 0 0 16px;
+  color: var(--muted, #5a6375);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.affiliate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.affiliate-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border, #ccd8e8);
+  border-radius: var(--radius, 14px);
+  background: var(--white, #fff);
+  box-shadow: var(--shadow, 0 6px 24px rgba(31, 111, 168, .14));
+  color: var(--text, #1a1a2e);
+  text-decoration: none;
+}
+.affiliate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(31, 111, 168, .2);
+}
+.affiliate-image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 190px;
+  padding: 16px;
+  background: #fff;
+}
+.affiliate-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.affiliate-copy {
+  padding: 14px 16px 16px;
+}
+.affiliate-title {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--blue-dark, #1a3a5c);
+  font-size: 16px;
+  line-height: 1.35;
+}
+.affiliate-description {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--muted, #5a6375);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.affiliate-price {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--blue-dark, #1a3a5c);
+  font-size: 15px;
+  font-weight: 800;
+}
+.affiliate-price-note {
+  display: block;
+  min-height: 18px;
+  margin: 0 0 8px;
+  color: var(--muted, #5a6375);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.affiliate-updated {
+  margin: 12px 0 0;
+  color: var(--muted, #5a6375);
+  font-size: 11px;
+}
+.affiliate-link-label {
+  color: var(--blue, #1f6fa8);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+@media (max-width: 760px) {
+  .affiliate-grid { grid-template-columns: minmax(0, 1fr); }
+  .affiliate-section { margin-top: 28px; }
+}
+@media print {
+  .affiliate-section { display: none !important; }
+}
