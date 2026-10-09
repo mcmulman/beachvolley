@@ -46,6 +46,9 @@
   /* Beach-Regeln als Vorgabe: Sätze bis 21, Entscheidungssatz bis 15. Ein
      Turnierbogen kann eigene Satzziele mitgeben (?t=21,21,15). */
   var DEFAULT_TARGETS = [21, 21, 15];
+  var SWITCH_AUTO = 0;
+  var SWITCH_OFF = -1;
+  var SWITCH_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10];
   var MAX_TARGETS = 5;
   var MAX_REF = 80;
   var RETURN_PAGE = /^(?:index\.html|Turnierbogen_[A-Za-z0-9_]+\.html)(?:\?[^#\s\\]*)?$/;
@@ -76,6 +79,8 @@
       sound: false,
       keepAwake: false,
       compact: false,
+      clockEnabled: true,
+      switchPts: 0,
       match: null
     };
   }
@@ -103,6 +108,8 @@
       sound: !!s.sound,
       keepAwake: !!s.keepAwake,
       compact: !!s.compact,
+      clockEnabled: s.clockEnabled !== false,
+      switchPts: s.switchPts,
       match: s.match ? { ref: s.match.ref, targets: s.match.targets.slice(), swapped: !!s.match.swapped } : null
     };
   }
@@ -333,6 +340,13 @@
     n.compact = !!on;
     return n;
   }
+  function setClockEnabled(s, on, now) {
+    on = !!on;
+    if (on === s.clockEnabled) return s;
+    var n = clone(!on && s.status === 'running' ? pause(s, now) : s);
+    n.clockEnabled = on;
+    return n;
+  }
 
   /* ------------------------------------------------- Regeln (nur Hinweise)
      Der Timer beendet nie selbst einen Satz; er weist nur auf Satzgewinn
@@ -350,6 +364,25 @@
     return t[Math.min(s.setHistory.length, t.length - 1)];
   }
   function switchEvery(target) { return Math.max(1, Math.round(target / 3)); }
+  /* Seitenwechsel-Einstellung: SWITCH_AUTO (nach Satzziel), SWITCH_OFF oder
+     feste Punktzahl. Bleibt beim Zurücksetzen erhalten (wie Ton). */
+  function cleanSwitchPts(v) {
+    v = Number(v);
+    if (v === SWITCH_OFF) return SWITCH_OFF;
+    return SWITCH_OPTIONS.indexOf(v) >= 0 ? v : SWITCH_AUTO;
+  }
+  function setSwitchPts(s, v) {
+    v = cleanSwitchPts(v);
+    if (v === s.switchPts) return s;
+    var n = clone(s);
+    n.switchPts = v;
+    return n;
+  }
+  /* Punkte zwischen zwei Seitenwechseln im laufenden Satz; 0 = aus. */
+  function switchInterval(s) {
+    if (s.switchPts === SWITCH_OFF) return 0;
+    return s.switchPts > 0 ? s.switchPts : switchEvery(setTarget(s));
+  }
   /* Seite, die den laufenden Satz gewonnen hat (Ziel erreicht, 2 Punkte
      Vorsprung) – sonst null. */
   function setWinner(s) {
@@ -359,7 +392,8 @@
   }
   function isSideSwitch(s) {
     var total = s.score.a + s.score.b;
-    return total > 0 && !setWinner(s) && total % switchEvery(setTarget(s)) === 0;
+    var every = switchInterval(s);
+    return every > 0 && total > 0 && !setWinner(s) && total % every === 0;
   }
 
   /* ---------------------------------------------- Spiel aus dem Turnierbogen
@@ -432,6 +466,8 @@
     s.sound = raw.sound === true;
     s.keepAwake = raw.keepAwake === true;
     s.compact = raw.compact === true;
+    s.clockEnabled = raw.clockEnabled !== false;
+    s.switchPts = cleanSwitchPts(raw.switchPts);
     var m = raw.match;
     if (m && typeof m === 'object' && typeof m.ref === 'string' && m.ref) {
       var t = cleanTargets(m.targets);
@@ -533,6 +569,11 @@
     leader: leader,
     setTarget: setTarget,
     switchEvery: switchEvery,
+    switchInterval: switchInterval,
+    setSwitchPts: setSwitchPts,
+    SWITCH_AUTO: SWITCH_AUTO,
+    SWITCH_OFF: SWITCH_OFF,
+    SWITCH_OPTIONS: SWITCH_OPTIONS,
     setWinner: setWinner,
     isSideSwitch: isSideSwitch,
     setMatch: setMatch,
@@ -546,6 +587,7 @@
     setSound: setSound,
     setKeepAwake: setKeepAwake,
     setCompact: setCompact,
+    setClockEnabled: setClockEnabled,
     serialize: serialize,
     parse: parse,
     load: load,

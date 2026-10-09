@@ -200,11 +200,9 @@
       new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['data-bar-title'] });
     }
 
-    // Mobile Scroll-Hinweis: Tabellen (Spielplan/Verlauf), die border-collapse
-    // nutzen, verdecken den Kanten-Schatten-Hintergrund der Tabelle selbst
-    // durch die undurchsichtigen Zellenhintergründe. Daher hier bei Bedarf
-    // einen schlanken Wrapper-Div (.scrollhint) einziehen, auf dem der
-    // Schatten (siehe app-skin.css) zuverlässig sichtbar bleibt. Läuft
+    // Mobile Scroll-Container: Tabellen (Spielplan/Verlauf) bei Bedarf in
+    // einen schlanken Wrapper-Div (.scrollhint) einziehen, der horizontal
+    // scrollt (flach, ohne Kanten-Verlauf – siehe app-skin.css). Läuft
     // wiederholt, da Spielpläne oft per innerHTML neu gerendert werden.
     function wrapScrollTables() {
       var tables = document.querySelectorAll('table.sched, table.track');

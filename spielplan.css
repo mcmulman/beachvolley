@@ -100,7 +100,7 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
   display:-webkit-inline-box; display:-webkit-inline-flex; display:inline-flex;
   -webkit-box-align:center; -webkit-align-items:center; align-items:center;
   -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center;
-  width:44px; height:40px; min-width:44px; min-height:40px;
+  width:44px; height:44px; min-width:44px; min-height:44px;
   margin:0; padding:0;
   border:0; border-radius:0;
   background:#fff;
@@ -137,10 +137,10 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
   margin: 0;
   padding: 0;
   border-radius: 50% !important;
@@ -283,6 +283,20 @@ caption > .cap-toolbar:empty { display:none; }
 .input-hint .mstd-toolbar {
   flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:center; justify-content:flex-end;
 }
+/* Bildschirm: Korrektur-Button als ruhiger Sekundär-Button mit echter
+   Trefferfläche (Touch: 44px), mittig zur Anleitung und mit Luft zur Tabelle. */
+@media screen {
+  .input-hint { align-items:center; }
+  .input-hint .mstd-toolbar { margin-bottom:4px; }
+  .mstd-toolbar button {
+    min-height:32px; padding:5px 12px; font-size:12px; font-weight:600;
+    border-color:#b9cbe0; border-radius:8px; background:#fff;
+  }
+  .mstd-toolbar button:hover { border-color:#1f4e79; }
+}
+@media screen and (pointer: coarse) {
+  .mstd-toolbar button { min-height:44px; }
+}
 @media print {
   caption > .cap-hint { font-size:7.5pt; color:#333; margin-top:0.8mm; }
 }
@@ -322,11 +336,11 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
 .table-scroll table { min-width:100%; }
 .mobile-schedule-title { display:none; }
-/* Runden-Navigator: bewusst PROMINENT und MODERN gestaltet (Glass-Pill-Leiste,
-   Verlaufs-Buttons, weiche Bewegungen) - an der App-Leiste "klebend" sticky,
-   da dies das am häufigsten genutzte Bedienelement während des Turniers ist
-   (Wechsel zur nächsten Runde). Farbsprache/Radius/Schatten orientieren sich
-   bewusst an der App-Leiste (app-skin.css) für ein durchgängiges Erscheinungsbild. */
+/* Runden-Navigator: das am haeufigsten genutzte Bedienelement waehrend des
+   Turniers (Wechsel zur naechsten Runde) - deshalb sticky an der App-Leiste.
+   Ruhig und flach gehalten (eine Akzentfarbe, keine Verlaeufe): Zurueck/Weiter
+   sind gleichwertige tonale Buttons, nur der aktive Ansichts-Umschalter ist
+   gefuellt. Radius/Farben aus den Tokens in app-skin.css. */
 .schedule-roundbar {
     margin: 12px 0 14px;
     display: flex;
@@ -337,35 +351,36 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     position: sticky;
     top: calc(var(--app-bar-h, 54px) + 8px);
     z-index: 150;
-    background: rgba(255, 255, 255, .82);
+    background: rgba(255, 255, 255, .9);
     -webkit-backdrop-filter: saturate(180%) blur(14px);
     backdrop-filter: saturate(180%) blur(14px);
-    border: 1px solid rgba(31, 78, 121, .14);
+    border: 1px solid var(--app-line, #c9d6e6);
     border-radius: 999px;
-    padding: 8px 10px 8px 16px;
-    box-shadow: 0 6px 20px rgba(20, 50, 90, .14), 0 1px 2px rgba(20, 50, 90, .06);
-    transition: box-shadow .2s;
+    padding: 6px 8px 6px 16px;
+    box-shadow: 0 2px 10px rgba(20, 50, 90, .08);
   }
 .schedule-roundbar label {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 7px;
-    font-size: 11.5px;
-    color: var(--app-blue-dark, #1f4e79);
+    font-size: 12px;
+    color: var(--app-muted, #5a6375);
     font-weight: 700;
     letter-spacing: .01em;
   }
 .schedule-roundbar select {
     box-sizing: border-box;
     min-height: 44px;
-    padding: 7px 12px;
+    padding: 7px 36px 7px 14px;
     font-size: 14px;
-    border: 1.5px solid rgba(31, 78, 121, .28);
+    border: 1px solid var(--app-line, #c9d6e6);
     border-radius: 999px;
     font-weight: 700;
-    color: var(--app-blue-dark, #1f4e79);
-    background: #fff;
+    color: var(--app-blue-dark, #1a3a5c);
+    -webkit-appearance: none;
+    appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231a3a5c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
     cursor: pointer;
     transition: border-color .15s, box-shadow .15s;
   }
@@ -381,81 +396,63 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     justify-content: center;
     gap: 6px;
     min-height: 44px;
-    padding: 10px 20px;
-    font-size: 14.5px;
+    padding: 10px 18px;
+    font-size: 14px;
     font-weight: 700;
     border-radius: 999px;
-    background-color: #1a3a5c;
-    background-image: linear-gradient(135deg, #1a3a5c 0%, #1f6fa8 100%);
-    color: #fff;
+    background-color: #e8f1fb;
+    background-image: none;
+    color: #1a3a5c;
     border: 1px solid transparent;
-    box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
+    box-shadow: none;
     letter-spacing: .01em;
     -webkit-appearance: none !important;
     appearance: none !important;
     -webkit-tap-highlight-color: rgba(0,0,0,0);
     font-family: inherit;
-    transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
+    transition: transform .12s ease, background-color .15s ease;
   }
   /* Hintergrund/Textfarbe in ALLEN interaktiven Zustaenden (Hover, Active,
      Disabled) hart mit "!important" und festen Hex-Werten (statt var())
      erzwungen: auf manchen aelteren iPad-Safari-Versionen kann es sonst
      vorkommen, dass ein "haengender" Hover-/Fokus-Zustand nach einem Tap
-     (typisch bei Touch-Geraeten) den farbigen Verlauf durch eine helle
-     native Buttonflaeche ersetzt -> weißer Text auf fast-weißem Grund. */
+     (typisch bei Touch-Geraeten) die Flaeche durch eine native Buttonflaeche
+     ersetzt. */
 .schedule-roundbar .nbtn-round:hover:not(:disabled),
 .schedule-roundbar .nbtn-round:active:not(:disabled),
 .schedule-roundbar .nbtn-round:focus:not(:disabled),
 .schedule-roundbar .nbtn-round:disabled {
-    background-color: #1a3a5c !important;
-    background-image: linear-gradient(135deg, #1a3a5c 0%, #1f6fa8 100%) !important;
-    color: #fff !important;
+    background-color: #e8f1fb !important;
+    background-image: none !important;
+    color: #1a3a5c !important;
   }
 .schedule-roundbar .nbtn-round:hover:not(:disabled) {
-    filter: brightness(1.08);
-    box-shadow: 0 5px 14px rgba(26, 58, 92, .4);
+    background-color: #d8e8f8 !important;
   }
 .schedule-roundbar .nbtn-round:active:not(:disabled) {
     transform: scale(.95);
   }
-.schedule-roundbar .nbtn-round:focus { outline: 2px solid #fff; outline-offset: 2px; }
+.schedule-roundbar .nbtn-round:focus { outline: 2px solid #1f6fa8; outline-offset: 2px; }
 .schedule-roundbar .nbtn-round:focus:not(:focus-visible) { outline: none; }
-.schedule-roundbar .nbtn-round:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.schedule-roundbar .nbtn-round:focus-visible { outline: 2px solid #1f6fa8; outline-offset: 2px; }
 .schedule-roundbar .nbtn-round:disabled {
-    opacity: .35;
+    opacity: .4;
     cursor: not-allowed;
     box-shadow: none;
-    filter: none;
-  }
-.schedule-roundbar .nbtn-round-next {
-    background-color: #0a7d2c;
-    background-image: linear-gradient(135deg, #0a7d2c 0%, #2ea043 100%);
-    box-shadow: 0 3px 10px rgba(10, 125, 44, .32);
-  }
-.schedule-roundbar .nbtn-round-next:hover:not(:disabled),
-.schedule-roundbar .nbtn-round-next:active:not(:disabled),
-.schedule-roundbar .nbtn-round-next:focus:not(:disabled),
-.schedule-roundbar .nbtn-round-next:disabled {
-    background-color: #0a7d2c !important;
-    background-image: linear-gradient(135deg, #0a7d2c 0%, #2ea043 100%) !important;
-    color: #fff !important;
-  }
-.schedule-roundbar .nbtn-round-next:hover:not(:disabled) {
-    box-shadow: 0 5px 14px rgba(10, 125, 44, .4);
   }
 .schedule-roundbar .nbtn-round-all {
     background-color: #fff;
     background-image: none;
-    color: #1f4e79;
-    border: 1.5px solid rgba(31, 78, 121, .3);
+    color: #1a3a5c;
+    border: 1px solid #c9d6e6;
     box-shadow: none;
   }
 .schedule-roundbar .nbtn-round-all:hover:not(:disabled),
-.schedule-roundbar .nbtn-round-all:active:not(:disabled) {
+.schedule-roundbar .nbtn-round-all:active:not(:disabled),
+.schedule-roundbar .nbtn-round-all:focus:not(:disabled) {
     background-color: #eef3f9 !important;
     background-image: none !important;
-    color: #1f4e79 !important;
-    filter: none;
+    color: #1a3a5c !important;
     box-shadow: none;
   }
 .schedule-roundbar .nbtn-round-all.roundall-active,
@@ -466,8 +463,7 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     background-image: none !important;
     color: #fff !important;
     border-color: #1a3a5c;
-    box-shadow: 0 3px 10px rgba(26, 58, 92, .32);
-    filter: none;
+    box-shadow: none;
   }
 /* Pfeil-Icons als reine CSS-Formen (Border-Ecke, rotiert) statt Unicode-
    Pfeilzeichen ("◀"/"▶") - auf älteren iPads/Safari-Versionen fehlen
@@ -880,13 +876,13 @@ input.score { font-size:16px; }
         position: sticky;
         top: calc(var(--app-bar-h, 54px) + 6px);
         z-index: 150;
-        padding: 10px 10px;
-        background: rgba(255, 255, 255, .88);
+        padding: 8px;
+        background: rgba(255, 255, 255, .92);
         -webkit-backdrop-filter: saturate(180%) blur(14px);
         backdrop-filter: saturate(180%) blur(14px);
-        border: 1px solid rgba(31, 78, 121, .14);
-        border-radius: 18px;
-        box-shadow: 0 6px 18px rgba(20, 50, 90, .16);
+        border: 1px solid var(--app-line, #c9d6e6);
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(20, 50, 90, .08);
       }
 .schedule-roundbar label {
         grid-column: 2;
@@ -1237,6 +1233,16 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
 .track .pos, .central-table .rankcol, .central-table .rplace,
 .central-table .ptscol, .central-table .diffcol { text-align: center; font-weight: 700; }
 
+/* Laufende Tabelle: leere Korrektur-Spalten nicht als Leerstreifen zeigen.
+   "Korr." erscheint bei vorhandenen Δ-Werten oder im Bearbeiten-Modus,
+   die Rücksetz-Spalte (.mstd-rowact) nur im Bearbeiten-Modus. Die Klassen
+   setzt paintTrack() der Bögen; Tabellen ohne Korrektur bleiben schlank. */
+@media screen {
+  table.track:not(.is-editing):not(.has-corr) .mstd-actcol,
+  table.track:not(.is-editing):not(.has-corr) .mstd-cell,
+  table.track:not(.is-editing) .mstd-rowact { display: none; }
+}
+
 /* Beispielzeile der Schweizer Tabelle wie in der laufenden Tabelle. */
 .example-row td { background: #eef6ff; color: #15467a; font-style: italic; }
 .example-row .teamcol, .example-row .lbl { background: #dceaf7; font-style: normal; }
@@ -1448,6 +1454,35 @@ table.timeplan th:nth-child(odd), table.timeplan td:nth-child(odd) {
 }
 table.timeplan td:nth-child(even) { text-align: left; }
 table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
+/* Am Bildschirm etwas Luft je Zeile: mit 2 px wirkten einzeilige Zeilen neben
+   umbrechenden (z. B. „Platzierung – Über-Kreuz“) gequetscht. Druck unverändert. */
+@media screen {
+  table.timeplan th, table.timeplan td { padding: 5px 8px; }
+}
+
+/* Offene Spiele: der reservierte Ergebnisbereich (.presult, feste Höhe gegen
+   Layoutsprünge) bleibt, aber ohne Strichlinie – sie trennte bisher eine leere
+   Zeile ab. Mit Ergebnis (td.bl-done) erscheint sie wieder. Nur Bildschirm. */
+@media screen {
+  td.match.bl-open .presult { border-top-color: transparent; }
+}
+
+/* King & Queen / King of the Court: Rundentitel als dunkle Pille wie .rlabel
+   der übrigen Bögen. */
+@media screen {
+  .kq-rlabel {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--app-blue-dark, #1a3a5c);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: .02em;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+}
 
 /* ---------------------------------------------------------------------------
    Runden-Karten im gemeinsamen Spielplan und im Jeder-gegen-Jeden-Bogen.
@@ -1469,35 +1504,37 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
   .table-scroll.is-wide,
   .table-scroll.is-wide > table.sched { background: none !important; }
   .sched tr.rmatches > td.match:not(.is-bye) { background: #fff; }
+  /* Runden-Rahmen: eine ruhige 1px-Kontur (Token --app-line-strong) statt
+     dunkelblauer 2px-Kante - die Abstandszeile trennt die Runden bereits. */
   .sched tr.rgap + tr.rhead > td.rhead-cell {
-    border: 2px solid #1f4e79;
-    border-bottom: 1px solid #c3d3e6;
+    border: 1px solid var(--app-line-strong, #a9bdd4);
+    border-bottom: 1px solid #d6e1ef;
   }
-  .sched tr.rgap + tr.rhead + tr.fhead > th:first-child { border-left: 2px solid #1f4e79; }
-  .sched tr.rgap + tr.rhead + tr.fhead > th:last-child { border-right: 2px solid #1f4e79; }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td { border-bottom: 2px solid #1f4e79; }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:first-child { border-left: 2px solid #1f4e79; }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child { border-right: 2px solid #1f4e79; }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:first-child { border-left: 1px solid var(--app-line-strong, #a9bdd4); }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:last-child { border-right: 1px solid var(--app-line-strong, #a9bdd4); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td { border-bottom: 1px solid var(--app-line-strong, #a9bdd4); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:first-child { border-left: 1px solid var(--app-line-strong, #a9bdd4); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child { border-right: 1px solid var(--app-line-strong, #a9bdd4); }
 }
 @media screen and (max-width: 640px) {
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] { height: 14px; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] > td { display: none; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round]:first-child { display: none; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead {
-    border: 2px solid #1f4e79;
+    border: 1px solid var(--app-line-strong, #a9bdd4);
     border-bottom: 0;
-    border-radius: 10px 10px 0 0;
+    border-radius: 12px 12px 0 0;
     overflow: hidden;
   }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead > td.rhead-cell {
     margin-top: 0;
     border: 0;
-    border-bottom: 2px solid #c3d3e6;
+    border-bottom: 1px solid #d6e1ef;
   }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches {
-    border: 2px solid #1f4e79;
+    border: 1px solid var(--app-line-strong, #a9bdd4);
     border-top: 0;
-    border-radius: 0 0 10px 10px;
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
   }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td {
@@ -1517,8 +1554,8 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
 @media screen {
   .round-block,
   .kq-round {
-    border: 2px solid #1f4e79;
-    border-radius: 10px;
+    border: 1px solid var(--app-line-strong, #a9bdd4);
+    border-radius: 12px;
     background: #fff;
     padding: 10px;
     margin: 0 0 24px;
@@ -1540,11 +1577,11 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
-    margin: -2px 0 -2px 8px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    margin: -4px 0 -4px 8px !important;
     padding: 0 !important;
     border-radius: 50% !important;
     border: 1px solid #1f6fa8 !important;
@@ -1562,4 +1599,15 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
 }
 @media print {
   .bl-rdone { display: none !important; }
+}
+
+/* OK-/Timer-Knopf an der Spielkarte: am Handy groesser antippbar
+   (draussen, mit Sonnenbrille/nassen Fingern). Nur Bildschirm. */
+@media screen and (max-width: 640px) {
+  body .score-ok,
+  body .bl-mtimer {
+    width: 32px;
+    height: 32px;
+  }
+  body .bl-mtimer svg { width: 17px; height: 17px; }
 }

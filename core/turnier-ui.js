@@ -753,7 +753,7 @@
       + tx('ui.track.cumulative', 'kumuliert') + '</th>';
     for (let r = 1; r <= roundCount; r++) html += '<th>R' + r + '</th>';
     html += '<th class="mstd-actcol noprint">' + tx('ui.track.corr', 'Korr.') + '</th><th class="pos">' + tx('ui.track.place', 'Platz') + '</th>'
-      + '<th class="mstd-actcol noprint"></th></tr></thead><tbody>';
+      + '<th class="mstd-actcol mstd-rowact noprint"></th></tr></thead><tbody>';
     /* Beispielzeile – zeigt wie man die Tabelle ausfüllt */
     let pEx = 0, bdEx = 0;
     const ptsEx = [], bdExArr = [];
@@ -767,7 +767,7 @@
       + '</td><td class="lbl">' + ptsLabel + '</td>';
     ptsEx.forEach(v => html += '<td>' + v + '</td>');
     html += '<td class="mstd-actcol noprint"></td><td class="pos" rowspan="2">3.</td>'
-      + '<td class="mstd-actcol noprint" rowspan="2"></td></tr>';
+      + '<td class="mstd-actcol mstd-rowact noprint" rowspan="2"></td></tr>';
     html += '<tr class="ex ex-end"><td class="lbl">' + bdLabel + '</td>';
     bdExArr.forEach(v => html += '<td>' + (v > 0 ? '+' : '') + v + '</td>');
     html += '<td class="mstd-actcol noprint"></td></tr>';
@@ -779,7 +779,7 @@
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
       html += '<td class="mstd-cell noprint" data-corr="dPts"></td>'
         + '<td class="pos" rowspan="2" data-pos></td>'
-        + '<td class="mstd-actcol noprint" rowspan="2" data-actcol></td></tr>';
+        + '<td class="mstd-actcol mstd-rowact noprint" rowspan="2" data-actcol></td></tr>';
       html += '<tr data-team="' + t + '" data-line="bd"><td class="lbl">' + bdLabel + '</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
       html += '<td class="mstd-cell noprint" data-corr="dBd"></td></tr>';

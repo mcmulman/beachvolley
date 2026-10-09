@@ -211,3 +211,7 @@
 /* ══ Turnier-Auswahl-Overlay (core/turnier-resume-picker.js) ═══════════ */
 .no-flexgap .trp-list > * + * { margin-top: 8px; }
 .no-flexgap .trp-item > * + * { margin-top: 2px; }
+
+/* Rundentitel-Pille (King & Queen / King of the Court) vor Freilos-/Zeit-Hinweis. */
+.no-flexgap .kq-round-title > .kq-rlabel,
+.no-flexgap .kq-round-head > .kq-rlabel { margin-right: 6px; }

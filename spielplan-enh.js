@@ -39,13 +39,13 @@
     + '#bl-toast button{margin-left:10px;padding:5px 9px;border:1px solid currentColor;border-radius:5px;'
     + 'min-height:44px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
     + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
-    + '@media screen{td.bl-open .psets{background:#f3e6e8;border-bottom:3px solid #925d68;'
+    + '@media screen{td.bl-open .psets{background:#eaf2fb;border-bottom:3px solid #7d9fc4;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
     /* ⏱ je offenem Spiel: spiegelt den ✓-Knopf links neben den Kaestchen. */
     + '.bl-mtimer{width:22px;height:22px;margin-right:8px;border-radius:50%;border:1px solid #b7bfc9;'
     + 'background:#eef1f4;color:#1a3a5c;font-size:12px;line-height:1;text-decoration:none;'
-    + '.bl-mtimer svg{display:block;width:14px;height:14px;pointer-events:none}'
     + 'display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}'
+    + '.bl-mtimer svg{display:block;width:14px;height:14px;pointer-events:none}'
     + '.bl-mtimer:hover,.bl-mtimer:focus{background:#e0e5eb}'
     + 'td.bl-done .bl-mtimer{visibility:hidden}'
     + '@media print{.bl-mtimer{display:none!important}}'
@@ -597,7 +597,7 @@
      Die bestehenden Elemente (#rv-…) werden nur umsortiert, damit die
      bogeneigene Befüllung inkl. is-warn unverändert weiterarbeitet.       */
   var KPI_MAIN = [
-    ['rv-teams', tx('enh.kpi.teams', 'Teams')], ['rv-participants', tx('enh.kpi.participants', 'Teilnehmer:innen')],
+    ['rv-teams', tx('enh.kpi.teams', 'Teams')], ['rv-participants', tx('enh.kpi.participants', 'Personen')],
     ['rv-groups', tx('enh.kpi.groups', 'Gruppen')],
     ['rv-fields', tx('enh.kpi.fields', 'Felder')], ['rv-perTeam', tx('enh.kpi.perTeam', 'Spiele pro Team')],
     ['rv-perPerson', tx('enh.kpi.perPerson', 'Spiele pro Person')],
@@ -768,7 +768,7 @@
       return String(inp.value || '').trim() !== '';
     });
     if (filled && !window.confirm(tx('enh.timerResult.replace',
-      'Für dieses Spiel ist schon ein Ergebnis eingetragen. Durch das Ergebnis aus dem Spiel-Timer ({result}) ersetzen?',
+      'Für dieses Spiel ist schon ein Ergebnis eingetragen. Durch das Ergebnis aus dem Score Counter ({result}) ersetzen?',
       { result: text }))) return;
     var ok = true;
     r.sets.forEach(function (p, i) {
@@ -785,8 +785,8 @@
     var cell = scoreInput(r.ref, 1, 'a');
     td = cell ? cell.closest('td.match') : td;
     showTimerResultNote(td, ok
-      ? tx('enh.timerResult.applied', 'Ergebnis aus dem Spiel-Timer übernommen: {result}', { result: text })
-      : tx('enh.timerResult.failed', 'Das Ergebnis aus dem Spiel-Timer ({result}) konnte nicht übernommen werden – bitte selbst eintragen.', { result: text }));
+      ? tx('enh.timerResult.applied', 'Ergebnis aus dem Score Counter übernommen: {result}', { result: text })
+      : tx('enh.timerResult.failed', 'Das Ergebnis aus dem Score Counter ({result}) konnte nicht übernommen werden – bitte selbst eintragen.', { result: text }));
     schedule();
   }
   /* ⏱ „Timer für dieses Spiel“: öffnet den Spiel-Timer mit beiden Namen
@@ -812,7 +812,7 @@
       box.insertBefore(link, box.firstChild);
     }
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
-    var label = tx('enh.matchTimerAria', 'Spiel-Timer für {a} gegen {b} öffnen',
+    var label = tx('enh.matchTimerAria', 'Score Counter für {a} gegen {b} öffnen',
       { a: matchSideName(td, 'a'), b: matchSideName(td, 'b') });
     if (link.getAttribute('aria-label') !== label) {
       link.setAttribute('aria-label', label);
@@ -855,8 +855,8 @@
     var link = document.createElement('a');
     link.className = 'app-bar__btn bl-timer-link noprint';
     link.href = timerHref();
-    link.setAttribute('aria-label', tx('enh.timerAria', 'Spiel-Timer öffnen (Turnierergebnisse bleiben unverändert)'));
-    link.setAttribute('title', tx('enh.timerAria', 'Spiel-Timer öffnen (Turnierergebnisse bleiben unverändert)'));
+    link.setAttribute('aria-label', tx('enh.timerAria', 'Score Counter öffnen (Turnierergebnisse bleiben unverändert)'));
+    link.setAttribute('title', tx('enh.timerAria', 'Score Counter öffnen (Turnierergebnisse bleiben unverändert)'));
     var ic = document.createElement('span');
     ic.className = 'ic';
     ic.setAttribute('aria-hidden', 'true');

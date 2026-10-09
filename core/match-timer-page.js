@@ -228,13 +228,95 @@
   /* Hinweise nach Beach-Regeln: Satzgewinn vor Seitenwechsel. */
   function renderNotice() {
     var winner = TM.setWinner(state);
-    var text = '';
-    if (winner) text = tx('timer.notice.setWon', 'Satzgewinn {name} – Satz beenden', { name: sideName(winner) });
-    else if (TM.isSideSwitch(state)) text = tx('timer.notice.switch', 'Seitenwechsel');
-    el.notice.textContent = text;
-    el.notice.hidden = !text;
-    el.notice.className = 'mt-notice' + (winner ? ' is-set' : '');
+    el.setWonTitle.textContent = winner
+      ? tx('timer.notice.setWon', 'Satzgewinn {name} – Satz beenden', { name: sideName(winner) }) : '';
     el.endSet.classList.toggle('is-ready', !!winner);
+  }
+  /* Seitenwechsel-Rhythmus: Einstellung und Popup teilen sich denselben Wert. */
+  function renderSwitchSelects() {
+    var values = [TM.SWITCH_AUTO].concat(TM.SWITCH_OPTIONS, [TM.SWITCH_OFF]);
+    var auto = TM.switchEvery(TM.setTarget(state));
+    el.switchSelects.forEach(function (sel) {
+      if (sel.options.length !== values.length) {
+        sel.innerHTML = '';
+        values.forEach(function (v) {
+          var opt = doc.createElement('option');
+          opt.value = String(v);
+          sel.appendChild(opt);
+        });
+      }
+      values.forEach(function (v, i) {
+        sel.options[i].textContent = v === TM.SWITCH_AUTO
+          ? tx('timer.switch.auto', 'Automatisch (alle {n})', { n: auto })
+          : v === TM.SWITCH_OFF ? tx('timer.switch.off', 'Aus')
+            : tx('timer.switch.every', 'Alle {n} Punkte', { n: v });
+      });
+      if (sel.value !== String(state.switchPts)) sel.value = String(state.switchPts);
+    });
+  }
+  function onSwitchPts(e) {
+    commit(TM.setSwitchPts(state, parseInt(e.target.value, 10)));
+    var every = TM.switchInterval(state);
+    announce(every
+      ? tx('timer.switch.every', 'Alle {n} Punkte', { n: every })
+      : tx('timer.switch.off', 'Aus'));
+  }
+
+  /* ------------------------------------------------------------- Popups
+     Eigenes Overlay statt <dialog> (erst ab Safari 15.4): Hintergrund per
+     aria-hidden ausblenden, Fokus im Popup halten und danach zurückgeben. */
+  var modal = null;
+  function focusables(box) {
+    var list = box.querySelectorAll('button, select, input, [href]');
+    var out = [];
+    for (var i = 0; i < list.length; i++) if (!list[i].disabled && list[i].offsetParent !== null) out.push(list[i]);
+    return out;
+  }
+  function setBackgroundHidden(hidden) {
+    [el.bar, el.root].forEach(function (node) {
+      if (!node) return;
+      if (hidden) node.setAttribute('aria-hidden', 'true'); else node.removeAttribute('aria-hidden');
+    });
+  }
+  function openModal(box, focusEl, onClose) {
+    if (modal && modal.box !== box) closeModal(false);
+    if (!modal) modal = { box: box, back: doc.activeElement };
+    modal.onClose = onClose;
+    box.hidden = false;
+    doc.documentElement.classList.add('mt-modal-open');
+    setBackgroundHidden(true);
+    try { focusEl.focus(); } catch (e) { /* ohne Fokus */ }
+  }
+  function closeModal(restore) {
+    if (!modal) return;
+    var m = modal;
+    modal = null;
+    m.box.hidden = true;
+    doc.documentElement.classList.remove('mt-modal-open');
+    setBackgroundHidden(false);
+    if (restore === false) return;
+    var target = restore && restore.focus ? restore : m.back;
+    if (!target || !target.focus || target.disabled || target.offsetParent === null) target = el.primary;
+    try { target.focus(); } catch (e) { /* ohne Fokus */ }
+  }
+  function onModalKey(e) {
+    if (!modal) return;
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      modal.onClose();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    var items = focusables(modal.box);
+    if (!items.length) return;
+    var first = items[0], last = items[items.length - 1];
+    var inside = modal.box.contains(doc.activeElement);
+    if (e.shiftKey && (doc.activeElement === first || !inside)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (doc.activeElement === last || !inside)) { e.preventDefault(); first.focus(); }
+  }
+  function showSwitch() {
+    el.switchScore.textContent = sideName('a') + ' ' + state.score.a + ' : ' + state.score.b + ' ' + sideName('b');
+    openModal(el.switchModal, el.switchOk, function () { closeModal(true); });
   }
   function renderTransfer() {
     el.transfer.hidden = !(returnTarget && TM.resultFor(state));
@@ -253,13 +335,10 @@
     /* Balken über den Punkten: Verhältnis im laufenden Satz. */
     var cur = TM.leader(state.score);
     var curTotal = state.score.a + state.score.b;
-    el.curBar.hidden = !curTotal;
     el.curBar.className = 'mt-cur-bar' + (cur.side ? ' is-' + cur.side : ' is-tie');
-    if (curTotal) {
-      var ca = Math.round(state.score.a / curTotal * 1000) / 10;
-      el.curSeg.a.style.width = ca + '%';
-      el.curSeg.b.style.width = (100 - ca) + '%';
-    }
+    var ca = curTotal ? Math.round(state.score.a / curTotal * 1000) / 10 : 0;
+    el.curSeg.a.style.width = ca + '%';
+    el.curSeg.b.style.width = (curTotal ? 100 - ca : 0) + '%';
     ['a', 'b'].forEach(function (s) {
       el.card[s].classList.toggle('is-leading', cur.side === s);
     });
@@ -305,7 +384,7 @@
     }
   }
   function wantsWake() {
-    return state.status === 'running' && state.keepAwake && !doc.hidden && !pageUnloading;
+    return (state.status === 'running' || !state.clockEnabled) && state.keepAwake && !doc.hidden && !pageUnloading;
   }
   function wakeMessage(key) {
     el.wakeStatus.textContent = key ? tx(key, key) : '';
@@ -394,6 +473,9 @@
     catch (e) { return false; }
   }
   function render() {
+    el.clock.hidden = !state.clockEnabled;
+    el.clockOpen.hidden = state.clockEnabled;
+    el.root.classList.toggle('is-points-only', !state.clockEnabled);
     renderTime();
     el.root.setAttribute('data-status', state.status);
     el.status.textContent = statusText();
@@ -402,6 +484,7 @@
     renderLead();
     renderNotice();
     renderTransfer();
+    renderSwitchSelects();
     el.hint.hidden = !returnTarget || !!state.match;
     el.undo.disabled = !TM.canUndo(state);
     el.endSet.disabled = !TM.canEndSet(state);
@@ -436,6 +519,9 @@
     el.keepAwake.setAttribute('aria-pressed', state.keepAwake ? 'true' : 'false');
     var auto = isAutoCompact();
     el.wakeHint.hidden = !state.keepAwake;
+    el.wakeHint.textContent = state.clockEnabled
+      ? tx('timer.keepAwakeHint', 'Display bleibt an, solange die Zeit läuft (braucht mehr Akku).')
+      : tx('timer.keepAwakePointsHint', 'Display bleibt beim Punktezählen an (braucht mehr Akku).');
     el.compactLabel.textContent = state.compact ? tx('timer.normal', 'Normal') : tx('timer.compact', 'Kompakt');
     el.compact.setAttribute('aria-label', state.compact
       ? tx('timer.normalAria', 'Zur Normalansicht wechseln')
@@ -480,11 +566,13 @@
       beep(990, 0.2, 0.3);
       haptic('notice');
       announce(scoreSentence() + '. ' + tx('timer.announce.setWon', 'Satzgewinn für {name}', { name: sideName(winner) }));
+      openModal(el.setWonModal, el.setWonEnd, function () { closeModal(true); });
     } else if (freq === 880 && TM.isSideSwitch(state) && !wasSwitch) {
       beep(freq);
       beep(freq, 0.18);
       haptic('notice');
       announce(tx('timer.announce.switch', 'Seitenwechsel bei {a} : {b}', { a: state.score.a, b: state.score.b }));
+      showSwitch();
     } else {
       beep(freq);
       haptic('light');
@@ -589,18 +677,16 @@
     el.prefillQuestion.textContent = tx('timer.prefillQuestion',
       'Neues Spiel aus dem Turnierbogen: {a} gegen {b}. Das laufende Spiel ({score}) wird dabei zurückgesetzt.',
       { a: label('a'), b: label('b'), score: sideName('a') + ' ' + state.score.a + ' : ' + state.score.b + ' ' + sideName('b') });
-    el.prefill.hidden = false;
-    el.prefillNo.focus();
+    openModal(el.prefill, el.prefillNo, function () { closePrefill(false); });
   }
   function closePrefill(accept) {
     var names = pendingPrefill;
     pendingPrefill = null;
-    el.prefill.hidden = true;
+    closeModal(el.primary);
     if (accept && names) {
       commit(withMatch(TM.setNames(TM.reset(state), names.a, names.b), names));
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: sideName('a'), b: sideName('b') }));
     }
-    el.primary.focus();
   }
   function commitDirect(side) {
     var input = el.direct[side];
@@ -665,6 +751,9 @@
   function mount() {
     el.root = byId('match-timer');
     if (!el.root) return;
+    el.clock = byId('mt-clock');
+    el.clockOpen = byId('mt-clock-open');
+    el.clockClose = byId('mt-clock-close');
     el.warning = byId('mt-storage-warning');
     el.status = byId('mt-status');
     el.time = byId('mt-time');
@@ -697,7 +786,10 @@
       b: doc.querySelector('.mt-side[data-side="b"]')
     };
     el.hint = byId('mt-hint');
-    el.notice = byId('mt-notice');
+    el.setWonModal = byId('mt-set-won');
+    el.setWonTitle = byId('mt-set-won-title');
+    el.setWonEnd = byId('mt-set-won-end');
+    el.setWonContinue = byId('mt-set-won-continue');
     el.transfer = byId('mt-transfer');
     el.undo = byId('mt-undo');
     el.swap = byId('mt-swap');
@@ -706,6 +798,12 @@
     el.prefillQuestion = byId('mt-prefill-question');
     el.prefillYes = byId('mt-prefill-yes');
     el.prefillNo = byId('mt-prefill-no');
+    el.bar = doc.querySelector('.mt-bar');
+    el.switchModal = byId('mt-switch');
+    el.switchScore = byId('mt-switch-score');
+    el.switchOk = byId('mt-switch-ok');
+    el.switchSwap = byId('mt-switch-swap');
+    el.switchSelects = [byId('mt-switch-pts'), byId('mt-switch-pts-modal')];
     el.backLabel = byId('mt-back-label');
     el.name = {}; el.value = {}; el.short = {}; el.plus = {}; el.minus = {}; el.direct = {};
     ['a', 'b'].forEach(function (side) {
@@ -726,6 +824,14 @@
     expiredSignaled = TM.isExpired(state, now());
 
     el.primary.addEventListener('click', onPrimary);
+    el.clockClose.addEventListener('click', function () {
+      commit(TM.setClockEnabled(state, false, now()));
+      el.clockOpen.focus();
+    });
+    el.clockOpen.addEventListener('click', function () {
+      commit(TM.setClockEnabled(state, true, now()));
+      el.clockClose.focus();
+    });
     el.mode.addEventListener('change', onMode);
     el.undo.addEventListener('click', onUndo);
     el.swap.addEventListener('click', onSwap);
@@ -733,9 +839,23 @@
     el.transfer.addEventListener('click', onTransfer);
     el.prefillYes.addEventListener('click', function () { closePrefill(true); });
     el.prefillNo.addEventListener('click', function () { closePrefill(false); });
-    el.prefill.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' || e.key === 'Esc') { e.preventDefault(); closePrefill(false); }
+    doc.addEventListener('keydown', onModalKey);
+    [el.prefill, el.switchModal, el.setWonModal].forEach(function (box) {
+      box.addEventListener('click', function (e) {
+        if (e.target === box && modal && modal.box === box) modal.onClose();
+      });
     });
+    el.switchOk.addEventListener('click', function () { closeModal(true); });
+    el.setWonContinue.addEventListener('click', function () { closeModal(true); });
+    el.setWonEnd.addEventListener('click', function () {
+      closeModal(el.primary);
+      onEndSet();
+    });
+    el.switchSwap.addEventListener('click', function () {
+      closeModal(el.primary);
+      onSwap();
+    });
+    el.switchSelects.forEach(function (sel) { sel.addEventListener('change', onSwitchPts); });
     el.stop.addEventListener('click', onStop);
     ['a', 'b'].forEach(function (side) {
       el.plus[side].addEventListener('click', function () { changeScore(side, TM.addPoint(state, side, 1), 880); });
@@ -764,7 +884,7 @@
       var enabled = !state.keepAwake;
       commit(TM.setKeepAwake(state, enabled));
       announce(enabled
-        ? tx('timer.keepAwakeHint', 'Display bleibt an, solange die Zeit läuft (braucht mehr Akku).')
+        ? el.wakeHint.textContent
         : tx('timer.announce.keepAwakeOff', 'Bildschirm darf sich wieder abschalten'));
     });
     el.compact.addEventListener('click', function () { commit(TM.setCompact(state, !state.compact)); });

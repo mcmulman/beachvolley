@@ -27,7 +27,7 @@
       --border:     #ccd8e8;
       --white:      #fff;
       --radius:     14px;
-      --shadow:     0 6px 24px rgba(31,111,168,.14);
+      --shadow:     0 1px 2px rgba(16,42,74,.05), 0 2px 10px rgba(16,42,74,.06);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,7 +72,8 @@
     .appbar .brand img { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 2px 6px rgba(26,58,92,.25); }
     .appbar .brand .brand-sub { display: block; font-size: 10.5px; font-weight: 600; color: var(--muted); letter-spacing: .3px; }
     .appbar-spacer { flex: 1; }
-    .appbar-actions { display: flex; align-items: center; gap: 8px; }
+    .appbar-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .appbar .brand { flex: 0 0 auto; }
     .pill {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 12.5px; font-weight: 700;
@@ -89,11 +90,17 @@
       .appbar .brand-title { display: none; }
       .pill .lbl { display: none; }
       .pill { padding: 8px; }
+      /* Status-Text (z. B. „Offline-Modus nicht verfügbar“) darf auf sehr
+         schmalen Screens umbrechen statt die Seite zu verbreitern. */
+      #offline-status {
+        min-width: 0; padding: 6px 10px; white-space: normal;
+        font-size: 11.5px; line-height: 1.2; text-align: center;
+      }
     }
 
     /* ── Header ── */
     header {
-      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
+      background: var(--blue-dark);
       color: var(--white);
       padding: 36px 24px 32px;
       text-align: center;
@@ -138,17 +145,17 @@
     .wizard-wrap { max-width: 1080px; margin: 24px auto 24px; padding: 0 20px; }
     .wizard {
       background: var(--white);
-      border: 2px solid var(--blue);
+      border: 1px solid var(--blue-dark);
       border-radius: var(--radius);
-      box-shadow: 0 8px 26px rgba(31,111,168,.28);
+      box-shadow: 0 2px 12px rgba(31,111,168,.16);
       overflow: hidden;
       transition: box-shadow .18s, transform .18s;
       animation: wizardAttention 2.2s ease .3s 1;
     }
-    .wizard:hover { box-shadow: 0 10px 32px rgba(31,111,168,.36); transform: translateY(-1px); }
+    .wizard:hover { box-shadow: 0 4px 16px rgba(31,111,168,.22); }
     @keyframes wizardAttention {
-      0%, 100% { box-shadow: 0 8px 26px rgba(31,111,168,.28); }
-      50% { box-shadow: 0 0 0 6px rgba(31,111,168,.22), 0 8px 26px rgba(31,111,168,.28); }
+      0%, 100% { box-shadow: 0 2px 12px rgba(31,111,168,.16); }
+      50% { box-shadow: 0 0 0 6px rgba(31,111,168,.2), 0 2px 12px rgba(31,111,168,.16); }
     }
     .wizard-summary {
       cursor: pointer;
@@ -157,7 +164,7 @@
       font-weight: 700;
       font-size: 15px;
       color: var(--white);
-      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+      background: var(--blue-dark);
       display: flex;
       align-items: center;
       gap: 12px;
@@ -175,7 +182,6 @@
       border-radius: 50%;
       background: var(--white);
       color: var(--blue-dark);
-      box-shadow: 0 2px 6px rgba(0,0,0,.2);
     }
     .wizard-icon-badge svg { width: 20px; height: 20px; }
     .wizard-summary-title { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
@@ -202,8 +208,9 @@
     .wizard-q { font-size: 12px; font-weight: 700; color: var(--muted); }
     .wizard-opts { display: flex; flex-wrap: wrap; gap: 6px; }
     .wizard-opt {
-      padding: 6px 12px;
-      font-size: 12.5px;
+      min-height: 40px;
+      padding: 8px 14px;
+      font-size: 13px;
       border: 1px solid var(--border);
       background: var(--white);
       color: var(--muted);
@@ -292,17 +299,16 @@
       border-radius: 10px;
       background: var(--white);
       color: var(--text);
-      font-size: 13px;
+      font-size: 16px;
       padding: 8px 10px;
-      min-height: 38px;
+      min-height: 44px;
     }
     .mobile-filter-grid .mf-reset {
-      grid-column: 1 / -1;
       width: 100%;
       text-align: center;
       border-radius: 10px;
       font-size: 13px;
-      min-height: 38px;
+      min-height: 44px;
     }
     @media (max-width: 640px) {
       .filterbar {
@@ -310,9 +316,11 @@
         padding: 10px 12px;
       }
       .filterbar-desktop { display: none; }
+      /* Format-Auswahl breit, „Alle anzeigen“ rechts daneben (eine Zeile). */
       .mobile-filter-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-gap: 8px;
         gap: 8px;
         align-items: end;
       }
@@ -386,15 +394,15 @@
       justify-content: center;
       min-height: 104px;
       padding: 10px 6px;
-      background: linear-gradient(145deg, #1a3a5c 0%, #1f6fa8 100%);
+      background: var(--blue-dark);
       border-radius: var(--radius);
       color: #fff;
       text-align: center;
       text-decoration: none;
-      box-shadow: 0 4px 14px rgba(31,111,168,.28);
+      box-shadow: none;
       transition: box-shadow .16s, transform .12s;
     }
-    .timer-tool:hover { box-shadow: 0 6px 20px rgba(31,111,168,.4); }
+    .timer-tool:hover { background: var(--blue); }
     .timer-tool:active { transform: scale(.97); }
     .timer-tool:focus { outline: 3px solid var(--blue); outline-offset: 2px; }
     .timer-tool__icon { display: block; width: 40px; height: 40px; margin-bottom: 6px; }
@@ -477,14 +485,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 38px;
-      padding: 8px 12px;
-      font-size: 12px;
+      min-height: 44px;
+      padding: 8px 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--blue-dark);
       background: var(--white);
       border: 1px solid var(--border);
-      border-radius: 9px;
+      border-radius: 10px;
       text-decoration: none;
       white-space: nowrap;
       flex: 0 0 auto;
@@ -494,11 +502,12 @@
       background: var(--blue-light);
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(31,111,168,.2);
+    @media (hover: hover) {
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(31,111,168,.14);
+      }
     }
-    .card:active { transform: translateY(-1px) scale(.995); }
 
     .filter-btn { border: 1px solid var(--border); background: var(--white); }
     .filter-btn:active { transform: scale(.95); }
@@ -547,9 +556,11 @@
       color: var(--muted);
     }
 
+    /* Inhalt oben bündig; der Leerraum ungleich hoher Karten sammelt sich
+       über der Fußleiste (.card-footer margin-top:auto) statt mitten in der Karte. */
     .card-body {
       padding: 16px 20px;
-      flex: 1;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -599,9 +610,16 @@
       gap: 5px;
     }
 
+    /* Flex-Container: das Häkchen bleibt bei umbrechendem Text links stehen
+       (hängender Einzug) statt in die zweite Zeile zu rutschen. */
     .feat {
+      display: -webkit-inline-box;
+      display: inline-flex;
+      align-items: flex-start;
+      max-width: 100%;
       font-size: 11.5px;
       font-weight: 600;
+      line-height: 1.35;
       color: var(--green);
       background: var(--green-light);
       border-radius: 6px;
@@ -610,6 +628,7 @@
 
     /* CTA */
     .card-footer {
+      margin-top: auto;
       padding: 14px 20px 16px;
       border-top: 1px solid var(--border);
       display: flex;
@@ -621,7 +640,9 @@
     .btn-open {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      min-height: 44px;
       padding: 9px 20px;
       font-size: 13.5px;
       font-weight: 700;
@@ -636,6 +657,14 @@
     }
 
     .btn-open:hover { background: var(--blue); }
+    /* Zweite Aktion einer Karte (z. B. „Als Finalrunde aus Rangliste“) ist
+       sekundär: Outline statt eines zweiten dunklen Primär-Buttons. */
+    .card-footer .btn-open + .btn-open {
+      background: var(--white);
+      color: var(--blue-dark);
+      border: 1px solid var(--border);
+    }
+    .card-footer .btn-open + .btn-open:hover { background: var(--blue-light); border-color: var(--blue); }
 
     /* Einfarbige Linien-Icons (Lucide-Stil) statt Emoji/Sonderzeichen im Text. */
     .stat .icon { display: inline-flex; align-items: center; }
@@ -643,7 +672,7 @@
     header .logo svg { display: inline-block; width: 40px; height: 40px; }
     .bl-ic--btn { width: 16px; height: 16px; flex: 0 0 auto; }
     .bl-ic--chev { width: 14px; height: 14px; vertical-align: -2px; }
-    .feat::before{content:"";display:inline-block;flex:0 0 auto;width:1em;height:1em;margin:0 4px 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain}
+    .feat::before{content:"";display:inline-block;flex:0 0 auto;width:1em;height:1em;margin:.15em 4px 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain}
     .btn-open::after{content:"";display:inline-block;flex:0 0 auto;width:1.05em;height:1.05em;margin:0 0 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='7' y1='17' x2='17' y2='7'/%3E%3Cpolyline points='7 7 17 7 17 17'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='7' y1='17' x2='17' y2='7'/%3E%3Cpolyline points='7 7 17 7 17 17'/%3E%3C/svg%3E") no-repeat center/contain}
     .wizard-result-btn::after{content:"";display:inline-block;flex:0 0 auto;width:1.05em;height:1.05em;margin:0 0 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cpolyline points='19 12 12 19 5 12'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cpolyline points='19 12 12 19 5 12'/%3E%3C/svg%3E") no-repeat center/contain}
     a[data-i18n="home.card.gruppen.blocks"]::before{content:"";display:inline-block;flex:0 0 auto;width:1.1em;height:1.1em;margin:0 0 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='15' r='6'/%3E%3Cpath d='M8.5 10 6 3h4l2 4 2-4h4l-2.5 7'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='15' r='6'/%3E%3Cpath d='M8.5 10 6 3h4l2 4 2-4h4l-2.5 7'/%3E%3C/svg%3E") no-repeat center/contain}
@@ -1031,8 +1060,8 @@
 
   <a class="timer-tool noprint" id="home-timer-link" href="Spiel_Timer.html">
     <svg class="timer-tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="14" r="8"/><path d="M12 14V10"/><path d="M10 2h4"/><path d="M12 2v4"/><path d="m19 7 1.5-1.5"/></svg>
-    <strong data-i18n="home.timer.title">Spiel-Timer</strong>
-    <span class="timer-tool__sub" data-i18n="home.timer.desc">Zeit &amp; Punkte</span>
+    <strong data-i18n="home.timer.title">Score Counter</strong>
+    <span class="timer-tool__sub" data-i18n="home.timer.desc">Punkte · Sätze · Zeit</span>
   </a>
   </div>
 

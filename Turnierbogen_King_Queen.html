@@ -134,7 +134,7 @@
 
   <div class="cfgresult" id="cfgResult">
     <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.mode">Spielmodus</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-participants">–</span><span class="cfgres-lbl" data-i18n="kq.kpi.participants">Teilnehmer:innen</span></div>
+    <div class="cfgres-item"><span class="cfgres-val" id="rv-participants">–</span><span class="cfgres-lbl" data-i18n="kq.kpi.participants">Personen</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.games">Spiele gesamt</span></div>
     <div class="cfgres-item"><span class="cfgres-val" id="rv-perPerson">–</span><span class="cfgres-lbl" data-i18n="kq.kpi.perPerson">Spiele pro Person (ca.)</span></div>
@@ -485,7 +485,7 @@
       const byeNote = (rd.bye && rd.bye.length)
         ? '<span class="kq-bye">' + esc(T('kq.round.bye', { list: rd.bye.map(p => playerName(p)).join(', ') })) + '</span>' : '';
       html += '<div class="kq-round" data-round-block="' + rd.round + '">'
-        + '<div class="kq-round-title">' + esc(T('ui.round.n', { n: rd.round })) + byeNote + '</div>'
+        + '<div class="kq-round-title"><span class="kq-rlabel">' + esc(T('ui.round.n', { n: rd.round })) + '</span>' + byeNote + '</div>'
         + '<table class="kq-cards"><tbody><tr>'
         + rd.matches.map(m => kqCellHtml(m, ctx)).join('')
         + '</tr></tbody></table></div>';

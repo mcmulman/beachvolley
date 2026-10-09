@@ -411,7 +411,7 @@
     let html = '';
     B.rounds.forEach(rd => {
       html += '<div class="kq-round round-block" data-round="' + rd.round + '">'
-        + '<div class="kq-round-head">' + TUI.esc(T('ui.round.n', { n: rd.round })) + ' <span style="font-weight:normal;color:#5c5c5c;font-size:12px">'
+        + '<div class="kq-round-head"><span class="kq-rlabel">' + TUI.esc(T('ui.round.n', { n: rd.round })) + '</span> <span style="font-weight:normal;color:#5c5c5c;font-size:12px">'
         + TUI.esc(T('kotc.round.time', { time: TUI.fmtTime(B.slots[rd.round-1] ? B.slots[rd.round-1].startMin : B.startMin) })) + '</span></div>'
         + '<div class="kq-courts">' + TUI.courtLadderHtml(displayCourts(rd.courts), rd.round) + '</div>'
         + '</div>';

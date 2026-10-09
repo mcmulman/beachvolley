@@ -45,7 +45,6 @@
   padding-left: calc(10px + env(safe-area-inset-left, 0px));
   padding-right: calc(10px + env(safe-area-inset-right, 0px));
   background: #1a3a5c;
-  background: linear-gradient(135deg, #1a3a5c 0%, #1f6fa8 100%);
   color: #fff;
   box-shadow: 0 2px 12px rgba(26, 58, 92, .28);
 }
@@ -114,7 +113,7 @@
 }
 .mt-error { margin: 10px 0 0; }
 
-.mt-clock { padding: 12px; text-align: center; }
+.mt-clock { position: relative; padding: 12px; text-align: center; }
 .mt-status {
   display: inline-block;
   padding: 3px 12px;
@@ -157,11 +156,10 @@
   -webkit-box-flex: 0;
   flex: 0 1 auto;
   min-height: 44px;
-  padding: 4px 10px;
+  padding: 4px 34px 4px 12px;
   font: inherit;
   font-weight: 650;
   color: #1a3a5c;
-  background: #fff;
   border: 1.5px solid #9fb2c8;
   border-radius: 10px;
 }
@@ -358,15 +356,35 @@
   border-radius: 999px;
 }
 .mt-set-win { font-weight: 800; color: #1a3a5c; }
-.mt-prefill { margin-bottom: 10px; }
 .mt-hint { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: #6b7385; text-align: center; }
 .mt-hint[hidden] { display: none; }
 
 /* ── Einstellungen / Zurücksetzen ── */
-.mt-settings { margin-top: 14px; }
+.mt-settings { margin-top: 10px; }
+.mt-clock[hidden] { display: none; }
+.mt-clock-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: #4a5468;
+  cursor: pointer;
+}
+.mt-clock .mt-status { max-width: calc(100% - 88px); }
+.mt-clock-close:hover { background: #eef2f7; color: #1a3a5c; }
+.mt-clock-open { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px; padding: 0; cursor: pointer; }
+.mt-clock-open[hidden] { display: none; }
 /* Einstellungen (4) und Spielaktionen (3) je in einer Zeile: Symbol über
    kurzer Beschriftung. */
-.mt-toolbar, .mt-actions { display: flex; margin: 0 0 8px; }
+.mt-toolbar, .mt-actions { display: flex; margin: 0; }
 .mt-actions { margin: 10px 0 0; }
 .mt-toolbar > .mt-toggle, .mt-actions > .mt-toggle {
   -webkit-box-flex: 1;
@@ -402,7 +420,6 @@
 .mt-toolbar > .mt-toggle { border: 1px solid #c6d2e0; background: #fff; color: #34445c; font-weight: 600; font-size: 12px; }
 .mt-toolbar > .mt-toggle:hover { background: #f1f5fa; }
 .mt-toolbar > .mt-toggle[aria-pressed="true"] { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
-.mt-settings { border-top: 1px solid #d5dde8; padding-top: 10px; }
 .mt-toolbar .mt-tl, .mt-actions .mt-tl { max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
 .mt-toggle:disabled { opacity: .45; cursor: default; }
 .mt-toggle, .mt-plain {
@@ -440,12 +457,153 @@
 .mt-confirm button { margin: 4px 8px 0 0; max-width: 100%; }
 .mt-confirm .mt-confirm-yes { color: #fff; background: #a61b1b; border-color: #a61b1b; }
 
+/* Seitenwechsel-Rhythmus: Beschriftung links, Auswahl rechts. */
+.mt-setting {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+}
+.mt-setting-label { margin: 4px 10px 4px 2px; font-size: 14px; font-weight: 650; color: #34445c; }
+.mt-select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 4px 34px 4px 12px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  color: #1a3a5c;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+}
+/* Eigener Pfeil statt des nativen: einheitlich in Safari/Chrome/WebView und
+   mit festem Abstand zum Text (der native Pfeil klebte am Optionstext). */
+.mt-select, .mt-mode select {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231a3a5c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  cursor: pointer;
+}
+.mt-settings > .mt-setting {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 10px;
+  -webkit-box-pack: justify;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  background: #fff;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+}
+.mt-settings > .mt-setting .mt-setting-label {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+/* Auswahl so breit wie ihr Text (max. 70 %), die Beschriftung
+   bricht notfalls um – so bleibt „Automatisch (alle 7)“ auch bei 320 px lesbar. */
+.mt-settings > .mt-setting .mt-select {
+  -webkit-box-flex: 0;
+  flex: 0 1 auto;
+  max-width: 70%;
+  border: 0;
+  border-left: 1px solid #e1e7ef;
+  border-radius: 0 11px 11px 0;
+  font-weight: 600;
+}
+
+/* ── Popups (Seitenwechsel, Spiel aus dem Bogen) ──
+   Kein dialog-Element und kein inset (Safari 12): fixes Overlay mit
+   top/right/bottom/left 0, Box per Flex mittig. */
+.mt-modal {
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 50;
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(15, 27, 45, .55);
+}
+.mt-modal[hidden] { display: none; }
+.mt-modal-open, .mt-modal-open body { overflow: hidden; }
+.mt-modal-box {
+  width: 100%;
+  max-width: 360px;
+  margin: auto;
+  padding: 20px 18px 16px;
+  text-align: center;
+  color: #1a1a2e;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+}
+.mt-modal-ic {
+  display: inline-block;
+  padding: 10px;
+  margin-bottom: 6px;
+  color: #1a3a5c;
+  background: #e6eef7;
+  border-radius: 999px;
+}
+.mt-modal-ic svg { display: block; }
+.mt-modal-title { margin: 0 0 6px; font-size: 22px; font-weight: 800; line-height: 1.25; color: #1a3a5c; }
+.mt-modal-text { margin: 0 0 14px; font-size: 15px; line-height: 1.45; color: #34445c; }
+.mt-modal-score {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #34445c;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  font-variant-numeric: tabular-nums;
+}
+.mt-modal-actions button { display: block; width: 100%; margin: 0 0 8px; }
+.mt-modal-actions .mt-plain {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+}
+.mt-modal-actions .mt-plain .mt-ic { margin-right: 8px; }
+.mt-modal-primary { background: #1a3a5c; color: #fff; font-size: 18px; min-height: 52px; }
+#mt-prefill .mt-modal-primary { background: #a61b1b; }
+.mt-modal-setting {
+  margin: 6px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e1e7ef;
+}
+.mt-modal-setting .mt-setting-label { font-size: 13px; font-weight: 600; color: #4a5468; }
+.mt-modal-setting .mt-select { font-size: 16px; }
+
 /* Fokus sichtbar (Tastatur/Screenreader); :focus als Safari-12-Fallback. */
-.mt button:focus, .mt input:focus, .mt-bar a:focus, .mt-bar button:focus {
+.mt button:focus, .mt input:focus, .mt select:focus, .mt-bar a:focus, .mt-bar button:focus,
+.mt-modal button:focus, .mt-modal select:focus {
   outline: 3px solid #f2a900;
   outline-offset: 2px;
 }
-.mt button:focus:not(:focus-visible), .mt-bar a:focus:not(:focus-visible), .mt-bar button:focus:not(:focus-visible) { outline: none; }
+.mt button:focus:not(:focus-visible), .mt-bar a:focus:not(:focus-visible), .mt-bar button:focus:not(:focus-visible),
+.mt-modal button:focus:not(:focus-visible) { outline: none; }
 
 /* ── Kompaktansicht ── */
 .mt.is-compact { padding: 6px 6px 10px; }
@@ -461,6 +619,7 @@
 .mt.is-compact .mt-name,
 .mt.is-compact .mt-direct,
 .mt.is-compact .mt-hint,
+.mt.is-compact .mt-settings .mt-setting,
 .mt.is-compact .mt-mode { display: none; }
 .mt.is-compact .mt-short { display: block; }
 .mt.is-compact .mt-value { font-size: 40px; margin: 2px 0; }
@@ -475,19 +634,7 @@
 .mt.is-compact .mt-cur-bar:not([hidden]) + .mt-sides { margin-top: 6px; }
 .mt.is-compact .mt-match-score { font-size: 20px; }
 .mt.is-compact .mt-match-name { font-size: 13px; }
-/* ── Regelhinweise: Seitenwechsel / Satzgewinn ── */
-.mt-notice {
-  margin: 12px 0 0;
-  padding: 8px 12px;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 750;
-  color: #1a3a5c;
-  background: #e3ecf7;
-  border-radius: 10px;
-}
-.mt-notice.is-set { color: #fff; background: #0a7d2c; }
-.mt-notice[hidden] { display: none; }
+#mt-set-won-end { background: #0a7d2c; }
 .mt-actions > #mt-end-set.is-ready { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0a7d2c; -webkit-animation: mt-ready 1.6s ease-in-out infinite; animation: mt-ready 1.6s ease-in-out infinite; }
 @-webkit-keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
 @keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
@@ -496,7 +643,6 @@
 .mt-transfer { width: 100%; margin-top: 10px; color: #fff; background: #1f6fa8; font-size: 17px; }
 .mt-transfer[hidden] { display: none; }
 
-.mt.is-compact .mt-notice { margin-top: 6px; }
 
 /* ── Querformat (Handy/Tablet quer): Zeit + Einstellungen links,
    Spielstand rechts – Uhr und „+1“ ohne Scrollen sichtbar. ── */
@@ -512,11 +658,11 @@
   }
   .mt > * { grid-column: 1; }
   .mt > .mt-score { grid-column: 2; grid-row: 1 / span 8; }
-  .mt > .mt-score > .mt-notice { margin-top: 0; }
+  .mt.is-points-only { display: block; max-width: 640px; }
   .mt-time { font-size: 64px; }
   .mt-value { font-size: 52px; }
   .mt-plus { min-height: 64px; }
-  .mt-settings { margin-top: 12px; }
+  .mt-settings { margin-top: 10px; }
   .mt-hint { text-align: left; }
 }
 
@@ -551,6 +697,6 @@
 }
 @media print {
   .mt-cur-bar,
-  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-actions, .mt-mode, .mt-prefill,
-  .mt-notice, .mt-transfer { display: none !important; }
+  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-actions, .mt-mode, .mt-modal,
+  .mt-transfer { display: none !important; }
 }

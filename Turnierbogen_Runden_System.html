@@ -711,6 +711,18 @@
     const hintEl = $('hintRank');
     const editing = MSTD.isEditing('final');
     const manual = TStore.getManualStandings(S, 'final');
+    /* Korrektur-Spalten nur zeigen, wenn sie etwas enthalten: "Korr." bei
+       vorhandenen Δ-Werten oder im Bearbeiten-Modus, die Rücksetz-Spalte
+       nur im Bearbeiten-Modus (siehe .mstd-rowact in spielplan.css). */
+    const trackEl = $('trackTable');
+    if (trackEl) {
+      const hasCorr = Object.keys(manual || {}).some(function (k) {
+        const ov = manual[k] || {};
+        return !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
+      });
+      trackEl.classList.toggle('is-editing', !!editing);
+      trackEl.classList.toggle('has-corr', hasCorr);
+    }
 
     if (hintEl) {
       hintEl.innerHTML = TUI.hintHtml(

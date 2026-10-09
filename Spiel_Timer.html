@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title data-i18n="timer.docTitle">Spiel-Timer &amp; Spielstand</title>
+<title data-i18n="timer.docTitle">Score Counter – Punkte, Sätze &amp; Spielzeit</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -26,19 +26,16 @@
      core/match-timer-page.js. -->
 <header class="mt-bar">
   <a class="mt-back" id="mt-back" href="index.html" aria-label="Zur Übersicht" data-i18n-attr="aria-label:chrome.backToOverviewAria"><span class="mt-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></span><span class="mt-back-lbl" id="mt-back-label" data-i18n="chrome.overview">Übersicht</span></a>
-  <h1 class="mt-title" data-i18n="timer.title">Spiel-Timer</h1>
+  <h1 class="mt-title" data-i18n="timer.title">Score Counter</h1>
+  <button type="button" class="mt-iconbtn mt-clock-open" id="mt-clock-open" aria-controls="mt-clock" aria-label="Spielzeit einblenden" data-i18n-attr="aria-label:timer.clockOpen" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <span class="mt-lang" data-i18n-switch="mt-iconbtn"></span>
 </header>
 
 <main id="match-timer" class="mt" data-status="idle">
-  <div class="mt-confirm mt-prefill" id="mt-prefill" role="group" aria-labelledby="mt-prefill-question" hidden>
-    <p id="mt-prefill-question"></p>
-    <button type="button" class="mt-plain mt-confirm-yes" id="mt-prefill-yes" data-i18n="timer.prefillYes">Neues Spiel starten</button>
-    <button type="button" class="mt-plain" id="mt-prefill-no" data-i18n="timer.prefillNo">Aktuelles Spiel behalten</button>
-  </div>
   <p id="mt-storage-warning" class="mt-warning" role="alert" hidden data-i18n="timer.storageWarning">Der Timer-Stand kann auf diesem Gerät nicht gespeichert werden (z. B. privates Surfen). Zeit und Spielstand gehen beim Schließen oder Neuladen der Seite verloren.</p>
 
-  <section class="mt-card mt-clock" aria-labelledby="mt-clock-heading">
+  <section class="mt-card mt-clock" id="mt-clock" aria-labelledby="mt-clock-heading">
+    <button type="button" class="mt-clock-close" id="mt-clock-close" aria-controls="mt-clock" aria-label="Spielzeit ausblenden und pausieren" data-i18n-attr="aria-label:timer.clockClose"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg></button>
     <h2 class="mt-vh" id="mt-clock-heading" data-i18n="timer.clockHeading">Spielzeit</h2>
     <div class="mt-status" id="mt-status"></div>
     <div class="mt-time" id="mt-time" role="timer" aria-live="off" aria-atomic="true" aria-labelledby="mt-clock-heading">00:00</div>
@@ -56,8 +53,7 @@
 
   <section class="mt-score" aria-labelledby="mt-score-heading">
     <h2 class="mt-vh" id="mt-score-heading" data-i18n="timer.scoreHeading">Spielstand</h2>
-    <p class="mt-notice" id="mt-notice" aria-hidden="true" hidden></p>
-    <div class="mt-cur-bar" id="mt-cur-bar" aria-hidden="true" hidden><span class="mt-lead-seg" id="mt-cur-a"></span><span class="mt-lead-seg" id="mt-cur-b"></span></div>
+    <div class="mt-cur-bar" id="mt-cur-bar" aria-hidden="true"><span class="mt-lead-seg" id="mt-cur-a"></span><span class="mt-lead-seg" id="mt-cur-b"></span></div>
     <div class="mt-sides">
       <div class="mt-card mt-side" data-side="a">
         <label class="mt-name-label mt-vh" for="mt-name-a" data-i18n="timer.nameA">Name Seite A</label>
@@ -98,6 +94,10 @@
 
   <section class="mt-settings" aria-labelledby="mt-settings-heading">
     <h2 class="mt-vh" id="mt-settings-heading" data-i18n="timer.settingsHeading">Einstellungen</h2>
+    <div class="mt-setting">
+      <label class="mt-setting-label" for="mt-switch-pts" data-i18n="timer.switch.label">Seitenwechsel anzeigen</label>
+      <select class="mt-select" id="mt-switch-pts" data-switch-select></select>
+    </div>
     <div class="mt-toolbar">
       <button type="button" class="mt-toggle" id="mt-sound" aria-pressed="false"><span class="mt-ic" aria-hidden="true"><svg class="ic-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg><svg class="ic-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6"/><path d="m22 9-6 6"/></svg></span><span class="mt-tl" data-i18n="timer.sound">Ton</span></button>
       <button type="button" class="mt-toggle" id="mt-keep-awake" aria-pressed="false" aria-describedby="mt-wake-hint"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8.5v1"/><path d="M12 14.5v1"/><path d="M9 12h1"/><path d="M14 12h1"/></svg></span><span class="mt-tl" data-i18n="timer.keepAwake">Bildschirm an</span></button>
@@ -115,6 +115,42 @@
 
   <div class="mt-vh" id="mt-announce" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
+<!-- Popups liegen außerhalb von <main>, damit der Rest beim Öffnen per
+     aria-hidden ausgeblendet werden kann (kein dialog-Element: erst ab Safari 15.4). -->
+<div class="mt-modal" id="mt-prefill" role="dialog" aria-modal="true" aria-labelledby="mt-prefill-title" aria-describedby="mt-prefill-question" hidden>
+  <div class="mt-modal-box">
+    <h2 class="mt-modal-title" id="mt-prefill-title" data-i18n="timer.prefillTitle">Laufendes Spiel zurücksetzen?</h2>
+    <p class="mt-modal-text" id="mt-prefill-question"></p>
+    <div class="mt-modal-actions">
+      <button type="button" class="mt-btn mt-modal-primary" id="mt-prefill-yes" data-i18n="timer.prefillYes">Neues Spiel starten</button>
+      <button type="button" class="mt-plain" id="mt-prefill-no" data-i18n="timer.prefillNo">Aktuelles Spiel behalten</button>
+    </div>
+  </div>
+</div>
+<div class="mt-modal" id="mt-set-won" role="dialog" aria-modal="true" aria-labelledby="mt-set-won-title" hidden>
+  <div class="mt-modal-box">
+    <h2 class="mt-modal-title" id="mt-set-won-title"></h2>
+    <div class="mt-modal-actions">
+      <button type="button" class="mt-btn mt-modal-primary" id="mt-set-won-end" data-i18n="timer.endSet">Satz beenden</button>
+      <button type="button" class="mt-plain" id="mt-set-won-continue" data-i18n="timer.setWon.continue">Weiterzählen</button>
+    </div>
+  </div>
+</div>
+<div class="mt-modal" id="mt-switch" role="dialog" aria-modal="true" aria-labelledby="mt-switch-title" aria-describedby="mt-switch-score" hidden>
+  <div class="mt-modal-box">
+    <span class="mt-modal-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></span>
+    <h2 class="mt-modal-title" id="mt-switch-title" data-i18n="timer.notice.switch">Seitenwechsel</h2>
+    <p class="mt-modal-score" id="mt-switch-score"></p>
+    <div class="mt-modal-actions">
+      <button type="button" class="mt-btn mt-modal-primary" id="mt-switch-ok" data-i18n="timer.switch.ok">OK</button>
+      <button type="button" class="mt-plain" id="mt-switch-swap"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></span><span data-i18n="timer.swap">Seiten tauschen</span></button>
+    </div>
+    <div class="mt-setting mt-modal-setting">
+      <label class="mt-setting-label" for="mt-switch-pts-modal" data-i18n="timer.switch.rule">Rhythmus</label>
+      <select class="mt-select" id="mt-switch-pts-modal" data-switch-select></select>
+    </div>
+  </div>
+</div>
 
 <script src="core/match-timer.js"></script>
 <script src="core/match-timer-page.js"></script>
