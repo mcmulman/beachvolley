@@ -996,6 +996,7 @@
       tbody.setAttribute('data-round-state-page', page);
       tbody.removeAttribute('data-opened-round');
       if (tbody.__checkedMatches) tbody.__checkedMatches.clear();
+      if (tbody.__confirmedMatches) tbody.__confirmedMatches.clear();
     }
     if (filter !== 'all') {
       tbody.setAttribute('data-opened-round', String(Math.max(+tbody.getAttribute('data-opened-round') || 0, +filter || 0)));
@@ -1011,43 +1012,141 @@
     if (!tbody) return;
     const opened = +tbody.getAttribute('data-opened-round') || 0;
     const rounds = {};
+    const begun = {};
+    tbody.querySelectorAll('td.match[data-round]').forEach(td => {
+      if (Array.prototype.some.call(td.querySelectorAll('input.score'), inp =>
+        !inp.disabled && String(inp.value || '').trim() !== '')) begun[td.getAttribute('data-round')] = true;
+    });
     tbody.querySelectorAll('td.match[data-round]').forEach(td => {
       const round = td.getAttribute('data-round');
       const active = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
       const needed = active.length > 0 || (!td.classList.contains('is-bye') && !!td.querySelector('input.score'));
-      const checked = tbody.__checkedMatches && tbody.__checkedMatches.has(td.getAttribute('data-mid'));
-      if ((+round < opened || checked) && active.length) {
-        td.setAttribute('data-score-required', '');
-        markScoreInputs(td, null);
-      }
+      const confirmed = tbody.__confirmedMatches && tbody.__confirmedMatches.has(td.getAttribute('data-mid'));
+      const checked = confirmed || (begun[round] && tbody.__checkedMatches
+        && tbody.__checkedMatches.has(td.getAttribute('data-mid')));
+      const required = checked || (begun[round] && +round < opened);
+      if (required) td.setAttribute('data-score-required', '');
+      else td.removeAttribute('data-score-required');
+      markScoreInputs(td, null);
       const invalid = active.some(inp => inp.classList.contains('invalid'))
-        || (needed && !active.length && +round < opened);
+        || (needed && !active.length && required);
       const complete = !needed || (active.length > 0 && active.every(inp => String(inp.value || '').trim() !== '') && !invalid);
       td.classList.toggle('bl-match-invalid', invalid);
       td.classList.toggle('bl-match-valid', active.length > 0 && complete);
-      rounds[round] = (rounds[round] || false) || !complete;
+      const summary = rounds[round] || (rounds[round] = { open: 0, invalid: 0, checked: false });
+      summary.checked = summary.checked || invalid || (begun[round] && +round < opened);
+      if (!complete) {
+        if (!active.length || active.some(inp => String(inp.value || '').trim() === '')) summary.open++;
+        else summary.invalid++;
+      }
     });
     tbody.querySelectorAll('tr[data-round]:not(.rgap)').forEach(tr => {
       const round = tr.getAttribute('data-round');
-      const checked = +round < opened && Object.prototype.hasOwnProperty.call(rounds, round);
-      tr.classList.toggle('bl-round-invalid', checked && rounds[round]);
-      tr.classList.toggle('bl-round-valid', checked && !rounds[round]);
+      const summary = rounds[round];
+      const checked = !!(summary && summary.checked);
+      const incomplete = summary && (summary.open > 0 || summary.invalid > 0);
+      tr.classList.toggle('bl-round-invalid', checked && incomplete);
+      tr.classList.toggle('bl-round-valid', checked && !incomplete);
       const head = tr.querySelector('.rhead-meta');
       if (!head) return;
       let status = head.querySelector('.bl-round-status');
       if (checked && !status) {
-        status = document.createElement('span');
+        status = document.createElement('button');
+        status.type = 'button';
         status.className = 'bl-round-status noprint';
         head.appendChild(status);
       }
       if (status) {
-        const text = !checked ? '' : rounds[round]
-          ? tx('ui.round.incomplete', 'Ergebnisse fehlen oder sind ungültig')
-          : tx('ui.round.complete', 'Ergebnisse vollständig');
+        const text = !checked ? '' : incomplete ? roundProblemsText(summary) : tx('ui.round.complete', 'Ergebnisse vollständig');
         status.hidden = !checked;
+        status.disabled = !incomplete;
+        status.setAttribute('data-round-errors', round);
+        const title = incomplete ? tx('ui.round.errorsJump', 'Zum ersten fehlenden oder ungültigen Ergebnis springen') : '';
+        if (status.title !== title) status.title = title;
+        const label = title ? text + '. ' + title : text;
+        if (status.getAttribute('aria-label') !== label) status.setAttribute('aria-label', label);
         if (status.textContent !== text) status.textContent = text;
       }
     });
+    updateRoundWarnings(tbody, rounds);
+  }
+
+  function roundProblemsText(summary) {
+    const parts = [];
+    if (summary.open) parts.push(tx('ui.round.openCount',
+      { one: '{count} Spiel offen', other: '{count} Spiele offen' }, { count: summary.open }));
+    if (summary.invalid) parts.push(tx('ui.round.invalidCount',
+      { one: '{count} Ergebnis ungültig', other: '{count} Ergebnisse ungültig' }, { count: summary.invalid }));
+    return parts.join(' · ');
+  }
+
+  function focusRoundProblem(tbody, round) {
+    const problem = Array.prototype.find.call(tbody.querySelectorAll('td.match[data-round]'),
+      td => td.getAttribute('data-round') === round && td.classList.contains('bl-match-invalid'));
+    if (!problem) return;
+    const active = Array.prototype.filter.call(problem.querySelectorAll('input.score'), inp => !inp.disabled);
+    const target = active.find(inp => String(inp.value || '').trim() === '')
+      || active.find(inp => inp.classList.contains('invalid'));
+    if (target) {
+      target.focus();
+      target.select();
+      target.scrollIntoView({ block: 'center', inline: 'nearest' });
+    } else {
+      problem.setAttribute('tabindex', '-1');
+      problem.focus();
+      problem.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+  }
+
+  function updateRoundWarnings(tbody, rounds) {
+    const wrapper = tbody.closest('.table-scroll');
+    const bar = wrapper && wrapper.previousElementSibling;
+    if (!bar || !bar.classList.contains('schedule-roundbar')) return;
+    const select = bar.querySelector('[data-round-select]');
+    if (!select) return;
+    Array.prototype.forEach.call(select.options, option => {
+      if (option.value === 'all') return;
+      const summary = rounds[option.value];
+      const complete = summary && !summary.open && !summary.invalid;
+      const problem = summary && summary.checked && !complete;
+      const label = tx('ui.round.n', 'Runde {n}', { n: option.value })
+        + (complete ? ' – ' + tx('ui.round.complete', 'Ergebnisse vollständig')
+          : problem ? ' – ' + roundProblemsText(summary) : '');
+      if (option.textContent !== label) option.textContent = label;
+    });
+    let warnings = wrapper.nextElementSibling;
+    if (!warnings || !warnings.classList.contains('bl-round-warnings')) warnings = null;
+    const problems = Object.keys(rounds).filter(round => rounds[round].checked
+      && (rounds[round].open || rounds[round].invalid));
+    if (!warnings && problems.length) {
+      warnings = document.createElement('div');
+      warnings.className = 'bl-round-warnings noprint';
+      wrapper.parentNode.insertBefore(warnings, wrapper.nextSibling);
+    }
+    if (warnings) {
+      const html = problems.map(round => '<button type="button" data-round-warning="' + esc(round)
+        + '" aria-label="' + esc(tx('ui.round.n', 'Runde {n}', { n: round }) + ': '
+          + roundProblemsText(rounds[round]) + '. '
+          + tx('ui.round.errorsJump', 'Zum ersten fehlenden oder ungültigen Ergebnis springen'))
+        + '"><span aria-hidden="true">!</span> '
+        + esc(tx('ui.round.n', 'Runde {n}', { n: round }) + ': ' + roundProblemsText(rounds[round]))
+        + '</button>').join('');
+      warnings.hidden = !problems.length;
+      if (warnings.innerHTML !== html) warnings.innerHTML = html;
+    }
+    if (warnings && !warnings.__roundWarningWired) {
+      warnings.__roundWarningWired = true;
+      warnings.addEventListener('click', event => {
+        const button = event.target.closest ? event.target.closest('[data-round-warning]') : null;
+        if (!button) return;
+        event.preventDefault();
+        const round = button.getAttribute('data-round-warning');
+        const currentSelect = bar.querySelector('[data-round-select]');
+        currentSelect.value = round;
+        currentSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        focusRoundProblem(tbody, round);
+      });
+    }
   }
 
   function wireFormatInfo(doc) {
@@ -1146,6 +1245,7 @@
     if (!rootEl) return;
     let lastFocusedMatch = null;
     rootEl.__checkedMatches = new Set();
+    rootEl.__confirmedMatches = new Set();
     let focusedPage = typeof location === 'undefined' ? '' : location.pathname + location.search;
     const fields = () => Array.prototype.slice.call(rootEl.querySelectorAll('input.score'))
       .filter(i => !i.disabled && (i.offsetParent !== null || i.closest('td') === null));
@@ -1165,6 +1265,7 @@
       if (!ins.length) return false;
       const mode = setMode || (onChange.setMode ? onChange.setMode() : null);
       rootEl.__checkedMatches.add(td.getAttribute('data-mid'));
+      rootEl.__confirmedMatches.add(td.getAttribute('data-mid'));
       td.setAttribute('data-score-required', '');
       markScoreInputs(td, mode);
       const bad = ins.filter(inp => inp.classList.contains('invalid'));
@@ -1219,6 +1320,7 @@
           focusedPage = page;
           lastFocusedMatch = null;
           rootEl.__checkedMatches.clear();
+          rootEl.__confirmedMatches.clear();
         }
         score.select();
         const card = score.closest ? score.closest('td.match') : null;
@@ -1294,6 +1396,13 @@
       if (e.target && e.target.closest && e.target.closest('[data-round-confirm]')) e.preventDefault();
     });
     rootEl.addEventListener('click', e => {
+      const status = e.target && e.target.closest ? e.target.closest('[data-round-errors]') : null;
+      if (status && !status.disabled) {
+        e.preventDefault();
+        const round = status.getAttribute('data-round-errors');
+        focusRoundProblem(rootEl, round);
+        return;
+      }
       const roundBtn = e.target && e.target.closest
         ? e.target.closest('[data-round-confirm]')
         : null;

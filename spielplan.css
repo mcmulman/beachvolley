@@ -1491,6 +1491,31 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
    tr.rmatches. Nur Bildschirm; im Druck bleibt die dichte Tabelle.
    --------------------------------------------------------------------------- */
 @media screen {
+  .schedule-roundbar label { min-width: 0; max-width: 100%; }
+  .schedule-roundbar select { min-width: 0; max-width: 100%; }
+  .bl-round-warnings {
+    min-width: 0;
+    margin: 14px 0;
+  }
+  .bl-round-warnings[hidden] { display: none; }
+  .bl-round-warnings > button {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin: 4px 0 0;
+    padding: 8px 12px;
+    border: 1px solid #b42318;
+    border-radius: 8px;
+    background: #fde0e0;
+    color: #8f1710;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    white-space: normal;
+    cursor: pointer;
+  }
+  .bl-round-warnings > button:focus { outline: 2px solid #1f6fa8; outline-offset: 2px; }
   .sched > tbody > tr.rgap > td {
     height: 24px;
     padding: 0 !important;
@@ -1516,6 +1541,18 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
   .sched tr.bl-round-valid { --bl-round-border: #0a7d2c; }
   .sched tr.bl-round-invalid .bl-round-status { color: #8f1710; font-weight: 700; }
   .sched tr.bl-round-valid .bl-round-status { color: #0a5d22; font-weight: 700; }
+  .sched .bl-round-status {
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .sched .bl-round-status:focus { outline: 2px solid #1f6fa8; outline-offset: 2px; }
+  .sched .bl-round-status:disabled { border-color: transparent; opacity: 1; cursor: default; }
   /* Runden-Rahmen: eine ruhige 1px-Kontur (Token --app-line-strong) statt
      dunkelblauer 2px-Kante - die Abstandszeile trennt die Runden bereits. */
   .sched tr.rgap + tr.rhead > td.rhead-cell {
