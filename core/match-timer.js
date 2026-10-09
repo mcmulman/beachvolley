@@ -9,6 +9,19 @@
    Optional: Countdown (countdownMs > 0, danach Nachspielzeit „+MM:SS“),
    Seitentausch, Rückgängig (Stapel früherer Spielstände) und ein von Hand
    ausgelöstes „Satz beenden“ (Satz geht an die Seite mit mehr Punkten).
+   Aufschlag (Volleyball, Rally-Point, optional): serve = 'a' | 'b' | null
+   (offen) ist das aufschlagende Team, sp[team] die Person (0/1), die dort
+   zuletzt aufgeschlagen hat bzw. gerade aufschlägt (null = in diesem Satz
+   noch nicht, -1 = unbekannt), first[team] die gewählte erste Person des
+   Teams im Satz. Nur „+1“ belegt einen gewonnenen Ballwechsel: Gewinnt
+   das aufschlagende Team, bleibt dieselbe Person; holt das andere Team
+   den Aufschlag zurück, schlägt dort der Partner der zuletzt
+   aufschlagenden Person auf (feste Reihenfolge je Satz). Wer einen Satz
+   eröffnet, wird gewählt (Münzwurf) und nie aus dem Spielstand geraten;
+   Satzende und Zurücksetzen machen alles wieder offen (Spielernamen
+   bleiben). −1/Direkteingabe können den Verlauf nicht rekonstruieren →
+   offen und bekannte Reihenfolgen unbekannt (außer die Korrektur stellt
+   genau den vorigen Stand wieder her).
 
    Zeitmodell: Gespeichert werden nur abgeschlossene Laufzeit
    (accumulatedMs) und der Wanduhr-Zeitpunkt, seit dem der Timer läuft
@@ -38,6 +51,7 @@
   var STORAGE_KEY = 'BEACHL.matchTimer';
   var MAX_SCORE = 999;
   var MAX_NAME = 40;
+  var MAX_PLAYER = 24;
   var MAX_UNDO = 30;
   var MAX_SETS = 9;
   var MAX_COUNTDOWN_MS = 180 * 60000;
@@ -88,6 +102,11 @@
       switchPts: 0,
       rules: defaultRules(),
       setupDone: false,
+      serve: null,
+      sp: emptyServePair(),
+      first: emptyServePair(),
+      players: { a: ['', ''], b: ['', ''] },
+      serveShown: false,
       match: null
     };
   }
@@ -95,9 +114,50 @@
   function copyRules(r) { return { target: r.target, wins: r.wins, decider: r.decider, twoPoint: r.twoPoint !== false }; }
 
   function copyPair(p) { return { a: p.a, b: p.b }; }
-  /* Spielstands-Schnappschuss für „Rückgängig“. */
+  function cleanServe(v) { return v === 'a' || v === 'b' ? v : null; }
+  function cleanFirst(v) { return v === 0 || v === 1 ? v : null; }
+  function cleanSp(v) { return v === 0 || v === 1 || v === -1 ? v : null; }
+  function emptyServePair() { return { a: null, b: null }; }
+  function servePair(p, clean) {
+    p = p && typeof p === 'object' ? p : {};
+    return { a: clean(p.a), b: clean(p.b) };
+  }
+  function playerPair(list) {
+    list = Array.isArray(list) ? list : [];
+    return [0, 1].map(function (i) { return typeof list[i] === 'string' ? cleanName(list[i]).slice(0, MAX_PLAYER) : ''; });
+  }
+  function cleanPlayers(p) {
+    p = p && typeof p === 'object' ? p : {};
+    return { a: playerPair(p.a), b: playerPair(p.b) };
+  }
+  /* Spielstands-Schnappschuss für „Rückgängig“ inkl. Aufschlag samt
+     Reihenfolge beider Teams – kompakt als
+     sv = [serve, sp.a, sp.b, first.a, first.b] (bis zu 30 Einträge). */
+  function packServe(s) {
+    var sp = servePair(s.sp, cleanSp), f = servePair(s.first, cleanFirst);
+    return [cleanServe(s.serve), sp.a, sp.b, f.a, f.b];
+  }
+  function cleanSv(v) {
+    v = Array.isArray(v) ? v : [];
+    return [cleanServe(v[0]), cleanSp(v[1]), cleanSp(v[2]), cleanFirst(v[3]), cleanFirst(v[4])];
+  }
+  function flipSv(v) { return [flipServe(v[0]), v[2], v[1], v[4], v[3]]; }
   function snapshot(s) {
-    return { score: copyPair(s.score), sets: copyPair(s.sets), setHistory: s.setHistory.map(copyPair) };
+    return {
+      score: copyPair(s.score), sets: copyPair(s.sets), setHistory: s.setHistory.map(copyPair),
+      sv: s.sv ? cleanSv(s.sv) : packServe(s)
+    };
+  }
+  function restoreServe(n, u) {
+    var v = cleanSv(u.sv);
+    n.serve = v[0];
+    n.sp = { a: v[1], b: v[2] };
+    n.first = { a: v[3], b: v[4] };
+  }
+  function clearSetServe(n) {
+    n.serve = null;
+    n.sp = emptyServePair();
+    n.first = emptyServePair();
   }
 
   function clone(s) {
@@ -110,9 +170,7 @@
       score: { a: s.score.a, b: s.score.b },
       sets: copyPair(s.sets),
       setHistory: s.setHistory.map(copyPair),
-      undo: s.undo.map(function (u) {
-        return { score: copyPair(u.score), sets: copyPair(u.sets), setHistory: u.setHistory.map(copyPair) };
-      }),
+      undo: s.undo.map(snapshot),
       countdownMs: s.countdownMs,
       sound: !!s.sound,
       keepAwake: !!s.keepAwake,
@@ -121,6 +179,11 @@
       switchPts: s.switchPts,
       rules: copyRules(s.rules || defaultRules()),
       setupDone: !!s.setupDone,
+      serve: cleanServe(s.serve),
+      sp: servePair(s.sp, cleanSp),
+      first: servePair(s.first, cleanFirst),
+      players: cleanPlayers(s.players),
+      serveShown: s.serveShown === true,
       match: s.match ? { ref: s.match.ref, targets: s.match.targets.slice(), swapped: !!s.match.swapped } : null
     };
   }
@@ -185,6 +248,7 @@
     n.sets = { a: 0, b: 0 };
     n.setHistory = [];
     n.undo = [];
+    clearSetServe(n);
     return n;
   }
 
@@ -254,13 +318,52 @@
     n.undo.push(snapshot(prev));
     if (n.undo.length > MAX_UNDO) n.undo.splice(0, n.undo.length - MAX_UNDO);
   }
-  function setScoreValue(s, side, value) {
+  function samePairs(x, y) {
+    return x.length === y.length && x.every(function (p, i) { return p.a === y[i].a && p.b === y[i].b; });
+  }
+  /* Ballwechsel gewonnen: side schlägt auf. Blieb der Aufschlag beim Team,
+     bleibt die Person; nach Aufschlagwechsel der Partner der zuletzt
+     aufschlagenden Person (bzw. die gewählte erste Person des Satzes).
+     War der Aufschlag offen, ist nicht belegbar, ob es ein Wechsel war:
+     Person unbekannt, außer das Team hat im Satz noch nie aufgeschlagen –
+     dann beginnt in beiden Fällen seine erste Person; das andere Team
+     könnte dabei aufgeschlagen haben (noch nie → unbekannt). */
+  function gainServe(n, prev, side) {
+    var other = side === 'a' ? 'b' : 'a';
+    var cur = n.sp[side];
+    if (prev === side) {
+      if (cur === null) n.sp[side] = -1;
+    } else if (cur === null) {
+      n.sp[side] = n.first[side] === null ? -1 : n.first[side];
+    } else {
+      n.sp[side] = prev === other && cur !== -1 ? 1 - cur : -1;
+    }
+    if (prev === null && n.sp[other] === null) n.sp[other] = -1;
+    n.serve = side;
+  }
+  /* rally = true nur für „+1“: Diese Seite hat den Ballwechsel gewonnen und
+     schlägt auf. Sonst (Korrektur) ist der Aufschlag offen und bekannte
+     Reihenfolgen gelten als unbekannt – es sei denn, der neue Stand ist
+     genau der vorige (dann gilt dessen Aufschlag samt Reihenfolge). */
+  function setScoreValue(s, side, value, rally) {
     if (!isSide(side)) return s;
     var v = clampScore(value);
     if (v === s.score[side]) return s;
     var n = clone(s);
     pushUndo(n, s);
     n.score[side] = v;
+    if (rally) {
+      gainServe(n, s.serve, side);
+      return n;
+    }
+    var prev = s.undo[s.undo.length - 1];
+    if (prev && prev.score.a === n.score.a && prev.score.b === n.score.b &&
+        prev.sets.a === n.sets.a && prev.sets.b === n.sets.b && samePairs(prev.setHistory, n.setHistory)) {
+      restoreServe(n, prev);
+    } else {
+      n.serve = null;
+      SIDES.forEach(function (t) { if (n.sp[t] !== null) n.sp[t] = -1; });
+    }
     return n;
   }
   function canUndo(s) { return s.undo.length > 0; }
@@ -271,6 +374,7 @@
     n.score = u.score;
     n.sets = u.sets;
     n.setHistory = u.setHistory;
+    restoreServe(n, u);
     return n;
   }
 
@@ -287,6 +391,8 @@
     n.sets[s.score.a > s.score.b ? 'a' : 'b'] += 1;
     n.setHistory.push(copyPair(s.score));
     n.score = { a: 0, b: 0 };
+    /* Jeder Satz wird neu eröffnet: Aufschlag und Reihenfolgen neu wählen. */
+    clearSetServe(n);
     return n;
   }
 
@@ -300,16 +406,114 @@
     n.sets = flip(s.sets);
     n.setHistory = s.setHistory.map(flip);
     if (n.match) n.match.swapped = !n.match.swapped;
+    n.serve = flipServe(s.serve);
+    n.sp = flip(n.sp);
+    n.first = flip(n.first);
+    n.players = flip(n.players);
     n.undo = n.undo.map(function (u) {
-      return { score: flip(u.score), sets: flip(u.sets), setHistory: u.setHistory.map(flip) };
+      return {
+        score: flip(u.score), sets: flip(u.sets), setHistory: u.setHistory.map(flip), sv: flipSv(u.sv)
+      };
     });
     return n;
   }
+  function flipServe(v) { return v === 'a' ? 'b' : (v === 'b' ? 'a' : null); }
   function addPoint(s, side, delta) {
     if (!isSide(side)) return s;
     var d = delta == null ? 1 : Math.round(Number(delta));
     if (!isFinite(d) || d === 0) return s;
-    return setScoreValue(s, side, s.score[side] + d);
+    return setScoreValue(s, side, s.score[side] + d, d === 1);
+  }
+  /* Aufschlag von Hand wählen (Satzbeginn) oder korrigieren: Team und
+     Person (0/1; ohne Person: gewählte erste Person bzw. unbekannt);
+     side null = offen. Die Reihenfolge des anderen Teams bleibt unberührt.
+     Keine Spielstandsänderung, daher kein Rückgängig-Eintrag. */
+  function setServe(s, side, player) {
+    var v = cleanServe(side);
+    if (v === null) {
+      if (s.serve === null) return s;
+      var o = clone(s);
+      o.serve = null;
+      return o;
+    }
+    var p = cleanFirst(player);
+    var fresh = s.sp[v] === null;
+    if (p === null) p = fresh && s.first[v] !== null ? s.first[v] : (s.serve === v ? s.sp[v] : -1);
+    if (v === s.serve && p === s.sp[v]) return s;
+    var n = clone(s);
+    if (fresh && p !== -1) n.first[v] = p;
+    n.sp[v] = p;
+    n.serve = v;
+    return n;
+  }
+  /* Satzbeginn möglich? Solange im Satz noch kein Ballwechsel gezählt ist
+     (0:0) oder noch keine Aufschlagreihenfolge entstanden ist. */
+  function canStartServe(s) {
+    return (s.score.a === 0 && s.score.b === 0) || (s.sp.a === null && s.sp.b === null);
+  }
+  /* Satzbeginn festlegen: beginnendes Team (null = noch offen) und die erste
+     Person jedes Teams (first = { a, b }, je 0/1 oder null). Ersetzt eine
+     frühere Wahl dieses Satzes; nur bei canStartServe, kein Rückgängig. */
+  function startServe(s, side, first) {
+    if (!canStartServe(s)) return s;
+    var v = cleanServe(side);
+    var f = { a: cleanFirst(first && first.a), b: cleanFirst(first && first.b) };
+    var sp = { a: null, b: null };
+    if (v) sp[v] = f[v] === null ? -1 : f[v];
+    if (s.serve === v && s.first.a === f.a && s.first.b === f.b && s.sp.a === sp.a && s.sp.b === sp.b) return s;
+    var n = clone(s);
+    clearSetServe(n);
+    n.first = f;
+    n.sp = sp;
+    n.serve = v;
+    return n;
+  }
+  /* Wer schlägt beim Team side als Nächstes auf, wenn es den Aufschlag
+     (zurück)holt? → 0/1 oder null (unbekannt/nicht gewählt). */
+  function nextServer(s, side) {
+    if (!isSide(side)) return null;
+    var cur = s.sp[side];
+    if (cur === null) return s.first[side];
+    return cur === -1 ? null : 1 - cur;
+  }
+  /* Nächste Person für das gerade NICHT aufschlagende Team festlegen
+     (Reihenfolge des annehmenden Teams; auch Korrektur). */
+  function setNextServer(s, side, player) {
+    var p = cleanFirst(player);
+    if (!isSide(side) || side === s.serve || p === null || nextServer(s, side) === p) return s;
+    var n = clone(s);
+    if (n.sp[side] === null) n.first[side] = p;
+    else n.sp[side] = 1 - p;
+    return n;
+  }
+  /* Wer schlägt gerade auf? → { side, player } (player null = unbekannt)
+     oder null (offen). */
+  function server(s) {
+    if (!s.serve) return null;
+    var p = s.sp[s.serve];
+    return { side: s.serve, player: p === 0 || p === 1 ? p : null };
+  }
+  function setPlayerName(s, side, idx, name) {
+    if (!isSide(side) || (idx !== 0 && idx !== 1)) return s;
+    var v = cleanName(name).slice(0, MAX_PLAYER);
+    if (v === s.players[side][idx]) return s;
+    var n = clone(s);
+    n.players[side][idx] = v;
+    return n;
+  }
+  /* Neue Teams (z. B. aus dem Turnierbogen): Aufschlag, Reihenfolgen und
+     Spielernamen leeren; die Anzeige-Einstellung bleibt. */
+  function clearServe(s) {
+    var n = clone(s);
+    clearSetServe(n);
+    n.players = { a: ['', ''], b: ['', ''] };
+    return JSON.stringify(n) === JSON.stringify(s) ? s : n;
+  }
+  function setServeShown(s, on) {
+    if (!!on === (s.serveShown === true)) return s;
+    var n = clone(s);
+    n.serveShown = !!on;
+    return n;
   }
   /* Direkteingabe: nur ganze Zahlen 0…999 (Leerraum erlaubt), sonst null. */
   function parseScore(raw) {
@@ -539,7 +743,10 @@
       s.undo = raw.undo.slice(-MAX_UNDO).filter(function (u) {
         return u && typeof u === 'object';
       }).map(function (u) {
-        return { score: parsePair(u.score), sets: parsePair(u.sets), setHistory: parsePairs(u.setHistory, MAX_SETS) };
+        return {
+          score: parsePair(u.score), sets: parsePair(u.sets), setHistory: parsePairs(u.setHistory, MAX_SETS),
+          sv: cleanSv(u.sv)
+        };
       });
     }
     if (finiteNonNeg(raw.countdownMs) && raw.countdownMs <= MAX_COUNTDOWN_MS) s.countdownMs = Math.round(raw.countdownMs);
@@ -551,6 +758,12 @@
     /* Ältere Stände ohne Regeln: Beach-Vorgabe (wie bisher 21/21/15). */
     s.rules = cleanRules(raw.rules);
     s.setupDone = raw.setupDone === true;
+    /* Ältere Stände ohne Aufschlag: offen, Anzeige aus (freiwillig). */
+    s.serve = cleanServe(raw.serve);
+    s.sp = servePair(raw.sp, cleanSp);
+    s.first = servePair(raw.first, cleanFirst);
+    s.players = cleanPlayers(raw.players);
+    s.serveShown = raw.serveShown === true;
     var m = raw.match;
     if (m && typeof m === 'object' && typeof m.ref === 'string' && m.ref) {
       var t = cleanTargets(m.targets);
@@ -643,6 +856,16 @@
     endSet: endSet,
     canEndSet: canEndSet,
     swapSides: swapSides,
+    setServe: setServe,
+    startServe: startServe,
+    canStartServe: canStartServe,
+    setNextServer: setNextServer,
+    nextServer: nextServer,
+    server: server,
+    setPlayerName: setPlayerName,
+    clearServe: clearServe,
+    setServeShown: setServeShown,
+    MAX_PLAYER: MAX_PLAYER,
     setCountdown: setCountdown,
     remaining: remaining,
     isExpired: isExpired,

@@ -513,11 +513,18 @@
      alle aktiven Kaestchen der Zelle gefuellt und keines ungueltig ist.    */
   function update() {
     injectRoundButtons();
+    if (window.TUI) {
+      document.querySelectorAll('table.sched > tbody').forEach(function (body) {
+        window.TUI.markRoundStatus(body);
+      });
+    }
     document.querySelectorAll('input.score').forEach(function (inp) {
       if (inp.classList.contains('invalid')) {
+        inp.setAttribute('aria-invalid', 'true');
         if (inp.title !== INVALID_TITLE) inp.title = INVALID_TITLE;
-      } else if (inp.title === INVALID_TITLE) {
-        inp.removeAttribute('title');
+      } else {
+        inp.removeAttribute('aria-invalid');
+        if (inp.title === INVALID_TITLE) inp.removeAttribute('title');
       }
     });
 
@@ -863,7 +870,7 @@
     ic.innerHTML = '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg>';
     var lbl = document.createElement('span');
     lbl.className = 'lbl';
-    lbl.textContent = tx('enh.timer', 'Timer');
+    lbl.textContent = tx('enh.timer', 'Counter');
     link.appendChild(ic);
     link.appendChild(lbl);
     /* Bögen ergänzen ?id= erst nach dem Laden – Ziel erst bei Benutzung bilden. */

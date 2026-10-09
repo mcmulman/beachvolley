@@ -1504,24 +1504,36 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
   .table-scroll.is-wide,
   .table-scroll.is-wide > table.sched { background: none !important; }
   .sched tr.rmatches > td.match:not(.is-bye) { background: #fff; }
+  .sched td.match.bl-match-valid,
+  .sched tr.rhead.bl-round-valid > td,
+  .sched tr.fhead.bl-round-valid > th { background: #e7f6ec !important; }
+  .sched td.match.bl-match-invalid,
+  .sched tr.rhead.bl-round-invalid > td,
+  .sched tr.fhead.bl-round-invalid > th { background: #fde0e0 !important; border-color: #b42318 !important; }
+  .sched td.match.bl-match-valid .psets { background: #d5efde !important; border-bottom-color: #0a7d2c !important; }
+  .sched td.match.bl-match-invalid .psets { background: #f9cccc !important; border-bottom-color: #b42318 !important; }
+  .sched tr.bl-round-invalid { --bl-round-border: #b42318; }
+  .sched tr.bl-round-valid { --bl-round-border: #0a7d2c; }
+  .sched tr.bl-round-invalid .bl-round-status { color: #8f1710; font-weight: 700; }
+  .sched tr.bl-round-valid .bl-round-status { color: #0a5d22; font-weight: 700; }
   /* Runden-Rahmen: eine ruhige 1px-Kontur (Token --app-line-strong) statt
      dunkelblauer 2px-Kante - die Abstandszeile trennt die Runden bereits. */
   .sched tr.rgap + tr.rhead > td.rhead-cell {
-    border: 1px solid var(--app-line-strong, #a9bdd4);
-    border-bottom: 1px solid #d6e1ef;
+    border: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4));
+    border-bottom: 1px solid var(--bl-round-border, #d6e1ef);
   }
-  .sched tr.rgap + tr.rhead + tr.fhead > th:first-child { border-left: 1px solid var(--app-line-strong, #a9bdd4); }
-  .sched tr.rgap + tr.rhead + tr.fhead > th:last-child { border-right: 1px solid var(--app-line-strong, #a9bdd4); }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td { border-bottom: 1px solid var(--app-line-strong, #a9bdd4); }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:first-child { border-left: 1px solid var(--app-line-strong, #a9bdd4); }
-  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child { border-right: 1px solid var(--app-line-strong, #a9bdd4); }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:first-child { border-left: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4)); }
+  .sched tr.rgap + tr.rhead + tr.fhead > th:last-child { border-right: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4)); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td { border-bottom: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4)); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:first-child { border-left: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4)); }
+  .sched tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child { border-right: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4)); }
 }
 @media screen and (max-width: 640px) {
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] { height: 14px; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round] > td { display: none; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap[data-round]:first-child { display: none; }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead {
-    border: 1px solid var(--app-line-strong, #a9bdd4);
+    border: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4));
     border-bottom: 0;
     border-radius: 12px 12px 0 0;
     overflow: hidden;
@@ -1529,10 +1541,10 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead > td.rhead-cell {
     margin-top: 0;
     border: 0;
-    border-bottom: 1px solid #d6e1ef;
+    border-bottom: 1px solid var(--bl-round-border, #d6e1ef);
   }
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches {
-    border: 1px solid var(--app-line-strong, #a9bdd4);
+    border: 1px solid var(--bl-round-border, var(--app-line-strong, #a9bdd4));
     border-top: 0;
     border-radius: 0 0 12px 12px;
     overflow: hidden;

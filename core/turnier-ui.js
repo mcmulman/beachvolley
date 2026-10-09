@@ -384,8 +384,11 @@
   function markScoreInputs(td, setMode) {
     if (!td) return;
     const boxes = {};
+    const requireComplete = td.hasAttribute('data-score-required');
+    let invalid = false;
     td.querySelectorAll('input.score').forEach(inp => {
       inp.classList.remove('win', 'invalid');
+      inp.removeAttribute('aria-invalid');
       const set = inp.getAttribute('data-set') || '1';
       (boxes[set] = boxes[set] || {})[inp.getAttribute('data-side')] = inp;
     });
@@ -393,14 +396,24 @@
       const a = boxes[set].a, b = boxes[set].b;
       if (!a || !b || a.disabled || b.disabled) return;
       const ra = String(a.value || '').trim(), rb = String(b.value || '').trim();
-      if (ra === '' || rb === '') return;
-      const va = parseInt(ra, 10), vb = parseInt(rb, 10);
-      if (isNaN(va) || isNaN(vb)) return;
-      if (!TC.setValid(va, vb, TC.targetForSet(setMode, +set))) {
-        a.classList.add('invalid'); b.classList.add('invalid');
+      if (!requireComplete && ra === '' && rb === '') return;
+      const column = a.closest('.sset');
+      const target = (column && +column.getAttribute('data-target')) || TC.targetForSet(setMode, +set);
+      const complete = /^[0-9]+$/.test(ra) && /^[0-9]+$/.test(rb);
+      const va = Number(ra), vb = Number(rb);
+      if ((!complete && (requireComplete || (ra !== '' && !/^[0-9]+$/.test(ra)) || (rb !== '' && !/^[0-9]+$/.test(rb))))
+          || (complete && !TC.setValid(va, vb, target))) {
+        invalid = true;
+        [a, b].forEach(inp => {
+          inp.classList.add('invalid');
+          inp.setAttribute('aria-invalid', 'true');
+        });
+      } else if (!complete) {
+        return;
       } else if (va > vb) a.classList.add('win');
       else if (vb > va) b.classList.add('win');
     });
+    if (requireComplete && !invalid) td.removeAttribute('data-score-required');
   }
 
   /* ============================================================ 5. TABELLE
@@ -978,9 +991,62 @@
 
   function applyRoundFilter(tbody, filter) {
     if (!tbody) return;
+    const page = typeof location === 'undefined' ? '' : location.pathname + location.search;
+    if (tbody.getAttribute('data-round-state-page') !== page) {
+      tbody.setAttribute('data-round-state-page', page);
+      tbody.removeAttribute('data-opened-round');
+      if (tbody.__checkedMatches) tbody.__checkedMatches.clear();
+    }
+    if (filter !== 'all') {
+      tbody.setAttribute('data-opened-round', String(Math.max(+tbody.getAttribute('data-opened-round') || 0, +filter || 0)));
+    }
     tbody.querySelectorAll('tr[data-round]').forEach(tr => {
       const r = tr.getAttribute('data-round');
       tr.hidden = !(filter === 'all' || String(r) === String(filter));
+    });
+    markRoundStatus(tbody);
+  }
+
+  function markRoundStatus(tbody) {
+    if (!tbody) return;
+    const opened = +tbody.getAttribute('data-opened-round') || 0;
+    const rounds = {};
+    tbody.querySelectorAll('td.match[data-round]').forEach(td => {
+      const round = td.getAttribute('data-round');
+      const active = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
+      const needed = active.length > 0 || (!td.classList.contains('is-bye') && !!td.querySelector('input.score'));
+      const checked = tbody.__checkedMatches && tbody.__checkedMatches.has(td.getAttribute('data-mid'));
+      if ((+round < opened || checked) && active.length) {
+        td.setAttribute('data-score-required', '');
+        markScoreInputs(td, null);
+      }
+      const invalid = active.some(inp => inp.classList.contains('invalid'))
+        || (needed && !active.length && +round < opened);
+      const complete = !needed || (active.length > 0 && active.every(inp => String(inp.value || '').trim() !== '') && !invalid);
+      td.classList.toggle('bl-match-invalid', invalid);
+      td.classList.toggle('bl-match-valid', active.length > 0 && complete);
+      rounds[round] = (rounds[round] || false) || !complete;
+    });
+    tbody.querySelectorAll('tr[data-round]:not(.rgap)').forEach(tr => {
+      const round = tr.getAttribute('data-round');
+      const checked = +round < opened && Object.prototype.hasOwnProperty.call(rounds, round);
+      tr.classList.toggle('bl-round-invalid', checked && rounds[round]);
+      tr.classList.toggle('bl-round-valid', checked && !rounds[round]);
+      const head = tr.querySelector('.rhead-meta');
+      if (!head) return;
+      let status = head.querySelector('.bl-round-status');
+      if (checked && !status) {
+        status = document.createElement('span');
+        status.className = 'bl-round-status noprint';
+        head.appendChild(status);
+      }
+      if (status) {
+        const text = !checked ? '' : rounds[round]
+          ? tx('ui.round.incomplete', 'Ergebnisse fehlen oder sind ungültig')
+          : tx('ui.round.complete', 'Ergebnisse vollständig');
+        status.hidden = !checked;
+        if (status.textContent !== text) status.textContent = text;
+      }
     });
   }
 
@@ -1079,6 +1145,8 @@
   function wireScoreInputs(rootEl, onChange) {
     if (!rootEl) return;
     let lastFocusedMatch = null;
+    rootEl.__checkedMatches = new Set();
+    let focusedPage = typeof location === 'undefined' ? '' : location.pathname + location.search;
     const fields = () => Array.prototype.slice.call(rootEl.querySelectorAll('input.score'))
       .filter(i => !i.disabled && (i.offsetParent !== null || i.closest('td') === null));
     const cards = () => Array.prototype.slice.call(rootEl.querySelectorAll('td.match'))
@@ -1093,23 +1161,18 @@
     };
     const validateCard = (td, setMode) => {
       if (!td) return false;
-      const ins = td.querySelectorAll('input.score');
+      const ins = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
       if (!ins.length) return false;
       const mode = setMode || (onChange.setMode ? onChange.setMode() : null);
-      for (let i = 0; i < ins.length; i++) {
-        const inp = ins[i];
-        if (inp.disabled) continue;
-        const raw = String(inp.value || '').trim();
-        if (!/^[0-9]+$/.test(raw)) return false;
-        const setNo = +inp.getAttribute('data-set');
-        const side = inp.getAttribute('data-side');
-        const other = td.querySelector('input.score[data-set="' + setNo + '"][data-side="' + (side === 'a' ? 'b' : 'a') + '"]');
-        if (!other || other.disabled) return false;
-        const rawOther = String(other.value || '').trim();
-        if (!/^[0-9]+$/.test(rawOther)) return false;
-        const va = parseInt(raw, 10), vb = parseInt(rawOther, 10);
-        if (!mode) return false;
-        if (!TC.setValid(va, vb, TC.targetForSet(mode, setNo))) return false;
+      rootEl.__checkedMatches.add(td.getAttribute('data-mid'));
+      td.setAttribute('data-score-required', '');
+      markScoreInputs(td, mode);
+      const bad = ins.filter(inp => inp.classList.contains('invalid'));
+      if (bad.length) {
+        const first = bad.find(inp => String(inp.value || '').trim() === '') || bad[0];
+        first.focus();
+        first.select();
+        return false;
       }
       return true;
     };
@@ -1151,9 +1214,25 @@
     rootEl.addEventListener('focusin', e => {
       const score = e.target && e.target.classList && e.target.classList.contains('score') ? e.target : null;
       if (score) {
+        const page = typeof location === 'undefined' ? '' : location.pathname + location.search;
+        if (page !== focusedPage) {
+          focusedPage = page;
+          lastFocusedMatch = null;
+          rootEl.__checkedMatches.clear();
+        }
         score.select();
         const card = score.closest ? score.closest('td.match') : null;
-        if (card) lastFocusedMatch = card;
+        if (card) {
+          const round = +card.getAttribute('data-round') || 0;
+          const opened = +rootEl.getAttribute('data-opened-round') || 0;
+          const moved = lastFocusedMatch && lastFocusedMatch.getAttribute('data-mid') !== card.getAttribute('data-mid');
+          if (round > opened) rootEl.setAttribute('data-opened-round', String(round));
+          if (moved) {
+            rootEl.__checkedMatches.add(lastFocusedMatch.getAttribute('data-mid'));
+          }
+          if (moved || round > opened) markRoundStatus(rootEl);
+          lastFocusedMatch = card;
+        }
       }
     });
     rootEl.addEventListener('input', e => {
@@ -1211,22 +1290,37 @@
         onChange(p.getAttribute('data-mid'), setNo, other, p.value);
       }
     });
+    rootEl.addEventListener('mousedown', e => {
+      if (e.target && e.target.closest && e.target.closest('[data-round-confirm]')) e.preventDefault();
+    });
     rootEl.addEventListener('click', e => {
       const roundBtn = e.target && e.target.closest
         ? e.target.closest('[data-round-confirm]')
         : null;
       if (roundBtn) {
+        e.preventDefault();
         const round = roundBtn.getAttribute('data-round-confirm');
+        const slot = roundBtn.getAttribute('data-round-confirm-slot');
         const activeCard = document.activeElement && document.activeElement.closest
           ? document.activeElement.closest('td.match')
           : null;
-        const current = (lastFocusedMatch && String(lastFocusedMatch.getAttribute('data-round')) === String(round))
-          ? lastFocusedMatch
-          : (activeCard && String(activeCard.getAttribute('data-round')) === String(round) ? activeCard : null);
-        const td = current || rootEl.querySelector('td.match[data-round="' + round + '"]');
+        const inSlot = td => td && String(td.getAttribute('data-round')) === String(round)
+          && (slot == null || String(td.getAttribute('data-slot')) === String(slot));
+        const lastCard = lastFocusedMatch && rootEl.querySelector('td.match[data-mid="' + lastFocusedMatch.getAttribute('data-mid') + '"]');
+        const current = inSlot(lastCard)
+          ? lastCard
+          : (inSlot(activeCard) ? activeCard : null);
+        let td = current || rootEl.querySelector('td.match[data-round="' + round + '"]'
+          + (slot == null ? '' : '[data-slot="' + slot + '"]'));
+        if (!td) return;
+        const mid = td.getAttribute('data-mid');
+        const focused = document.activeElement;
+        if (focused && focused.classList.contains('score')) {
+          focused.dispatchEvent(new Event('change', { bubbles: true }));
+          td = rootEl.querySelector('td.match[data-mid="' + mid + '"]');
+        }
         if (!td) return;
         if (!validateCard(td, onChange.setMode ? onChange.setMode() : null)) return;
-        e.preventDefault();
         const moved = focusNextFieldCard(td);
         if (!moved && current) {
           const roundList = cards();
@@ -1475,7 +1569,7 @@
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
-    roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter,
+    roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,
     wireScoreInputs, courtLadderHtml, paintCourtLadder

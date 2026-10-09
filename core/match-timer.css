@@ -294,6 +294,115 @@
   touch-action: manipulation;
 }
 .mt-corr .mt-direct { flex: 1 1 auto; min-width: 0; width: auto; }
+/* Aufschlag (optional, Standard aus): unter dem Teamnamen beide Spieler.
+   Markierung nicht nur per Farbe: aufschlagend = gefüllt + Ball, Nächster
+   im Team = Rahmen + Pfeil, unbekannt = gestrichelt + „?“. Feste Breite der
+   Markierung und gleiche Schriftstärke: Punkte verschieben nichts. */
+.mt-serve { margin: 6px 0 0; }
+.mt-serve[hidden] { display: none; }
+.mt-pl {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-flex: 1;
+  flex: 1 1 0;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: start;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+  color: #34445c;
+  background: #fff;
+  border: 1.5px solid #c7d3e0;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-pl + .mt-pl { margin-top: 4px; }
+.mt-pl-tx { min-width: 0; text-align: left; word-wrap: break-word; overflow-wrap: break-word; }
+/* Breite Karten (Tablet): beide Spieler nebeneinander. */
+@media (min-width: 600px) {
+  .mt-serve:not([hidden]) { display: -webkit-box; display: flex; }
+  .mt-pl { width: auto; }
+  .mt-pl + .mt-pl { margin-top: 0; margin-left: 6px; }
+}
+.mt-mk { display: -webkit-box; display: flex; -webkit-box-pack: center; justify-content: center; flex: 0 0 auto; width: 16px; margin-right: 6px; }
+.mt-mk svg, .mt-mk-q { display: none; }
+.mt-mk-q { font-weight: 800; line-height: 16px; }
+.is-now > .mt-mk .mt-mk-now, .mt-mk.is-now .mt-mk-now,
+.is-next > .mt-mk .mt-mk-next, .mt-mk.is-next .mt-mk-next,
+.is-q > .mt-mk .mt-mk-q, .mt-mk.is-q .mt-mk-q { display: block; }
+.mt-pl.is-now { color: #1a1a2e; background: #ffd84d; border-color: #d9a400; }
+.mt-pl.is-next { color: #1a3a5c; border-color: #1f6fa8; }
+.mt-pl.is-q { border-style: dashed; border-color: #9fb2c8; }
+.mt-legend { margin: 0 2px 10px; font-size: 12.5px; line-height: 1.6; color: #34445c; }
+.mt-legend-item { display: inline-block; margin-right: 10px; white-space: nowrap; }
+.mt-legend .mt-mk { display: inline-block; vertical-align: -3px; }
+.mt-legend .mt-mk.is-now { color: #8a6a00; }
+.mt-legend .mt-mk.is-next { color: #1f6fa8; }
+.mt-serve-players { margin: 8px 0 0; }
+.mt-serve-players-head { margin: 0 2px 6px; font-size: 13px; font-weight: 650; color: #34445c; }
+.mt-serve-team { margin: 0 0 8px; }
+.mt-serve-team-name { display: block; margin: 0 2px 4px; font-size: 13px; font-weight: 600; color: #4a5468; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-serve-team-row { display: flex; }
+.mt-player {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 16px;
+  color: #1a1a2e;
+  background: #fff;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+}
+.mt-player + .mt-vh + .mt-player { margin-left: 8px; }
+/* Auswahl-Popup: je Team zwei Personen, darunter (reserviert) die erste
+   Person des annehmenden Teams. */
+.mt-sv-box { text-align: left; }
+.mt-sv-box .mt-modal-title { text-align: center; }
+.mt-sv-label { margin: 0 2px 6px; font-size: 14px; font-weight: 650; line-height: 1.35; color: #34445c; }
+.mt-sv-team { margin: 0 0 10px; }
+.mt-sv-tn { margin: 0 2px 4px; font-size: 13px; font-weight: 600; color: #4a5468; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-sv-opts { display: flex; }
+.mt-sv-opt {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  color: #1a3a5c;
+  background: #fff;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-sv-opt + .mt-sv-opt { margin-left: 8px; }
+.mt-sv-opt[aria-pressed="true"] { color: #1a1a2e; background: #ffd84d; border-color: #d9a400; font-weight: 750; }
+.mt-sv-next { margin: 4px 0 14px; padding-top: 10px; border-top: 1px solid #e1e7ef; }
+.mt-sv-next.is-off { visibility: hidden; }
+.mt-sv-next .mt-sv-label { min-height: 2.7em; margin-bottom: 4px; }
+/* Satzbeginn: „Wer beginnt?“ (Teams) über „Erster Aufschläger“ je Team. */
+.mt-sv-begin { margin: 0 0 14px; }
+.mt-sv-start .mt-sv-team:last-child { margin-bottom: 14px; }
+.mt-sv-rule { margin: 0 2px 4px; }
+.mt-setup-start { margin-top: 10px; padding-top: 10px; border-top: 1px solid #e1e7ef; }
+.mt-serve-open { margin-top: 6px; border-bottom: 0; }
 /* Führung: Karte der führenden Seite hervorgehoben + kurze Zeile. */
 .mt-side.is-leading { border-color: #0a7d2c; box-shadow: inset 0 0 0 1px #0a7d2c, 0 4px 16px rgba(10, 125, 44, .16); }
 .mt-side.is-leading .mt-value { color: #0a7d2c; }
@@ -383,8 +492,6 @@
 .mt-quick-controls { margin-top: 10px; }
 .mt-settings-heading { display: flex; align-items: center; min-height: 44px; margin: 0 44px 10px 0; color: #34445c; font-size: 15px; font-weight: 650; }
 .mt-settings-close { top: 12px; right: 12px; }
-.mt-settings > .mt-rules { margin: 0 0 10px; }
-.mt-setup-open { width: 100%; margin-bottom: 10px; border-radius: 12px; }
 .mt-settings-toggle { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px; padding: 0; cursor: pointer; }
 .mt-settings-toggle[aria-expanded="true"] { background: #fff; color: #1a3a5c; }
 @media screen and (min-width: 301px) and (max-width: 640px) and (orientation: portrait) {
@@ -541,43 +648,7 @@
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231a3a5c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
   cursor: pointer;
 }
-.mt-settings > .mt-setting {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 0 10px;
-  -webkit-box-pack: justify;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  background: #fff;
-  border: 1px solid #c6d2e0;
-  border-radius: 12px;
-}
-.mt-settings > .mt-setting .mt-setting-label {
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 0;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-/* Auswahl so breit wie ihr Text (max. 70 %), die Beschriftung
-   bricht notfalls um – so bleibt „Automatisch (alle 7)“ auch bei 320 px lesbar. */
-.mt-settings > .mt-setting .mt-select {
-  -webkit-box-flex: 0;
-  flex: 0 1 auto;
-  max-width: 70%;
-  border: 0;
-  border-left: 1px solid #e1e7ef;
-  border-radius: 0 11px 11px 0;
-  font-weight: 600;
-}
-
-/* ── Spielregeln: dezent eingeklappt unter den Einstellungen ── */
+/* ── Spielregeln (Einstellungen: flache Zeilen, Startdialog: eingeklappt) ── */
 .mt-rules { margin: 10px 0 0; }
 .mt-rules-toggle {
   display: -webkit-box;
@@ -639,45 +710,119 @@
 }
 .mt-rules .mt-rule .mt-select:disabled { color: #4a5468; background-color: #f3f6fa; cursor: default; opacity: 1; }
 
-.mt-settings .mt-setup-open {
-  width: auto;
-  padding: 6px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 600;
+/* Einstiege und Einstellungen teilen Beschriftung und Wert/Aktion. */
+.mt-setup-open {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  text-align: left;
+  color: #1a3a5c;
+  background: #f6f8fb;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+  cursor: pointer;
 }
-.mt-settings > .mt-setting,
+.mt-setup-open-tx { -webkit-box-flex: 1; flex: 1 1 auto; min-width: 0; padding: 10px; overflow-wrap: break-word; word-wrap: break-word; }
+.mt-setup-open-chev { flex: 0 0 auto; width: 44px; height: 46px; padding: 14px 12px; border-left: 1px solid #c6d2e0; }
+.mt-setup-open:hover { background: #f1f5fa; }
+.mt-group { margin: 18px 0 0; }
+.mt-group-title { margin: 0 0 8px; font-size: 12px; font-weight: 750; line-height: 1.3; letter-spacing: .04em; text-transform: uppercase; color: #5a6375; }
 .mt-settings .mt-rules-toggle,
 .mt-settings .mt-rules .mt-rule {
-  border: 0;
-  border-bottom: 1px solid #e1e7ef;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+  background: #f6f8fb;
 }
-.mt-settings > .mt-setting .mt-setting-label,
 .mt-settings .mt-rules-toggle,
-.mt-settings .mt-rules .mt-rule .mt-setting-label { padding-left: 0; }
-.mt-settings > .mt-setting .mt-select,
+.mt-settings .mt-rules .mt-rule .mt-setting-label { padding-left: 10px; font-size: 14px; -webkit-hyphens: auto; hyphens: auto; }
+/* Rahmenlose Auswahl rechts: wenig Innenabstand, damit „2 Punkte Vorsprung“
+   und „Automatisch (alle 7)“ auch bei 320 px ganz sichtbar bleiben. */
 .mt-settings .mt-rules .mt-rule .mt-select {
+  max-width: 70%;
+  padding: 4px 26px 4px 8px;
   border: 0;
-  border-radius: 0;
-  background-color: transparent;
+  border-left: 1px solid #c6d2e0;
+  border-radius: 0 11px 11px 0;
+  background-color: #fff;
+  background-position: right 4px center;
   font-size: 15px;
   font-weight: 500;
 }
-.mt-settings .mt-rules-panel { margin-top: 0; }
-.mt-settings .mt-rules .mt-rule { margin-bottom: 0; min-height: 48px; }
-.mt-settings .mt-rules .mt-rule:last-child { border-bottom: 0; }
-.mt-settings .mt-rules-toggle[aria-expanded="true"] .mt-rules-sum { display: none; }
+.mt-settings .mt-rules .mt-rule { margin-bottom: 8px; min-height: 48px; }
+/* Vom Bogen gesperrt: ohne Pfeil, damit es nicht wie eine Auswahl wirkt. */
+.mt-settings .mt-rules .mt-rule .mt-select:disabled { padding-right: 8px; color: #4a5468; background-image: none; cursor: default; }
+.mt-settings .mt-rules-note { margin: 4px 0 6px; }
 @media (min-width: 480px) {
-  .mt-settings > .mt-setting .mt-select,
   .mt-settings .mt-rules .mt-rule .mt-select { flex: 0 0 220px; width: 220px; }
 }
 
+/* Ein/Aus-Schalter: ganze Zeile antippbar, Zustand als Text + Schieber. */
+.mt-onoff {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: left;
+  color: #34445c;
+  background: #f6f8fb;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-onoff-label { -webkit-box-flex: 1; flex: 1 1 auto; min-width: 0; padding: 10px; overflow-wrap: break-word; word-wrap: break-word; }
+.mt-onoff-state { display: flex; align-items: center; justify-content: center; align-self: stretch; flex: 0 0 72px; margin: 0; border-left: 1px solid #c6d2e0; border-radius: 0 11px 11px 0; background: #fff; font-size: 14px; font-weight: 600; color: #4a5468; }
+.mt-onoff-ui {
+  display: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 28px;
+  background: #b3bccb;
+  border-radius: 14px;
+  -webkit-transition: background-color .2s ease;
+  transition: background-color .2s ease;
+}
+.mt-onoff-ui:after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  -webkit-transition: -webkit-transform .2s ease;
+  transition: transform .2s ease;
+}
+.mt-onoff[aria-pressed="true"] .mt-onoff-ui { background: #0a7d2c; }
+.mt-onoff[aria-pressed="true"] .mt-onoff-ui:after { -webkit-transform: translateX(18px); transform: translateX(18px); }
+.mt-onoff[aria-pressed="true"] .mt-onoff-state { color: #0a7d2c; }
+.mt-help { margin: 6px 0 8px; font-size: 12.5px; line-height: 1.4; color: #5a6375; }
+.mt-reset-toolbar { margin-top: 8px; }
+.mt-reset-toolbar > .mt-toggle { flex-direction: row; }
+.mt-reset-toolbar .mt-ic { margin: 0 8px 0 0; }
+
 /* ── Startdialog: Namen (+ Regeln eingeklappt) ── */
-.mt-setup-box { text-align: left; }
+/* .mt-modal-box (später, zentriert) überstimmen: Felder links ausgerichtet. */
+.mt-modal-box.mt-setup-box { text-align: left; }
 .mt-setup-box .mt-modal-title, .mt-setup-box .mt-modal-text { text-align: center; }
 .mt-setup-box:focus { outline: none; }
 .mt-setup-field { margin: 0 0 10px; }
@@ -696,6 +841,9 @@
   border-radius: 10px;
 }
 .mt-setup-rules { margin: 4px 0 14px; }
+.mt-setup-serve { margin: 4px 0 10px; }
+.mt-setup-serve .mt-onoff { border: 1.5px solid #9fb2c8; }
+.mt-setup-serve .mt-help { margin: 4px 2px 0; }
 /* Im schmalen Dialog: Beschriftung über der Auswahl, nichts abgeschnitten. */
 .mt-setup-rules .mt-rule { display: block; padding: 6px 0 0; background: transparent; border: 0; border-radius: 0; }
 .mt-setup-rules .mt-rule .mt-setting-label { display: block; padding: 0 2px 4px; }
@@ -806,9 +954,48 @@
 .mt.is-compact .mt-value { font-size: 40px; margin: 2px 0; }
 .mt.is-compact .mt-plus { min-height: 56px; font-size: 26px; }
 .mt.is-compact .mt-corr { margin-top: 6px; }
+.mt.is-compact .mt-serve { margin-top: 4px; }
 .mt.is-compact .mt-minus { width: 100%; margin-right: 0; min-height: 44px; }
 .mt.is-compact .mt-settings { margin-top: 8px; }
-.mt.is-compact .mt-actions { margin-top: 6px; }
+.mt.is-compact .mt-actions {
+  display: grid; grid-template-columns: repeat(3, minmax(44px, 1fr));
+  grid-gap: 6px; gap: 6px; margin-top: 6px;
+}
+.mt.is-compact .mt-actions > .mt-toggle {
+  flex: 1 1 0; flex-direction: row; min-height: 44px; margin: 0; padding: 6px;
+}
+.mt.is-compact .mt-actions > #mt-end-set { flex: 1 1 0; flex-direction: column; padding: 4px 2px; font-size: 12px; line-height: 1.1; }
+.mt.is-compact .mt-actions > #mt-end-set .mt-ic { margin: 0; }
+.mt.is-compact .mt-actions > #mt-end-set .mt-ic svg { width: 16px; height: 16px; }
+.mt.is-compact .mt-actions > #mt-end-set .mt-tl { margin-top: 2px; }
+.mt.is-compact .mt-clock-actions .mt-btn { flex-direction: column; font-size: 12px; line-height: 1.1; }
+.mt.is-compact .mt-clock-actions .mt-btn .mt-ic svg { width: 16px; height: 16px; }
+.mt.is-compact .mt-clock-actions .mt-btn > span:last-child { margin-top: 2px; }
+.mt.is-compact .mt-pl-tx { white-space: nowrap; }
+.mt.is-compact .mt-actions .mt-ic,
+.mt.is-compact .mt-btn .mt-ic,
+.mt.is-compact .mt-reset-toolbar .mt-ic { margin: 0; }
+/* Labels remain available to screen readers when only the SVG is shown. */
+.mt.is-compact .mt-actions > .mt-toggle:not(#mt-end-set) .mt-tl,
+.mt.is-compact .mt-reset-toolbar .mt-tl,
+.mt.is-compact .mt-transfer > span:not(.mt-ic) {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.mt.is-compact .mt-reset-toolbar { justify-content: flex-end; }
+.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) > .mt-toggle {
+  flex: 1 1 0; flex-direction: row; min-height: 44px; padding: 6px;
+}
+.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) .mt-ic { margin: 0; }
+.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) .mt-tl {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.mt.is-compact .mt-reset-toolbar { margin-top: 6px; }
+.mt.is-compact .mt-reset-toolbar > #mt-reset {
+  flex: 0 0 44px; min-height: 44px; padding: 6px;
+}
+.mt.is-compact .mt-transfer { min-height: 44px; margin-top: 6px; }
 .mt.is-compact .mt-sets { margin-top: 4px; font-size: 14px; }
 .mt.is-compact .mt-lead { margin-top: 6px; }
 .mt.is-compact .mt-cur-bar { margin-top: 6px; height: 8px; }
@@ -848,10 +1035,10 @@
 }
 
 @media (max-width: 300px) {
-  .mt-actions > #mt-end-set { -webkit-box-flex: 1; flex: 1 1 0; flex-direction: column; font-size: 12.5px; }
+  .mt { padding-left: 6px; padding-right: 6px; }
+  .mt.is-compact .mt-clock-actions { grid-template-columns: repeat(2, minmax(44px, 1fr)); grid-gap: 6px; gap: 6px; }
   .mt-iconbtn.i18n-switch .code { display: none; }
   .mt-iconbtn.i18n-switch .ic svg { margin-right: 0; }
-  .mt-actions > #mt-end-set .mt-ic { margin: 0 0 3px; }
   /* Smartwatch-Größe: Kopfleiste scrollt weg, damit Zeit, Spielstand und
      „+1“ den ganzen Bildschirm nutzen; der Status steckt dann in Farbe der
      Zeit und Beschriftung der Haupttaste. */
@@ -860,16 +1047,27 @@
   .mt-back .mt-back-lbl { display: none; }
   .mt-back .mt-chev { margin: 0; }
   .mt-title { font-size: 13px; margin: 0 4px; }
-  .mt-btn .mt-ic { display: none; }
   .mt.is-compact .mt-status { display: none; }
-  .mt.is-compact .mt-time { font-size: 34px; margin: 0 0 2px; }
+  .mt.is-compact .mt-time { font-size: 34px; margin: 0 44px 2px 0; text-align: left; letter-spacing: 0; }
   .mt.is-compact .mt-value { font-size: 34px; margin: 0; }
   .mt.is-compact .mt-plus { min-height: 48px; font-size: 22px; }
   .mt.is-compact .mt-short { font-size: 12px; }
+  /* Watch: beide Spieler bleiben sichtbar, nur kompakter. */
+  .mt-pl { padding: 2px 4px; font-size: 12px; }
+  .mt-mk { width: 12px; margin-right: 3px; }
   .mt-match { grid-column-gap: 6px; }
   .mt-match-name { font-size: 13px; }
   .mt-match-score { font-size: 24px; }
   .mt-match-sep { margin: 0 3px; }
+  .mt-settings .mt-rules .mt-rule { display: block; }
+  .mt-settings .mt-rules .mt-rule .mt-setting-label { display: block; padding: 8px 10px; }
+  .mt-settings .mt-rules .mt-rule .mt-select {
+    width: 100%; max-width: 100%; border-left: 0; border-top: 1px solid #c6d2e0;
+    border-radius: 0 0 11px 11px; font-size: 14px;
+  }
+}
+@media (max-width: 180px) {
+  .mt.is-compact .mt-time { font-size: 26px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -878,6 +1076,6 @@
 }
 @media print {
   .mt-cur-bar,
-  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-actions, .mt-mode, .mt-modal,
+  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-serve, .mt-actions, .mt-mode, .mt-modal,
   .mt-transfer { display: none !important; }
 }

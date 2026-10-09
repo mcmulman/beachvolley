@@ -14,6 +14,8 @@
      (falls an) und Vibration gemeldet; danach läuft Nachspielzeit „+MM:SS“.
    - Haptik: kurzes Antippen bei Punkten – nativ über das App-Plugin
      AppHaptics, im Browser über navigator.vibrate (iOS-Safari: ohne).
+   - Aufschlag (Volleyball): Umschalter je Karte; „+1“ setzt ihn, Korrekturen
+     machen ihn ggf. offen („?“). Änderungen werden mit angesagt.
    - ?a=…&b=… (aus dem Turnierbogen) übernimmt Teamnamen; läuft bereits ein
      Spiel, erst nach Rückfrage.
    - Kein Zugriff auf TStore/Turnierdaten: Turnierergebnisse werden nie
@@ -60,6 +62,7 @@
   };
 
   var state = TM.create();
+  var normalOnSmallScreen = false;
   var storageOk = true;
   var tickId = null;
   var lastTimeText = '';
@@ -161,6 +164,30 @@
   function scoreSentence() {
     return tx('timer.announce.score', 'Spielstand: {nameA} {a}, {nameB} {b}',
       { nameA: sideName('a'), a: state.score.a, nameB: sideName('b'), b: state.score.b });
+  }
+  /* Spielername für Anzeige/Auswahl: leer → „Spieler 1/2“, doppelt →
+     mit Nummer, damit beide Personen unterscheidbar bleiben. */
+  function playerLabel(side, i) {
+    var list = state.players[side];
+    var name = list[i];
+    if (!name) return tx('timer.serve.player', 'Spieler {n}', { n: i + 1 });
+    return name.toLowerCase() === list[1 - i].toLowerCase() ? name + ' ' + (i + 1) : name;
+  }
+  function serveKey() {
+    var v = TM.server(state);
+    return v ? v.side + v.player : '';
+  }
+  function serveSentence() {
+    var v = TM.server(state);
+    if (!v) return tx('timer.serve.announceOpen', 'Aufschlag offen – bitte antippen');
+    if (v.player == null) {
+      return tx('timer.serve.announceWho', 'Aufschlag: {name} – Person bitte antippen', { name: sideName(v.side) });
+    }
+    return tx('timer.serve.announce', 'Aufschlag: {player} ({name})', { player: playerLabel(v.side, v.player), name: sideName(v.side) });
+  }
+  /* Ansage um den Aufschlag ergänzen, wenn er sichtbar ist und wechselte. */
+  function withServe(text, prevKey) {
+    return state.serveShown && serveKey() !== prevKey ? text + '. ' + serveSentence() : text;
   }
   var flashTimers = {};
   function flash(side) {
@@ -331,7 +358,6 @@
     var info = TM.ruleInfo(state);
     renderRuleSelects(el.ruleSelects, info, info.fromMatch);
     el.rulesNote.hidden = !info.fromMatch;
-    el.rulesSummary.textContent = rulesText(info);
   }
   function onRuleChange(e) {
     if (state.match) { renderRules(); return; }
@@ -353,7 +379,7 @@
     el.settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) {
       el.settings.scrollIntoView({ block: 'nearest' });
-      el.switchSelects[0].focus();
+      el.setupOpen.focus();
     } else {
       hideResetConfirm(false);
       el.settingsToggle.focus();
@@ -415,6 +441,166 @@
   function showSwitch() {
     el.switchScore.textContent = sideName('a') + ' ' + state.score.a + ' : ' + state.score.b + ' ' + sideName('b');
     openModal(el.switchModal, el.switchOk, function () { closeModal(true); });
+  }
+  /* Markierung je Spieler: 'now' schlägt auf, 'next' ist im Team als
+     Nächster dran (beim aufschlagenden Team der Partner, sonst wer beim
+     nächsten Aufschlagrecht beginnt), 'q' unbekannt – nie geraten. */
+  function serveMarks(side) {
+    var v = TM.server(state);
+    var m = ['', ''];
+    if (v && v.side === side) {
+      if (v.player == null) return ['q', 'q'];
+      m[v.player] = 'now';
+      m[1 - v.player] = 'next';
+      return m;
+    }
+    var n = TM.nextServer(state, side);
+    if (n === null) return ['q', 'q'];
+    m[n] = 'next';
+    return m;
+  }
+  function chipLabel(mark, side, i) {
+    var o = { player: playerLabel(side, i), name: sideName(side) };
+    if (mark === 'now') return tx('timer.serve.chipNow', '{player} ({name}): schlägt auf – ändern', o);
+    if (mark === 'next') return tx('timer.serve.chipNext', '{player} ({name}): Nächster im Team – ändern', o);
+    if (mark === 'q') return tx('timer.serve.chipOpen', '{player} ({name}): Aufschlag offen – festlegen', o);
+    return tx('timer.serve.chip', '{player} ({name}) – Aufschlag ändern', o);
+  }
+  function renderServe() {
+    var shown = state.serveShown === true;
+    var v = TM.server(state);
+    ['a', 'b'].forEach(function (side) {
+      var name = sideName(side);
+      var marks = serveMarks(side);
+      el.serve[side].hidden = !shown;
+      el.serve[side].setAttribute('aria-label', tx('timer.serve.heading', 'Aufschlag') + ': ' + name);
+      [0, 1].forEach(function (i) {
+        var b = el.pl[side][i];
+        b.className = 'mt-pl' + (marks[i] ? ' is-' + marks[i] : '');
+        el.plText[side][i].textContent = playerLabel(side, i);
+        b.setAttribute('aria-label', chipLabel(marks[i], side, i));
+        b.title = chipLabel(marks[i], side, i);
+      });
+      el.card[side].classList.toggle('is-serving', shown && !!v && v.side === side);
+      el.serveTeam[side].textContent = name;
+      [0, 1].forEach(function (i) {
+        var input = el.player[side][i];
+        input.placeholder = tx('timer.serve.player', 'Spieler {n}', { n: i + 1 });
+        el.playerLabel[side][i].textContent = tx('timer.serve.playerField', '{name}: Spieler {n}', { name: name, n: i + 1 });
+        if (doc.activeElement !== input) input.value = state.players[side][i];
+      });
+    });
+    el.servePlayers.hidden = !shown;
+    renderOnOff(el.serveShow, el.serveState, shown);
+    if (!el.serveDialog.hidden) renderServeDialog();
+  }
+  /* Ein/Aus-Schalter (Button mit aria-pressed): Zustand sichtbar als Text
+     und Schiebeschalter, Vorleser liest aria-pressed. */
+  function renderOnOff(btn, stateEl, on) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    stateEl.textContent = on ? tx('timer.serve.on', 'An') : tx('timer.serve.off', 'Aus');
+  }
+  /* Erste Person je Team zu Satzbeginn: gespeicherte Wahl, sonst Spieler 1
+     (sichtbar markiert und mit dem beginnenden Team übernommen). */
+  function firstPick(side) {
+    return state.first[side] === 1 ? 1 : 0;
+  }
+  function firstPicks() { return { a: firstPick('a'), b: firstPick('b') }; }
+  function pressed(btn, on) { btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  /* Zwei Ansichten mit je fester Höhe: zu Satzbeginn „Wer beginnt?“ und
+     „Erster Aufschläger“ je Team; danach „Aktueller Aufschlag“ (Korrektur)
+     und „Nächster Aufschläger“ des annehmenden Teams (reserviert). */
+  function renderServeDialog() {
+    var start = TM.canStartServe(state);
+    var v = TM.server(state);
+    var other = v ? (v.side === 'a' ? 'b' : 'a') : null;
+    var next = other ? TM.nextServer(state, other) : null;
+    el.svStart.hidden = !start;
+    el.svFix.hidden = start;
+    ['a', 'b'].forEach(function (side) {
+      el.svTeamName[side].textContent = sideName(side);
+      el.svFirstName[side].textContent = sideName(side);
+    });
+    el.svBegin.forEach(function (btn) {
+      var side = btn.getAttribute('data-begin');
+      btn.textContent = sideName(side);
+      pressed(btn, state.serve === side);
+    });
+    el.svFirst.forEach(function (btn) {
+      var side = btn.getAttribute('data-first');
+      var i = Number(btn.getAttribute('data-player'));
+      btn.textContent = playerLabel(side, i);
+      pressed(btn, firstPick(side) === i);
+    });
+    el.svNow.forEach(function (btn) {
+      var side = btn.getAttribute('data-side');
+      var i = Number(btn.getAttribute('data-idx'));
+      btn.textContent = playerLabel(side, i);
+      pressed(btn, v && v.side === side && v.player === i);
+    });
+    el.svNextRow.classList.toggle('is-off', !other);
+    if (other) el.svNextRow.removeAttribute('aria-hidden'); else el.svNextRow.setAttribute('aria-hidden', 'true');
+    /* Text auch im ausgeblendeten Zustand setzen, damit die Höhe gleich bleibt. */
+    el.svNextLabel.textContent = tx('timer.serve.next', 'Nächster Aufschläger · {name}', { name: sideName(other || 'b') });
+    el.svNext.forEach(function (btn) {
+      var i = Number(btn.getAttribute('data-next'));
+      btn.textContent = other ? playerLabel(other, i) : '';
+      btn.disabled = !other;
+      pressed(btn, other && next === i);
+    });
+    el.svClear.disabled = !v;
+  }
+  /* Fokus: zu Satzbeginn das gewählte bzw. angetippte Team, sonst die
+     angetippte Person unter „Aktueller Aufschlag“ (ein Tipp zur Korrektur). */
+  function openServeDialog(side, idx) {
+    showError('');
+    renderServeDialog();
+    var start = TM.canStartServe(state);
+    var focus = null;
+    (start ? el.svBegin : el.svNow).forEach(function (btn) {
+      if (focus) return;
+      if (start ? (state.serve ? btn.getAttribute('aria-pressed') === 'true' : btn.getAttribute('data-begin') === side)
+        : (idx != null ? btn.getAttribute('data-side') === side && Number(btn.getAttribute('data-idx')) === idx
+          : btn.getAttribute('aria-pressed') === 'true')) focus = btn;
+    });
+    openModal(el.serveDialog, focus || el.svDone, closeServeDialog);
+  }
+  /* Fokus zurück: vom Spielerfeld aus auf den aktuellen Aufschläger, sonst dorthin, woher geöffnet. */
+  function closeServeDialog() {
+    var v = TM.server(state);
+    var back = modal && modal.back;
+    var onChip = back && back.className && back.className.indexOf('mt-pl') === 0;
+    closeModal(onChip && v && v.player != null ? el.pl[v.side][v.player] : true);
+  }
+  function onServeBegin(btn) {
+    if (commit(TM.startServe(state, btn.getAttribute('data-begin'), firstPicks()))) announce(serveSentence());
+  }
+  function onServeFirst(btn) {
+    var side = btn.getAttribute('data-first');
+    var i = Number(btn.getAttribute('data-player'));
+    var f = firstPicks();
+    f[side] = i;
+    if (commit(TM.startServe(state, state.serve, f))) {
+      announce(tx('timer.serve.first', 'Erster Aufschläger') + ' · ' + sideName(side) + ': ' + playerLabel(side, i));
+    }
+  }
+  function onServeNow(btn) {
+    if (commit(TM.setServe(state, btn.getAttribute('data-side'), Number(btn.getAttribute('data-idx'))))) announce(serveSentence());
+  }
+  function onServeNext(btn) {
+    var v = TM.server(state);
+    if (!v) return;
+    var other = v.side === 'a' ? 'b' : 'a';
+    var i = Number(btn.getAttribute('data-next'));
+    if (commit(TM.setNextServer(state, other, i))) {
+      announce(tx('timer.serve.next', 'Nächster Aufschläger · {name}', { name: sideName(other) }) + ': ' + playerLabel(other, i));
+    }
+  }
+  function onServeShown() {
+    if (commit(TM.setServeShown(state, !state.serveShown))) {
+      announce(tx('timer.serve.show', 'Aufschlag anzeigen') + ': ' +
+        (state.serveShown ? tx('timer.serve.on', 'An') : tx('timer.serve.off', 'Aus')));
+    }
   }
   function renderTransfer() {
     el.transfer.hidden = !(returnTarget && TM.resultFor(state));
@@ -570,7 +756,29 @@
     try { return !!(root.matchMedia && root.matchMedia('(max-width: 300px)').matches); }
     catch (e) { return false; }
   }
+  function isCompact() {
+    return !!state.compact || (isAutoCompact() && !normalOnSmallScreen);
+  }
+  var nameFitScheduled = false;
+  function fitCompactNames() {
+    if (nameFitScheduled) return;
+    nameFitScheduled = true;
+    root.requestAnimationFrame(function () {
+      nameFitScheduled = false;
+      ['a', 'b'].forEach(function (side) {
+        [0, 1].forEach(function (i) {
+          var label = el.plText[side][i];
+          label.textContent = playerLabel(side, i);
+          if (isCompact() && label.clientWidth > 0 && label.scrollWidth > label.clientWidth) {
+            var initial = Array.from(state.players[side][i].replace(/^\s+|\s+$/g, ''))[0] || '';
+            label.textContent = String(i + 1) + (initial ? ' ' + initial : '');
+          }
+        });
+      });
+    });
+  }
   function render() {
+    var compact = isCompact();
     el.clock.hidden = !state.clockEnabled;
     el.clockOpen.hidden = state.clockEnabled;
     el.root.classList.toggle('is-points-only', !state.clockEnabled);
@@ -584,15 +792,21 @@
     renderTransfer();
     renderSwitchSelects();
     renderRules();
+    renderServe();
     el.hint.hidden = !returnTarget || !!state.match;
     el.undo.disabled = !TM.canUndo(state);
     el.endSet.disabled = !TM.canEndSet(state);
     el.undo.title = tx('timer.undoAria', 'Letzte Spielstandsänderung rückgängig machen');
     el.endSet.title = tx('timer.endSetAria', 'Satz beenden: geht an die Seite mit mehr Punkten, Punkte starten wieder bei 0');
+    el.endSetLabel.textContent = compact ? tx('timer.endSetShort', 'Ende') : tx('timer.endSet', 'Satz beenden');
+    el.endSet.setAttribute('aria-label', el.endSetLabel.textContent + ': '
+      + tx('timer.endSetAria', 'Satz beenden: geht an die Seite mit mehr Punkten, Punkte starten wieder bei 0'));
+    el.endSetLabel.setAttribute('data-i18n', compact ? 'timer.endSetShort' : 'timer.endSet');
 
     var action = TM.primaryAction(state);
     var p = PRIMARY[action];
-    el.primaryLabel.textContent = p.text();
+    el.primaryLabel.textContent = compact && action === 'clear' ? tx('timer.resetTimeShort', 'Uhr auf 0') : p.text();
+    el.primary.setAttribute('aria-label', compact && action === 'clear' ? el.primaryLabel.textContent + ': ' + p.text() : p.text());
     el.primary.setAttribute('data-action', action);
     var stopped = state.status === 'stopped';
     el.stop.disabled = !TM.canStop(state) && !stopped;
@@ -616,17 +830,19 @@
 
     el.sound.setAttribute('aria-pressed', state.sound ? 'true' : 'false');
     el.keepAwake.setAttribute('aria-pressed', state.keepAwake ? 'true' : 'false');
-    var auto = isAutoCompact();
     el.wakeHint.hidden = !state.keepAwake;
     el.wakeHint.textContent = state.clockEnabled
       ? tx('timer.keepAwakeHint', 'Display bleibt an, solange die Zeit läuft (braucht mehr Akku).')
       : tx('timer.keepAwakePointsHint', 'Display bleibt beim Punktezählen an (braucht mehr Akku).');
-    el.compactLabel.textContent = state.compact ? tx('timer.normal', 'Normal') : tx('timer.compact', 'Kompakt');
-    el.compact.setAttribute('aria-label', state.compact
+    el.compactLabel.textContent = compact ? tx('timer.normal', 'Normal') : tx('timer.compact', 'Kompakt');
+    el.compactLabel.setAttribute('data-i18n', compact ? 'timer.normal' : 'timer.compact');
+    el.compact.setAttribute('aria-pressed', compact ? 'true' : 'false');
+    el.compact.setAttribute('aria-label', compact
       ? tx('timer.normalAria', 'Zur Normalansicht wechseln')
       : tx('timer.compactAria', 'Zur Kompaktansicht wechseln'));
-    el.compact.hidden = auto;
-    el.root.classList.toggle('is-compact', !!state.compact || auto);
+    el.compact.hidden = false;
+    el.root.classList.toggle('is-compact', compact);
+    fitCompactNames();
     syncTick();
     syncWake(false);
   }
@@ -657,6 +873,7 @@
     showError('');
     var wasWon = TM.setWinner(state);
     var wasSwitch = TM.isSideSwitch(state);
+    var prevServe = serveKey();
     if (!commit(next)) return;
     flash(side);
     var winner = TM.setWinner(state);
@@ -672,12 +889,12 @@
       beep(freq);
       beep(freq, 0.18);
       haptic('notice');
-      announce(tx('timer.announce.switch', 'Seitenwechsel bei {a} : {b}', { a: state.score.a, b: state.score.b }));
+      announce(withServe(tx('timer.announce.switch', 'Seitenwechsel bei {a} : {b}', { a: state.score.a, b: state.score.b }), prevServe));
       showSwitch();
     } else {
       beep(freq);
       haptic('light');
-      announce(scoreSentence());
+      announce(withServe(scoreSentence(), prevServe));
     }
   }
   /* Ergebnis an den Turnierbogen übergeben: spielplan-enh.js trägt es beim
@@ -704,10 +921,11 @@
   }
   function onUndo() {
     showError('');
+    var prevServe = serveKey();
     if (!commit(TM.undo(state))) return;
     beep(440);
     haptic('light');
-    announce(tx('timer.announce.undo', 'Rückgängig. {score}', { score: scoreSentence() }));
+    announce(withServe(tx('timer.announce.undo', 'Rückgängig. {score}', { score: scoreSentence() }), prevServe));
   }
   function onSwap() {
     showError('');
@@ -720,6 +938,7 @@
     var winner = before.a > before.b ? 'a' : 'b';
     var name = sideName(winner);
     var hadWinner = !!TM.matchWinner(state);
+    var prevServe = serveKey();
     if (!commit(TM.endSet(state))) return;
     flash(winner);
     beep(660, 0, 0.18);
@@ -730,7 +949,7 @@
     if (!hadWinner && TM.matchWinner(state) === winner) {
       text += '. ' + tx('timer.announce.matchWon', 'Spielgewinn für {name}', { name: name });
     }
-    announce(text);
+    announce(withServe(text, prevServe));
   }
   function onMode() {
     var min = parseInt(el.mode.value, 10);
@@ -775,7 +994,8 @@
     }
     var label = function (side) { return names[side] || (side === 'a' ? tx('timer.sideA', 'Seite A') : tx('timer.sideB', 'Seite B')); };
     if (!TM.hasProgress(state)) {
-      commit(withMatch(TM.setNames(state, names.a, names.b), names));
+      /* Neue Teams: eine früher gewählte Eröffnung gilt nicht mehr. */
+      commit(withMatch(TM.clearServe(TM.setNames(state, names.a, names.b)), names));
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: label('a'), b: label('b') }));
       return;
     }
@@ -790,7 +1010,7 @@
     pendingPrefill = null;
     closeModal(el.primary);
     if (accept && names) {
-      commit(withMatch(TM.setNames(TM.reset(state), names.a, names.b), names));
+      commit(withMatch(TM.clearServe(TM.setNames(TM.reset(state), names.a, names.b)), names));
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: sideName('a'), b: sideName('b') }));
     }
   }
@@ -836,7 +1056,7 @@
 
   /* ------------------------------------------------------ Startdialog
      Freiwillig beim Öffnen, nicht beim Neuladen oder aus dem Turnierbogen.
-     Überspringen verändert weder Namen noch Regeln oder Spielstand. */
+     Überspringen verändert weder Namen noch Regeln, Aufschlag oder Spielstand. */
   var setupDraft = null;
   function offerSetup(prefilled) {
     var navigation = root.performance && root.performance.navigation;
@@ -845,16 +1065,62 @@
     var reload = entries.length ? entries[0].type === 'reload' : navigation && navigation.type === 1;
     return !reload && !prefilled && !returnTarget && !state.match && !modal;
   }
+  /* Teamname im Entwurf (live aus dem Namensfeld), sonst „Seite A/B“. */
+  function setupSideName(side) {
+    return el.setupName[side].value.replace(/^\s+|\s+$/g, '') ||
+      (side === 'a' ? tx('timer.sideA', 'Seite A') : tx('timer.sideB', 'Seite B'));
+  }
+  function setupPlayerLabel(side, i) {
+    return el.setupPlayer[side][i].value.replace(/^\s+|\s+$/g, '') || tx('timer.serve.player', 'Spieler {n}', { n: i + 1 });
+  }
+  /* Satzbeginn im Entwurf: kein Team vorgewählt (erneutes Antippen hebt die
+     Wahl auf), erste Person je Team = gespeicherte Wahl bzw. Spieler 1. */
+  function renderSetupServe() {
+    var on = setupDraft.serveShown;
+    renderOnOff(el.setupServe, el.setupServeState, on);
+    el.setupPlayers.hidden = !on;
+    el.setupStart.hidden = !setupDraft.canStart;
+    el.setupRunning.hidden = setupDraft.canStart;
+    el.setupBegin.forEach(function (btn) {
+      var side = btn.getAttribute('data-setup-begin');
+      btn.textContent = setupSideName(side);
+      pressed(btn, setupDraft.begin === side);
+    });
+    el.setupFirst.forEach(function (btn) {
+      var side = btn.getAttribute('data-setup-first');
+      var i = Number(btn.getAttribute('data-player'));
+      btn.textContent = setupPlayerLabel(side, i);
+      pressed(btn, setupDraft.first[side] === i);
+    });
+    ['a', 'b'].forEach(function (side) {
+      var name = setupSideName(side);
+      el.setupTeam[side].textContent = name;
+      el.setupFirstName[side].textContent = name;
+      [0, 1].forEach(function (i) {
+        el.setupPlayer[side][i].placeholder = tx('timer.serve.player', 'Spieler {n}', { n: i + 1 });
+        el.setupPlayerLabel[side][i].textContent = tx('timer.serve.playerField', '{name}: Spieler {n}', { name: name, n: i + 1 });
+      });
+    });
+  }
   function renderSetup() {
     renderRuleSelects(el.setupSelects, setupDraft, !!state.match);
     el.setupRulesNote.hidden = !state.match;
     el.setupRulesSummary.textContent = rulesText(setupDraft);
+    renderSetupServe();
   }
-  function openSetup() {
+  /* Aus den Einstellungen erneut geöffnet: „Abbrechen“ statt „Überspringen“. */
+  function openSetup(fromSettings) {
     var info = TM.ruleInfo(state);
-    setupDraft = { target: info.target, wins: info.wins, decider: info.decider, twoPoint: info.twoPoint };
+    el.setupText.hidden = !!fromSettings;
+    el.setupSkip.textContent = fromSettings ? tx('timer.setup.cancel', 'Abbrechen') : tx('timer.setup.skip', 'Überspringen');
+    setupDraft = { target: info.target, wins: info.wins, decider: info.decider, twoPoint: info.twoPoint,
+      serveShown: state.serveShown === true, canStart: TM.canStartServe(state),
+      begin: state.serve, first: firstPicks() };
     el.setupName.a.value = state.names.a;
     el.setupName.b.value = state.names.b;
+    ['a', 'b'].forEach(function (side) {
+      [0, 1].forEach(function (i) { el.setupPlayer[side][i].value = state.players[side][i]; });
+    });
     el.setupRulesPanel.hidden = true;
     el.setupRulesToggle.setAttribute('aria-expanded', 'false');
     renderSetup();
@@ -869,6 +1135,11 @@
     if (apply) {
       next = TM.setNames(next, el.setupName.a.value, el.setupName.b.value);
       if (!state.match) next = TM.setRules(next, draft);
+      next = TM.setServeShown(next, draft.serveShown);
+      ['a', 'b'].forEach(function (side) {
+        [0, 1].forEach(function (i) { next = TM.setPlayerName(next, side, i, el.setupPlayer[side][i].value); });
+      });
+      if (draft.serveShown && draft.canStart && draft.startTouched) next = TM.startServe(next, draft.begin, draft.first);
     }
     commit(next);
     if (apply && (state.names.a || state.names.b)) {
@@ -919,6 +1190,7 @@
     el.wakeHint = byId('mt-wake-hint');
     el.compactLabel = byId('mt-compact-label');
     el.compact = byId('mt-compact');
+    el.endSetLabel = byId('mt-end-set').querySelector('.mt-tl');
     el.reset = byId('mt-reset');
     el.resetConfirm = byId('mt-reset-confirm');
     el.resetYes = byId('mt-reset-yes');
@@ -960,9 +1232,6 @@
     el.switchSwap = byId('mt-switch-swap');
     el.switchSelects = [byId('mt-switch-pts'), byId('mt-switch-pts-modal')];
     el.backLabel = byId('mt-back-label');
-    el.rulesToggle = byId('mt-rules-toggle');
-    el.rulesPanel = byId('mt-rules-panel');
-    el.rulesSummary = byId('mt-rules-summary');
     el.rulesNote = byId('mt-rules-note');
     el.ruleSelects = Array.prototype.slice.call(doc.querySelectorAll('[data-rule]'));
     el.setup = byId('mt-setup');
@@ -976,7 +1245,36 @@
     el.setupDone = byId('mt-setup-done');
     el.setupOpen = byId('mt-setup-open');
     el.setupSkip = byId('mt-setup-skip');
-    el.name = {}; el.value = {}; el.short = {}; el.plus = {}; el.minus = {}; el.direct = {};
+    el.setupText = byId('mt-setup-text');
+    el.setupServe = byId('mt-setup-serve');
+    el.setupServeState = byId('mt-setup-serve-state');
+    el.setupPlayers = byId('mt-setup-players');
+    el.setupTeam = { a: byId('mt-setup-team-a'), b: byId('mt-setup-team-b') };
+    el.setupPlayer = {}; el.setupPlayerLabel = {};
+    el.setupStart = byId('mt-setup-start');
+    el.setupRunning = byId('mt-setup-running');
+    el.setupBegin = Array.prototype.slice.call(doc.querySelectorAll('[data-setup-begin]'));
+    el.setupFirst = Array.prototype.slice.call(doc.querySelectorAll('[data-setup-first]'));
+    el.setupFirstName = { a: byId('mt-setup-ftn-a'), b: byId('mt-setup-ftn-b') };
+    el.serveOpen = byId('mt-serve-open');
+    el.serveShow = byId('mt-serve-show');
+    el.serveState = byId('mt-serve-state');
+    el.servePlayers = byId('mt-serve-players');
+    el.serveDialog = byId('mt-serve-dialog');
+    el.svNow = Array.prototype.slice.call(el.serveDialog.querySelectorAll('[data-idx]'));
+    el.svNext = Array.prototype.slice.call(el.serveDialog.querySelectorAll('[data-next]'));
+    el.svNextRow = byId('mt-sv-next');
+    el.svNextLabel = byId('mt-sv-next-label');
+    el.svStart = byId('mt-sv-start');
+    el.svFix = byId('mt-sv-fix');
+    el.svBegin = Array.prototype.slice.call(el.serveDialog.querySelectorAll('[data-begin]'));
+    el.svFirst = Array.prototype.slice.call(el.serveDialog.querySelectorAll('[data-first]'));
+    el.svFirstName = { a: byId('mt-sv-ftn-a'), b: byId('mt-sv-ftn-b') };
+    el.svDone = byId('mt-sv-done');
+    el.svClear = byId('mt-sv-clear');
+    el.svTeamName = { a: byId('mt-sv-tn-a'), b: byId('mt-sv-tn-b') };
+    el.name = {}; el.value = {}; el.short = {}; el.plus = {}; el.minus = {}; el.direct = {}; el.serve = {};
+    el.pl = {}; el.plText = {}; el.serveTeam = {}; el.player = {}; el.playerLabel = {};
     ['a', 'b'].forEach(function (side) {
       el.name[side] = byId('mt-name-' + side);
       el.value[side] = byId('mt-score-' + side);
@@ -984,6 +1282,14 @@
       el.plus[side] = byId('mt-plus-' + side);
       el.minus[side] = byId('mt-minus-' + side);
       el.direct[side] = byId('mt-direct-' + side);
+      el.serve[side] = byId('mt-serve-' + side);
+      el.pl[side] = [byId('mt-pl-' + side + '0'), byId('mt-pl-' + side + '1')];
+      el.plText[side] = [byId('mt-pl-tx-' + side + '0'), byId('mt-pl-tx-' + side + '1')];
+      el.serveTeam[side] = byId('mt-serve-team-' + side);
+      el.player[side] = [byId('mt-player-' + side + '0'), byId('mt-player-' + side + '1')];
+      el.playerLabel[side] = el.player[side].map(function (input) { return doc.querySelector('label[for="' + input.id + '"]'); });
+      el.setupPlayer[side] = [byId('mt-setup-player-' + side + '0'), byId('mt-setup-player-' + side + '1')];
+      el.setupPlayerLabel[side] = el.setupPlayer[side].map(function (input) { return doc.querySelector('label[for="' + input.id + '"]'); });
     });
 
     var loaded = TM.load(storage());
@@ -1011,13 +1317,40 @@
     el.prefillYes.addEventListener('click', function () { closePrefill(true); });
     el.prefillNo.addEventListener('click', function () { closePrefill(false); });
     doc.addEventListener('keydown', onModalKey);
-    [el.prefill, el.switchModal, el.setWonModal, el.setup].forEach(function (box) {
+    [el.prefill, el.switchModal, el.setWonModal, el.setup, el.serveDialog].forEach(function (box) {
       box.addEventListener('click', function (e) {
         if (e.target === box && modal && modal.box === box) modal.onClose();
       });
     });
     el.ruleSelects.forEach(function (sel) { sel.addEventListener('change', onRuleChange); });
-    wireDisclosure(el.rulesToggle, el.rulesPanel);
+    el.serveOpen.addEventListener('click', function () { openServeDialog(null); });
+    el.svBegin.forEach(function (btn) { btn.addEventListener('click', function () { onServeBegin(btn); }); });
+    el.svFirst.forEach(function (btn) { btn.addEventListener('click', function () { onServeFirst(btn); }); });
+    el.setupBegin.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!setupDraft) return;
+        var side = btn.getAttribute('data-setup-begin');
+        setupDraft.begin = setupDraft.begin === side ? null : side;
+        setupDraft.startTouched = true;
+        renderSetupServe();
+      });
+    });
+    el.setupFirst.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!setupDraft) return;
+        setupDraft.first[btn.getAttribute('data-setup-first')] = Number(btn.getAttribute('data-player'));
+        setupDraft.startTouched = true;
+        renderSetupServe();
+      });
+    });
+    el.serveShow.addEventListener('click', onServeShown);
+    el.svNow.forEach(function (btn) { btn.addEventListener('click', function () { onServeNow(btn); }); });
+    el.svNext.forEach(function (btn) { btn.addEventListener('click', function () { onServeNext(btn); }); });
+    el.svDone.addEventListener('click', closeServeDialog);
+    el.svClear.addEventListener('click', function () {
+      if (commit(TM.setServe(state, null))) announce(serveSentence());
+      closeServeDialog();
+    });
     el.settingsToggle.addEventListener('click', function () {
       setSettingsOpen(el.settings.hidden);
     });
@@ -1040,8 +1373,25 @@
       });
     });
     el.setupDone.addEventListener('click', function () { closeSetup(true); });
-    el.setupOpen.addEventListener('click', openSetup);
+    el.setupOpen.addEventListener('click', function () { openSetup(true); });
     el.setupSkip.addEventListener('click', function () { closeSetup(false); });
+    el.setupServe.addEventListener('click', function () {
+      if (!setupDraft) return;
+      setupDraft.serveShown = !setupDraft.serveShown;
+      renderSetupServe();
+    });
+    var setupPlayerOrder = el.setupPlayer.a.concat(el.setupPlayer.b);
+    setupPlayerOrder.forEach(function (input, i) {
+      input.addEventListener('input', function () { if (setupDraft) renderSetupServe(); });
+      input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (i < setupPlayerOrder.length - 1) setupPlayerOrder[i + 1].focus(); else closeSetup(true);
+      });
+    });
+    ['a', 'b'].forEach(function (side) {
+      el.setupName[side].addEventListener('input', function () { if (setupDraft) renderSetupServe(); });
+    });
     el.setupName.a.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); el.setupName.b.focus(); }
     });
@@ -1062,6 +1412,18 @@
     el.stop.addEventListener('click', onStop);
     ['a', 'b'].forEach(function (side) {
       el.plus[side].addEventListener('click', function () { changeScore(side, TM.addPoint(state, side, 1), 880); });
+      el.pl[side].forEach(function (btn, i) {
+        btn.addEventListener('click', function () { openServeDialog(side, i); });
+      });
+      el.player[side].forEach(function (input, i) {
+        input.addEventListener('input', function () {
+          state = TM.setPlayerName(state, side, i, input.value);
+          persist();
+          render();
+        });
+        input.addEventListener('change', function () { input.value = state.players[side][i]; });
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+      });
       el.minus[side].addEventListener('click', function () { changeScore(side, TM.addPoint(state, side, -1), 440); });
       el.direct[side].addEventListener('change', function () { commitDirect(side); });
       el.direct[side].addEventListener('keydown', function (e) {
@@ -1090,7 +1452,12 @@
         ? el.wakeHint.textContent
         : tx('timer.announce.keepAwakeOff', 'Bildschirm darf sich wieder abschalten'));
     });
-    el.compact.addEventListener('click', function () { commit(TM.setCompact(state, !state.compact)); });
+    el.compact.addEventListener('click', function () {
+      var enabled = !isCompact();
+      normalOnSmallScreen = isAutoCompact() && !enabled;
+      if (!commit(TM.setCompact(state, enabled))) render();
+      el.compact.focus();
+    });
     el.reset.addEventListener('click', function () {
       if (el.resetConfirm.hidden) showResetConfirm(); else hideResetConfirm(true);
     });
@@ -1124,6 +1491,7 @@
       syncWake(true);
     });
     root.addEventListener('focus', function () { renderTime(); });
+    root.addEventListener('resize', fitCompactNames);
     root.addEventListener('storage', function (e) {
       if (e.key !== TM.STORAGE_KEY) return;
       state = TM.parse(e.newValue) || TM.create();
