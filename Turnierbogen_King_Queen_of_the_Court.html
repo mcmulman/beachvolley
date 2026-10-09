@@ -73,16 +73,17 @@
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
-  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
+  <script src="core/turnier-native.js"></script>
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px">
   <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
-  <a href="docs/format-king-of-the-court.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">📖 Format-Info</a>
+  <a href="docs/format-king-of-the-court.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">Format-Info</a>
 </div>
 
 <h1 id="h-title" data-i18n="kotc.title">King/Queen of the Court</h1>
@@ -117,23 +118,23 @@
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head" data-i18n="sheet.cfg.title">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="sheet.cfg.title">Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide"><span data-i18n="sheet.cfg.titleLabel">📝 Turniertitel</span>
+    <label class="cfgfield cfgfield--wide"><span data-i18n="sheet.cfg.titleLabel">Turniertitel</span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:sheet.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
     </label>
     <div class="cfgfield-row">
-      <label class="cfgfield"><span data-i18n="sheet.cfg.teams">👥 Teams</span>
+      <label class="cfgfield"><span data-i18n="sheet.cfg.teams">Teams</span>
         <select id="teamCount"></select>
       </label>
-      <label class="cfgfield"><span data-i18n="sheet.cfg.fields">🏖️ Felder</span>
+      <label class="cfgfield"><span data-i18n="sheet.cfg.fields">Felder</span>
         <select id="courtCount"></select>
       </label>
-      <label class="cfgfield"><span data-i18n="kotc.cfg.rounds">🔁 Runden</span>
+      <label class="cfgfield"><span data-i18n="kotc.cfg.rounds">Runden</span>
         <select id="roundCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--mode"><span data-i18n="kotc.cfg.roundMinutes">⏱ Min./Runde</span>
+    <label class="cfgfield cfgfield--mode"><span data-i18n="kotc.cfg.roundMinutes">Min./Runde</span>
       <select id="roundMinutes">
         <option value="10" data-i18n="kotc.cfg.min10">10 Min</option>
         <option value="12" data-i18n="kotc.cfg.min12">12 Min</option>
@@ -141,7 +142,7 @@
         <option value="20" data-i18n="kotc.cfg.min20">20 Min</option>
       </select>
     </label>
-    <label class="cfgfield cfgfield--start"><span data-i18n="kotc.cfg.start">🕘 Start</span>
+    <label class="cfgfield cfgfield--start"><span data-i18n="kotc.cfg.start">Start</span>
       <input type="time" id="startTime" value="10:00">
     </label>
   </div>
@@ -175,9 +176,9 @@
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
-    <p class="nhint" data-i18n="kotc.hint.absent">ℹ️ Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
+    <p class="nhint" data-i18n="kotc.hint.absent">Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
       betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.</p>
-    <p class="nhint" data-i18n-html="kotc.hint.delete">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, bereits gespielte Runden behalten ihre Feldbesetzung (ohne das gelöschte Team), die weiteren Runden werden neu eingeteilt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <p class="nhint" data-i18n-html="kotc.hint.delete"><b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, bereits gespielte Runden behalten ihre Feldbesetzung (ohne das gelöschte Team), die weiteren Runden werden neu eingeteilt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -474,7 +475,7 @@
 
     // Hinweise/Warnungen
     let notice = '';
-    (B.warnings||[]).forEach(w => { notice += '<div class="notebox is-warn">⚠️ ' + TUI.esc(term(w)) + '</div>'; });
+    (B.warnings||[]).forEach(w => { notice += '<div class="notebox is-warn"><svg class="bl-ic bl-ic--inl" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ' + TUI.esc(term(w)) + '</div>'; });
     (B.notes||[]).forEach(n => { notice += '<div class="notebox">ℹ️ ' + TUI.esc(term(n)) + '</div>'; });
     $('noticeBox').innerHTML = notice;
   }
@@ -615,7 +616,7 @@
 </script>
 
 <script>
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>

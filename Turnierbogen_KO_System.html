@@ -37,7 +37,7 @@
     .bracket .brm .brside .s { font-variant-numeric:tabular-nums; color:#333; font-weight:bold; }
     .bracket .brm .brside.is-win { background:#eaf5ea; font-weight:bold; }
     .bracket .brm.is-p3 { border-style:dashed; }
-    @media (max-width:700px){ .bracket { flex-direction:column; } }
+    @media screen and (max-width:700px){ .bracket { flex-direction:column; } }
     @media print {
       .bracket .brm .brside.is-win { background:#eaf5ea !important;
         -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -69,10 +69,11 @@
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
-  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
+  <script src="core/turnier-native.js"></script>
 </head>
 <body>
 
@@ -102,32 +103,32 @@
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head" data-i18n="ko.cfg.title">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="ko.cfg.title">Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
-    <label class="cfgfield cfgfield--wide"><span data-i18n="ko.cfg.titleLabel">📝 Turniertitel</span>
+    <label class="cfgfield cfgfield--wide"><span data-i18n="ko.cfg.titleLabel">Turniertitel</span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:ko.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
     </label>
     <div class="cfgfield-row">
-      <label class="cfgfield"><span data-i18n="ko.cfg.teams">👥 Teams</span>
+      <label class="cfgfield"><span data-i18n="ko.cfg.teams">Teams</span>
         <select id="teamCount"></select>
       </label>
-      <label class="cfgfield"><span data-i18n="ko.cfg.fields">🏖️ Felder</span>
+      <label class="cfgfield"><span data-i18n="ko.cfg.fields">Felder</span>
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--mode"><span data-i18n="ko.cfg.setMode">🎯 Satzmodus</span>
+    <label class="cfgfield cfgfield--mode"><span data-i18n="ko.cfg.setMode">Satzmodus</span>
       <select id="setMode"></select>
     </label>
-    <label class="cfgfield cfgfield--wide"><span data-i18n="ko.cfg.thirdPlace">🥉 Kleines Finale</span>
+    <label class="cfgfield cfgfield--wide"><span data-i18n="ko.cfg.thirdPlace">Kleines Finale</span>
       <select id="thirdPlace">
         <option value="1" data-i18n="ko.cfg.thirdPlaceYes">Spiel um Platz 3 austragen</option>
         <option value="0" data-i18n="ko.cfg.thirdPlaceNo">kein Spiel um Platz 3 (3.–4. geteilt)</option>
       </select>
     </label>
-    <label class="cfgfield cfgfield--start"><span data-i18n="ko.cfg.start">⏱ Start</span>
+    <label class="cfgfield cfgfield--start"><span data-i18n="ko.cfg.start">Start</span>
       <input type="time" id="startTime" value="10:00">
     </label>
-    <label class="cfgfield cfgfield--end"><span data-i18n="ko.cfg.end">🏁 Ende</span>
+    <label class="cfgfield cfgfield--end"><span data-i18n="ko.cfg.end">Ende</span>
       <input type="time" id="endTime" value="14:00">
     </label>
   </div>
@@ -171,10 +172,10 @@
   <div id="namepanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="nameGrid"></div>
     <div class="nactions">
-      <button type="button" class="nbtn" id="btnShuffle" data-i18n="ko.btn.shuffle">🎲 Auslosen (Setzliste mischen)</button>
+      <button type="button" class="nbtn" id="btnShuffle" data-i18n="ko.btn.shuffle">Auslosen (Setzliste mischen)</button>
       <button type="button" class="nbtn" id="btnClearNames" data-i18n="ko.btn.clearNames">Namen leeren</button>
     </div>
-    <p class="nhint" data-i18n-html="ko.hint.seed">ℹ️ Die Reihenfolge in dieser Liste ist die <b>Setzliste</b>. Nr. 1 ist der Favorit; Nr. 1 und Nr. 2 können sich erst im Finale treffen. Wer nicht setzen will, drückt „Auslosen“.</p>
+    <p class="nhint" data-i18n-html="ko.hint.seed">Die Reihenfolge in dieser Liste ist die <b>Setzliste</b>. Nr. 1 ist der Favorit; Nr. 1 und Nr. 2 können sich erst im Finale treffen. Wer nicht setzen will, drückt „Auslosen“.</p>
   </div>
   <div id="fieldpanel" class="noprint namepanel" hidden>
     <div class="ngrid" id="fieldGrid"></div>
@@ -183,8 +184,8 @@
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="ko.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
-    <p class="nhint" data-i18n-html="ko.hint.absent">ℹ️ Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Der Gegner zieht kampflos in die nächste Runde ein.</p>
-    <p class="nhint" data-i18n-html="ko.hint.delete">🗑 <b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <p class="nhint" data-i18n-html="ko.hint.absent">Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Der Gegner zieht kampflos in die nächste Runde ein.</p>
+    <p class="nhint" data-i18n-html="ko.hint.delete"><b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
   </div>
 </div>
 
@@ -783,7 +784,7 @@
 </script>
 
 <script>
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>

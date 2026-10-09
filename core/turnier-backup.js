@@ -133,11 +133,13 @@
     return { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), entries: entries };
   }
 
-  /* → Promise<Sicherung>. Quelle ist IndexedDB; ist IndexedDB nicht
-     verfügbar, wird der lesbare localStorage-Bestand exportiert. */
+  /* → Promise<Sicherung>. Quelle ist IndexedDB (in der App SQLite); ist
+     der Speicher nicht verfügbar, wird der lesbare localStorage-Bestand
+     exportiert. */
   function exportAll() {
     return TStore.readEntries().then(function (entries) {
-      return Object.assign(buildBackup(entries), { storage: 'indexedDB' });
+      const backend = typeof TStore.backend === 'function' ? TStore.backend() : 'indexedDB';
+      return Object.assign(buildBackup(entries), { storage: backend });
     }, function (err) {
       const code = err && err.code;
       if (code !== 'unavailable' && code !== 'blocked') throw err;
@@ -381,9 +383,45 @@
     });
   }
 
+  /* ------------------------------------------------ Native App: Dateien
+     In der App (TStore-Backend SQLite) gibt es keinen Download-Link und
+     kein verlässliches <input type=file>: Export über das System-Teilen-
+     Menü, Import über die System-Dateiauswahl (TNativeFiles aus dem
+     nativen Bundle). Geprüft und importiert wird unverändert über
+     validateBackup()/importAll(). Im Browser wird nichts davon geladen. */
+  /* Obergrenze der Sicherungsdatei: Inhalt ≤ MAX_BYTES, JSON-Maskierung und
+     Einrückung machen die Datei größer. */
+  const MAX_FILE_BYTES = 2 * MAX_BYTES;
+  function usesNativeFiles() {
+    return !!TStore && typeof TStore.backend === 'function' && TStore.backend() === 'sqlite';
+  }
+  function isNativeFiles(files) {
+    return !!files && typeof files.shareBackup === 'function' && typeof files.pickBackup === 'function';
+  }
+  function nativeFilesUnavailable(cause) {
+    const e = new Error(tx('backup.err.nativeFiles', 'Dateiexport/-import der App ist nicht verfügbar.'));
+    e.code = 'files-unavailable';
+    if (cause !== undefined) e.cause = cause;
+    return e;
+  }
+  /* → Promise<TNativeFiles>; lädt bei Bedarf das native Bundle nach. */
+  function nativeFiles() {
+    if (!usesNativeFiles()) return Promise.reject(nativeFilesUnavailable());
+    if (isNativeFiles(root.TNativeFiles)) return Promise.resolve(root.TNativeFiles);
+    const load = typeof TStore.loadNativeBundle === 'function'
+      ? TStore.loadNativeBundle() : Promise.reject(new Error('loadNativeBundle missing'));
+    return load.then(function () {
+      if (!isNativeFiles(root.TNativeFiles)) throw new Error('native bundle did not register TNativeFiles');
+      return root.TNativeFiles;
+    }).then(null, function (err) {
+      throw err && err.code === 'files-unavailable' ? err : nativeFilesUnavailable(err);
+    });
+  }
+
   return {
-    FORMAT: FORMAT, VERSION: VERSION, MAX_BYTES: MAX_BYTES,
+    FORMAT: FORMAT, VERSION: VERSION, MAX_BYTES: MAX_BYTES, MAX_FILE_BYTES: MAX_FILE_BYTES,
     exportAll: exportAll, importAll: importAll, undoImport: undoImport,
-    validateBackup: validateBackup, importInView: importInView
+    validateBackup: validateBackup, importInView: importInView,
+    usesNativeFiles: usesNativeFiles, nativeFiles: nativeFiles
   };
 });

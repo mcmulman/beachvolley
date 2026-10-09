@@ -174,15 +174,16 @@
       info2.href = infoLink.href;
       info2.target = infoLink.target;
       info2.rel = 'noopener';
-      info2.innerHTML = '<span class="ic">📖</span><span class="lbl">Info</span>';
+      info2.innerHTML = '<span class="ic"><span style="display:none">📖</span><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span class="lbl">Info</span>';
       info2.setAttribute('aria-label', 'Format-Info');
       actions.appendChild(info2);
     }
 
+    /* Das versteckte Emoji dient turnier-i18n.js zur Erkennung der Buttons. */
     var printBtn = document.createElement('button');
     printBtn.type = 'button';
     printBtn.className = 'app-bar__btn';
-    printBtn.innerHTML = '<span class="ic">🖨</span><span class="lbl">Drucken</span>';
+    printBtn.innerHTML = '<span class="ic"><span style="display:none">🖨</span><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><span class="lbl">Drucken</span>';
     printBtn.setAttribute('aria-label', 'Drucken');
     printBtn.addEventListener('click', function () { window.print(); });
     actions.appendChild(printBtn);

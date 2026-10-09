@@ -1,7 +1,7 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v112';
+const CACHE_VERSION = 'beachl-turniere-v127';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
@@ -28,6 +28,11 @@ const PRECACHE = [
   './Turnierbogen_King_Queen_of_the_Court.html',
   './Turnierbogen_King_Queen.html',
   './Turnierbogen_Flex_Turnier.html',
+  /* Kostenloser Einzelspiel-Timer (PRODUKTPLAN §6.5) */
+  './Spiel_Timer.html',
+  './core/match-timer.js',
+  './core/match-timer-page.js',
+  './core/match-timer.css',
   './core/turnier-base.css',
   './core/compat.js',
   './core/compat-flexgap.css',
@@ -36,10 +41,12 @@ const PRECACHE = [
   './core/turnier-format.js',
   './core/turnier-resume-picker.js',
   './core/turnier-share.js',
+  './core/turnier-native.js',
   './core/turnier-store.js',
   './core/turnier-backup.js',
   './core/turnier-ui.js',
   './core/turnier-i18n.js',
+  './core/format-doc-i18n.js',
   './core/i18n/de.js',
   './core/i18n/en.js',
   './docs/format-jeder-gegen-jeden.html',

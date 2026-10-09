@@ -5,31 +5,31 @@
     {
       asin: 'B07Z6VQ2ZG',
       titleKey: 'home.affiliate.ball.title',
-      title: 'Wilson OPTX Beachvolleyball',
+      title: 'Wilson OPTX AVP Game Ball',
       descriptionKey: 'home.affiliate.ball.description',
-      description: 'Ein gut sichtbarer Beachvolleyball für Training und Spiel am Strand.',
+      description: 'Offizieller Spielball der AVP, speziell für den Strand entwickelt. Die Visual Spin Technology macht den Spin auch im Freien gut erkennbar.',
       altKey: 'home.affiliate.ball.alt',
-      alt: 'Wilson OPTX Beachvolleyball',
+      alt: 'Wilson OPTX AVP Beachvolleyball in Gelb, Schwarz und Orange',
       image: 'https://m.media-amazon.com/images/I/8111KcIjdIL._AC_SL1500_.jpg'
     },
     {
       asin: 'B0F3284NK7',
       titleKey: 'home.affiliate.socks.title',
-      title: 'Neoprensocken für Beachvolleyball',
+      title: 'PLAVINS Beachsocken – Profi-Design',
       descriptionKey: 'home.affiliate.socks.description',
-      description: 'Schützen die Füße vor heißem Sand und kaltem Untergrund.',
+      description: 'Entwickelt von Europameister und Olympia-Bronzemedaillengewinner Mārtiņš Pļaviņš: Neopren, Kevlar und Elasthan schützen die Füße, das Design hält den Sand draußen.',
       altKey: 'home.affiliate.socks.alt',
-      alt: 'Beachvolleyball-Neoprensocken',
+      alt: 'PLAVINS Beachsocken aus Neopren',
       image: 'https://m.media-amazon.com/images/I/61wAAWBj8HL._AC_SL1080_.jpg'
     },
     {
       asin: '3964160601',
       titleKey: 'home.affiliate.book.title',
-      title: 'Beach-Volleyball: Übungen für Gewinner',
+      title: 'Beach-Volleyball-Übungen für Gewinner',
       descriptionKey: 'home.affiliate.book.description',
-      description: 'Trainingsideen und Übungen für abwechslungsreiche Beachvolleyball-Einheiten.',
+      description: 'Olympia-Bronzemedaillengewinner Jörg Ahmann zeigt auf 172 Seiten Übungen mit übersichtlichen Grafiken – zu Einspielen, Technik, Individual- und Mannschaftstaktik.',
       altKey: 'home.affiliate.book.alt',
-      alt: 'Beach-Volleyball: Übungen für Gewinner',
+      alt: 'Buchcover „Beach-Volleyball-Übungen für Gewinner“ von Jörg Ahmann',
       image: 'https://m.media-amazon.com/images/I/71VNHnabFSL._SL1436_.jpg'
     }
   ];
@@ -181,9 +181,9 @@
           unavailable([card]);
           return;
         }
-        if (typeof product.title === 'string' && product.title) {
-          card.querySelector('.affiliate-title').textContent = product.title;
-        }
+        /* Titel/Text bleiben die kuratierten, übersetzten Kartentexte (aus dem
+           Amazon-Eintrag abgeleitet); der API-Titel ist ein langer,
+           unübersetzter Listentitel. */
         if (typeof product.imageUrl === 'string') {
           try {
             var imageUrl = new URL(product.imageUrl);

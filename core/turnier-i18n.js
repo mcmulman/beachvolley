@@ -1,20 +1,23 @@
 /* ============================================================================
    turnier-i18n.js – schlankes DE/EN-Sprachmodul (Prototyp, PRODUKTPLAN §6.1)
 
-   Umfang: die Startseite (vollständig, inkl. turnier-backup.js-Meldungen)
-   und alle dort verlinkten Bögen (KO, Gruppen + Finalrunde, Modified Pool
-   Play, Doppel-KO, Runden-System, Flex-Turnier, King & Queen, King/Queen of
+   Umfang: die Startseite (vollständig, inkl. turnier-backup.js-Meldungen),
+   alle verlinkten Bögen und englische Kurzfassungen der Formatbeschreibungen
+   unter docs/ (KO, Gruppen + Finalrunde, Modified Pool Play, Doppel-KO,
+   Runden-System, Flex-Turnier, King & Queen, King/Queen of
    the Court) inklusive der von ihnen genutzten Core-Ausgaben (turnier-ui,
-   -archive, -share, -resume-picker, spielplan-enh). Alle anderen Seiten
-   (Formatbeschreibungen unter docs/) bleiben vollständig deutsch.
+   -archive, -share, -resume-picker, spielplan-enh). Formatbeschreibungen in
+   docs/ bieten kurze englische Zusammenfassungen; ihre ausführlichen Texte
+   bleiben deutsch.
 
    Grundsätze
-   - Deutsch ist IMMER der Standard. Englisch nur nach ausdrücklicher Wahl
-     über den Sprachumschalter; die Wahl liegt als reine UI-Präferenz in
-     localStorage (BEACHL.lang) – getrennt von den Turnierdaten in IndexedDB.
-   - Nur Seiten mit <html data-i18n> sind "aktiv". Auf allen anderen Seiten
-     liefern t()/term() garantiert Deutsch; die Core-Module behalten dort
-     ihre eingebauten deutschen Fallback-Texte (unverändertes Verhalten).
+   - Eine gespeicherte Sprachwahl hat Vorrang; ohne Wahl wird Deutsch oder
+     Englisch aus der Gerätesprache gewählt. Andere Sprachen fallen auf
+     Deutsch zurück. Die Wahl liegt in localStorage (BEACHL.lang), getrennt
+     von den Turnierdaten in IndexedDB.
+   - Nur Seiten mit <html data-i18n> sind "aktiv". Auf anderen Seiten liefern
+     t()/term() garantiert Deutsch; die Core-Module behalten dort ihre
+     eingebauten deutschen Fallback-Texte.
    - Sprachwechsel = Präferenz speichern + Seite neu laden. Dadurch werden
      auch dynamisch erzeugte Texte, Dialoge und Druckausgaben vollständig in
      der neuen Sprache aufgebaut, ohne Live-Umschaltlogik.
@@ -50,6 +53,26 @@
   const PREF_KEY = 'BEACHL.lang';
   const LOCALES = { de: 'de-DE', en: 'en-GB' };
   const NAMES = { de: 'Deutsch', en: 'English' };
+  /* Runde, flache Flaggen als Inline-SVG (Emoji-Flaggen fehlen z. B. unter
+     Windows). Gezeigt wird die Flagge der Zielsprache. */
+  const FLAG_WRAP = function (id, body) {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<defs><clipPath id="' + id + '"><circle cx="12" cy="12" r="11"/></clipPath></defs>' +
+      '<g clip-path="url(#' + id + ')">' + body + '</g>' +
+      '<circle cx="12" cy="12" r="11" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="1"/></svg>';
+  };
+  const FLAGS = {
+    de: FLAG_WRAP('i18n-flag-de',
+      '<rect x="0" y="0" width="24" height="8.4" fill="#1a1a1a"/>' +
+      '<rect x="0" y="8.4" width="24" height="7.3" fill="#dd0000"/>' +
+      '<rect x="0" y="15.7" width="24" height="8.3" fill="#ffce00"/>'),
+    en: FLAG_WRAP('i18n-flag-en',
+      '<rect width="24" height="24" fill="#012169"/>' +
+      '<path d="M0 0L24 24M24 0L0 24" stroke="#fff" stroke-width="4.5"/>' +
+      '<path d="M0 0L24 24M24 0L0 24" stroke="#c8102e" stroke-width="1.6"/>' +
+      '<path d="M12 0V24M0 12H24" stroke="#fff" stroke-width="6.5"/>' +
+      '<path d="M12 0V24M0 12H24" stroke="#c8102e" stroke-width="3.8"/>')
+  };
   const has = Object.prototype.hasOwnProperty;
 
   const catalogs = {};
@@ -75,6 +98,24 @@
       return LANGS.indexOf(v) >= 0 ? v : null;
     } catch (e) { return null; }
   }
+  function deviceLang() {
+    let nav;
+    try { nav = root.navigator; } catch (e) { nav = null; }
+    if (!nav) return DEFAULT_LANG;
+    let candidates = [];
+    try {
+      if (nav.languages && nav.languages.length) candidates = nav.languages;
+      else candidates = [nav.language || nav.userLanguage];
+    } catch (e) {
+      candidates = [nav.language || nav.userLanguage];
+    }
+    for (let i = 0; i < candidates.length; i++) {
+      const value = String(candidates[i] || '').toLowerCase();
+      if (value.indexOf('en') === 0) return 'en';
+      if (value.indexOf('de') === 0) return 'de';
+    }
+    return DEFAULT_LANG;
+  }
   function writePref(l) {
     const ls = storage();
     if (!ls) return false;
@@ -92,7 +133,7 @@
   function enable(on) { forcedActive = on == null ? null : !!on; }
 
   function storedLang() {
-    if (current == null) current = readPref() || DEFAULT_LANG;
+    if (current == null) current = readPref() || deviceLang();
     return current;
   }
   /* Sprache für Ausgaben: auf nicht freigeschalteten Seiten immer Deutsch. */
@@ -282,8 +323,12 @@
       'button.i18n-switch::after{content:"";position:absolute;top:50%;left:50%;' +
         'width:100%;height:100%;min-width:44px;min-height:44px;' +
         '-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);}' +
-      '.i18n-switch .ic{font-size:18px;line-height:1;letter-spacing:0;}' +
-      '.i18n-switch .lbl{margin-left:6px;}' +
+      /* Flagge + Sprachkürzel statt Flagge (Sprachen sind keine Länder). */
+      '.i18n-switch{display:inline-flex;align-items:center;justify-content:center;}' +
+      '.i18n-switch .ic{display:inline-flex;align-items:center;line-height:1;letter-spacing:0;}' +
+      '.i18n-switch .ic svg{display:block;width:20px;height:20px;margin-right:6px;border-radius:50%;}' +
+      '.i18n-switch .code{font-size:13px;font-weight:800;letter-spacing:.04em;}' +
+      '.i18n-switch .lbl{display:none !important;}' +
       '@media print{.i18n-switch{display:none !important;}}';
     (d.head || d.documentElement).appendChild(st);
   }
@@ -305,7 +350,11 @@
     const ic = d.createElement('span');
     ic.className = 'ic';
     ic.setAttribute('aria-hidden', 'true');
-    ic.textContent = target === 'de' ? '\uD83C\uDDE9\uD83C\uDDEA' : '\uD83C\uDDEC\uD83C\uDDE7';
+    ic.innerHTML = FLAGS[target] || '';
+    const code = d.createElement('span');
+    code.className = 'code';
+    code.textContent = target.toUpperCase();
+    ic.appendChild(code);
     const lbl = d.createElement('span');
     lbl.className = 'lbl';
     lbl.setAttribute('aria-hidden', 'true');

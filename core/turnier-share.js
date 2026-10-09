@@ -129,10 +129,34 @@
     });
   }
 
-  function buildServerShareUrl(id) {
+  /* Native App (Capacitor): Seiten laufen unter capacitor://localhost bzw.
+     https://localhost – solche Links wären für Empfänger wertlos. Dort
+     liefert TNative (core/turnier-native.js) dieselbe Seite der öffentlichen
+     Web-App. Fehlt TNative in der App, wird abgebrochen statt einen lokalen
+     Link zu erzeugen. Browser/PWA: unverändert location.href. */
+  function nativeApp() {
+    if (typeof TNative !== 'undefined' && TNative && typeof TNative.isNative === 'function') return TNative.isNative();
+    const cap = typeof Capacitor !== 'undefined' ? Capacitor : null;
+    if (!cap || typeof cap.isNativePlatform !== 'function') return false;
+    try { return !!cap.isNativePlatform(); } catch (e) { return true; }
+  }
+  /* → URL dieser Seite ohne #Hash, Grundlage aller Teilen-Links. */
+  function sharePageUrl() {
+    if (nativeApp()) {
+      if (typeof TNative === 'undefined' || !TNative || typeof TNative.publicPageUrl !== 'function') {
+        const err = new Error(tx('native.share.noPublicUrl', 'Für diese Seite gibt es keinen öffentlichen Link.'));
+        err.code = 'no-public-url';
+        throw err;
+      }
+      return TNative.publicPageUrl(location.href);
+    }
     const url = new URL(location.href);
     url.hash = '';
-    return url.toString() + SERVER_PREFIX + encodeURIComponent(id);
+    return url;
+  }
+
+  function buildServerShareUrl(id) {
+    return sharePageUrl().toString() + SERVER_PREFIX + encodeURIComponent(id);
   }
 
   /* =================================================== Offline-Kodierung
@@ -225,9 +249,7 @@
 
   function buildOfflineShareUrl(opts, password) {
     const hash = OFFLINE_PREFIX + offlineEncode(opts, password);
-    const url = new URL(location.href);
-    url.hash = '';
-    return url.toString() + hash;
+    return sharePageUrl().toString() + hash;
   }
 
   /* ================================================================== Hash
@@ -425,7 +447,9 @@
         + escapeHtml(tx('share.loading', 'Link wird erstellt…')) + '</p></div>', '');
   }
 
-  function renderShareResult(url, pw, longWarnLen, code) {
+  /* o (optional): archiveOpts() des Bogens – Titel für das System-Teilen-Menü. */
+  function renderShareResult(url, pw, longWarnLen, code, o) {
+    const nativeShare = nativeApp() && typeof TNative !== 'undefined' && TNative && typeof TNative.shareLink === 'function';
     const root = openShareModalShell(
       tx('share.result.title', 'Link zum Teilen'),
       '<p class="tshare-hint">' + escapeHtml(tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
@@ -443,7 +467,10 @@
           '<div class="tshare-linkrow"><input type="text" id="tshare-code" readonly>' +
           '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>'
         : '') +
-      '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>',
+      '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>' +
+      (nativeShare ? '<p class="tshare-error" id="tshare-native-msg" hidden></p>' : ''),
+      (nativeShare ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="native-share">'
+        + escapeHtml(tx('native.share.button', 'Teilen…')) + '</button>' : '') +
       '<button type="button" class="tshare-btn tshare-btn-primary" data-act="done">' + escapeHtml(tx('share.done', 'Fertig')) + '</button>'
     );
     const urlInput = root.querySelector('#tshare-url');
@@ -468,6 +495,25 @@
       root.querySelector('[data-act="copy-code"]').addEventListener('click', function () { copyText(code, codeInput); });
     }
     root.querySelector('[data-act="done"]').addEventListener('click', closeShareModal);
+    if (nativeShare) {
+      /* App: System-Teilen-Menü (iOS) bzw. Chooser (Android) mit dem
+         öffentlichen Link. Abbrechen bleibt still, Fehler stehen im Dialog. */
+      const nativeMsg = root.querySelector('#tshare-native-msg');
+      const name = (o && (o.title || (o.type ? term(o.type) : ''))) || tx('share.tournament', 'Turnier');
+      root.querySelector('[data-act="native-share"]').addEventListener('click', function () {
+        nativeMsg.hidden = true;
+        TNative.shareLink({
+          url: url,
+          title: name,
+          text: tx('native.share.text', 'Turnier „{title}“', { title: name })
+            + (code ? '\n' + tx('share.result.code', 'Code') + ': ' + code : '')
+        }).then(null, function (err) {
+          if (err && err.code === 'share-busy') return;
+          nativeMsg.textContent = tx('native.share.failed', 'Das Teilen-Menü konnte nicht geöffnet werden: {message}', { message: errMsg(err) });
+          nativeMsg.hidden = false;
+        });
+      });
+    }
     copyText(url, urlInput); // gleich beim Öffnen automatisch den Link in die Zwischenablage legen (wie zuvor)
     urlInput.focus(); urlInput.select();
   }
@@ -481,10 +527,10 @@
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
       (c.showOfflineFallback ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="offline">'
         + escapeHtml(tx('share.error.offlineFallback', 'Offline-Link stattdessen')) + '</button>' : '') +
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="retry">' + escapeHtml(tx('share.error.retry', 'Erneut versuchen')) + '</button>'
+      (c.onRetry ? '<button type="button" class="tshare-btn tshare-btn-primary" data-act="retry">' + escapeHtml(tx('share.error.retry', 'Erneut versuchen')) + '</button>' : '')
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
-    root.querySelector('[data-act="retry"]').addEventListener('click', c.onRetry);
+    if (c.onRetry) root.querySelector('[data-act="retry"]').addEventListener('click', c.onRetry);
     if (c.showOfflineFallback) root.querySelector('[data-act="offline"]').addEventListener('click', c.onOfflineFallback);
   }
 
@@ -505,6 +551,12 @@
     return Promise.resolve().then(function () { return TArchive.snapshot(o.keys); });
   }
 
+  /* App ohne öffentliche Adresse für diese Seite: Hinweis ohne Wiederholen
+     (ein neuer Versuch oder der Offline-Link hätte dasselbe Problem). */
+  function renderNoPublicUrl(err) {
+    renderShareError(errMsg(err), {});
+  }
+
   /* -------------------------------------------------------- Server-Variante
      Wird bei einem Netzwerkfehler über den "Erneut versuchen"-Button im
      Overlay erneut aufgerufen, ohne das Passwort nochmal abzufragen - der
@@ -512,15 +564,21 @@
   function createServerShare(o, pw) {
     // Der Snapshot wird bei jedem Versuch frisch gelesen, damit auch ein
     // "Erneut versuchen" nach längerem Warten den aktuellsten Stand teilt.
-    return readSnapshot(o).then(function (snapshot) {
+    // Die Link-Adresse wird VOR dem Hochladen geprüft (App: öffentliche URL),
+    // damit kein Server-Eintrag ohne verwendbaren Link entsteht.
+    return Promise.resolve().then(function () {
+      sharePageUrl();
+      return readSnapshot(o);
+    }).then(function (snapshot) {
       return apiPost('/share.php?action=create', {
         sheet: o.sheet || '', file: o.file || '', type: o.type || '',
         title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
         snapshot: snapshot, password: pw || ''
       });
     }).then(function (data) {
-      renderShareResult(buildServerShareUrl(data.id), pw, null, data.id);
+      renderShareResult(buildServerShareUrl(data.id), pw, null, data.id, o);
     }).catch(function (err) {
+      if (err && err.code === 'no-public-url') { renderNoPublicUrl(err); return; }
       // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
       const msg = err.network
         ? tx('share.create.network', 'Der Link konnte nicht erstellt werden: {message}', { message: errMsg(err) })
@@ -542,8 +600,9 @@
       const url = buildOfflineShareUrl({
         sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
       }, pw || null);
-      renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null);
+      renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null, null, o);
     }).catch(function (err) {
+      if (err && err.code === 'no-public-url') { renderNoPublicUrl(err); return; }
       renderShareError(tx('share.create.read', 'Der Turnierstand konnte nicht gelesen werden: {message}', { message: errMsg(err) }), {
         onRetry: function () { createOfflineShare(o, pw); }
       });
@@ -772,6 +831,12 @@
   }
 
   function openByCode(input) {
+    /* App: eingefügter öffentlicher Offline-Link → dieselbe Seite im App-
+       Bundle öffnen (Server-Links/Codes laufen unten über die Vorschau). */
+    if (nativeApp() && typeof TNative !== 'undefined' && TNative && typeof TNative.localPageFromPublicUrl === 'function') {
+      const local = TNative.localPageFromPublicUrl(input);
+      if (local && local.indexOf(OFFLINE_PREFIX) !== -1) { location.href = local; return; }
+    }
     const id = extractServerCode(input);
     if (!id) { alert(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.')); return; }
 

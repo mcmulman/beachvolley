@@ -12,9 +12,19 @@
    Ist IndexedDB blockiert/nicht verfügbar, wird ein Fehler gemeldet,
    gespeicherte Stände bleiben lesbar, Speichern liefert aber false.
 
+   Native App (Capacitor, isNativePlatform()): Statt IndexedDB ist SQLite
+   maßgeblich (core/native-store.bundle.js, Quelle turniere/native/src).
+   Gleiche Schlüssel/Werte und gleiche Transaktionssemantik: Transaktionen
+   werden serialisiert, der Callback läuft synchron auf einer Momentaufnahme,
+   der Schreibsatz wird in EINER SQLite-Transaktion übernommen. Altdaten der
+   WebView (IndexedDB, sonst localStorage) werden einmalig übernommen. Fällt
+   SQLite aus, gilt dasselbe wie oben – kein Schreib-Rückfall auf IndexedDB.
+
    Alle speicherbezogenen Funktionen sind asynchron (Promise). Die reinen
    Hilfsfunktionen (setScore, normalize …) bleiben synchron.
-   Kein DOM-Zugriff außer Events/localStorage(lesen)/IndexedDB.
+   Kein DOM-Zugriff außer Events/localStorage(lesen)/IndexedDB und dem
+   Nachladen des nativen Bundles in der App (loadNativeBundle; es enthält
+   auch die Dateiablage für Sicherungen, siehe turnier-backup.js).
    ========================================================================== */
 (function (root, factory) {
   const api = factory(root);
@@ -80,7 +90,7 @@
     });
     /* Ausstehende Speichervorgänge schützen: Seite nicht ohne Rückfrage verlassen. */
     root.addEventListener('beforeunload', function (event) {
-      if (!pendingCount && !activityCount && !Object.keys(failedSheets).length) return;
+      if (!hasUnsavedWork() || leaveAllowed()) return;
       if (event.preventDefault) event.preventDefault();
       event.returnValue = '';
       return '';
@@ -338,6 +348,10 @@
     });
   }
   function withDb(mode, callback) {
+    if (useNative()) {
+      if (nativePlatformError) return Promise.reject(storageError('unavailable', nativePlatformError));
+      return withNativeDb(mode, callback);
+    }
     return openDb().then(function (db) {
       return runTx(db, mode, callback).then(null, function (err) {
         /* Verbindung zwischenzeitlich geschlossen → einmal neu öffnen */
@@ -348,6 +362,259 @@
         throw err;
       });
     });
+  }
+  /* --------------------------------------------- Native App (SQLite) */
+  const NATIVE_BUNDLE = 'native-store.bundle.js';
+  /* Bundle-URL relativ zu DIESER Datei (Seiten liegen in unterschiedlichen
+     Verzeichnissen); currentScript ist nur beim ersten Ausführen gesetzt. */
+  const nativeBundleUrl = (function () {
+    try {
+      const script = root && root.document && root.document.currentScript;
+      const src = script && script.src;
+      if (src) return String(src).replace(/[^\/?#]*(?:[?#].*)?$/, NATIVE_BUNDLE);
+    } catch (e) { }
+    return 'core/' + NATIVE_BUNDLE;
+  })();
+  let nativeBackend = null;
+  /* Einmal je Seite entschieden: kein Wechsel des Speichers zur Laufzeit. */
+  function useNative() {
+    if (nativeBackend === null) {
+      let native = false;
+      const capacitor = root && root.Capacitor;
+      if (capacitor && typeof capacitor.isNativePlatform === 'function') {
+        native = true;
+        try { native = !!capacitor.isNativePlatform(); }
+        catch (e) { nativePlatformError = e; }
+      }
+      nativeBackend = native;
+    }
+    return nativeBackend;
+  }
+  function backend() { return useNative() ? 'sqlite' : 'indexedDB'; }
+  /* Fehler des nativen Adapters/Plugins → TStore-Fehler mit bekanntem Code
+     (Plugin-Codes wie UNIMPLEMENTED werden auf den Rückfallcode abgebildet). */
+  const NATIVE_ERROR_CODES = ['unavailable', 'blocked', 'write-failed', 'incompatible'];
+  const NATIVE_INIT_CODES = ['unavailable', 'blocked', 'incompatible'];
+  let nativePlatformError = null;
+  function nativeFailure(err, fallback, allowed) {
+    const codes = allowed || NATIVE_ERROR_CODES;
+    const code = err && codes.indexOf(err.code) !== -1 ? err.code : fallback;
+    if (err && err.code === code && typeof err.message === 'string' && err.message.indexOf('TStore storage ') === 0) return err;
+    return storageError(code, err);
+  }
+  function isNativeAdapter(adapter) {
+    return !!adapter && ['importLegacy', 'readEntries', 'writeEntries'].every(function (name) {
+      return typeof adapter[name] === 'function';
+    });
+  }
+  let nativeBundlePromise = null;
+  /* Lädt das native Bundle als klassisches Skript (kein import(): diese Datei
+     muss auch in Safari 12 fehlerfrei parsen). Das Bundle setzt
+     root.TNativeStorage (und root.TNativeFiles für Sicherungsdateien);
+     Tests können den Adapter direkt vorgeben. Nur in der nativen App;
+     im Browser wird nichts geladen. → Promise<undefined> */
+  function loadNativeBundle() {
+    if (!useNative()) return Promise.reject(new Error('native bundle is only available in the native app'));
+    if (nativeBundlePromise) return nativeBundlePromise;
+    const p = new Promise(function (resolve, reject) {
+      if (root && root.TNativeStorage) { resolve(); return; }
+      const doc = root && root.document;
+      if (!doc || typeof doc.createElement !== 'function') {
+        reject(new Error('native storage bundle cannot be loaded without a document'));
+        return;
+      }
+      const script = doc.createElement('script');
+      script.src = nativeBundleUrl;
+      script.async = true;
+      script.onload = function () {
+        if (root.TNativeStorage) resolve();
+        else reject(new Error(nativeBundleUrl + ' did not register TNativeStorage'));
+      };
+      script.onerror = function () {
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('failed to load ' + nativeBundleUrl));
+      };
+      (doc.head || doc.documentElement).appendChild(script);
+    });
+    nativeBundlePromise = p;
+    p.then(null, function () { if (nativeBundlePromise === p) nativeBundlePromise = null; });
+    return p;
+  }
+  let nativeAdapterPromise = null;
+  function nativeAdapter() {
+    if (nativeAdapterPromise) return nativeAdapterPromise;
+    const p = loadNativeBundle().then(function () {
+      const adapter = root.TNativeStorage;
+      if (!isNativeAdapter(adapter)) throw new TypeError('TStore: nativer Speicheradapter ist unvollständig.');
+      return adapter;
+    });
+    nativeAdapterPromise = p;
+    p.then(null, function () { if (nativeAdapterPromise === p) nativeAdapterPromise = null; });
+    return p;
+  }
+  /* Einmalige Übernahme von WebView-Altdaten (App-Stände vor SQLite):
+     Existiert die IndexedDB, ist sie maßgeblich (sie enthält bereits die
+     localStorage-Übernahme und alle späteren Löschungen); sonst localStorage.
+     Der Adapter ruft dies nur ohne Übernahme-Markierung auf und schreibt
+     Daten + Markierung atomar. Die Altdaten bleiben unverändert liegen. */
+  function legacyLocalStorageEntries() {
+    let s;
+    try { s = root && root.localStorage; }
+    catch (e) { throw storageError('unavailable', e); }
+    const out = [];
+    if (!s) return out;
+    let n;
+    try { n = s.length; } catch (e) { throw storageError('unavailable', e); }
+    for (let i = 0; i < n; i++) {
+      let key, value;
+      try { key = s.key(i); value = key == null ? null : s.getItem(key); }
+      catch (e) { throw storageError('unavailable', e); }
+      if (key != null && value != null && isKnownKey(key)) out.push({ key: String(key), value: String(value) });
+    }
+    return out;
+  }
+  /* → Promise<null> (keine IndexedDB vorhanden) | Promise<[{key,value}]>.
+     Öffnet ohne Version: Eine noch nicht vorhandene Datenbank wird dabei
+     NICHT angelegt (Upgrade wird abgebrochen). Lesefehler einer vorhandenen
+     Datenbank brechen die Übernahme ab (Wiederholung beim nächsten Start). */
+  function legacyIdbEntries() {
+    const factory = idbFactory();
+    if (!factory) return Promise.resolve(null);
+    /* databases() (iOS 14+/Chromium 71+) vermeidet das Öffnen ganz; WebKit
+       hinterlässt nach dem abgebrochenen Anlegen eine leere Version-0-Hülle. */
+    if (typeof factory.databases === 'function') {
+      return Promise.resolve().then(function () { return factory.databases(); }).then(function (list) {
+        const known = Array.isArray(list) && list.some(function (info) {
+          return info && info.name === DB_NAME && Number(info.version) > 0;
+        });
+        return known ? openLegacyIdb(factory) : null;
+      }, function () { return openLegacyIdb(factory); });
+    }
+    return openLegacyIdb(factory);
+  }
+  function openLegacyIdb(factory) {
+    return new Promise(function (resolve, reject) {
+      let req, created = false, done = false;
+      function finish(fn, value) { if (!done) { done = true; fn(value); } }
+      try { req = factory.open(DB_NAME); }
+      catch (e) { finish(resolve, null); return; }
+      req.onupgradeneeded = function () {
+        created = true;
+        try { req.transaction.abort(); } catch (e) { }
+      };
+      req.onblocked = function () { finish(reject, storageError('blocked')); };
+      req.onerror = function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (created) finish(resolve, null);
+        else finish(reject, storageError('unavailable', req.error));
+      };
+      req.onsuccess = function () {
+        const db = req.result;
+        const close = function () { try { db.close(); } catch (e) { } };
+        if (created || !db.objectStoreNames.contains(KV_STORE)) { close(); finish(resolve, null); return; }
+        let tx;
+        try { tx = db.transaction(KV_STORE, 'readonly'); }
+        catch (e) { close(); finish(reject, storageError('unavailable', e)); return; }
+        const entries = [];
+        let cursorReq;
+        try { cursorReq = tx.objectStore(KV_STORE).openCursor(); }
+        catch (e) { close(); finish(reject, storageError('unavailable', e)); return; }
+        cursorReq.onsuccess = function () {
+          const cursor = cursorReq.result;
+          if (!cursor) return;
+          if (typeof cursor.value === 'string') entries.push({ key: String(cursor.key), value: cursor.value });
+          cursor.continue();
+        };
+        tx.oncomplete = function () { close(); finish(resolve, entries); };
+        tx.onabort = function () { close(); finish(reject, storageError('unavailable', tx.error)); };
+      };
+    });
+  }
+  /* Bekannter WebKit-Fehler: indexedDB.open() meldet sich manchmal nie.
+     Dann nicht ewig hängen, sondern Übernahme beim nächsten Start wiederholen. */
+  const LEGACY_IDB_TIMEOUT_MS = 15000;
+  function withTimeout(promise, ms) {
+    if (!root || typeof root.setTimeout !== 'function') return promise;
+    return new Promise(function (resolve, reject) {
+      const timer = root.setTimeout(function () {
+        reject(storageError('unavailable', new Error('IndexedDB did not respond within ' + ms + ' ms')));
+      }, ms);
+      promise.then(function (value) { root.clearTimeout(timer); resolve(value); },
+        function (err) { root.clearTimeout(timer); reject(err); });
+    });
+  }
+  function nativeLegacySource() {
+    return withTimeout(legacyIdbEntries(), LEGACY_IDB_TIMEOUT_MS).then(function (entries) {
+      if (entries) return { source: 'indexedDB', entries: entries };
+      return { source: 'localStorage', entries: legacyLocalStorageEntries() };
+    });
+  }
+  let nativeReady = null;
+  function nativeInit() {
+    if (nativeReady) return nativeReady;
+    const p = nativeAdapter().then(function (adapter) {
+      return Promise.resolve(adapter.importLegacy(nativeLegacySource)).then(function () { return adapter; });
+    }).then(null, function (err) {
+      /* Auch ein fehlgeschlagener Übernahme-Schreibvorgang heißt: Speicher
+         (noch) nicht verfügbar – Altdaten bleiben lesbar, Speichern false. */
+      throw nativeFailure(err, 'unavailable', NATIVE_INIT_CODES);
+    });
+    nativeReady = p;
+    p.then(null, function () { if (nativeReady === p) nativeReady = null; });
+    return p;
+  }
+  /* SQLite-Zugriffe laufen asynchron über die Capacitor-Brücke. Damit die
+     Semantik der IndexedDB-Transaktion erhalten bleibt, laufen alle
+     Transaktionen dieser Seite strikt nacheinander (nativeQueue). Die Seite
+     ist in der App der einzige Schreiber; der zuletzt BESTÄTIGTE Stand wird
+     daher zwischengespeichert (nativeCache). Nach jedem Schreib-/Lesefehler
+     wird er verworfen und beim nächsten Zugriff neu aus SQLite gelesen –
+     ein fehlgeschlagener Schreibsatz wird nie veröffentlicht. */
+  let nativeQueue = Promise.resolve();
+  let nativeCache = null;
+  function withNativeDb(mode, callback) {
+    const task = nativeQueue.then(function () {
+      return nativeInit();
+    }).then(function (adapter) {
+      if (nativeCache) return adapter;
+      return Promise.resolve().then(function () { return adapter.readEntries(); }).then(function (entries) {
+        const data = Object.create(null);
+        (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+          if (entry && typeof entry.key === 'string' && typeof entry.value === 'string') data[entry.key] = entry.value;
+        });
+        nativeCache = data;
+        return adapter;
+      }, function (err) {
+        throw nativeFailure(err, 'unavailable');
+      });
+    }).then(function (adapter) {
+      const data = Object.assign(Object.create(null), nativeCache);
+      const wrapped = makeView(data, mode !== 'readwrite');
+      let result;
+      try {
+        result = callback(wrapped.view);
+        if (result && typeof result.then === 'function') {
+          throw new TypeError('TStore.transaction: callback muss synchron sein.');
+        }
+      } finally {
+        wrapped.close();
+      }
+      const keys = Object.keys(wrapped.changes);
+      if (mode !== 'readwrite' || !keys.length) return result;
+      const changes = keys.map(function (key) {
+        const change = wrapped.changes[key];
+        return change.remove ? { key: key, remove: true } : { key: key, value: change.value };
+      });
+      return Promise.resolve().then(function () { return adapter.writeEntries(changes); }).then(function () {
+        nativeCache = data;
+        return result;
+      }, function (err) {
+        nativeCache = null;
+        throw nativeFailure(err, 'write-failed');
+      });
+    });
+    nativeQueue = task.then(function () { }, function () { });
+    return task;
   }
   /* Öffentliche, atomare Transaktion über ALLE Datensätze.
      callback(view) muss synchron sein; Rückgabewert = Promise-Ergebnis. */
@@ -433,8 +700,12 @@
   function removeItem(key) {
     return transaction(function (view) { view.removeItem(key); return true; });
   }
-  /* Öffnet die Datenbank (inkl. einmaliger localStorage-Übernahme). */
+  /* Öffnet die Datenbank (inkl. einmaliger Altdaten-Übernahme). */
   function ready() {
+    if (useNative()) {
+      if (nativePlatformError) return Promise.reject(storageError('unavailable', nativePlatformError));
+      return nativeInit().then(function () { return true; });
+    }
     return openDb().then(function () { return true; });
   }
   function errorCode(err, fallback) {
@@ -676,6 +947,22 @@
   function whenIdle() {
     if (!pendingCount && !activityCount) return Promise.resolve(true);
     return new Promise(function (resolve) { idleWaiters.push(resolve); });
+  }
+  /* Laufende/ausstehende Speichervorgänge oder ein seit dem letzten Erfolg
+     fehlgeschlagener Speichervorgang: Seite nicht ohne Rückfrage verlassen
+     (beforeunload; in der App auch die Android-Zurück-Taste, turnier-native.js). */
+  function hasUnsavedWork() {
+    return !!(pendingCount || activityCount || Object.keys(failedSheets).length);
+  }
+  /* Das Verlassen wurde trotz ungespeicherter Änderungen bereits in der
+     Seite bestätigt (App-Zurück-Taste): beforeunload fragt dann nicht ein
+     zweites Mal. Gilt nur kurz, falls die Navigation ausbleibt. */
+  let leaveAllowedUntil = 0;
+  function allowLeave() {
+    leaveAllowedUntil = Date.now() + 3000;
+  }
+  function leaveAllowed() {
+    return Date.now() < leaveAllowedUntil;
   }
 
   function snapshotOf(t) {
@@ -1088,6 +1375,7 @@
     isKnownKey: isKnownKey,
     isPending: isPending,
     whenIdle: whenIdle,
+    backend: backend,
     DB_NAME: DB_NAME,
     DB_VERSION: DB_VERSION,
     STORE_NAME: KV_STORE
@@ -1098,10 +1386,10 @@
     DB_NAME, DB_VERSION, STORE_NAME: KV_STORE,
     sheetIdFrom, BASE_ID, SHEET_BASES: SHEET_BASES.slice(), sheetBaseOf, isCurrentSheet, pruneUnsupportedIndex,
     emptyTournament, normalize, parseRecord,
-    // async (Promise) – IndexedDB maßgeblich
+    // async (Promise) – IndexedDB bzw. in der App SQLite maßgeblich
     load, save, reset, hasBackup, restorePrevious, index, updateIndex,
     ready, readEntries, transaction, getItem, setItem, removeItem,
-    isPending, whenIdle, storage,
+    isPending, whenIdle, hasUnsavedWork, allowLeave, leaveAllowed, storage, backend, loadNativeBundle,
     // synchron, rein (für transaction()-Callbacks und Tests)
     isKnownKey, indexEntry,
     loadInView, saveInView, updateIndexInView, readIndexInView, refreshIndexInView, revisionInView,

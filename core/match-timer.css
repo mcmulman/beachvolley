@@ -1,0 +1,556 @@
+/* ============================================================================
+   match-timer.css – Seite Spiel_Timer.html (Einzelspiel-Timer, PRODUKTPLAN §6.5)
+
+   Mobile-first, kontrastreich, große Touch-Ziele (≥ 44 px, „+1“ deutlich
+   größer) und Einhandbedienung. Kompaktansicht (.is-compact: per Schalter
+   oder automatisch bis 300 px Breite, z. B. Smartwatch-Browser) zeigt nur
+   Zeit, Spielstand und die wichtigsten Tasten (Modus-Wahl nur in der
+   Normalansicht).
+
+   Safari 12 (AGENTS.md §7b): kein Flex-gap (nur Grid-gap mit grid-gap-
+   Fallback), kein inset, kein clamp(); Abstände in Flex-Containern über
+   margin.
+   ========================================================================== */
+.mt-body {
+  margin: 0;
+  min-height: 100vh;
+  background: #eef2f7;
+  color: #1a1a2e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-body *, .mt-body *::before, .mt-body *::after { box-sizing: border-box; }
+
+.mt-vh {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Kopfleiste ── */
+.mt-bar {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 6px 10px;
+  padding-top: calc(6px + env(safe-area-inset-top, 0px));
+  padding-left: calc(10px + env(safe-area-inset-left, 0px));
+  padding-right: calc(10px + env(safe-area-inset-right, 0px));
+  background: #1a3a5c;
+  background: linear-gradient(135deg, #1a3a5c 0%, #1f6fa8 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(26, 58, 92, .28);
+}
+.mt-back {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px 0 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 650;
+  text-decoration: none;
+  background: rgba(255, 255, 255, .20);
+  border: 1px solid rgba(255, 255, 255, .4);
+  border-radius: 999px;
+}
+.mt-back .mt-chev { display: block; width: 18px; height: 18px; margin: 0 4px 0 -2px; }
+.mt-back .mt-chev svg { display: block; width: 18px; height: 18px; }
+.mt-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mt-lang { flex-shrink: 0; display: inline-flex; }
+.mt-iconbtn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+  color: #fff;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 10px;
+}
+.mt-iconbtn .lbl { display: none; }
+
+/* ── Inhalt ── */
+.mt {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 12px 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.mt-card {
+  background: #fff;
+  border: 1px solid #ccd8e8;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(31, 111, 168, .10);
+}
+.mt-warning, .mt-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  background: #fdecec;
+  border: 1px solid #e6a5a5;
+  color: #761010;
+}
+.mt-error { margin: 10px 0 0; }
+
+.mt-clock { padding: 12px; text-align: center; }
+.mt-status {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  background: #e8eef5;
+  color: #1a3a5c;
+}
+.mt[data-status="running"] .mt-status { background: #e7f6ec; color: #0a5d22; }
+.mt[data-status="paused"] .mt-status { background: #fff4d6; color: #6b4a00; }
+.mt[data-status="stopped"] .mt-status { background: #fdecec; color: #8a1414; }
+.mt-time {
+  margin: 4px 0 2px;
+  font-size: 68px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+  color: #1a3a5c;
+}
+.mt[data-status="paused"] .mt-time, .mt[data-status="stopped"] .mt-time { color: #5a6375; }
+@media (min-width: 480px) { .mt-time { font-size: 92px; } }
+/* Countdown abgelaufen: Nachspielzeit „+MM:SS“ deutlich rot. */
+.mt.is-expired .mt-time { color: #a61b1b; }
+.mt.is-expired[data-status="running"] .mt-status { background: #a61b1b; color: #fff; }
+.mt.is-expired[data-status="running"] .mt-time { -webkit-animation: mt-expired 1s ease-in-out 3; animation: mt-expired 1s ease-in-out 3; }
+@-webkit-keyframes mt-expired { 50% { opacity: .35; } }
+@keyframes mt-expired { 50% { opacity: .35; } }
+
+/* Modus (Stoppuhr/Countdown) nur vor dem Start wählbar. */
+.mt-mode { display: flex; align-items: center; justify-content: center; margin: 2px 0 4px; font-size: 15px; color: #4a5468; }
+.mt-mode label { margin-right: 8px; font-weight: 650; white-space: nowrap; }
+.mt-mode select {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-box-flex: 0;
+  flex: 0 1 auto;
+  min-height: 44px;
+  padding: 4px 10px;
+  font: inherit;
+  font-weight: 650;
+  color: #1a3a5c;
+  background: #fff;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+}
+.mt:not([data-status="idle"]) .mt-mode { display: none; }
+
+.mt-clock-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-gap: 10px;
+  gap: 10px;
+  margin-top: 8px;
+}
+.mt-btn {
+  min-height: 56px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 750;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-btn--primary { background: #0a7d2c; color: #fff; }
+.mt-btn--primary[data-action="pause"] { background: #1a3a5c; }
+.mt-btn--primary[data-action="clear"] { background: #1a3a5c; }
+.mt-btn--stop[data-action="resume"] { color: #0a7d2c; border-color: #0a7d2c; }
+.mt-btn--stop { background: #fff; color: #a61b1b; border-color: #a61b1b; }
+.mt-btn .mt-ic { display: inline-block; margin-right: 8px; }
+/* Symbole: einfarbige Inline-SVGs (currentColor), Varianten per Zustand. */
+.mt-ic svg { display: block; width: 20px; height: 20px; }
+.mt-btn .mt-ic svg { width: 22px; height: 22px; }
+.mt-btn, .mt-toggle { -webkit-box-align: center; }
+.mt-btn { display: flex; align-items: center; justify-content: center; }
+.mt-btn--primary .ic-pause,
+.mt-btn--primary .ic-clear,
+.mt-btn--primary[data-action="pause"] .ic-play,
+.mt-btn--primary[data-action="clear"] .ic-play,
+.mt-btn--stop .ic-play,
+.mt-btn--stop[data-action="resume"] .ic-stop,
+#mt-sound .ic-on,
+#mt-sound[aria-pressed="true"] .ic-off,
+#mt-compact .ic-normal,
+.mt.is-compact #mt-compact .ic-compact { display: none; }
+.mt-btn--primary[data-action="pause"] .ic-pause,
+.mt-btn--primary[data-action="clear"] .ic-clear,
+.mt-btn--stop[data-action="resume"] .ic-play,
+#mt-sound[aria-pressed="true"] .ic-on,
+.mt.is-compact #mt-compact .ic-normal { display: block; }
+.mt button:disabled { opacity: .4; cursor: default; }
+
+/* ── Spielstand ── */
+.mt-sides {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-gap: 10px;
+  gap: 10px;
+  margin-top: 12px;
+}
+.mt-side { padding: 10px; text-align: center; min-width: 0; }
+.mt-name-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #5a6375;
+}
+.mt-name, .mt-direct {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 16px; /* iOS zoomt unter 16 px beim Fokus */
+  text-align: center;
+  color: #1a1a2e;
+  background: #f6f8fb;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+}
+.mt-name { font-weight: 700; }
+.mt-short {
+  display: none;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mt-value {
+  margin: 6px 0;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+  color: #1a3a5c;
+  border-radius: 10px;
+}
+.mt-flash { -webkit-animation: mt-flash .45s ease-out; animation: mt-flash .45s ease-out; }
+@-webkit-keyframes mt-flash { 0% { background: #ffe58a; } 100% { background: transparent; } }
+@keyframes mt-flash { 0% { background: #ffe58a; } 100% { background: transparent; } }
+.mt-plus {
+  display: block;
+  width: 100%;
+  min-height: 88px;
+  font: inherit;
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+  background: #1a3a5c;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-corr { display: flex; align-items: stretch; margin-top: 8px; }
+.mt-minus {
+  flex: 0 0 auto;
+  min-width: 56px;
+  min-height: 44px;
+  margin-right: 8px;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 750;
+  color: #1a3a5c;
+  background: #fff;
+  border: 2px solid #1a3a5c;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-corr .mt-direct { flex: 1 1 auto; min-width: 0; width: auto; }
+/* Führung: Karte der führenden Seite hervorgehoben + kurze Zeile. */
+.mt-side.is-leading { border-color: #0a7d2c; box-shadow: inset 0 0 0 1px #0a7d2c, 0 4px 16px rgba(10, 125, 44, .16); }
+.mt-side.is-leading .mt-value { color: #0a7d2c; }
+.mt-lead { margin: 12px 0 0; text-align: center; }
+.mt-lead[hidden] { display: none; }
+/* Satzbalken direkt über den Punkte-Karten, links = Seite A, rechts = Seite B. */
+.mt-cur-bar { display: flex; overflow: hidden; height: 10px; margin: 12px 4px 0; background: #e3e9f1; border-radius: 999px; }
+.mt-cur-bar[hidden] { display: none; }
+.mt-lead-seg { display: block; height: 100%; background: #9fb2c8; -webkit-transition: width .3s ease; transition: width .3s ease; }
+#mt-cur-a { border-right: 2px solid #fff; }
+.mt-cur-bar.is-a #mt-cur-a, .mt-cur-bar.is-b #mt-cur-b { background: #0a7d2c; }
+.mt-cur-bar.is-tie .mt-lead-seg { background: #1a3a5c; }
+.mt-cur-bar:not([hidden]) + .mt-sides { margin-top: 8px; }
+/* Gesamtauswertung: Name A  3 : 1  Name B – Führender grün, sonst ruhig. */
+.mt-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-column-gap: 12px;
+  align-items: center;
+  margin: 0;
+  color: #4a5468;
+}
+.mt-match-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 650; }
+.mt-match-name:first-child { text-align: right; }
+.mt-match-name:last-child { text-align: left; }
+.mt-match-score { font-size: 26px; font-weight: 800; line-height: 1.1; color: #1a3a5c; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mt-match-score b { font-weight: 800; }
+.mt-match-sep { margin: 0 6px; color: #b3bccb; }
+.mt-lead.is-a #mt-match-name-a, .mt-lead.is-b #mt-match-name-b,
+.mt-lead.is-a #mt-match-a, .mt-lead.is-b #mt-match-b { color: #0a7d2c; }
+.mt-sets {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 15px;
+  color: #4a5468;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
+.mt-set-chip {
+  display: inline-block;
+  margin: 3px;
+  padding: 3px 10px 3px 4px;
+  background: #fff;
+  border: 1px solid #d5dde8;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mt-set-no {
+  display: inline-block;
+  min-width: 20px;
+  margin-right: 6px;
+  padding: 1px 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: #6b7a90;
+  border-radius: 999px;
+}
+.mt-set-win { font-weight: 800; color: #1a3a5c; }
+.mt-prefill { margin-bottom: 10px; }
+.mt-hint { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: #6b7385; text-align: center; }
+.mt-hint[hidden] { display: none; }
+
+/* ── Einstellungen / Zurücksetzen ── */
+.mt-settings { margin-top: 14px; }
+/* Einstellungen (4) und Spielaktionen (3) je in einer Zeile: Symbol über
+   kurzer Beschriftung. */
+.mt-toolbar, .mt-actions { display: flex; margin: 0 0 8px; }
+.mt-actions { margin: 10px 0 0; }
+.mt-toolbar > .mt-toggle, .mt-actions > .mt-toggle {
+  -webkit-box-flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0 0 0 6px;
+  padding: 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.mt-toolbar > .mt-toggle:first-child, .mt-actions > .mt-toggle:first-child { margin-left: 0; }
+.mt-toolbar > .mt-toggle[hidden] { display: none; }
+/* „Satz beenden“ ist die wichtigste Spielaktion: doppelt so breit, gefüllt,
+   Symbol neben der Beschriftung. */
+.mt-actions > #mt-end-set {
+  -webkit-box-flex: 2;
+  flex: 2 1 0;
+  flex-direction: row;
+  font-size: 16px;
+  font-weight: 750;
+  color: #fff;
+  background: #0a7d2c;
+  border-color: #0a7d2c;
+}
+.mt-actions > #mt-end-set .mt-ic { margin: 0 8px 0 0; }
+.mt-actions > #mt-end-set:disabled { color: #4a5468; background: #e3e9f1; border-color: #e3e9f1; opacity: 1; }
+.mt-toolbar .mt-ic, .mt-actions .mt-ic { margin: 0 0 3px; line-height: 1; }
+.mt-toolbar > .mt-toggle { border: 1px solid #c6d2e0; background: #fff; color: #34445c; font-weight: 600; font-size: 12px; }
+.mt-toolbar > .mt-toggle:hover { background: #f1f5fa; }
+.mt-toolbar > .mt-toggle[aria-pressed="true"] { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
+.mt-settings { border-top: 1px solid #d5dde8; padding-top: 10px; }
+.mt-toolbar .mt-tl, .mt-actions .mt-tl { max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+.mt-toggle:disabled { opacity: .45; cursor: default; }
+.mt-toggle, .mt-plain {
+  min-height: 44px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  color: #1a3a5c;
+  background: #fff;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mt-toggle[aria-pressed="true"] { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
+.mt-toggle .mt-ic { margin-right: 6px; }
+.mt-wake-status {
+  flex: 1 0 100%;
+  margin: 0 0 8px;
+  color: #4a5468;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.mt-plain--danger { color: #a61b1b; border-color: #a61b1b; }
+.mt-toolbar > .mt-plain--danger { color: #a61b1b; border-color: #e6b8b8; }
+.mt-confirm {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 12px;
+  background: #fff8e1;
+  border: 1.5px solid #e0b84a;
+  border-radius: 12px;
+}
+.mt-confirm p { margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
+.mt-confirm button { margin: 4px 8px 0 0; max-width: 100%; }
+.mt-confirm .mt-confirm-yes { color: #fff; background: #a61b1b; border-color: #a61b1b; }
+
+/* Fokus sichtbar (Tastatur/Screenreader); :focus als Safari-12-Fallback. */
+.mt button:focus, .mt input:focus, .mt-bar a:focus, .mt-bar button:focus {
+  outline: 3px solid #f2a900;
+  outline-offset: 2px;
+}
+.mt button:focus:not(:focus-visible), .mt-bar a:focus:not(:focus-visible), .mt-bar button:focus:not(:focus-visible) { outline: none; }
+
+/* ── Kompaktansicht ── */
+.mt.is-compact { padding: 6px 6px 10px; }
+.mt.is-compact .mt-clock { padding: 6px; }
+.mt.is-compact .mt-status { font-size: 12px; padding: 1px 8px; }
+.mt.is-compact .mt-time { font-size: 40px; margin: 2px 0; }
+.mt.is-compact .mt-clock-actions { margin-top: 4px; grid-gap: 6px; gap: 6px; }
+.mt.is-compact .mt-btn { min-height: 44px; font-size: 16px; padding: 4px 6px; }
+.mt.is-compact .mt-btn .mt-ic { margin-right: 3px; }
+.mt.is-compact .mt-sides { margin-top: 6px; grid-gap: 6px; gap: 6px; }
+.mt.is-compact .mt-side { padding: 6px; }
+.mt.is-compact .mt-name-label,
+.mt.is-compact .mt-name,
+.mt.is-compact .mt-direct,
+.mt.is-compact .mt-hint,
+.mt.is-compact .mt-mode { display: none; }
+.mt.is-compact .mt-short { display: block; }
+.mt.is-compact .mt-value { font-size: 40px; margin: 2px 0; }
+.mt.is-compact .mt-plus { min-height: 56px; font-size: 26px; }
+.mt.is-compact .mt-corr { margin-top: 6px; }
+.mt.is-compact .mt-minus { width: 100%; margin-right: 0; min-height: 44px; }
+.mt.is-compact .mt-settings { margin-top: 8px; }
+.mt.is-compact .mt-actions { margin-top: 6px; }
+.mt.is-compact .mt-sets { margin-top: 4px; font-size: 14px; }
+.mt.is-compact .mt-lead { margin-top: 6px; }
+.mt.is-compact .mt-cur-bar { margin-top: 6px; height: 8px; }
+.mt.is-compact .mt-cur-bar:not([hidden]) + .mt-sides { margin-top: 6px; }
+.mt.is-compact .mt-match-score { font-size: 20px; }
+.mt.is-compact .mt-match-name { font-size: 13px; }
+/* ── Regelhinweise: Seitenwechsel / Satzgewinn ── */
+.mt-notice {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 750;
+  color: #1a3a5c;
+  background: #e3ecf7;
+  border-radius: 10px;
+}
+.mt-notice.is-set { color: #fff; background: #0a7d2c; }
+.mt-notice[hidden] { display: none; }
+.mt-actions > #mt-end-set.is-ready { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0a7d2c; -webkit-animation: mt-ready 1.6s ease-in-out infinite; animation: mt-ready 1.6s ease-in-out infinite; }
+@-webkit-keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
+@keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
+
+/* ── Ergebnis an den Turnierbogen ── */
+.mt-transfer { width: 100%; margin-top: 10px; color: #fff; background: #1f6fa8; font-size: 17px; }
+.mt-transfer[hidden] { display: none; }
+
+.mt.is-compact .mt-notice { margin-top: 6px; }
+
+/* ── Querformat (Handy/Tablet quer): Zeit + Einstellungen links,
+   Spielstand rechts – Uhr und „+1“ ohne Scrollen sichtbar. ── */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 560px) {
+  .mt {
+    max-width: 1100px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-column-gap: 12px;
+    align-items: start;
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+  }
+  .mt > * { grid-column: 1; }
+  .mt > .mt-score { grid-column: 2; grid-row: 1 / span 8; }
+  .mt > .mt-score > .mt-notice { margin-top: 0; }
+  .mt-time { font-size: 64px; }
+  .mt-value { font-size: 52px; }
+  .mt-plus { min-height: 64px; }
+  .mt-settings { margin-top: 12px; }
+  .mt-hint { text-align: left; }
+}
+
+@media (max-width: 300px) {
+  .mt-actions > #mt-end-set { -webkit-box-flex: 1; flex: 1 1 0; flex-direction: column; font-size: 12.5px; }
+  .mt-iconbtn.i18n-switch .code { display: none; }
+  .mt-iconbtn.i18n-switch .ic svg { margin-right: 0; }
+  .mt-actions > #mt-end-set .mt-ic { margin: 0 0 3px; }
+  /* Smartwatch-Größe: Kopfleiste scrollt weg, damit Zeit, Spielstand und
+     „+1“ den ganzen Bildschirm nutzen; der Status steckt dann in Farbe der
+     Zeit und Beschriftung der Haupttaste. */
+  .mt-bar { position: static; min-height: 44px; padding-top: calc(0px + env(safe-area-inset-top, 0px)); padding-bottom: 0; box-shadow: none; }
+  .mt-back { padding: 0; justify-content: center; }
+  .mt-back .mt-back-lbl { display: none; }
+  .mt-back .mt-chev { margin: 0; }
+  .mt-title { font-size: 13px; margin: 0 4px; }
+  .mt-btn .mt-ic { display: none; }
+  .mt.is-compact .mt-status { display: none; }
+  .mt.is-compact .mt-time { font-size: 34px; margin: 0 0 2px; }
+  .mt.is-compact .mt-value { font-size: 34px; margin: 0; }
+  .mt.is-compact .mt-plus { min-height: 48px; font-size: 22px; }
+  .mt.is-compact .mt-short { font-size: 12px; }
+  .mt-match { grid-column-gap: 6px; }
+  .mt-match-name { font-size: 12px; }
+  .mt-match-score { font-size: 20px; }
+  .mt-match-sep { margin: 0 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-flash { -webkit-animation: none; animation: none; outline: 3px solid #f2a900; }
+  .mt-actions > #mt-end-set.is-ready { -webkit-animation: none; animation: none; }
+}
+@media print {
+  .mt-cur-bar,
+  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-actions, .mt-mode, .mt-prefill,
+  .mt-notice, .mt-transfer { display: none !important; }
+}

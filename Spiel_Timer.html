@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de" data-i18n>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="timer.docTitle">Spiel-Timer &amp; Spielstand</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="core/match-timer.css">
+  <script src="core/compat.js"></script>
+  <link rel="stylesheet" href="core/compat-flexgap.css">
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
+  <script src="core/turnier-native.js"></script>
+</head>
+<body class="mt-body">
+<!-- Kostenloser, sportartenneutraler Einzelspiel-Timer (PRODUKTPLAN §6.5).
+     Liest und schreibt KEINE Turnierdaten – Ergebnisse werden bewusst im
+     Turnierbogen eingetragen. Logik: core/match-timer.js, Bedienung:
+     core/match-timer-page.js. -->
+<header class="mt-bar">
+  <a class="mt-back" id="mt-back" href="index.html" aria-label="Zur Übersicht" data-i18n-attr="aria-label:chrome.backToOverviewAria"><span class="mt-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></span><span class="mt-back-lbl" id="mt-back-label" data-i18n="chrome.overview">Übersicht</span></a>
+  <h1 class="mt-title" data-i18n="timer.title">Spiel-Timer</h1>
+  <span class="mt-lang" data-i18n-switch="mt-iconbtn"></span>
+</header>
+
+<main id="match-timer" class="mt" data-status="idle">
+  <div class="mt-confirm mt-prefill" id="mt-prefill" role="group" aria-labelledby="mt-prefill-question" hidden>
+    <p id="mt-prefill-question"></p>
+    <button type="button" class="mt-plain mt-confirm-yes" id="mt-prefill-yes" data-i18n="timer.prefillYes">Neues Spiel starten</button>
+    <button type="button" class="mt-plain" id="mt-prefill-no" data-i18n="timer.prefillNo">Aktuelles Spiel behalten</button>
+  </div>
+  <p id="mt-storage-warning" class="mt-warning" role="alert" hidden data-i18n="timer.storageWarning">Der Timer-Stand kann auf diesem Gerät nicht gespeichert werden (z. B. privates Surfen). Zeit und Spielstand gehen beim Schließen oder Neuladen der Seite verloren.</p>
+
+  <section class="mt-card mt-clock" aria-labelledby="mt-clock-heading">
+    <h2 class="mt-vh" id="mt-clock-heading" data-i18n="timer.clockHeading">Spielzeit</h2>
+    <div class="mt-status" id="mt-status"></div>
+    <div class="mt-time" id="mt-time" role="timer" aria-live="off" aria-atomic="true" aria-labelledby="mt-clock-heading">00:00</div>
+    <div class="mt-mode" id="mt-mode-row">
+      <label class="mt-vh" for="mt-mode" data-i18n="timer.mode">Modus</label>
+      <select id="mt-mode">
+        <option value="0" data-i18n="timer.modeStopwatch">Stoppuhr</option>
+      </select>
+    </div>
+    <div class="mt-clock-actions">
+      <button type="button" class="mt-btn mt-btn--primary" id="mt-primary" data-action="start"><span class="mt-ic" aria-hidden="true"><svg class="ic-play" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg><svg class="ic-pause" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none"/></svg><svg class="ic-clear" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></span><span id="mt-primary-label"></span></button>
+      <button type="button" class="mt-btn mt-btn--stop" id="mt-stop" data-action="stop" disabled><span class="mt-ic" aria-hidden="true"><svg class="ic-stop" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="13" height="13" rx="2" fill="currentColor"/></svg><svg class="ic-play" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg></span><span id="mt-stop-label" data-i18n="timer.stop">Stopp</span></button>
+    </div>
+  </section>
+
+  <section class="mt-score" aria-labelledby="mt-score-heading">
+    <h2 class="mt-vh" id="mt-score-heading" data-i18n="timer.scoreHeading">Spielstand</h2>
+    <p class="mt-notice" id="mt-notice" aria-hidden="true" hidden></p>
+    <div class="mt-cur-bar" id="mt-cur-bar" aria-hidden="true" hidden><span class="mt-lead-seg" id="mt-cur-a"></span><span class="mt-lead-seg" id="mt-cur-b"></span></div>
+    <div class="mt-sides">
+      <div class="mt-card mt-side" data-side="a">
+        <label class="mt-name-label mt-vh" for="mt-name-a" data-i18n="timer.nameA">Name Seite A</label>
+        <input class="mt-name" id="mt-name-a" type="text" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Seite A" data-i18n-attr="placeholder:timer.sideA">
+        <div class="mt-short" id="mt-short-a" aria-hidden="true"></div>
+        <div class="mt-value" id="mt-score-a">0</div>
+        <button type="button" class="mt-plus" id="mt-plus-a">+1</button>
+        <div class="mt-corr">
+          <button type="button" class="mt-minus" id="mt-minus-a">−1</button>
+          <input class="mt-direct" id="mt-direct-a" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" enterkeyhint="done">
+        </div>
+      </div>
+      <div class="mt-card mt-side" data-side="b">
+        <label class="mt-name-label mt-vh" for="mt-name-b" data-i18n="timer.nameB">Name Seite B</label>
+        <input class="mt-name" id="mt-name-b" type="text" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Seite B" data-i18n-attr="placeholder:timer.sideB">
+        <div class="mt-short" id="mt-short-b" aria-hidden="true"></div>
+        <div class="mt-value" id="mt-score-b">0</div>
+        <button type="button" class="mt-plus" id="mt-plus-b">+1</button>
+        <div class="mt-corr">
+          <button type="button" class="mt-minus" id="mt-minus-b">−1</button>
+          <input class="mt-direct" id="mt-direct-b" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" enterkeyhint="done">
+        </div>
+      </div>
+    </div>
+    <div class="mt-lead" id="mt-lead" hidden>
+      <p class="mt-match" id="mt-match"><span class="mt-match-name" id="mt-match-name-a"></span><span class="mt-match-score"><b id="mt-match-a">0</b><span class="mt-match-sep">:</span><b id="mt-match-b">0</b></span><span class="mt-match-name" id="mt-match-name-b"></span></p>
+      <div class="mt-sets" id="mt-sets" hidden></div>
+      <button type="button" class="mt-btn mt-transfer" id="mt-transfer" hidden><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M14 4h6v6"/><path d="M20 4l-9 9"/></svg></span><span data-i18n="timer.transfer">Ins Turnierblatt übernehmen</span></button>
+    </div>
+    <div class="mt-actions">
+      <button type="button" class="mt-toggle" id="mt-undo" disabled><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></span><span class="mt-tl" data-i18n="timer.undo">Rückgängig</span></button>
+      <button type="button" class="mt-toggle" id="mt-swap"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></span><span class="mt-tl" data-i18n="timer.swap">Seiten tauschen</span></button>
+      <button type="button" class="mt-toggle" id="mt-end-set" disabled><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4.5L17 13H5"/></svg></span><span class="mt-tl" data-i18n="timer.endSet">Satz beenden</span></button>
+    </div>
+    <p class="mt-error" id="mt-error" role="alert" hidden></p>
+    <p class="mt-hint" id="mt-hint" data-i18n="timer.hint" hidden>Tipp: Über das Uhr-Symbol am Spiel geöffnet, lässt sich das Ergebnis direkt übernehmen.</p>
+  </section>
+
+  <section class="mt-settings" aria-labelledby="mt-settings-heading">
+    <h2 class="mt-vh" id="mt-settings-heading" data-i18n="timer.settingsHeading">Einstellungen</h2>
+    <div class="mt-toolbar">
+      <button type="button" class="mt-toggle" id="mt-sound" aria-pressed="false"><span class="mt-ic" aria-hidden="true"><svg class="ic-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg><svg class="ic-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6"/><path d="m22 9-6 6"/></svg></span><span class="mt-tl" data-i18n="timer.sound">Ton</span></button>
+      <button type="button" class="mt-toggle" id="mt-keep-awake" aria-pressed="false" aria-describedby="mt-wake-hint"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8.5v1"/><path d="M12 14.5v1"/><path d="M9 12h1"/><path d="M14 12h1"/></svg></span><span class="mt-tl" data-i18n="timer.keepAwake">Bildschirm an</span></button>
+      <button type="button" class="mt-toggle" id="mt-compact" aria-label="Zur Kompaktansicht wechseln" data-i18n-attr="aria-label:timer.compactAria"><span class="mt-ic" aria-hidden="true"><svg class="ic-compact" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/></svg><svg class="ic-normal" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg></span><span class="mt-tl" id="mt-compact-label" data-i18n="timer.compact">Kompakt</span></button>
+      <button type="button" class="mt-toggle mt-plain--danger" id="mt-reset" aria-expanded="false" aria-controls="mt-reset-confirm"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></span><span class="mt-tl" data-i18n="timer.reset">Zurücksetzen</span></button>
+    </div>
+    <p class="mt-wake-status" id="mt-wake-hint" data-i18n="timer.keepAwakeHint" hidden>Display bleibt an, solange die Zeit läuft (braucht mehr Akku).</p>
+    <p class="mt-wake-status" id="mt-wake-status" role="status" aria-live="polite" hidden></p>
+    <div class="mt-confirm" id="mt-reset-confirm" role="group" aria-labelledby="mt-reset-question" hidden>
+      <p id="mt-reset-question" data-i18n="timer.resetQuestion">Zeit, Spielstand und Sätze auf 0 setzen? Die Namen bleiben erhalten.</p>
+      <button type="button" class="mt-plain mt-confirm-yes" id="mt-reset-yes" data-i18n="timer.resetYes">Ja, zurücksetzen</button>
+      <button type="button" class="mt-plain" id="mt-reset-no" data-i18n="timer.resetNo">Abbrechen</button>
+    </div>
+  </section>
+
+  <div class="mt-vh" id="mt-announce" role="status" aria-live="polite" aria-atomic="true"></div>
+</main>
+
+<script src="core/match-timer.js"></script>
+<script src="core/match-timer-page.js"></script>
+<script>
+if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+</body>
+</html>

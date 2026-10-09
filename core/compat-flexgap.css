@@ -73,8 +73,9 @@
 .no-flexgap .bracket > * + * { margin-left: 6mm; }
 .no-flexgap .bracket .brcol > * + * { margin-top: 4px; }
 .no-flexgap .bracket .brm .brside > * + * { margin-left: 4px; }
-@media (max-width: 700px) {
-  /* .bracket steht hier auf flex-direction: column */
+@media screen and (max-width: 700px) {
+  /* .bracket steht hier auf flex-direction: column (nur Bildschirm; auf
+     Papier bleibt der Baum ein Spaltenraster, auch beim Druck vom Handy) */
   .no-flexgap .bracket > * + * { margin-left: 0; margin-top: 6mm; }
 }
 

@@ -78,16 +78,17 @@
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
-  <!-- DE/EN-Prototyp (PRODUKTPLAN §6.1): Sprachmodul + Texte. Deutsch bleibt Standard. -->
+  <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
+  <script src="core/turnier-native.js"></script>
 </head>
 <body>
 
 <div class="noprint" style="margin:0 0 8px">
   <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
-  <a id="formatDoc" href="docs/format-jeder-gegen-jeden.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">📖 Format-Info</a>
+  <a id="formatDoc" href="docs/format-jeder-gegen-jeden.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">Format-Info</a>
 </div>
 
 <h1 id="h-title" data-i18n="rs.mode.rr">Jeder gegen Jeden</h1>
@@ -113,7 +114,7 @@
 </div>
 
 <div class="noprint cfgcard" id="configSection">
-  <div class="cfgcard-head" data-i18n="sheet.cfg.title">⚙ Turnier-Konfiguration</div>
+  <div class="cfgcard-head" data-i18n="sheet.cfg.title">Turnier-Konfiguration</div>
   <div class="cfgcard-grid">
     <label class="cfgfield cfgfield--wide"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="rs.cfg.titleLabel">Turniertitel</span></span>
       <input id="session-title-input" type="text" placeholder="Turniertitel eingeben…" data-i18n-attr="placeholder:sheet.cfg.titlePlaceholder" autocomplete="off" spellcheck="false">
@@ -793,7 +794,7 @@
       const ov = manual[t] || {};
       const hasAny = !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
       actTd.innerHTML = (editing && hasAny)
-        ? '<button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + TUI.esc(T('rs.mstd.resetRowTitle')) + '">↺</button>'
+        ? '<button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + TUI.esc(T('rs.mstd.resetRowTitle')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
         : '';
     });
 
@@ -1019,7 +1020,7 @@
           : fmtd + TUI.manualDeltaBadge(T('rs.delta.bd'), dBd);
       }
       if (editableSwiss && ptsCell && (dPts || dBd)) {
-        ptsCell.innerHTML += ' <button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + E('rs.mstd.resetRowTitle') + '">↺</button>';
+        ptsCell.innerHTML += ' <button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + E('rs.mstd.resetRowTitle') + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
       }
     });
 
@@ -1381,7 +1382,7 @@
 </script>
 
 <script>
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>

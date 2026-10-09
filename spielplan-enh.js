@@ -41,6 +41,21 @@
     + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
     + '@media screen{td.bl-open .psets{background:#f3e6e8;border-bottom:3px solid #925d68;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
+    /* ⏱ je offenem Spiel: spiegelt den ✓-Knopf links neben den Kaestchen. */
+    + '.bl-mtimer{width:22px;height:22px;margin-right:8px;border-radius:50%;border:1px solid #b7bfc9;'
+    + 'background:#eef1f4;color:#1a3a5c;font-size:12px;line-height:1;text-decoration:none;'
+    + '.bl-mtimer svg{display:block;width:14px;height:14px;pointer-events:none}'
+    + 'display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}'
+    + '.bl-mtimer:hover,.bl-mtimer:focus{background:#e0e5eb}'
+    + 'td.bl-done .bl-mtimer{visibility:hidden}'
+    + '@media print{.bl-mtimer{display:none!important}}'
+    /* Rückmeldung nach „Ins Turnierblatt übernehmen“ im Spiel-Timer. */
+    + '#bl-timer-result{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));'
+    + 'max-width:560px;margin:0 auto;padding:10px 14px;border-radius:10px;background:#1a3a5c;color:#fff;'
+    + 'font:600 14px system-ui,Arial,sans-serif;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:81}'
+    + '#bl-timer-result[hidden]{display:none}'
+    + 'td.bl-from-timer .psets{outline:3px solid #0a7d2c;outline-offset:2px;border-radius:6px}'
+    + '@media print{#bl-timer-result{display:none!important}}'
     + '@media print{#bl-toast{display:none!important}'
     + 'td.bl-open{box-shadow:none!important}td.bl-done{opacity:1!important}}';
   var st = document.createElement('style');
@@ -217,6 +232,8 @@
   window.addEventListener('beforeunload', function (event) {
     if (!Object.keys(window.__BL_UNSAVED_SHEETS__ || {}).length
         && !(window.TStore && window.TStore.isPending())) return;
+    /* In der App bereits über die Zurück-Taste bestätigt (turnier-native.js). */
+    if (window.TStore && typeof window.TStore.leaveAllowed === 'function' && window.TStore.leaveAllowed()) return;
     event.preventDefault();
     event.returnValue = '';
   });
@@ -415,7 +432,7 @@
       btn.setAttribute('data-bl-round-done', '');
       btn.setAttribute('aria-label', tx('enh.roundDone', 'Runde abschließen'));
       btn.title = tx('enh.roundDone', 'Runde abschließen');
-      btn.textContent = '✓';
+      btn.innerHTML = '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>';
       head.appendChild(btn);
     });
   }
@@ -513,6 +530,9 @@
       var invalid = active.some(function (inp) { return inp.classList.contains('invalid'); });
       td.classList.add(filled && !invalid ? 'bl-done' : 'bl-open');
     });
+    document.querySelectorAll('td.match').forEach(syncMatchTimerLink);
+    applyTimerResult();
+    fitMatchTimerLinks();
 
     /* OK-Knopf (.score-ok, siehe unten): grün statt grau, sobald BEIDE
        Kaestchen des zugehoerigen Kaestchenpaars (.sbox) ausgefuellt UND
@@ -620,8 +640,243 @@
     box.classList.add('kpi2');
   }
 
-  function boot() { layoutKpis(); observe(); setTimeout(update, 80); }
+  /* ------------------------------------------- Einzelspiel-Timer (App-Leiste)
+     Öffnet den kostenlosen Spiel-Timer (Spiel_Timer.html, PRODUKTPLAN §6.5)
+     mit Rückweg zu genau diesem Bogen (?from=Seite?Query, OHNE #Hash – ein
+     #share= würde sonst erneut importiert). Der Timer liest/schreibt keine
+     Turnierdaten; Ergebnisse werden weiterhin bewusst hier eingetragen.
+     Als <a> (nicht <button>), damit Druck-Button-Selektoren unverändert
+     bleiben; vor dem Drucken-Knopf eingereiht, nur am Bildschirm. */
+  function timerHref() {
+    var page = String(location.pathname || '').split('/').pop() || 'index.html';
+    return 'Spiel_Timer.html?from=' + encodeURIComponent(page + (location.search || ''));
+  }
+  /* Teamname einer Kartenseite: eingetragener Name, sonst „Team N“; bei
+     King/Queen die Spieler:innen mit „&“; sonst die Beschriftung des
+     Ergebnis-Kaestchens. */
+  function matchSideName(td, side) {
+    var t = td.querySelector('.pside-' + side + ' .t');
+    var lines = t ? t.querySelectorAll('.t-line') : [];
+    var line = lines[0];
+    if (lines.length > 1) {
+      /* King/Queen: mehrere Spieler:innen je Seite */
+      return Array.prototype.map.call(lines, function (l) { return l.textContent.trim(); }).join(' & ');
+    }
+    if (line) {
+      var nm = t.querySelector('.tnm');
+      var name = nm ? nm.textContent.replace(/^\s*\(|\)\s*$/g, '') : line.textContent;
+      return String(name).replace(/\s+/g, ' ').trim();
+    }
+    var inp = td.querySelector('input.score[data-set="1"][data-side="' + side + '"]');
+    var label = inp && inp.getAttribute('aria-label');
+    return label && label !== '\u2013' ? label.trim() : '';
+  }
+  /* Satzziele der Satzspalten (data-target aus turnier-ui.js, sonst 21) –
+     für Satzgewinn-/Seitenwechsel-Hinweise und die Ergebnisrückgabe. */
+  function matchTargets(td) {
+    var seen = {};
+    var list = [];
+    Array.prototype.forEach.call(td.querySelectorAll('input.score[data-set]'), function (inp) {
+      var n = inp.getAttribute('data-set');
+      if (seen[n]) return;
+      seen[n] = true;
+      var col = inp.closest('.sset');
+      var t = parseInt(col && col.getAttribute('data-target'), 10);
+      list.push(t > 0 ? t : 21);
+    });
+    return list;
+  }
+  function matchTimerHref(td) {
+    var a = matchSideName(td, 'a'), b = matchSideName(td, 'b');
+    if (!a || !b) return null;
+    var href = timerHref() + '&a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b);
+    var mid = td.getAttribute('data-mid');
+    var targets = matchTargets(td);
+    if (mid && targets.length) href += '&m=' + encodeURIComponent(mid) + '&t=' + targets.join(',');
+    return href;
+  }
+
+  /* ------------------------------------ Ergebnis aus dem Spiel-Timer eintragen
+     Der Timer legt beim „Ins Turnierblatt übernehmen“ BEACHL.timerResult ab
+     ({from, ref, sets:[[a,b]…], ts}). Hier wird es genau einmal in das Spiel
+     mit data-mid=ref eingetragen – wie eine Eingabe von Hand (input-Ereignis,
+     damit Bogen-Logik, Speichern und Prüfung unverändert greifen). */
+  var RESULT_KEY = 'BEACHL.timerResult';
+  var RESULT_MAX_AGE = 30 * 60000;
+  function readTimerResult() {
+    var raw = null;
+    try { raw = window.localStorage && window.localStorage.getItem(RESULT_KEY); } catch (e) { return null; }
+    if (!raw) return null;
+    var r = null;
+    try { r = JSON.parse(raw); } catch (e) { r = null; }
+    if (!r || r.v !== 1 || typeof r.ref !== 'string' || !Array.isArray(r.sets) || !r.sets.length ||
+        typeof r.ts !== 'number' || Date.now() - r.ts > RESULT_MAX_AGE || Date.now() < r.ts - 60000) {
+      clearTimerResult();
+      return null;
+    }
+    var page = String(location.pathname || '').split('/').pop() || 'index.html';
+    var from = String(r.from || '');
+    if (from !== page + (location.search || '') && from.split('?')[0] !== page) return null;
+    return r;
+  }
+  function clearTimerResult() {
+    try { if (window.localStorage) window.localStorage.removeItem(RESULT_KEY); } catch (e) { /* bleibt liegen, verfällt */ }
+  }
+  function cssEsc(v) { return String(v).replace(/["\\]/g, '\\$&'); }
+  function scoreInput(ref, setNo, side) {
+    return document.querySelector('input.score[data-mid="' + cssEsc(ref) + '"][data-set="' + setNo + '"][data-side="' + side + '"]');
+  }
+  function fire(inp, type) {
+    var ev;
+    try { ev = new Event(type, { bubbles: true }); } catch (e) {
+      ev = document.createEvent('Event');
+      ev.initEvent(type, true, true);
+    }
+    inp.dispatchEvent(ev);
+  }
+  function showTimerResultNote(td, text) {
+    var note = document.getElementById('bl-timer-result');
+    if (!note) {
+      note = document.createElement('p');
+      note.id = 'bl-timer-result';
+      note.className = 'bl-timer-result noprint';
+      note.setAttribute('role', 'status');
+      document.body.appendChild(note);
+    }
+    note.textContent = text;
+    note.hidden = false;
+    clearTimeout(showTimerResultNote.t);
+    showTimerResultNote.t = setTimeout(function () { note.hidden = true; }, 6000);
+    if (td) {
+      td.classList.add('bl-from-timer');
+      setTimeout(function () { td.classList.remove('bl-from-timer'); }, 2400);
+      try { td.scrollIntoView({ block: 'center' }); } catch (e) { td.scrollIntoView(); }
+    }
+  }
+  var timerResultDone = false;
+  function applyTimerResult() {
+    if (timerResultDone) return;
+    var r = readTimerResult();
+    if (!r) { timerResultDone = true; return; }
+    var first = scoreInput(r.ref, 1, 'a');
+    if (!first) return; /* Bogen rendert noch – beim nächsten update() erneut */
+    timerResultDone = true;
+    clearTimerResult();
+    var td = first.closest('td.match');
+    var text = r.sets.map(function (p) { return p[0] + ':' + p[1]; }).join(', ');
+    var filled = Array.prototype.some.call(td ? td.querySelectorAll('input.score') : [], function (inp) {
+      return String(inp.value || '').trim() !== '';
+    });
+    if (filled && !window.confirm(tx('enh.timerResult.replace',
+      'Für dieses Spiel ist schon ein Ergebnis eingetragen. Durch das Ergebnis aus dem Spiel-Timer ({result}) ersetzen?',
+      { result: text }))) return;
+    var ok = true;
+    r.sets.forEach(function (p, i) {
+      ['a', 'b'].forEach(function (side, k) {
+        /* Frisch suchen: das Eintragen kann Folgespalten freischalten. */
+        var inp = scoreInput(r.ref, i + 1, side);
+        var v = Math.floor(Number(p[k]));
+        if (!inp || inp.disabled || !(v >= 0 && v <= 999)) { ok = false; return; }
+        inp.removeAttribute('data-bl-auto');
+        inp.value = String(v);
+        fire(inp, 'input');
+      });
+    });
+    var cell = scoreInput(r.ref, 1, 'a');
+    td = cell ? cell.closest('td.match') : td;
+    showTimerResultNote(td, ok
+      ? tx('enh.timerResult.applied', 'Ergebnis aus dem Spiel-Timer übernommen: {result}', { result: text })
+      : tx('enh.timerResult.failed', 'Das Ergebnis aus dem Spiel-Timer ({result}) konnte nicht übernommen werden – bitte selbst eintragen.', { result: text }));
+    schedule();
+  }
+  /* ⏱ „Timer für dieses Spiel“: öffnet den Spiel-Timer mit beiden Namen
+     (?a=&b=). Nur bei spielbaren Karten (Kaestchen aktiv, kein Freilos);
+     nach eingetragenem Ergebnis unsichtbar (Platz bleibt, Layout ruhig).
+     tabindex=-1 wie beim ✓: die Tab-Reihenfolge der Kaestchen bleibt. */
+  function syncMatchTimerLink(td) {
+    var box = td.querySelector('.sset .sbox');
+    if (!box) return;
+    var first = box.querySelector('input.score');
+    var link = box.querySelector('.bl-mtimer');
+    var href = first && !first.disabled && !td.classList.contains('is-bye') ? matchTimerHref(td) : null;
+    if (!href) {
+      if (link) link.parentNode.removeChild(link);
+      return;
+    }
+    if (!link) {
+      link = document.createElement('a');
+      link.className = 'bl-mtimer noprint';
+      link.setAttribute('tabindex', '-1');
+      link.setAttribute('data-bl-match-timer', '');
+      link.innerHTML = '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg>';
+      box.insertBefore(link, box.firstChild);
+    }
+    if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+    var label = tx('enh.matchTimerAria', 'Spiel-Timer für {a} gegen {b} öffnen',
+      { a: matchSideName(td, 'a'), b: matchSideName(td, 'b') });
+    if (link.getAttribute('aria-label') !== label) {
+      link.setAttribute('aria-label', label);
+      link.setAttribute('title', label);
+    }
+  }
+  /* Zu schmale Karten (z. B. King/Queen am Handy): ⏱ ausblenden, statt die
+     Kaestchen aus der Karte zu schieben. Erst alle zeigen, dann gesammelt
+     messen (ein Layout-Durchlauf), dann ausblenden. */
+  function fitMatchTimerLinks() {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.bl-mtimer'));
+    links.forEach(function (l) { l.style.display = ''; });
+    var hide = links.filter(function (l) {
+      var td = l.closest('td.match');
+      var box = l.parentNode;
+      if (!td || !box) return false;
+      var tr = td.getBoundingClientRect();
+      if (!tr.width) return false;
+      var br = box.getBoundingClientRect();
+      return br.left < tr.left - 0.5 || br.right > tr.right + 0.5;
+    });
+    hide.forEach(function (l) { l.style.display = 'none'; });
+  }
+  window.addEventListener('resize', function () { schedule(); });
+  document.addEventListener('click', function () { schedule(); });
+
+  /* Bögen ergänzen ?id= erst nach dem Laden – Ziel bei Benutzung auffrischen. */
+  ['mousedown', 'touchstart', 'focusin', 'click'].forEach(function (type) {
+    document.addEventListener(type, function (e) {
+      var link = e.target && e.target.closest ? e.target.closest('[data-bl-match-timer]') : null;
+      var td = link && link.closest('td.match');
+      var href = td && matchTimerHref(td);
+      if (href) link.setAttribute('href', href);
+    }, type === 'touchstart' ? { passive: true, capture: true } : true);
+  });
+
+  function mountTimerLink() {
+    var actions = document.querySelector('.app-bar__actions');
+    if (!actions || actions.querySelector('.bl-timer-link')) return;
+    var link = document.createElement('a');
+    link.className = 'app-bar__btn bl-timer-link noprint';
+    link.href = timerHref();
+    link.setAttribute('aria-label', tx('enh.timerAria', 'Spiel-Timer öffnen (Turnierergebnisse bleiben unverändert)'));
+    link.setAttribute('title', tx('enh.timerAria', 'Spiel-Timer öffnen (Turnierergebnisse bleiben unverändert)'));
+    var ic = document.createElement('span');
+    ic.className = 'ic';
+    ic.setAttribute('aria-hidden', 'true');
+    ic.innerHTML = '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg>';
+    var lbl = document.createElement('span');
+    lbl.className = 'lbl';
+    lbl.textContent = tx('enh.timer', 'Timer');
+    link.appendChild(ic);
+    link.appendChild(lbl);
+    /* Bögen ergänzen ?id= erst nach dem Laden – Ziel erst bei Benutzung bilden. */
+    ['mousedown', 'touchstart', 'focus', 'click'].forEach(function (type) {
+      link.addEventListener(type, function () { link.href = timerHref(); }, type === 'touchstart' ? { passive: true } : false);
+    });
+    var printBtn = actions.querySelector('button.app-bar__btn:not(.i18n-switch)');
+    if (printBtn && printBtn.parentNode === actions) actions.insertBefore(link, printBtn);
+    else actions.appendChild(link);
+  }
+
+  function boot() { layoutKpis(); observe(); mountTimerLink(); setTimeout(update, 80); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
-  window.addEventListener('load', function () { setTimeout(update, 120); });
+  window.addEventListener('load', function () { mountTimerLink(); setTimeout(update, 120); });
 })();

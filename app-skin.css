@@ -274,7 +274,8 @@
   }
   .app-bar__btn:hover { background: rgba(255, 255, 255, .24); }
   .app-bar__btn:active { transform: scale(.95); }
-  .app-bar__btn .ic { font-size: 16px; line-height: 1; }
+  .app-bar__btn .ic { font-size: 16px; line-height: 1; display: inline-flex; align-items: center; }
+  .app-bar__btn .ic svg { display: block; width: 20px; height: 20px; flex: 0 0 auto; }
 
   /* Auf schmalen Screens: Nav-Label „Übersicht" bleibt sichtbar (klare
      Orientierung); nur die Aktions-Buttons werden auf Icons reduziert. */

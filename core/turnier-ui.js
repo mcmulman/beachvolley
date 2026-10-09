@@ -143,7 +143,7 @@
   }
 
   /* ========================================================= 2. SPIEL-KARTE */
-  function setColumnHtml(matchId, setNo, label, placeholder, names) {
+  function setColumnHtml(matchId, setNo, label, placeholder, names, target) {
     const ph = placeholder ? ' placeholder="' + esc(placeholder) + '"' : '';
     /* aria-label mit dem Teamnamen – sonst liest der Screenreader nur "Feld". */
     const inp = side => {
@@ -160,8 +160,9 @@
        Tab muss immer direkt vom linken ins rechte Kaestchen und von dort ins
        naechste Spiel springen, ohne hier "haengenzubleiben". */
     const okBtn = '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
-      + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '">✓</button>';
-    return '<span class="sset" data-set="' + setNo + '">'
+      + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
+    /* data-target: Satzziel für den Spiel-Timer (Satzgewinn-/Seitenwechsel). */
+    return '<span class="sset" data-set="' + setNo + '"' + (target > 0 ? ' data-target="' + target + '"' : '') + '>'
       + '<span class="slbl">' + esc(label) + '</span>'
       + '<span class="sbox">' + inp('a') + '<span class="vs">:</span>' + inp('b') + okBtn + '</span>'
       + '</span>';
@@ -175,10 +176,11 @@
     const isBye = (m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye');
 
     const inputNames = { a: sideLabel(m.a, ta, ctx), b: sideLabel(m.b, tb, ctx) };
+    const tgt = n => TC.targetForSet(ctx.setMode, n);
     let sets = setColumnHtml(m.id, 1, setCnt <= 1 ? tx('ui.score.points', 'Punkte')
-      : tx('ui.score.setN', 'Satz {n}', { n: 1 }), null, inputNames);
-    if (setCnt >= 2) sets += setColumnHtml(m.id, 2, tx('ui.score.setN', 'Satz {n}', { n: 2 }), null, inputNames);
-    if (deciding) sets += setColumnHtml(m.id, 3, tx('ui.score.decider', 'Entsch.'), 'TB', inputNames);
+      : tx('ui.score.setN', 'Satz {n}', { n: 1 }), null, inputNames, tgt(1));
+    if (setCnt >= 2) sets += setColumnHtml(m.id, 2, tx('ui.score.setN', 'Satz {n}', { n: 2 }), null, inputNames, tgt(2));
+    if (deciding) sets += setColumnHtml(m.id, 3, tx('ui.score.decider', 'Entsch.'), 'TB', inputNames, tgt(3));
 
     /* t-a/t-b richten die Namen nach aussen aus, .t-line haelt "Team 12"
        einzeilig – beides wie im Bogen "Alle gegen Alle".                     */
@@ -280,7 +282,7 @@
         + ' data-round-confirm="' + s.round + '"'
         + ' data-round-confirm-slot="' + s.slot + '"'
         + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Aktuelles Feld validieren und zum nächsten Feld springen')) + '"'
-        + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '">✓</button>';
+        + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
       const meta = '<span class="rhead-meta">'
         + '<span class="rlabel">' + esc(title) + '</span>'
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
@@ -500,7 +502,7 @@
         const hasAny = row.hasPlace || row.dPts || row.dBd;
         html += '<td class="mstd-actcol noprint">' + (hasAny
           ? '<button type="button" class="mstd-reset-row" data-team="' + r.team + '" title="'
-            + esc(tx('ui.manual.resetRowTitle', 'Korrektur für dieses Team zurücksetzen')) + '">↺</button>'
+            + esc(tx('ui.manual.resetRowTitle', 'Korrektur für dieses Team zurücksetzen')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
           : '') + '</td>';
       }
       html += '</tr>';
@@ -585,7 +587,7 @@
           + '<input type="text" class="mstd-in mstd-text" data-field="source" value="' + esc(row.source) + '">'
           + (p.team != null && (row.hasPlace || row.hasSource)
               ? ' <button type="button" class="mstd-reset-row" data-team="' + p.team + '" title="'
-                + esc(tx('ui.manual.resetRow', 'Zurücksetzen')) + '">↺</button>'
+                + esc(tx('ui.manual.resetRow', 'Zurücksetzen')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
               : '')
           + '</td>';
       } else {
@@ -1019,14 +1021,22 @@
      scrollt man waehrend des Turniers minutenlang.                           */
   function jumpBarHtml(targets) {
     const t = targets || {};
-    const btn = (id, label) => id
-      ? '<button type="button" class="nbtn" data-jump="' + esc(id) + '">' + esc(label) + '</button>'
+    const ico = body => '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + body + '</svg>';
+    const icons = {
+      setup: '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/>',
+      guide: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+      schedule: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+      standings: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+      print: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'
+    };
+    const btn = (id, key, label) => id
+      ? '<button type="button" class="nbtn" data-jump="' + esc(id) + '">' + ico(icons[key]) + '<span>' + esc(label) + '</span></button>'
       : '';
-    return btn(t.setup || 'configSection', tx('ui.jump.setup', '⚙️ Setup'))
-      + btn(t.guide || 'guideContainer', tx('ui.jump.guide', '📖 Anleitung'))
-      + btn(t.schedule || 'scheduleSection', tx('ui.jump.schedule', '📋 Spielplan'))
-      + btn(t.standings || 'standingsSection', tx('ui.jump.standings', '🏁 Tabelle'))
-      + '<button type="button" class="nbtn" data-jump-print>' + esc(tx('ui.jump.print', '🖨️ Drucken')) + '</button>';
+    return btn(t.setup || 'configSection', 'setup', tx('ui.jump.setup', 'Setup'))
+      + btn(t.guide || 'guideContainer', 'guide', tx('ui.jump.guide', 'Anleitung'))
+      + btn(t.schedule || 'scheduleSection', 'schedule', tx('ui.jump.schedule', 'Spielplan'))
+      + btn(t.standings || 'standingsSection', 'standings', tx('ui.jump.standings', 'Tabelle'))
+      + '<button type="button" class="nbtn" data-jump-print>' + ico(icons.print) + '<span>' + esc(tx('ui.jump.print', 'Drucken')) + '</span></button>';
   }
 
   /* Ein delegierter Listener genuegt fuer die ganze Leiste. */
@@ -1378,7 +1388,7 @@
     (courtsData || []).forEach(cd => {
       const crownCls = cd.level === 1 ? ' is-king' : '';
       html += '<div class="kqcourt' + crownCls + '" data-kq-court="' + cd.level + '">'
-        + '<div class="kqcourt-head">' + (cd.level === 1 ? '👑 ' : '') + esc(term(cd.label)) + '</div>'
+        + '<div class="kqcourt-head">' + (cd.level === 1 ? '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 20h20"/><path d="M4 17 2 6l5.5 5L12 4l4.5 7L22 6l-2 11z"/></svg> ' : '') + esc(term(cd.label)) + '</div>'
         + '<div class="kqcourt-matches">';
       (cd.matches || []).forEach(m => {
         html += '<div class="kqmatch sbox" data-kq-match="' + esc(m.id) + '">'
@@ -1394,7 +1404,7 @@
              auch hier das Kaestchenpaar finden, ohne KQ-Sonderfall im JS.
              tabindex="-1": nicht Teil der Tab-Reihenfolge (siehe oben). */
           + '<button type="button" class="score-ok noprint" data-score-ok tabindex="-1"'
-          + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '">✓</button>'
+          + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>'
           + '</div>';
       });
       if (cd.bye != null) {
