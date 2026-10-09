@@ -76,65 +76,72 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
 .sched tr.rhead .rtime { font-weight:700; font-size:12px; color:#1f4e79; }
 .sched tr.rhead .rmode { font-size:11.5px; color:#444; }
 .sched tr.rhead .rbye { font-size:11.5px; color:#7a5a00; }
+/* Aktionen rechts im Rundenkopf: [‹|›] Runde zurueck/weiter + (✓) abschliessen.
+   Ohne flex-gap (Safari < 14.1, alte iPads) - Abstaende per margin. */
 .sched tr.rhead .rhead-actions {
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  margin-left:8px;
-  flex-shrink:0;
+  display:-webkit-box; display:-webkit-flex; display:flex;
+  -webkit-box-align:center; -webkit-align-items:center; align-items:center;
+  -webkit-flex-shrink:0; flex-shrink:0;
+  margin-left:10px;
 }
-.sched tr.rhead .rhead-actions .rnext { display:none; }
-.sched tr.rhead .rhead-actions .rconfirm { order: 0; }
 .sched tr.rhead .rhead-meta > span { display:inline-flex; align-items:center; margin:0; }
 .sched tr.rhead .rhead-meta > span + span::before { content:"\00b7"; color:#9bb0c8; margin:0 7px; font-weight:400; }
 .sched tr.rhead .rhead-meta > span:empty { display:none; }
-.sched tr.rhead .rhead-meta .rnext {
-  display: inline-flex;
-  margin-left: 0;
-  padding: 2px 8px;
-  font-size: 11px;
-  line-height: 1.2;
-  border-radius: 999px;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  background: #1f4e79;
-  border-color: #1f4e79;
-  color: #fff;
+.sched tr.rhead .rlabel, .sched tr.rhead .rtime { white-space:nowrap; }
+.sched tr.rhead .rnav-group {
+  display:-webkit-box; display:-webkit-flex; display:flex;
+  margin-right:8px;
+  border:1px solid #b9cbe0;
+  border-radius:999px;
+  background:#fff;
+  overflow:hidden;
 }
-.sched tr.rhead .rhead-meta .rnext .chev {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-top: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  transform: rotate(45deg);
-  flex: 0 0 auto;
+.sched tr.rhead .rnav {
+  display:-webkit-inline-box; display:-webkit-inline-flex; display:inline-flex;
+  -webkit-box-align:center; -webkit-align-items:center; align-items:center;
+  -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center;
+  width:44px; height:40px; min-width:44px; min-height:40px;
+  margin:0; padding:0;
+  border:0; border-radius:0;
+  background:#fff;
+  color:#1f4e79;
+  box-shadow:none;
 }
+.sched tr.rhead .rnav-count {
+  display:-webkit-inline-box; display:-webkit-inline-flex; display:inline-flex;
+  -webkit-box-align:center; -webkit-align-items:center; align-items:center;
+  -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center;
+  min-width:38px; padding:0 4px;
+  border-left:1px solid #d6e1ef; border-right:1px solid #d6e1ef;
+  font-size:13px; font-weight:700; color:#1f4e79; white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.sched tr.rhead .rnav:hover { background:#e8f1fb; }
+.sched tr.rhead .rnav:active { background:#d8e8f8; -webkit-transform:none; transform:none; }
+.sched tr.rhead .rnav[disabled] { color:#b9c7d6; background:#fff; cursor:default; }
+.sched tr.rhead .rnav svg { display:block; width:18px; height:18px; pointer-events:none; }
 .sched tr.rhead .rhead-content {
-  display:flex;
-  align-items:center;
+  display:-webkit-box; display:-webkit-flex; display:flex;
+  -webkit-box-align:center; -webkit-align-items:center; align-items:center;
   width:100%;
   min-width:0;
 }
 .sched tr.rhead .rhead-meta {
-  display:flex;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:8px;
+  display:-webkit-box; display:-webkit-flex; display:flex;
+  -webkit-box-align:center; -webkit-align-items:center; align-items:center;
+  -webkit-flex-wrap:wrap; flex-wrap:wrap;
   min-width:0;
-  flex:1 1 auto;
+  -webkit-box-flex:1; -webkit-flex:1 1 0px; flex:1 1 0px;
 }
 .sched tr.rhead .rconfirm {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  margin-left: 0;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  margin: 0;
   padding: 0;
   border-radius: 50% !important;
   box-sizing: border-box;
@@ -147,6 +154,7 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
   box-shadow: none;
   vertical-align: middle;
 }
+.sched tr.rhead .rconfirm svg { width:18px; height:18px; }
 /* Feldnamen-Zeile: steht je Runde direkt ueber den Karten (nicht im thead), damit im
    Bogen "Alle gegen Alle" jede Runde ihre eigene Beschriftung behaelt. */
 .sched tr.fhead > th { font-size:12px; }
@@ -488,6 +496,20 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     align-self: center;
     opacity: .85;
   }
+/* "Runde 2 von 7" steht schon in der Auswahl und im Rundenkopf (2/7). Bis
+   Tablet-Breite (iPad hochkant) wuerde der Text eine eigene Zeile erzwingen und
+   die sticky Leiste unnoetig hoch machen - dort nur fuer Screenreader (aria-live). */
+@media screen and (max-width: 900px) {
+  .schedule-roundbar .state {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
 
 
 @media screen and (min-width: 641px) {
@@ -793,13 +815,14 @@ input.score.invalid {
         padding: 7px 10px;
       }
 .sched > tbody > tr.rhead:first-child > td.rhead-cell { border-top-width: 0; }
-.sched tr.rhead .rhead-content > span {
+.sched tr.rhead .rhead-meta > span {
         display: inline-flex;
         align-items: center;
         vertical-align: middle;
         margin: 2px 6px 2px 0;
       }
-.sched tr.rhead .rhead-content > span + span::before { content: none; }
+.sched tr.rhead .rhead-content > span + span::before,
+.sched tr.rhead .rhead-meta > span + span::before { content: none; }
 .sched tr.rhead .rlabel {
         padding: 3px 10px;
         border-radius: 999px;
@@ -832,7 +855,7 @@ input.score.invalid {
 
 @media print {
   .sched tr.rhead .rconfirm,
-  .sched tr.rhead .rnext {
+  .sched tr.rhead .rhead-actions {
    display: none !important;
   }
 }
@@ -842,10 +865,16 @@ input.score.invalid {
    Auf Mobile daher auf 16px anheben, um den störenden Auto-Zoom beim
    Ergebnis-Eintragen zwischen den Spielen zu verhindern. */
 input.score { font-size:16px; }
+/* Mobil zweizeilig und kompakt:  [‹] [Runde-Auswahl] [›]
+                                   [   Alle Runden    ]
+   Explizite Grid-Platzierung (Safari >= 10.1), grid-gap als Alias fuer alte
+   Safari-Versionen; Pfeile als 44px-Kreise, Beschriftung nur fuer Screenreader. */
 .schedule-roundbar {
+        display: -ms-grid;
         display: grid;
-        grid-template-columns: 1fr auto auto;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
         align-items: center;
+        grid-gap: 8px;
         gap: 8px;
         position: -webkit-sticky;
         position: sticky;
@@ -860,24 +889,56 @@ input.score { font-size:16px; }
         box-shadow: 0 6px 18px rgba(20, 50, 90, .16);
       }
 .schedule-roundbar label {
+        grid-column: 2;
+        grid-row: 1;
         min-width: 0;
+        margin: 0 !important;
+        font-size: 0;
+      }
+.schedule-roundbar label > select {
+        margin: 0 !important;
       }
 .schedule-roundbar select {
         width: 100%;
+        min-width: 0;
+        font-size: 16px;
+        text-align: center;
+        text-align-last: center;
       }
+.schedule-roundbar > * { margin: 0 !important; }
 .schedule-roundbar .nbtn-round {
         min-height: 44px;
         padding: 8px 14px;
         font-size: 13px;
         white-space: nowrap;
       }
+.schedule-roundbar .nbtn-round-prev,
+.schedule-roundbar .nbtn-round-next {
+        grid-row: 1;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        padding: 0;
+      }
+.schedule-roundbar .nbtn-round-prev { grid-column: 1; }
+.schedule-roundbar .nbtn-round-next { grid-column: 3; }
+.schedule-roundbar .nbtn-round-prev > .chev,
+.schedule-roundbar .nbtn-round-next > .chev { margin: 0 !important; }
+.schedule-roundbar .nbtn-round-prev > .chev { margin-left: 3px !important; }
+.schedule-roundbar .nbtn-round-next > .chev { margin-right: 3px !important; }
+.schedule-roundbar .nbtn-round-txt {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
 .schedule-roundbar .nbtn-round-all {
-        grid-column: 1 / -1;
+        grid-column: 1 / 4;
+        grid-row: 2;
       }
-.schedule-roundbar .state {
-        grid-column: 1 / -1;
-        text-align: center;
-      }
+
 .mobile-schedule-title {
         display: block;
         font-weight: 800;

@@ -271,37 +271,53 @@
   function scheduleBodyHtml(slots, ctx) {
     const nf = ctx.fields;
     let html = '';
+    /* ctx.allRounds: alle Runden, wenn der Plan slotweise gebaut wird (sonst aus slots).
+       ctx.roundNav === false: keine Pfeile (Abschnitt ohne Runden-Filter). */
+    const roundList = ctx.allRounds ? ctx.allRounds.slice() : [];
+    if (!ctx.allRounds) slots.forEach(s => { if (roundList.indexOf(s.round) < 0) roundList.push(s.round); });
+    const withNav = ctx.roundNav !== false;
+    const chevron = pts => '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="' + pts + '"/></svg>';
+    const navBtn = (dir, round, disabled) => {
+      const label = dir === 'prev'
+        ? tx('ui.round.prevAria', 'Zur vorherigen Runde springen')
+        : tx('ui.round.nextAria', 'Zur nächsten Runde springen');
+      return '<button type="button" class="nbtn rnav r' + dir + ' noprint"'
+        + ' data-round-' + dir + '-from="' + round + '"'
+        + (disabled ? ' disabled' : '')
+        + ' aria-label="' + esc(label) + '" title="' + esc(label) + '">'
+        + chevron(dir === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6') + '</button>';
+    };
     slots.forEach(s => {
       const title = slotTitle(s);
-      const nextBtn = '<button type="button" class="nbtn rnext noprint"'
-        + ' data-round-next-from="' + s.round + '"'
-        + ' data-round-step="1"'
-        + ' aria-label="' + esc(tx('ui.round.nextAria', 'Zur nächsten Runde springen')) + '">'
-        + '<span class="chev chev-right" aria-hidden="true"></span> ' + esc(tx('ui.round.word', 'Runde')) + '</button>';
+      const ri = roundList.indexOf(s.round);
       const confirmBtn = '<button type="button" class="nbtn rconfirm noprint"'
         + ' data-round-confirm="' + s.round + '"'
         + ' data-round-confirm-slot="' + s.slot + '"'
         + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Aktuelles Feld validieren und zum nächsten Feld springen')) + '"'
         + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
-      const meta = '<span class="rhead-meta">'
+      const byes = (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
+      let meta = '<span class="rhead-meta">'
         + '<span class="rlabel">' + esc(title) + '</span>'
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
         + (s.startMin != null ? esc(fmtTime(s.startMin) + '–' + fmtTime(s.endMin)) : '')
         + '</span>'
-        + '<span class="rmode">' + esc(ctx.modeLabel || '') + '</span>'
-        + nextBtn;
-      let head = '<td class="rhead-cell" colspan="' + nf + '">'
-        + '<span class="rhead-content">'
-        + meta
-        + '</span>'
-        + '<span class="rhead-actions">' + confirmBtn + '</span>';
-      const byes = (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
+        + '<span class="rmode">' + esc(ctx.modeLabel || '') + '</span>';
       if (byes.length) {
-        head += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
+        meta += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
           + byes.map(t => '<span data-team="' + t + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
           + '</span>';
       }
-      head += '</span></td>';
+      meta += '</span>';
+      const head = '<td class="rhead-cell" colspan="' + nf + '">'
+        + '<span class="rhead-content">'
+        + meta
+        + '<span class="rhead-actions">'
+        + (withNav ? '<span class="rnav-group">' + navBtn('prev', s.round, ri <= 0)
+          + '<span class="rnav-count">' + (ri + 1) + '/' + roundList.length + '</span>'
+          + navBtn('next', s.round, ri >= roundList.length - 1) + '</span>' : '')
+        + confirmBtn
+        + '</span>'
+        + '</span></td>';
       html += '<tr class="rgap" data-round="' + s.round + '" data-slot="' + s.slot + '" aria-hidden="true">'
         + '<td class="rgap-cell" colspan="' + nf + '"></td></tr>';
       html += '<tr class="rhead" data-round="' + s.round + '" data-slot="' + s.slot + '">' + head + '</tr>';
@@ -882,10 +898,10 @@
     return '<label>' + esc(tx('ui.round.word', 'Runde')) + '<select data-round-select>' + opts + '</select></label>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-prev" data-round-step="-1"'
       + (atFirst ? ' disabled' : '') + ' aria-label="' + esc(tx('ui.roundbar.prevAria', 'Vorherige Runde')) + '">'
-      + '<span class="chev chev-left" aria-hidden="true"></span> ' + esc(tx('ui.roundbar.prev', 'Zurück')) + '</button>'
+      + '<span class="chev chev-left" aria-hidden="true"></span> <span class="nbtn-round-txt">' + esc(tx('ui.roundbar.prev', 'Zurück')) + '</span></button>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-next" data-round-step="1"'
       + (atLast ? ' disabled' : '') + ' aria-label="' + esc(tx('ui.roundbar.nextAria', 'Nächste Runde')) + '">'
-      + esc(tx('ui.roundbar.next', 'Weiter')) + ' <span class="chev chev-right" aria-hidden="true"></span></button>'
+      + '<span class="nbtn-round-txt">' + esc(tx('ui.roundbar.next', 'Weiter')) + '</span> <span class="chev chev-right" aria-hidden="true"></span></button>'
       + '<button type="button" class="nbtn nbtn-round nbtn-round-all'
         + (allActive ? ' roundall-active' : '') + '" data-round-all'
         + ' aria-pressed="' + allActive + '"'
@@ -933,14 +949,18 @@
       if (String(active) !== 'all') return 'all';
       return String(lastFilled != null ? lastFilled : 1);
     }
-    const fromBtn = el.closest ? el.closest('[data-round-next-from]') : null;
-    if (fromBtn && (fromBtn.hasAttribute ? fromBtn.hasAttribute('data-round-next-from') : false)) {
+    /* Pfeile im Rundenkopf: relativ zur Runde, in der sie stehen – auch in "Alle Runden". */
+    const fromBtn = el.closest ? el.closest('[data-round-next-from],[data-round-prev-from]') : null;
+    const isPrev = !!(fromBtn && fromBtn.hasAttribute && fromBtn.hasAttribute('data-round-prev-from'));
+    const isNext = !!(fromBtn && fromBtn.hasAttribute && fromBtn.hasAttribute('data-round-next-from'));
+    if (isPrev || isNext) {
+      if (fromBtn.disabled) return null;
       const roundsFrom = [];
       slots.forEach(s => { if (roundsFrom.indexOf(s.round) < 0) roundsFrom.push(s.round); });
-      const from = parseInt(fromBtn.getAttribute('data-round-next-from'), 10);
-      const iFrom = roundsFrom.indexOf(from);
-      if (iFrom < 0 || iFrom >= roundsFrom.length - 1) return null;
-      return String(roundsFrom[iFrom + 1]);
+      const from = parseInt(fromBtn.getAttribute(isPrev ? 'data-round-prev-from' : 'data-round-next-from'), 10);
+      const iTo = roundsFrom.indexOf(from) + (isPrev ? -1 : 1);
+      if (roundsFrom.indexOf(from) < 0 || iTo < 0 || iTo >= roundsFrom.length) return null;
+      return String(roundsFrom[iTo]);
     }
     const btn = el.closest ? el.closest('[data-round-step]') : null;
     if (!btn || btn.disabled) return null;

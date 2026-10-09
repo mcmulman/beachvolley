@@ -61,6 +61,7 @@
     'ui.round.n': 'Runde {n}',
     'ui.round.part': ' · Teil {part}/{of}',
     'ui.round.word': 'Runde',
+    'ui.round.prevAria': 'Zur vorherigen Runde springen',
     'ui.round.nextAria': 'Zur nächsten Runde springen',
     'ui.round.confirmAria': 'Aktuelles Feld validieren und zum nächsten Feld springen',
     'ui.round.confirmTitle': 'Aktuelles Feld validieren und weiter',

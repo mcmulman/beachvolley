@@ -550,8 +550,9 @@
     /* Jeder Slot wird mit dem Satzmodus SEINER Runde gebaut – eine bereits
        eingetragene Runde behält ihre Kästchen, auch wenn oben ein anderer
        Modus gewählt wird. */
+    const allRounds = B.slots.map(s => s.round).filter((r, i, a) => a.indexOf(r) === i);
     $('schedBody').innerHTML = B.slots
-      .map(s => TUI.scheduleBodyHtml([s], ctxFor(B.modeOfRound(s.round)))).join('');
+      .map(s => TUI.scheduleBodyHtml([s], Object.assign(ctxFor(B.modeOfRound(s.round)), { allRounds }))).join('');
     $('roundbar').innerHTML = TUI.roundBarHtml(B.slots, roundFilter);
     buildTeamsTable();
     // ptsLabel: Wertung je Sieg aus dem Satzmodus ableiten

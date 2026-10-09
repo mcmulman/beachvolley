@@ -60,6 +60,7 @@
     'ui.round.n': 'Round {n}',
     'ui.round.part': ' · part {part}/{of}',
     'ui.round.word': 'Round',
+    'ui.round.prevAria': 'Jump to the previous round',
     'ui.round.nextAria': 'Jump to the next round',
     'ui.round.confirmAria': 'Validate the current court and jump to the next court',
     'ui.round.confirmTitle': 'Validate the current court and continue',

@@ -469,7 +469,7 @@
     const cf = ctxFor(B.finalSetMode);
     if(B.finSlots.length){
       $('finalSection').hidden = false;
-      $('schedFinBody').innerHTML = TUI.scheduleBodyHtml(B.finSlots, cf);
+      $('schedFinBody').innerHTML = TUI.scheduleBodyHtml(B.finSlots, Object.assign(cf, { roundNav: false }));
       $('capFin').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
       $('mobileFinTitle').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
     } else {
@@ -1059,6 +1059,7 @@
     };
     $('roundbarGrp').addEventListener('click', onRoundNav);
     $('roundbarGrp').addEventListener('change', onRoundNav);
+    $('schedGrpBody').addEventListener('click', onRoundNav);
     TUI.wireJumpBar($('jumpbar'));
 
     // Score-Eingabe (beide Spielpläne)
