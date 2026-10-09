@@ -311,14 +311,29 @@
         '<button type="button" class="tnative-cancel" data-act="cancel">' + escapeHtml(tx('native.print.cancel', 'Abbrechen')) + '</button>' +
         '</div>';
       let done = false;
+      /* Fokusfuehrung: Tab bleibt im Dialog, Hintergrund ist fuer
+         Screenreader stumm, danach Fokus zurueck zum Druck-Knopf. */
+      const back = doc.activeElement;
+      const muted = [];
       function finish(choice) {
         if (done) return;
         done = true;
         doc.removeEventListener('keydown', onKey);
         closeChooser();
+        muted.forEach(function (n) { n.removeAttribute('aria-hidden'); });
+        if (back && back.focus && doc.documentElement.contains(back)) {
+          try { back.focus(); } catch (err) { }
+        }
         resolve(choice);
       }
-      function onKey(e) { if (e.key === 'Escape') finish(null); }
+      function onKey(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') { finish(null); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.prototype.slice.call(el.querySelectorAll('button'));
+        const i = f.indexOf(doc.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+      }
       el.addEventListener('click', function (e) {
         if (e.target === el) { finish(null); return; }
         const btn = e.target.closest ? e.target.closest('[data-act]') : null;
@@ -328,6 +343,11 @@
       });
       doc.addEventListener('keydown', onKey);
       doc.body.appendChild(el);
+      Array.prototype.forEach.call(doc.body.children, function (n) {
+        if (n === el || n.tagName === 'SCRIPT' || n.tagName === 'STYLE' || n.hasAttribute('aria-hidden')) return;
+        n.setAttribute('aria-hidden', 'true');
+        muted.push(n);
+      });
       const first = el.querySelector('.tnative-opt');
       if (first && first.focus) first.focus();
     });

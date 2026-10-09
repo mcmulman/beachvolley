@@ -601,4 +601,37 @@
 
 /* Inline-SVG-Icons in Knoepfen und Kopfzeilen (siehe auch app-skin.css). */
 .score-ok svg, .rconfirm svg, .bl-rdone svg, .mstd-reset-row svg { display:block; width:14px; height:14px; pointer-events:none; }
+
+/* Barrierefreiheit/Bedienung (nur Bildschirm; app-skin.css/spielplan.css sind
+   tabu, daher hier mit hoeherer Spezifitaet). */
+/* [hidden] muss gewinnen: .nbtn/.nactions setzen display:flex und zeigten
+   sonst ausgeblendete Knoepfe (z. B. „Startrunde auslosen“ im Jeder-gegen-
+   Jeden-Modus, „Namen zurücksetzen“ bei King & Queen) samt Tab-Stopp an. */
+.nbtn[hidden], .nactions[hidden] { display: none !important; }
+@media screen {
+  /* Fokus nicht unter der klebenden App-Leiste verstecken. */
+  html { scroll-padding-top: 72px; }
+  /* Textkontrast >= 4,5:1 (WCAG 1.4.3) bei kleinen Hinweisen. */
+  html body .sched .rtime, html body .sched .rnd .rtime { color: #1a5f91 !important; }
+  html body .vs { color: #66768c; }
+  html body .rank-badge.rank-none { color: #5b6270; }
+}
+/* Touch-Ziele >= 44 x 44 px in der App-Leiste ohne sichtbare Vergroesserung
+   (Leistenhoehe bleibt 56 px, siehe i18n-switch in turnier-i18n.js):
+   unsichtbare, zentrierte Trefferflaeche. Kein inset (Safari 12). */
+@media screen {
+  html body .app-bar__back, html body .app-bar__btn { position: relative; }
+  html body .app-bar__back::after, html body .app-bar__btn::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 100%; height: 100%; min-width: 44px; min-height: 44px;
+    -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+  }
+}
+/* ✓/⏱ an Spielkarten auch auf Tablets mit Fingerbedienung so gross wie am
+   Handy (32 px); Maus-Geraete behalten 22 px. */
+@media screen and (pointer: coarse) and (min-width: 641px) {
+  html body .score-ok,
+  html body .bl-mtimer { width: 32px; height: 32px; }
+  html body .bl-mtimer svg { width: 17px; height: 17px; }
+}
 .bl-ic--inl, .kqcourt-head .bl-ic { width:16px; height:16px; vertical-align:-3px; }

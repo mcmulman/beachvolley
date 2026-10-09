@@ -228,8 +228,10 @@
   /* Hinweise nach Beach-Regeln: Satzgewinn vor Seitenwechsel. */
   function renderNotice() {
     var winner = TM.setWinner(state);
-    el.setWonTitle.textContent = winner
-      ? tx('timer.notice.setWon', 'Satzgewinn {name} – Satz beenden', { name: sideName(winner) }) : '';
+    el.setWonTitle.textContent = !winner ? ''
+      : TM.decidingWinner(state)
+        ? tx('timer.notice.matchWon', 'Spielgewinn {name} – Satz beenden', { name: sideName(winner) })
+        : tx('timer.notice.setWon', 'Satzgewinn {name} – Satz beenden', { name: sideName(winner) });
     el.endSet.classList.toggle('is-ready', !!winner);
   }
   /* Seitenwechsel-Rhythmus: Einstellung und Popup teilen sich denselben Wert. */
@@ -260,6 +262,102 @@
     announce(every
       ? tx('timer.switch.every', 'Alle {n} Punkte', { n: every })
       : tx('timer.switch.off', 'Aus'));
+  }
+
+  /* ------------------------------------------------------- Spielregeln
+     Einstellungen (sofort wirksam) und Startdialog (Entwurf, erst mit
+     „Fertig“) nutzen dieselben Auswahlfelder: data-rule bzw.
+     data-setup-rule = target | wins | decider | twoPoint. */
+  function ruleKind(sel) { return sel.getAttribute('data-rule') || sel.getAttribute('data-setup-rule'); }
+  function ruleValues(kind, current) {
+    if (kind === 'twoPoint') return ['yes', 'no'];
+    if (kind === 'wins') return TM.RULE_WINS.map(String);
+    var list = TM.RULE_TARGETS.slice();
+    /* Ziel aus dem Bogen außerhalb der Auswahl: trotzdem anzeigen. */
+    if (list.indexOf(current) < 0) list.push(current);
+    list.sort(function (x, y) { return x - y; });
+    return list.map(String);
+  }
+  function ruleValue(kind, info) {
+    if (kind === 'twoPoint') return info.twoPoint ? 'yes' : 'no';
+    return String(info[kind]);
+  }
+  function ruleOptionText(kind, v) {
+    if (kind === 'twoPoint') return v === 'yes'
+      ? tx('timer.rules.lead2', '2 Punkte Vorsprung') : tx('timer.rules.lead1', '1 Punkt Vorsprung');
+    var n = parseInt(v, 10);
+    if (kind === 'wins') return n === 1 ? tx('timer.rules.wins1', '1 Satz')
+      : tx('timer.rules.winsN', '{n} Gewinnsätze', { n: n });
+    return tx('timer.rules.points', '{n} Punkte', { n: n });
+  }
+  function rulesText(info) {
+    var parts = [info.wins === 1 ? tx('timer.rules.wins1', '1 Satz')
+      : tx('timer.rules.winsN', '{n} Gewinnsätze', { n: info.wins }),
+      tx('timer.rules.to', 'bis {n}', { n: info.target })];
+    if (info.wins > 1 && info.decider !== info.target) {
+      parts.push(tx('timer.rules.deciderTo', 'Entscheidungssatz bis {n}', { n: info.decider }));
+    }
+    parts.push(info.twoPoint ? tx('timer.rules.lead2', '2 Punkte Vorsprung') : tx('timer.rules.lead1', '1 Punkt Vorsprung'));
+    return parts.join(' · ');
+  }
+  function renderRuleSelects(list, info, locked) {
+    list.forEach(function (sel) {
+      var kind = ruleKind(sel);
+      var values = ruleValues(kind, info[kind]);
+      if (sel.getAttribute('data-opts') !== values.join(',')) {
+        sel.innerHTML = '';
+        values.forEach(function (v) {
+          var opt = doc.createElement('option');
+          opt.value = v;
+          sel.appendChild(opt);
+        });
+        sel.setAttribute('data-opts', values.join(','));
+      }
+      values.forEach(function (v, i) { sel.options[i].textContent = ruleOptionText(kind, v); });
+      var value = ruleValue(kind, info);
+      if (sel.value !== value) sel.value = value;
+      sel.disabled = !!locked;
+      /* Entscheidungssatz nur bei mehr als einem Satz. */
+      if (kind === 'decider') sel.parentNode.hidden = info.wins === 1;
+    });
+  }
+  function rulePatch(sel) {
+    var kind = ruleKind(sel);
+    var patch = {};
+    patch[kind] = kind === 'twoPoint' ? sel.value === 'yes' : parseInt(sel.value, 10);
+    return patch;
+  }
+  function renderRules() {
+    var info = TM.ruleInfo(state);
+    renderRuleSelects(el.ruleSelects, info, info.fromMatch);
+    el.rulesNote.hidden = !info.fromMatch;
+    el.rulesSummary.textContent = rulesText(info);
+  }
+  function onRuleChange(e) {
+    if (state.match) { renderRules(); return; }
+    if (commit(TM.setRules(state, rulePatch(e.target)))) {
+      announce(tx('timer.announce.rules', 'Spielregeln: {rules}', { rules: rulesText(TM.ruleInfo(state)) }));
+    }
+  }
+  /* Auf-/Zuklappen (Einstellungen und Startdialog). */
+  function wireDisclosure(btn, panel) {
+    btn.addEventListener('click', function () {
+      var open = panel.hidden;
+      panel.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  function setSettingsOpen(open) {
+    el.settings.hidden = !open;
+    el.root.classList.toggle('has-settings', open);
+    el.settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      el.settings.scrollIntoView({ block: 'nearest' });
+      el.switchSelects[0].focus();
+    } else {
+      hideResetConfirm(false);
+      el.settingsToggle.focus();
+    }
   }
 
   /* ------------------------------------------------------------- Popups
@@ -485,6 +583,7 @@
     renderNotice();
     renderTransfer();
     renderSwitchSelects();
+    renderRules();
     el.hint.hidden = !returnTarget || !!state.match;
     el.undo.disabled = !TM.canUndo(state);
     el.endSet.disabled = !TM.canEndSet(state);
@@ -565,7 +664,9 @@
       beep(660, 0, 0.18);
       beep(990, 0.2, 0.3);
       haptic('notice');
-      announce(scoreSentence() + '. ' + tx('timer.announce.setWon', 'Satzgewinn für {name}', { name: sideName(winner) }));
+      announce(scoreSentence() + '. ' + (TM.decidingWinner(state)
+        ? tx('timer.announce.matchWon', 'Spielgewinn für {name}', { name: sideName(winner) })
+        : tx('timer.announce.setWon', 'Satzgewinn für {name}', { name: sideName(winner) })));
       openModal(el.setWonModal, el.setWonEnd, function () { closeModal(true); });
     } else if (freq === 880 && TM.isSideSwitch(state) && !wasSwitch) {
       beep(freq);
@@ -618,13 +719,18 @@
     var before = state.score;
     var winner = before.a > before.b ? 'a' : 'b';
     var name = sideName(winner);
+    var hadWinner = !!TM.matchWinner(state);
     if (!commit(TM.endSet(state))) return;
     flash(winner);
     beep(660, 0, 0.18);
     beep(880, 0.2, 0.25);
     haptic('light');
-    announce(tx('timer.announce.endSet', 'Satz an {name} ({a} : {b}). Sätze {sa} : {sb}',
-      { name: name, a: before.a, b: before.b, sa: state.sets.a, sb: state.sets.b }));
+    var text = tx('timer.announce.endSet', 'Satz an {name} ({a} : {b}). Sätze {sa} : {sb}',
+      { name: name, a: before.a, b: before.b, sa: state.sets.a, sb: state.sets.b });
+    if (!hadWinner && TM.matchWinner(state) === winner) {
+      text += '. ' + tx('timer.announce.matchWon', 'Spielgewinn für {name}', { name: name });
+    }
+    announce(text);
   }
   function onMode() {
     var min = parseInt(el.mode.value, 10);
@@ -720,8 +826,54 @@
     el.resetConfirm.hidden = true;
     el.reset.setAttribute('aria-expanded', 'false');
     showError('');
-    if (commit(TM.reset(state))) announce(tx('timer.announce.reset', 'Zeit, Spielstand und Sätze zurückgesetzt'));
+    var next = TM.reset(state);
+    /* Ohne Turnierbogen-Rückweg ist ein verknüpftes Bogenspiel nicht mehr
+       übertragbar: neu beginnen mit den eigenen Regeln. */
+    if (!returnTarget && next.match) next = TM.setMatch(next, null, null);
+    if (commit(next)) announce(tx('timer.announce.reset', 'Zeit, Spielstand und Sätze zurückgesetzt'));
     el.primary.focus();
+  }
+
+  /* ------------------------------------------------------ Startdialog
+     Freiwillig beim Öffnen, nicht beim Neuladen oder aus dem Turnierbogen.
+     Überspringen verändert weder Namen noch Regeln oder Spielstand. */
+  var setupDraft = null;
+  function offerSetup(prefilled) {
+    var navigation = root.performance && root.performance.navigation;
+    var entries = root.performance && root.performance.getEntriesByType
+      ? root.performance.getEntriesByType('navigation') : [];
+    var reload = entries.length ? entries[0].type === 'reload' : navigation && navigation.type === 1;
+    return !reload && !prefilled && !returnTarget && !state.match && !modal;
+  }
+  function renderSetup() {
+    renderRuleSelects(el.setupSelects, setupDraft, !!state.match);
+    el.setupRulesNote.hidden = !state.match;
+    el.setupRulesSummary.textContent = rulesText(setupDraft);
+  }
+  function openSetup() {
+    var info = TM.ruleInfo(state);
+    setupDraft = { target: info.target, wins: info.wins, decider: info.decider, twoPoint: info.twoPoint };
+    el.setupName.a.value = state.names.a;
+    el.setupName.b.value = state.names.b;
+    el.setupRulesPanel.hidden = true;
+    el.setupRulesToggle.setAttribute('aria-expanded', 'false');
+    renderSetup();
+    openModal(el.setup, el.setupBox, function () { closeSetup(false); });
+  }
+  function closeSetup(apply) {
+    var draft = setupDraft;
+    if (!draft) return;
+    setupDraft = null;
+    closeModal(state.clockEnabled ? el.primary : el.plus.a);
+    var next = TM.setSetupDone(state, true);
+    if (apply) {
+      next = TM.setNames(next, el.setupName.a.value, el.setupName.b.value);
+      if (!state.match) next = TM.setRules(next, draft);
+    }
+    commit(next);
+    if (apply && (state.names.a || state.names.b)) {
+      announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: sideName('a'), b: sideName('b') }));
+    }
   }
 
   /* ------------------------------------------------------------ Rückweg */
@@ -799,12 +951,31 @@
     el.prefillYes = byId('mt-prefill-yes');
     el.prefillNo = byId('mt-prefill-no');
     el.bar = doc.querySelector('.mt-bar');
+    el.settings = byId('mt-settings');
+    el.settingsToggle = byId('mt-settings-toggle');
+    el.settingsClose = byId('mt-settings-close');
     el.switchModal = byId('mt-switch');
     el.switchScore = byId('mt-switch-score');
     el.switchOk = byId('mt-switch-ok');
     el.switchSwap = byId('mt-switch-swap');
     el.switchSelects = [byId('mt-switch-pts'), byId('mt-switch-pts-modal')];
     el.backLabel = byId('mt-back-label');
+    el.rulesToggle = byId('mt-rules-toggle');
+    el.rulesPanel = byId('mt-rules-panel');
+    el.rulesSummary = byId('mt-rules-summary');
+    el.rulesNote = byId('mt-rules-note');
+    el.ruleSelects = Array.prototype.slice.call(doc.querySelectorAll('[data-rule]'));
+    el.setup = byId('mt-setup');
+    el.setupBox = byId('mt-setup-box');
+    el.setupName = { a: byId('mt-setup-a'), b: byId('mt-setup-b') };
+    el.setupRulesToggle = byId('mt-setup-rules-toggle');
+    el.setupRulesPanel = byId('mt-setup-rules-panel');
+    el.setupRulesNote = byId('mt-setup-rules-note');
+    el.setupRulesSummary = byId('mt-setup-rules-summary');
+    el.setupSelects = Array.prototype.slice.call(doc.querySelectorAll('[data-setup-rule]'));
+    el.setupDone = byId('mt-setup-done');
+    el.setupOpen = byId('mt-setup-open');
+    el.setupSkip = byId('mt-setup-skip');
     el.name = {}; el.value = {}; el.short = {}; el.plus = {}; el.minus = {}; el.direct = {};
     ['a', 'b'].forEach(function (side) {
       el.name[side] = byId('mt-name-' + side);
@@ -840,10 +1011,42 @@
     el.prefillYes.addEventListener('click', function () { closePrefill(true); });
     el.prefillNo.addEventListener('click', function () { closePrefill(false); });
     doc.addEventListener('keydown', onModalKey);
-    [el.prefill, el.switchModal, el.setWonModal].forEach(function (box) {
+    [el.prefill, el.switchModal, el.setWonModal, el.setup].forEach(function (box) {
       box.addEventListener('click', function (e) {
         if (e.target === box && modal && modal.box === box) modal.onClose();
       });
+    });
+    el.ruleSelects.forEach(function (sel) { sel.addEventListener('change', onRuleChange); });
+    wireDisclosure(el.rulesToggle, el.rulesPanel);
+    el.settingsToggle.addEventListener('click', function () {
+      setSettingsOpen(el.settings.hidden);
+    });
+    el.settings.addEventListener('keydown', function (e) {
+      if (!e.defaultPrevented && (e.key === 'Escape' || e.key === 'Esc') && el.resetConfirm.hidden) {
+        e.preventDefault();
+        setSettingsOpen(false);
+      }
+    });
+    el.settingsClose.addEventListener('click', function () {
+      setSettingsOpen(false);
+    });
+    wireDisclosure(el.setupRulesToggle, el.setupRulesPanel);
+    el.setupSelects.forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        if (!setupDraft) return;
+        var patch = rulePatch(sel);
+        for (var k in patch) if (patch.hasOwnProperty(k)) setupDraft[k] = patch[k];
+        renderSetup();
+      });
+    });
+    el.setupDone.addEventListener('click', function () { closeSetup(true); });
+    el.setupOpen.addEventListener('click', openSetup);
+    el.setupSkip.addEventListener('click', function () { closeSetup(false); });
+    el.setupName.a.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); el.setupName.b.focus(); }
+    });
+    el.setupName.b.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); closeSetup(true); }
     });
     el.switchOk.addEventListener('click', function () { closeModal(true); });
     el.setWonContinue.addEventListener('click', function () { closeModal(true); });
@@ -935,8 +1138,16 @@
     }
 
     wireBack();
+    /* Standalone geöffnet (ohne Bogen-Rückweg) und noch nichts gezählt:
+       ein altes Bogenspiel nicht weiterführen, sondern eigene Regeln nutzen. */
+    if (!returnTarget && state.match && !TM.hasProgress(state)) {
+      state = TM.setMatch(state, null, null);
+      persist();
+    }
     render();
-    applyPrefill(readPrefill());
+    var prefilled = readPrefill();
+    applyPrefill(prefilled);
+    if (offerSetup(prefilled)) openSetup();
     el.root.setAttribute('data-ready', 'true');
   }
 

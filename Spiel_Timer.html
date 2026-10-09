@@ -27,6 +27,7 @@
 <header class="mt-bar">
   <a class="mt-back" id="mt-back" href="index.html" aria-label="Zur Übersicht" data-i18n-attr="aria-label:chrome.backToOverviewAria"><span class="mt-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></span><span class="mt-back-lbl" id="mt-back-label" data-i18n="chrome.overview">Übersicht</span></a>
   <h1 class="mt-title" data-i18n="timer.title">Score Counter</h1>
+  <button type="button" class="mt-iconbtn mt-settings-toggle" id="mt-settings-toggle" aria-controls="mt-settings" aria-expanded="false" aria-label="Einstellungen" data-i18n-attr="aria-label:timer.settingsHeading"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-.6 2.1-1.8 1L4.5 6 3 9l1.5 1.5v3L3 15l1.5 3 2.1-.1 1.8 1L9 21h6l.6-2.1 1.8-1 2.1.1 1.5-3-1.5-1.5v-3L21 9l-1.5-3-2.1.1-1.8-1L15 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <button type="button" class="mt-iconbtn mt-clock-open" id="mt-clock-open" aria-controls="mt-clock" aria-label="Spielzeit einblenden" data-i18n-attr="aria-label:timer.clockOpen" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <span class="mt-lang" data-i18n-switch="mt-iconbtn"></span>
 </header>
@@ -92,12 +93,26 @@
     <p class="mt-hint" id="mt-hint" data-i18n="timer.hint" hidden>Tipp: Über das Uhr-Symbol am Spiel geöffnet, lässt sich das Ergebnis direkt übernehmen.</p>
   </section>
 
-  <section class="mt-settings" aria-labelledby="mt-settings-heading">
-    <h2 class="mt-vh" id="mt-settings-heading" data-i18n="timer.settingsHeading">Einstellungen</h2>
+  <section class="mt-settings" id="mt-settings" aria-labelledby="mt-settings-heading" hidden>
+    <button type="button" class="mt-clock-close mt-settings-close" id="mt-settings-close" aria-label="Einstellungen schließen" data-i18n-attr="aria-label:timer.settingsClose"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg></button>
+    <h2 class="mt-settings-heading" id="mt-settings-heading" data-i18n="timer.settingsHeading">Einstellungen</h2>
+    <button type="button" class="mt-setup-open mt-plain" id="mt-setup-open" data-i18n="timer.setup.open">Namen &amp; Regeln</button>
     <div class="mt-setting">
       <label class="mt-setting-label" for="mt-switch-pts" data-i18n="timer.switch.label">Seitenwechsel anzeigen</label>
       <select class="mt-select" id="mt-switch-pts" data-switch-select></select>
     </div>
+    <div class="mt-rules">
+      <button type="button" class="mt-rules-toggle" id="mt-rules-toggle" aria-expanded="false" aria-controls="mt-rules-panel"><span class="mt-rules-text"><span class="mt-rules-head" data-i18n="timer.rules.heading">Spielregeln</span> <span class="mt-rules-sum" id="mt-rules-summary"></span></span><svg class="mt-rules-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="mt-rules-panel" id="mt-rules-panel" hidden>
+        <p class="mt-rules-note" id="mt-rules-note" data-i18n="timer.rules.fromSheet" hidden>Vom Turnierbogen vorgegeben – hier nicht änderbar.</p>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-rule-wins" data-i18n="timer.rules.sets">Sätze</label><select class="mt-select" id="mt-rule-wins" data-rule="wins"></select></div>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-rule-target" data-i18n="timer.rules.target">Satz bis</label><select class="mt-select" id="mt-rule-target" data-rule="target"></select></div>
+        <div class="mt-setting mt-rule" data-rule-row="decider"><label class="mt-setting-label" for="mt-rule-decider" data-i18n="timer.rules.decider">Entscheidungssatz bis</label><select class="mt-select" id="mt-rule-decider" data-rule="decider"></select></div>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-rule-margin" data-i18n="timer.rules.margin">Satzgewinn</label><select class="mt-select" id="mt-rule-margin" data-rule="twoPoint"></select></div>
+      </div>
+    </div>
+  </section>
+  <div class="mt-quick-controls">
     <div class="mt-toolbar">
       <button type="button" class="mt-toggle" id="mt-sound" aria-pressed="false"><span class="mt-ic" aria-hidden="true"><svg class="ic-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg><svg class="ic-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6"/><path d="m22 9-6 6"/></svg></span><span class="mt-tl" data-i18n="timer.sound">Ton</span></button>
       <button type="button" class="mt-toggle" id="mt-keep-awake" aria-pressed="false" aria-describedby="mt-wake-hint"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8.5v1"/><path d="M12 14.5v1"/><path d="M9 12h1"/><path d="M14 12h1"/></svg></span><span class="mt-tl" data-i18n="timer.keepAwake">Bildschirm an</span></button>
@@ -111,12 +126,39 @@
       <button type="button" class="mt-plain mt-confirm-yes" id="mt-reset-yes" data-i18n="timer.resetYes">Ja, zurücksetzen</button>
       <button type="button" class="mt-plain" id="mt-reset-no" data-i18n="timer.resetNo">Abbrechen</button>
     </div>
-  </section>
-
+  </div>
   <div class="mt-vh" id="mt-announce" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
 <!-- Popups liegen außerhalb von <main>, damit der Rest beim Öffnen per
      aria-hidden ausgeblendet werden kann (kein dialog-Element: erst ab Safari 15.4). -->
+<div class="mt-modal" id="mt-setup" role="dialog" aria-modal="true" aria-labelledby="mt-setup-title" aria-describedby="mt-setup-text" hidden>
+  <div class="mt-modal-box mt-setup-box" id="mt-setup-box" tabindex="-1">
+    <h2 class="mt-modal-title" id="mt-setup-title" data-i18n="timer.setup.title">Spiel einrichten</h2>
+    <p class="mt-modal-text" id="mt-setup-text" data-i18n="timer.setup.text">Namen eintragen – oder überspringen und gleich loszählen.</p>
+    <div class="mt-setup-field">
+      <label class="mt-setup-label" for="mt-setup-a" data-i18n="timer.nameA">Name Seite A</label>
+      <input class="mt-setup-input" id="mt-setup-a" type="text" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" placeholder="Seite A" data-i18n-attr="placeholder:timer.sideA">
+    </div>
+    <div class="mt-setup-field">
+      <label class="mt-setup-label" for="mt-setup-b" data-i18n="timer.nameB">Name Seite B</label>
+      <input class="mt-setup-input" id="mt-setup-b" type="text" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Seite B" data-i18n-attr="placeholder:timer.sideB">
+    </div>
+    <div class="mt-rules mt-setup-rules">
+      <button type="button" class="mt-rules-toggle" id="mt-setup-rules-toggle" aria-expanded="false" aria-controls="mt-setup-rules-panel"><span class="mt-rules-text"><span class="mt-rules-head" data-i18n="timer.rules.heading">Spielregeln</span> <span class="mt-rules-sum" id="mt-setup-rules-summary"></span></span><svg class="mt-rules-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="mt-rules-panel" id="mt-setup-rules-panel" hidden>
+        <p class="mt-rules-note" id="mt-setup-rules-note" data-i18n="timer.rules.fromSheet" hidden>Vom Turnierbogen vorgegeben – hier nicht änderbar.</p>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-setup-wins" data-i18n="timer.rules.sets">Sätze</label><select class="mt-select" id="mt-setup-wins" data-setup-rule="wins"></select></div>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-setup-target" data-i18n="timer.rules.target">Satz bis</label><select class="mt-select" id="mt-setup-target" data-setup-rule="target"></select></div>
+        <div class="mt-setting mt-rule" data-rule-row="decider"><label class="mt-setting-label" for="mt-setup-decider" data-i18n="timer.rules.decider">Entscheidungssatz bis</label><select class="mt-select" id="mt-setup-decider" data-setup-rule="decider"></select></div>
+        <div class="mt-setting mt-rule"><label class="mt-setting-label" for="mt-setup-margin" data-i18n="timer.rules.margin">Satzgewinn</label><select class="mt-select" id="mt-setup-margin" data-setup-rule="twoPoint"></select></div>
+      </div>
+    </div>
+    <div class="mt-modal-actions">
+      <button type="button" class="mt-btn mt-modal-primary" id="mt-setup-done" data-i18n="timer.setup.done">Fertig</button>
+      <button type="button" class="mt-plain" id="mt-setup-skip" data-i18n="timer.setup.skip">Überspringen</button>
+    </div>
+  </div>
+</div>
 <div class="mt-modal" id="mt-prefill" role="dialog" aria-modal="true" aria-labelledby="mt-prefill-title" aria-describedby="mt-prefill-question" hidden>
   <div class="mt-modal-box">
     <h2 class="mt-modal-title" id="mt-prefill-title" data-i18n="timer.prefillTitle">Laufendes Spiel zurücksetzen?</h2>

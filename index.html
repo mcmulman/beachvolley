@@ -32,7 +32,8 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scroll-padding-top: 112px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -236,6 +237,7 @@
       gap: 12px;
       flex-wrap: wrap;
     }
+    .wizard-result[hidden] { display: none; }
     .wizard-result-text { font-size: 12.5px; color: var(--text); flex: 1 1 260px; }
     .wizard-result-btn { flex: 0 0 auto; }
     .wizard-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
@@ -536,7 +538,7 @@
       font-weight: 700;
       letter-spacing: .5px;
       text-transform: uppercase;
-      color: var(--blue);
+      color: #185d8e;
       background: #d0e8f7;
       border-radius: 6px;
       padding: 2px 8px;
@@ -731,7 +733,7 @@
     footer .footer-legal a { color: var(--muted); text-decoration: underline; }
     footer .footer-contact-btn {
       font-size: 11.5px; color: var(--muted); background: none; border: 1px solid var(--sand-dark);
-      border-radius: 999px; padding: 2px 10px; cursor: pointer;
+      border-radius: 999px; padding: 6px 12px; cursor: pointer;
     }
     footer .footer-contact-btn:hover { color: var(--ink, #1f2733); border-color: var(--muted); }
 
@@ -884,50 +886,50 @@
     </summary>
     <div class="wizard-body">
       <div class="wizard-row" data-q="participants">
-        <span class="wizard-q" data-i18n="home.wizard.q.participants">Wer spielt?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="teams" data-i18n="home.wizard.a.teams">Feste 2er-Teams</button>
-          <button type="button" class="wizard-opt" data-val="individuals" data-i18n="home.wizard.a.individuals">Einzelne, Partner wechseln</button>
+        <span class="wizard-q" id="wizq-participants" data-i18n="home.wizard.q.participants">Wer spielt?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-participants">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="teams" data-i18n="home.wizard.a.teams">Feste 2er-Teams</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="individuals" data-i18n="home.wizard.a.individuals">Einzelne, Partner wechseln</button>
         </div>
       </div>
       <div class="wizard-row" data-q="count">
-        <span class="wizard-q" data-i18n="home.wizard.q.count">Wie viele Teams/Personen?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="klein" data-i18n="home.wizard.a.klein">bis 8</button>
-          <button type="button" class="wizard-opt" data-val="mittel" data-i18n="home.wizard.a.mittel">8–16</button>
-          <button type="button" class="wizard-opt" data-val="gross" data-i18n="home.wizard.a.gross">über 16</button>
+        <span class="wizard-q" id="wizq-count" data-i18n="home.wizard.q.count">Wie viele Teams/Personen?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-count">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="klein" data-i18n="home.wizard.a.klein">bis 8</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="mittel" data-i18n="home.wizard.a.mittel">8–16</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="gross" data-i18n="home.wizard.a.gross">über 16</button>
         </div>
       </div>
       <div class="wizard-row" data-q="niveau">
-        <span class="wizard-q" data-i18n="home.wizard.q.niveau">Spielstärke?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="gleich" data-i18n="home.wizard.a.gleich">Ähnlich</button>
-          <button type="button" class="wizard-opt" data-val="gemischt" data-i18n="home.wizard.a.gemischt">Gemischt</button>
+        <span class="wizard-q" id="wizq-niveau" data-i18n="home.wizard.q.niveau">Spielstärke?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-niveau">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="gleich" data-i18n="home.wizard.a.gleich">Ähnlich</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="gemischt" data-i18n="home.wizard.a.gemischt">Gemischt</button>
         </div>
       </div>
       <div class="wizard-row" data-q="repeats">
-        <span class="wizard-q" data-i18n="home.wizard.q.repeats">Paarungen wiederholen?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="nein" data-i18n="home.wizard.a.nein">Nein</button>
-          <button type="button" class="wizard-opt" data-val="egal" data-i18n="home.wizard.a.egal">Egal</button>
+        <span class="wizard-q" id="wizq-repeats" data-i18n="home.wizard.q.repeats">Paarungen wiederholen?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-repeats">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="nein" data-i18n="home.wizard.a.nein">Nein</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="egal" data-i18n="home.wizard.a.egal">Egal</button>
         </div>
       </div>
       <div class="wizard-row" data-q="goal">
-        <span class="wizard-q" data-i18n="home.wizard.q.goal">Ziel?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="alle" data-i18n="home.wizard.a.alle">Viele Spiele für alle</button>
-          <button type="button" class="wizard-opt" data-val="sieger" data-i18n="home.wizard.a.sieger">Klarer Sieger (KO)</button>
+        <span class="wizard-q" id="wizq-goal" data-i18n="home.wizard.q.goal">Ziel?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-goal">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="alle" data-i18n="home.wizard.a.alle">Viele Spiele für alle</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="sieger" data-i18n="home.wizard.a.sieger">Klarer Sieger (KO)</button>
         </div>
       </div>
       <div class="wizard-row" data-q="time" id="wizardTimeRow" hidden>
-        <span class="wizard-q" data-i18n="home.wizard.q.time">Zeit knapp?</span>
-        <div class="wizard-opts">
-          <button type="button" class="wizard-opt" data-val="knapp" data-i18n="home.wizard.a.knapp">Ja</button>
-          <button type="button" class="wizard-opt" data-val="viel" data-i18n="home.wizard.a.viel">Nein</button>
+        <span class="wizard-q" id="wizq-time" data-i18n="home.wizard.q.time">Zeit knapp?</span>
+        <div class="wizard-opts" role="group" aria-labelledby="wizq-time">
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="knapp" data-i18n="home.wizard.a.knapp">Ja</button>
+          <button type="button" class="wizard-opt" aria-pressed="false" data-val="viel" data-i18n="home.wizard.a.viel">Nein</button>
         </div>
       </div>
       <div class="wizard-result" id="wizardResult" hidden>
-        <div class="wizard-result-text" id="wizardResultText"></div>
+        <div class="wizard-result-text" id="wizardResultText" role="status" aria-live="polite"></div>
         <button type="button" class="btn-open wizard-result-btn" id="wizardResultBtn" data-i18n="home.wizard.resultBtn">Bogen anzeigen</button>
       </div>
       <p class="wizard-hint"><span data-i18n="home.wizard.hintFlex">Herren, Damen und Mixed in einer Wertung? →</span> <a href="#" onclick="wizardJumpToTag('flex');return false;" data-i18n="home.format.flex">Flex-Turnier</a></p>
@@ -959,22 +961,22 @@
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
   </div>
-  <div class="filterbar-desktop">
-    <button class="filter-btn active" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
+  <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
+    <button class="filter-btn active" aria-pressed="true" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
     <div class="filter-sep"></div>
-    <button class="filter-btn" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
-    <button class="filter-btn" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
-    <button class="filter-btn" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
-    <button class="filter-btn" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
-    <button class="filter-btn" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
-    <button class="filter-btn" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
-    <button class="filter-btn" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
-    <button class="filter-btn" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
-    <button class="filter-btn" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
-    <button class="filter-btn" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
-    <button class="filter-btn" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
-    <button class="filter-btn" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften</button>
-    <button class="filter-btn" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup</button>
   </div>
 </div>
 
@@ -1515,6 +1517,8 @@
         out.appendChild(a);
         out.hidden = false;
         btn.hidden = true;
+        /* Fokus nicht verlieren (der Knopf verschwindet): auf die Adresse. */
+        a.focus();
       }, { once: true });
     }
     if(printOut){
@@ -1570,10 +1574,18 @@
     });
   }
 
+  /* aria-pressed spiegelt den aktiven Filter (sonst nur per Farbe erkennbar). */
+  function syncFilterPressed() {
+    document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false');
+    });
+  }
+
   function filter(tag, btn) {
     if (btn) {
       document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      syncFilterPressed();
     }
     if (tag === 'all') {
       applyCardFilters('', '');
@@ -1587,6 +1599,7 @@
     const format = (formatEl && formatEl.value) || '';
     applyCardFilters('', format);
     document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
+    syncFilterPressed();
   }
 
   function resetMobileFilters() {
@@ -2257,8 +2270,12 @@
       const q = row.dataset.q;
       row.querySelectorAll('.wizard-opt').forEach(btn => {
         btn.addEventListener('click', () => {
-          row.querySelectorAll('.wizard-opt').forEach(b => b.classList.remove('selected'));
+          row.querySelectorAll('.wizard-opt').forEach(b => {
+            b.classList.remove('selected');
+            b.setAttribute('aria-pressed', 'false');
+          });
           btn.classList.add('selected');
+          btn.setAttribute('aria-pressed', 'true');
           answers[q] = btn.dataset.val;
           updateTimeRowVisibility();
           updateWizardResult();
@@ -2379,6 +2396,7 @@
       document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => {
         b.classList.toggle('active', b.getAttribute('onclick') === "filter('" + tag + "', this)");
       });
+      if (typeof syncFilterPressed === 'function') syncFilterPressed();
       const mobileSel = document.getElementById('mobileFormatFilter');
       if (mobileSel) mobileSel.value = tag;
       const card = document.querySelector('.card[data-tags~="' + tag + '"]');

@@ -145,12 +145,14 @@
   /* ========================================================= 2. SPIEL-KARTE */
   function setColumnHtml(matchId, setNo, label, placeholder, names, target) {
     const ph = placeholder ? ' placeholder="' + esc(placeholder) + '"' : '';
-    /* aria-label mit dem Teamnamen – sonst liest der Screenreader nur "Feld". */
+    /* aria-label mit Teamname und Satz („Team A, Satz 2“) – sonst liest der
+       Screenreader nur "Feld" bzw. bei mehreren Saetzen identische Namen. */
     const inp = side => {
       const nm = names && names[side];
+      const al = nm ? (label ? nm + ', ' + label : nm) : '';
       return '<input class="score" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3"' +
         ' data-mid="' + esc(matchId) + '" data-set="' + setNo + '" data-side="' + side + '"' +
-        ' autocomplete="off"' + (nm ? ' aria-label="' + esc(nm) + '"' : '') + ph + '>';
+        ' autocomplete="off"' + (al ? ' aria-label="' + esc(al) + '"' : '') + ph + '>';
     };
     /* OK-Knopf neben den beiden Kaestchen: nimmt auf Geraeten ohne Tab-Taste
        (iPad) den Fokus aus dem Feld und springt weiter - siehe
@@ -164,7 +166,7 @@
     /* data-target: Satzziel für den Spiel-Timer (Satzgewinn-/Seitenwechsel). */
     return '<span class="sset" data-set="' + setNo + '"' + (target > 0 ? ' data-target="' + target + '"' : '') + '>'
       + '<span class="slbl">' + esc(label) + '</span>'
-      + '<span class="sbox">' + inp('a') + '<span class="vs">:</span>' + inp('b') + okBtn + '</span>'
+      + '<span class="sbox">' + inp('a') + '<span class="vs" aria-hidden="true">:</span>' + inp('b') + okBtn + '</span>'
       + '</span>';
   }
 
@@ -1415,7 +1417,7 @@
           + '<div class="kqside" data-kq-side="a"><span class="n"></span>'
           + '<input class="score kqscore" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3"'
           + ' data-mid="' + esc(m.id) + '" data-set="1" data-side="a" autocomplete="off"></div>'
-          + '<div class="kqvs">:</div>'
+          + '<div class="kqvs" aria-hidden="true">:</div>'
           + '<div class="kqside" data-kq-side="b"><input class="score kqscore" type="text" inputmode="numeric"'
           + ' pattern="[0-9]*" maxlength="3" data-mid="' + esc(m.id) + '" data-set="1" data-side="b" autocomplete="off">'
           + '<span class="n"></span></div>'
@@ -1446,8 +1448,15 @@
         const mbox = box.querySelector('[data-kq-match="' + m.id + '"]');
         if (!mbox) return;
         const aEl = mbox.querySelector('[data-kq-side="a"]'), bEl = mbox.querySelector('[data-kq-side="b"]');
-        if (aEl) aEl.querySelector('.n').textContent = ctx.teamLabel(m.a);
-        if (bEl) bEl.querySelector('.n').textContent = ctx.teamLabel(m.b);
+        const pts = tx('ui.score.points', 'Punkte');
+        [[aEl, m.a], [bEl, m.b]].forEach(function (p) {
+          if (!p[0]) return;
+          const nm = ctx.teamLabel(p[1]);
+          p[0].querySelector('.n').textContent = nm;
+          /* Kaestchen ohne sichtbares <label>: Name fuer Screenreader. */
+          const box = p[0].querySelector('input.kqscore');
+          if (box) box.setAttribute('aria-label', nm ? nm + ', ' + pts : pts);
+        });
         const r = m.result;
         aEl && aEl.classList.toggle('is-win', !!(r && r.winner === 'a'));
         bEl && bEl.classList.toggle('is-win', !!(r && r.winner === 'b'));

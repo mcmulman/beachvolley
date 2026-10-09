@@ -141,8 +141,10 @@
       '.trp-new{width:100%;padding:10px 12px;border:1px dashed #8aa;border-radius:8px;' +
         'background:#fff;cursor:pointer;font:inherit;font-weight:600;color:#256}' +
       '.trp-new:hover{background:#f0fbff}' +
-      '.trp-home{display:block;margin-top:10px;text-align:center;font-size:12.5px;' +
-        'color:#667;text-decoration:none}' +
+      'html body .trp-overlay .trp-box:focus{outline:none}' +
+      /* Trefferflaeche >= 44 px Hoehe (vorher nur die Textzeile). */
+      '.trp-home{display:block;margin-top:4px;padding:13px 0;text-align:center;font-size:12.5px;' +
+        'line-height:18px;color:#667;text-decoration:none}' +
       '.trp-home:hover{text-decoration:underline}';
     const style = document.createElement('style');
     style.textContent = css;
@@ -160,8 +162,11 @@
     const overlay = document.createElement('div');
     overlay.className = 'trp-overlay';
     overlay.innerHTML =
-      '<div class="trp-box">' +
-        '<h2>' + esc(tx('picker.title', 'Welches Turnier?')) + '</h2>' +
+      /* Kein aria-modal: der Hintergrund ist per visibility:hidden ohnehin
+         unerreichbar, und die Android-Zurueck-Taste (turnier-native.js
+         openDialog) soll hier weiterhin normal zurueck navigieren. */
+      '<div class="trp-box" role="dialog" aria-labelledby="trp-title" tabindex="-1">' +
+        '<h2 id="trp-title">' + esc(tx('picker.title', 'Welches Turnier?')) + '</h2>' +
         '<p>' + esc(tx('picker.intro', 'Für „{type}“ liegen bereits gespeicherte Turniere vor. ' +
           'Welches möchtest du weiterbearbeiten?', { type: typeLabel ? term(typeLabel) : tx('picker.thisSheet', 'diesen Bogen') })) + '</p>' +
         '<div class="trp-list"></div>' +
@@ -189,6 +194,9 @@
     overlay.querySelector('.trp-new').addEventListener('click', function () { gotoId(freshId()); });
 
     document.body.appendChild(overlay);
+    /* Fokus in die Auswahl: Screenreader lesen Titel/Frage, Tab beginnt
+       bei der ersten Zeile statt im (verborgenen) Bogen. */
+    try { overlay.querySelector('.trp-box').focus(); } catch (e) { }
   }
 
   function alreadyResolved() {

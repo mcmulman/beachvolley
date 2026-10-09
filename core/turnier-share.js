@@ -305,7 +305,10 @@
       '.tshare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;' +
         'padding:16px 18px;border-bottom:1px solid #e2e8f0;}' +
       '.tshare-head h3{margin:0;font-size:16px;font-weight:800;color:#1a3a5c;}' +
-      '.tshare-x{border:none;background:none;font-size:22px;line-height:1;color:#5a6375;cursor:pointer;padding:2px 6px;border-radius:6px;}' +
+      /* 44x44-Trefferflaeche; negativer Rand haelt die Kopfzeile gleich hoch. */
+      '.tshare-x{border:none;background:none;font-size:22px;line-height:1;color:#5a6375;cursor:pointer;padding:2px 6px;border-radius:8px;' +
+        'min-width:44px;min-height:44px;margin:-10px -10px -10px 0;flex:0 0 auto;}' +
+      '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
       '.tshare-x:hover{background:#eef2f7;}' +
       '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;}' +
       '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
@@ -342,34 +345,81 @@
     document.head.appendChild(style);
   }
 
-  function onShareEscKey(e) { if (e.key === 'Escape') closeShareModal(); }
+  /* Fokusfuehrung (WCAG 2.4.3): Fokus in den Dialog, Tab bleibt darin,
+     Hintergrund fuer Screenreader stumm (aria-hidden), beim Schliessen
+     zurueck zum ausloesenden Element. Escape schliesst weiterhin (auch der
+     synthetische Escape aus turnier-native.js dismissDialog()). */
+  let shareReturnFocus = null;
+  let shareHiddenSiblings = [];
 
-  function closeShareModal() {
+  function shareFocusables(root) {
+    return Array.prototype.filter.call(root.querySelectorAll(
+      'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'),
+      function (el) { return !el.disabled && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); });
+  }
+
+  function onShareEscKey(e) {
+    if (e.key === 'Escape' || e.key === 'Esc') { closeShareModal(); return; }
+    if (e.key !== 'Tab') return;
+    const root = document.getElementById(MODAL_ID);
+    if (!root) return;
+    const f = shareFocusables(root);
+    if (!f.length) { e.preventDefault(); return; }
+    const a = document.activeElement, i = f.indexOf(a);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }
+
+  function removeShareModal(restoreFocus) {
     const el = document.getElementById(MODAL_ID);
     if (el) el.remove();
     document.removeEventListener('keydown', onShareEscKey);
+    shareHiddenSiblings.forEach(function (n) { n.removeAttribute('aria-hidden'); });
+    shareHiddenSiblings = [];
+    if (restoreFocus) {
+      const back = shareReturnFocus;
+      shareReturnFocus = null;
+      if (back && back.focus && document.documentElement.contains(back)) {
+        try { back.focus(); } catch (e) { }
+      }
+    }
   }
+
+  function closeShareModal() { removeShareModal(true); }
 
   /* Baut/ersetzt das Overlay-Grundgerüst und liefert das Root-Element zum
      Anhängen von Event-Handlern durch die jeweilige "Seite" (Formular,
      Ladeanzeige, Ergebnis, Fehler). */
   function openShareModalShell(title, bodyHtml, footerHtml) {
-    closeShareModal();
+    /* Folgeschritt (Formular → Laden → Ergebnis) behaelt das urspruengliche
+       Ruecksprungziel. */
+    const chained = !!document.getElementById(MODAL_ID);
+    const back = chained ? shareReturnFocus : document.activeElement;
+    removeShareModal(false);
+    shareReturnFocus = back;
     ensureShareStyles();
     const root = document.createElement('div');
     root.id = MODAL_ID;
     root.className = 'tshare-backdrop';
     root.innerHTML =
-      '<div class="tshare-panel" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '">' +
+      '<div class="tshare-panel" role="dialog" aria-modal="true" tabindex="-1" aria-label="' + escapeHtml(title) + '">' +
       '<div class="tshare-head"><h3>' + escapeHtml(title) + '</h3>' +
       '<button type="button" class="tshare-x" aria-label="' + escapeHtml(tx('share.close', 'Schließen')) + '">&times;</button></div>' +
       '<div class="tshare-body">' + bodyHtml + '</div>' +
       (footerHtml ? '<div class="tshare-foot">' + footerHtml + '</div>' : '') +
       '</div>';
     document.body.appendChild(root);
+    Array.prototype.forEach.call(document.body.children, function (n) {
+      if (n === root || n.tagName === 'SCRIPT' || n.tagName === 'STYLE' || n.hasAttribute('aria-hidden')) return;
+      n.setAttribute('aria-hidden', 'true');
+      shareHiddenSiblings.push(n);
+    });
     root.addEventListener('mousedown', function (e) { if (e.target === root) closeShareModal(); });
     root.querySelector('.tshare-x').addEventListener('click', closeShareModal);
     document.addEventListener('keydown', onShareEscKey);
+    /* Panel selbst fokussieren (nicht das erste Eingabefeld): Screenreader
+       lesen den Dialogtitel, mobil klappt keine Tastatur ungefragt auf. */
+    try { root.querySelector('.tshare-panel').focus(); } catch (e) { }
     return root;
   }
 

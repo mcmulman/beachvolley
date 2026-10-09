@@ -3,7 +3,9 @@
 
    Reine Logik ohne DOM: Stoppuhr (Start, Pause/Fortsetzen, Stopp,
    Zurücksetzen) und einfacher Spielstand für zwei frei benennbare Seiten.
-   Sportartenneutral – keine Satz-/Punktregeln, keine Spielende-Erkennung.
+   Sportartenneutral – Satz-/Punktregeln (Satzziel, Gewinnsätze,
+   Entscheidungssatz, 2-Punkte-Regel) liefern nur Hinweise; ein Satz endet
+   nie automatisch.
    Optional: Countdown (countdownMs > 0, danach Nachspielzeit „+MM:SS“),
    Seitentausch, Rückgängig (Stapel früherer Spielstände) und ein von Hand
    ausgelöstes „Satz beenden“ (Satz geht an die Seite mit mehr Punkten).
@@ -43,9 +45,12 @@
   var STATUSES = ['idle', 'running', 'paused', 'stopped'];
   /* Rückweg aus dem Timer: nur Seiten dieser App, relativ, ohne #Hash
      (ein #share=-Hash würde beim Zurückkehren erneut importiert). */
-  /* Beach-Regeln als Vorgabe: Sätze bis 21, Entscheidungssatz bis 15. Ein
-     Turnierbogen kann eigene Satzziele mitgeben (?t=21,21,15). */
-  var DEFAULT_TARGETS = [21, 21, 15];
+  /* Eigene Spielregeln (ohne Turnierbogen): Satzziel, Gewinnsätze,
+     Entscheidungssatz und 2-Punkte-Regel. Vorgabe = Beach-Regeln: 2
+     Gewinnsätze bis 21, Entscheidungssatz bis 15, 2 Punkte Vorsprung. Ein
+     Turnierbogen gibt eigene Satzziele mit (?t=21,21,15). */
+  var RULE_TARGETS = [11, 15, 21, 25, 30];
+  var RULE_WINS = [1, 2, 3];
   var SWITCH_AUTO = 0;
   var SWITCH_OFF = -1;
   var SWITCH_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10];
@@ -81,9 +86,13 @@
       compact: false,
       clockEnabled: true,
       switchPts: 0,
+      rules: defaultRules(),
+      setupDone: false,
       match: null
     };
   }
+  function defaultRules() { return { target: 21, wins: 2, decider: 15, twoPoint: true }; }
+  function copyRules(r) { return { target: r.target, wins: r.wins, decider: r.decider, twoPoint: r.twoPoint !== false }; }
 
   function copyPair(p) { return { a: p.a, b: p.b }; }
   /* Spielstands-Schnappschuss für „Rückgängig“. */
@@ -110,6 +119,8 @@
       compact: !!s.compact,
       clockEnabled: s.clockEnabled !== false,
       switchPts: s.switchPts,
+      rules: copyRules(s.rules || defaultRules()),
+      setupDone: !!s.setupDone,
       match: s.match ? { ref: s.match.ref, targets: s.match.targets.slice(), swapped: !!s.match.swapped } : null
     };
   }
@@ -340,6 +351,13 @@
     n.compact = !!on;
     return n;
   }
+  /* Startdialog (Namen/Regeln) erledigt oder übersprungen: nicht erneut zeigen. */
+  function setSetupDone(s, on) {
+    if (!!on === !!s.setupDone) return s;
+    var n = clone(s);
+    n.setupDone = !!on;
+    return n;
+  }
   function setClockEnabled(s, on, now) {
     on = !!on;
     if (on === s.clockEnabled) return s;
@@ -350,14 +368,73 @@
 
   /* ------------------------------------------------- Regeln (nur Hinweise)
      Der Timer beendet nie selbst einen Satz; er weist nur auf Satzgewinn
-     und Seitenwechsel hin (Beach: alle 7 Punkte, im Satz bis 15 alle 5). */
+     und Seitenwechsel hin (Beach: alle 7 Punkte, im Satz bis 15 alle 5).
+     Kommt das Spiel aus einem Turnierbogen, gelten dessen Satzziele und
+     immer 2 Punkte Vorsprung (wie die Ergebnisprüfung im Bogen); sonst die
+     eigenen Regeln (rules). */
   function cleanTargets(list) {
     if (!Array.isArray(list)) return [];
     return list.slice(0, MAX_TARGETS).map(function (t) { return Math.floor(Number(t)); })
       .filter(function (t) { return isFinite(t) && t >= 1 && t <= 99; });
   }
+  function cleanRules(r) {
+    r = r && typeof r === 'object' ? r : {};
+    var d = defaultRules();
+    return {
+      target: RULE_TARGETS.indexOf(r.target) >= 0 ? r.target : d.target,
+      wins: RULE_WINS.indexOf(r.wins) >= 0 ? r.wins : d.wins,
+      decider: RULE_TARGETS.indexOf(r.decider) >= 0 ? r.decider : d.decider,
+      twoPoint: r.twoPoint !== false
+    };
+  }
+  /* Satzziele eigener Regeln: (2·Gewinnsätze − 1) Sätze, der letzte ist
+     der Entscheidungssatz. */
+  function rulesTargets(r) {
+    var count = r.wins * 2 - 1;
+    var list = [];
+    for (var i = 0; i < count - 1; i++) list.push(r.target);
+    list.push(count > 1 ? r.decider : r.target);
+    return list;
+  }
+  /* Geänderte Regeln übernehmen (Teilangaben möglich); ungültig → Vorgabe.
+     Bleiben wie Ton/Seitenwechsel beim Zurücksetzen erhalten. */
+  function setRules(s, patch) {
+    var cur = s.rules || defaultRules();
+    var p = patch && typeof patch === 'object' ? patch : {};
+    var next = cleanRules({
+      target: 'target' in p ? Number(p.target) : cur.target,
+      wins: 'wins' in p ? Number(p.wins) : cur.wins,
+      decider: 'decider' in p ? Number(p.decider) : cur.decider,
+      twoPoint: 'twoPoint' in p ? !!p.twoPoint : cur.twoPoint
+    });
+    if (next.target === cur.target && next.wins === cur.wins && next.decider === cur.decider &&
+        next.twoPoint === cur.twoPoint) return s;
+    var n = clone(s);
+    n.rules = next;
+    return n;
+  }
   function targets(s) {
-    return s.match && s.match.targets.length ? s.match.targets : DEFAULT_TARGETS;
+    return s.match && s.match.targets.length ? s.match.targets : rulesTargets(s.rules || defaultRules());
+  }
+  function twoPoint(s) {
+    return s.match ? true : (s.rules || defaultRules()).twoPoint !== false;
+  }
+  /* Wirksame Regeln für Anzeige/Einstellungen; fromMatch = vom Bogen vorgegeben. */
+  function ruleInfo(s) {
+    var t = targets(s);
+    return {
+      target: t[0],
+      wins: Math.floor(t.length / 2) + 1,
+      decider: t[t.length - 1],
+      twoPoint: twoPoint(s),
+      fromMatch: !!s.match
+    };
+  }
+  function setsToWin(s) { return Math.floor(targets(s).length / 2) + 1; }
+  /* Seite mit genug Gewinnsätzen – sonst null. */
+  function matchWinner(s) {
+    var need = setsToWin(s);
+    return s.sets.a >= need ? 'a' : (s.sets.b >= need ? 'b' : null);
   }
   function setTarget(s) {
     var t = targets(s);
@@ -383,12 +460,17 @@
     if (s.switchPts === SWITCH_OFF) return 0;
     return s.switchPts > 0 ? s.switchPts : switchEvery(setTarget(s));
   }
-  /* Seite, die den laufenden Satz gewonnen hat (Ziel erreicht, 2 Punkte
-     Vorsprung) – sonst null. */
+  /* Seite, die den laufenden Satz gewonnen hat (Ziel erreicht und – je
+     nach Regel – 2 Punkte oder 1 Punkt Vorsprung) – sonst null. */
   function setWinner(s) {
     var a = s.score.a, b = s.score.b;
     var hi = Math.max(a, b), lo = Math.min(a, b);
-    return hi >= setTarget(s) && hi - lo >= 2 ? (a > b ? 'a' : 'b') : null;
+    return hi >= setTarget(s) && hi - lo >= (twoPoint(s) ? 2 : 1) ? (a > b ? 'a' : 'b') : null;
+  }
+  /* Entscheidet der gerade gewonnene Satz das Spiel? → Seite oder null. */
+  function decidingWinner(s) {
+    var w = setWinner(s);
+    return w && !matchWinner(s) && s.sets[w] + 1 >= setsToWin(s) ? w : null;
   }
   function isSideSwitch(s) {
     var total = s.score.a + s.score.b;
@@ -408,9 +490,7 @@
   }
   function matchComplete(s) {
     if (!s.match || !s.setHistory.length) return false;
-    var count = s.match.targets.length;
-    var need = Math.floor(count / 2) + 1;
-    return s.setHistory.length >= count || s.sets.a >= need || s.sets.b >= need;
+    return s.setHistory.length >= s.match.targets.length || !!matchWinner(s);
   }
   /* Satzergebnisse in Bogen-Ausrichtung ([{a,b}…]) – nur bei fertigem Spiel. */
   function resultFor(s) {
@@ -468,6 +548,9 @@
     s.compact = raw.compact === true;
     s.clockEnabled = raw.clockEnabled !== false;
     s.switchPts = cleanSwitchPts(raw.switchPts);
+    /* Ältere Stände ohne Regeln: Beach-Vorgabe (wie bisher 21/21/15). */
+    s.rules = cleanRules(raw.rules);
+    s.setupDone = raw.setupDone === true;
     var m = raw.match;
     if (m && typeof m === 'object' && typeof m.ref === 'string' && m.ref) {
       var t = cleanTargets(m.targets);
@@ -575,6 +658,14 @@
     SWITCH_OFF: SWITCH_OFF,
     SWITCH_OPTIONS: SWITCH_OPTIONS,
     setWinner: setWinner,
+    decidingWinner: decidingWinner,
+    matchWinner: matchWinner,
+    setRules: setRules,
+    ruleInfo: ruleInfo,
+    rulesTargets: rulesTargets,
+    RULE_TARGETS: RULE_TARGETS,
+    RULE_WINS: RULE_WINS,
+    setSetupDone: setSetupDone,
     isSideSwitch: isSideSwitch,
     setMatch: setMatch,
     matchComplete: matchComplete,

@@ -316,12 +316,23 @@
   margin: 0;
   color: #4a5468;
 }
-.mt-match-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 650; }
+/* Teamnamen dürfen zweizeilig werden statt früh abgeschnitten. */
+.mt-match-name {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
 .mt-match-name:first-child { text-align: right; }
 .mt-match-name:last-child { text-align: left; }
-.mt-match-score { font-size: 26px; font-weight: 800; line-height: 1.1; color: #1a3a5c; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mt-match-score { font-size: 38px; font-weight: 800; line-height: 1.1; color: #1a3a5c; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mt-match-score b { font-weight: 800; }
-.mt-match-sep { margin: 0 6px; color: #b3bccb; }
+.mt-match-sep { margin: 0 8px; color: #b3bccb; }
 .mt-lead.is-a #mt-match-name-a, .mt-lead.is-b #mt-match-name-b,
 .mt-lead.is-a #mt-match-a, .mt-lead.is-b #mt-match-b { color: #0a7d2c; }
 .mt-sets {
@@ -356,11 +367,52 @@
   border-radius: 999px;
 }
 .mt-set-win { font-weight: 800; color: #1a3a5c; }
-.mt-hint { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: #6b7385; text-align: center; }
+.mt-hint { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: #5a6375; text-align: center; }
 .mt-hint[hidden] { display: none; }
 
 /* ── Einstellungen / Zurücksetzen ── */
-.mt-settings { margin-top: 10px; }
+.mt-settings {
+  position: relative;
+  margin-top: 10px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+}
+.mt-settings[hidden] { display: none; }
+.mt-quick-controls { margin-top: 10px; }
+.mt-settings-heading { display: flex; align-items: center; min-height: 44px; margin: 0 44px 10px 0; color: #34445c; font-size: 15px; font-weight: 650; }
+.mt-settings-close { top: 12px; right: 12px; }
+.mt-settings > .mt-rules { margin: 0 0 10px; }
+.mt-setup-open { width: 100%; margin-bottom: 10px; border-radius: 12px; }
+.mt-settings-toggle { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px; padding: 0; cursor: pointer; }
+.mt-settings-toggle[aria-expanded="true"] { background: #fff; color: #1a3a5c; }
+@media screen and (min-width: 301px) and (max-width: 640px) and (orientation: portrait) {
+  .mt .mt-actions {
+    position: -webkit-sticky;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin: 10px 0 0;
+    padding: 0;
+    background: #eef2f7;
+    border: 0;
+  }
+  @media (max-width: 360px) {
+    .mt-iconbtn.i18n-switch .code { display: none; }
+    .mt-iconbtn.i18n-switch .ic svg { margin-right: 0; }
+  }
+  .mt .mt-actions > .mt-toggle { min-height: 56px; }
+  .mt.has-settings .mt-actions { position: static; margin: 10px 0 0; padding: 0; border: 0; }
+}
+@media (max-width: 440px) {
+  .mt-back { padding: 0; justify-content: center; }
+  .mt-back .mt-back-lbl { display: none; }
+  .mt-back .mt-chev { margin: 0; }
+  .mt-title { font-size: 15px; margin: 0 4px; }
+}
 .mt-clock[hidden] { display: none; }
 .mt-clock-close {
   position: absolute;
@@ -525,6 +577,130 @@
   font-weight: 600;
 }
 
+/* ── Spielregeln: dezent eingeklappt unter den Einstellungen ── */
+.mt-rules { margin: 10px 0 0; }
+.mt-rules-toggle {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  color: #34445c;
+  background: #fff;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.mt-rules-toggle:hover { background: #f1f5fa; }
+.mt-rules-text { -webkit-box-flex: 1; flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.mt-rules-head { font-weight: 650; margin-right: 4px; }
+.mt-rules-sum { color: #4a5468; }
+.mt-rules-chev { flex: 0 0 auto; margin-left: 8px; -webkit-transition: -webkit-transform .2s ease; transition: transform .2s ease; }
+.mt-rules-toggle[aria-expanded="true"] .mt-rules-chev { -webkit-transform: rotate(180deg); transform: rotate(180deg); }
+.mt-rules-panel { margin: 8px 0 0; }
+.mt-rules-panel[hidden], .mt-rule[hidden] { display: none; }
+.mt-rules-note { margin: 0 2px 8px; font-size: 13px; line-height: 1.4; color: #4a5468; }
+.mt-rules-note[hidden] { display: none; }
+.mt-rules .mt-rule {
+  margin: 0 0 8px;
+  flex-wrap: nowrap;
+  background: #fff;
+  border: 1px solid #c6d2e0;
+  border-radius: 12px;
+}
+.mt-rules .mt-rule .mt-setting-label {
+  margin: 0;
+  min-width: 0;
+  -webkit-box-flex: 1;
+  flex: 1 1 0;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+.mt-rules .mt-rule .mt-select {
+  -webkit-box-flex: 0;
+  flex: 0 1 auto;
+  max-width: 66%;
+  border: 0;
+  border-left: 1px solid #e1e7ef;
+  border-radius: 0 11px 11px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.mt-rules .mt-rule .mt-select:disabled { color: #4a5468; background-color: #f3f6fa; cursor: default; opacity: 1; }
+
+.mt-settings .mt-setup-open {
+  width: auto;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+}
+.mt-settings > .mt-setting,
+.mt-settings .mt-rules-toggle,
+.mt-settings .mt-rules .mt-rule {
+  border: 0;
+  border-bottom: 1px solid #e1e7ef;
+  border-radius: 0;
+  background: transparent;
+}
+.mt-settings > .mt-setting .mt-setting-label,
+.mt-settings .mt-rules-toggle,
+.mt-settings .mt-rules .mt-rule .mt-setting-label { padding-left: 0; }
+.mt-settings > .mt-setting .mt-select,
+.mt-settings .mt-rules .mt-rule .mt-select {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  font-size: 15px;
+  font-weight: 500;
+}
+.mt-settings .mt-rules-panel { margin-top: 0; }
+.mt-settings .mt-rules .mt-rule { margin-bottom: 0; min-height: 48px; }
+.mt-settings .mt-rules .mt-rule:last-child { border-bottom: 0; }
+.mt-settings .mt-rules-toggle[aria-expanded="true"] .mt-rules-sum { display: none; }
+@media (min-width: 480px) {
+  .mt-settings > .mt-setting .mt-select,
+  .mt-settings .mt-rules .mt-rule .mt-select { flex: 0 0 220px; width: 220px; }
+}
+
+/* ── Startdialog: Namen (+ Regeln eingeklappt) ── */
+.mt-setup-box { text-align: left; }
+.mt-setup-box .mt-modal-title, .mt-setup-box .mt-modal-text { text-align: center; }
+.mt-setup-box:focus { outline: none; }
+.mt-setup-field { margin: 0 0 10px; }
+.mt-setup-label { display: block; margin: 0 2px 4px; font-size: 13px; font-weight: 650; color: #34445c; }
+.mt-setup-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 650;
+  color: #1a1a2e;
+  background: #fff;
+  border: 1.5px solid #9fb2c8;
+  border-radius: 10px;
+}
+.mt-setup-rules { margin: 4px 0 14px; }
+/* Im schmalen Dialog: Beschriftung über der Auswahl, nichts abgeschnitten. */
+.mt-setup-rules .mt-rule { display: block; padding: 6px 0 0; background: transparent; border: 0; border-radius: 0; }
+.mt-setup-rules .mt-rule .mt-setting-label { display: block; padding: 0 2px 4px; }
+.mt-setup-rules .mt-rule .mt-select { display: block; width: 100%; max-width: 100%; border: 1.5px solid #9fb2c8; border-radius: 10px; }
+
 /* ── Popups (Seitenwechsel, Spiel aus dem Bogen) ──
    Kein dialog-Element und kein inset (Safari 12): fixes Overlay mit
    top/right/bottom/left 0, Box per Flex mittig. */
@@ -596,9 +772,15 @@
 .mt-modal-setting .mt-setting-label { font-size: 13px; font-weight: 600; color: #4a5468; }
 .mt-modal-setting .mt-select { font-size: 16px; }
 
-/* Fokus sichtbar (Tastatur/Screenreader); :focus als Safari-12-Fallback. */
-.mt button:focus, .mt input:focus, .mt select:focus, .mt-bar a:focus, .mt-bar button:focus,
-.mt-modal button:focus, .mt-modal select:focus {
+/* Fokus sichtbar (Tastatur/Screenreader); :focus als Safari-12-Fallback.
+   Auf hellem Grund blau (>= 3:1, WCAG 1.4.11), in der dunklen Kopfleiste
+   bernsteinfarben. */
+.mt button:focus, .mt input:focus, .mt select:focus,
+.mt-modal button:focus, .mt-modal select:focus, .mt-modal input:focus {
+  outline: 3px solid #1f6fa8;
+  outline-offset: 2px;
+}
+.mt-bar a:focus, .mt-bar button:focus {
   outline: 3px solid #f2a900;
   outline-offset: 2px;
 }
@@ -619,7 +801,6 @@
 .mt.is-compact .mt-name,
 .mt.is-compact .mt-direct,
 .mt.is-compact .mt-hint,
-.mt.is-compact .mt-settings .mt-setting,
 .mt.is-compact .mt-mode { display: none; }
 .mt.is-compact .mt-short { display: block; }
 .mt.is-compact .mt-value { font-size: 40px; margin: 2px 0; }
@@ -632,8 +813,8 @@
 .mt.is-compact .mt-lead { margin-top: 6px; }
 .mt.is-compact .mt-cur-bar { margin-top: 6px; height: 8px; }
 .mt.is-compact .mt-cur-bar:not([hidden]) + .mt-sides { margin-top: 6px; }
-.mt.is-compact .mt-match-score { font-size: 20px; }
-.mt.is-compact .mt-match-name { font-size: 13px; }
+.mt.is-compact .mt-match-score { font-size: 28px; }
+.mt.is-compact .mt-match-name { font-size: 15px; }
 #mt-set-won-end { background: #0a7d2c; }
 .mt-actions > #mt-end-set.is-ready { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0a7d2c; -webkit-animation: mt-ready 1.6s ease-in-out infinite; animation: mt-ready 1.6s ease-in-out infinite; }
 @-webkit-keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
@@ -686,8 +867,8 @@
   .mt.is-compact .mt-plus { min-height: 48px; font-size: 22px; }
   .mt.is-compact .mt-short { font-size: 12px; }
   .mt-match { grid-column-gap: 6px; }
-  .mt-match-name { font-size: 12px; }
-  .mt-match-score { font-size: 20px; }
+  .mt-match-name { font-size: 13px; }
+  .mt-match-score { font-size: 24px; }
   .mt-match-sep { margin: 0 3px; }
 }
 

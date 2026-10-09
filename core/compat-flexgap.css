@@ -212,6 +212,16 @@
 .no-flexgap .trp-list > * + * { margin-top: 8px; }
 .no-flexgap .trp-item > * + * { margin-top: 2px; }
 
+/* ══ Teilen-/Info-Dialog (core/turnier-share.js) ═══════════════════════ */
+.no-flexgap .tshare-head > * + * { margin-left: 12px; }
+.no-flexgap .tshare-options > * + * { margin-top: 10px; }
+.no-flexgap .tshare-opt > * + * { margin-left: 10px; }
+.no-flexgap .tshare-linkrow > * + * { margin-left: 8px; }
+.no-flexgap .tshare-loading > * + * { margin-top: 14px; }
+.no-flexgap .tshare-foot > *:not(:last-child) { margin-right: 10px; }
+.no-flexgap .tshare-foot > * { margin-bottom: 10px; }
+.no-flexgap .tshare-foot { padding-bottom: 4px; }
+
 /* Rundentitel-Pille (King & Queen / King of the Court) vor Freilos-/Zeit-Hinweis. */
 .no-flexgap .kq-round-title > .kq-rlabel,
 .no-flexgap .kq-round-head > .kq-rlabel { margin-right: 6px; }
