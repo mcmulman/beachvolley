@@ -1789,27 +1789,12 @@
     if (!confirm(T('home.sessions.confirmDelete', { count: selectedSessionKeys.size }))) return;
     try {
       const keys = Array.from(selectedSessionKeys);
-      const undoKey = await TStore.transaction(function (view) {
-        const entries = [];
-        keys.forEach(function (sessionKey) {
-          const storageKey = sessionKey.indexOf('store:') === 0
-            ? TStore.PREFIX + sessionKey.slice(6) : sessionKey;
-          const value = view.getItem(storageKey);
-          if (value != null) entries.push({ sessionKey: sessionKey, storageKey: storageKey, value: value });
-        });
-        if (!entries.length) return null;
-        const stamp = Date.now();
-        let undoKey = TStore.QUARANTINE_PREFIX + 'undo-delete.' + stamp;
-        let suffix = 1;
-        while (view.getItem(undoKey) != null) {
-          undoKey = TStore.QUARANTINE_PREFIX + 'undo-delete.' + stamp + '-' + suffix++;
-        }
-        view.setItem(undoKey, JSON.stringify({
-          type: 'session-delete', expiresAt: stamp + 15000, entries: entries
-        }));
-        keys.forEach(function (key) { deleteSessionKey(view, key); });
-        return undoKey;
+      /* Gemeinsamer atomarer Helfer (auch Turnier-Auswahl im Bogen). */
+      const result = await TStore.transaction(function (view) {
+        return TStore.deleteEntriesInView(view, keys);
       });
+      if (!result.ok) throw new Error(result.code);
+      const undoKey = result.undoKey;
       selectedSessionKeys.clear();
       await loadSessions();
       if (undoKey) showSessionUndo(T('home.sessions.deleted', { count: keys.length }), undoKey, undoDeletedSessions);
@@ -1818,41 +1803,12 @@
     }
   }
 
+  const UNDO_ERROR_KEYS = { 'undo-corrupt': 'home.undo.corrupt', 'undo-expired': 'home.undo.expired',
+    'undo-conflict': 'home.undo.conflict' };
   async function undoDeletedSessions(undoKey) {
     await TStore.transaction(function (view) {
-      let undo;
-      try { undo = JSON.parse(view.getItem(undoKey) || 'null'); }
-      catch (error) { throw new Error(T('home.undo.corrupt')); }
-      if (!undo || undo.type !== 'session-delete' || undo.expiresAt <= Date.now()
-          || !Array.isArray(undo.entries)) throw new Error(T('home.undo.expired'));
-      undo.entries.forEach(function (entry) {
-        if (view.getItem(entry.storageKey) != null) {
-          throw new Error(T('home.undo.conflict'));
-        }
-      });
-      const index = TStore.readIndexInView(view);
-      undo.entries.forEach(function (entry) {
-        if (entry.sessionKey.indexOf('store:') === 0) {
-          const sheet = entry.sessionKey.slice(6);
-          const parsed = TStore.parseRecord(entry.value, sheet);
-          if (!parsed.ok) throw new Error(T('home.undo.recordCorrupt'));
-          const tournament = parsed.data;
-          tournament._revision = Math.max(TStore.revisionInView(view, sheet), Number(tournament._revision) || 0) + 1;
-          view.setItem(entry.storageKey, JSON.stringify(tournament));
-          index[sheet] = TStore.indexEntry(tournament);
-        } else {
-          const archive = JSON.parse(entry.value);
-          view.setItem(entry.storageKey, entry.value);
-          index.__archives = index.__archives || {};
-          index.__archives[entry.storageKey] = {
-            key: entry.storageKey, file: archive.file || '', sheet: archive.sheet || '',
-            type: archive.type || '', title: archive.title || '', teams: archive.teams || [],
-            savedAt: archive.savedAt, archived: true
-          };
-        }
-      });
-      view.setItem(TStore.INDEX_KEY, JSON.stringify(index));
-      view.removeItem(undoKey);
+      const result = TStore.undoDeleteInView(view, undoKey);
+      if (!result.ok) throw new Error(T(UNDO_ERROR_KEYS[result.code] || 'home.undo.expired'));
     });
   }
 
@@ -2272,28 +2228,6 @@
       notice.style.display = '';
       notice.textContent = T('home.sessions.loadFailed', { message: errDetail(error) });
     }
-  }
-
-  /* Löscht genau einen Speicher-Eintrag (ohne Bestätigung/Re-Render – siehe
-     bulkDeleteSessions() für den eigentlichen Nutzer-Vorgang). */
-  function deleteSessionKey(view, key) {
-      if (key.indexOf('store:') === 0) {
-        const sheetId = key.slice(6);
-        const current = view.getItem(TStore.PREFIX + sheetId);
-        if (current != null) view.setItem(TStore.BACKUP_PREFIX + sheetId, current);
-        view.removeItem(TStore.PREFIX + sheetId);
-        const idx = TStore.readIndexInView(view);
-        delete idx[sheetId];
-        view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
-      } else if (key.indexOf('beachl.arch.') === 0) {
-        view.removeItem(key);
-        const idx = TStore.readIndexInView(view);
-        if (idx[INDEX_ARCHIVES_KEY]) {
-          delete idx[INDEX_ARCHIVES_KEY][key];
-          if (!Object.keys(idx[INDEX_ARCHIVES_KEY]).length) delete idx[INDEX_ARCHIVES_KEY];
-        }
-        view.setItem(TStore.INDEX_KEY, JSON.stringify(idx));
-      }
   }
 
   purgeExpiredUndoRecords().then(async function (pendingUndo) {

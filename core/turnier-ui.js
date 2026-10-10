@@ -1229,12 +1229,25 @@
   /* Ein delegierter Listener genuegt fuer die ganze Leiste. */
   function wireJumpBar(bar) {
     if (!bar) return;
+    function editing() {
+      const el = document.activeElement;
+      const active = el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
+        && !el.disabled && !el.readOnly && !/^(checkbox|radio|button)$/.test(el.type);
+      bar.classList.toggle('is-editing', !!active);
+    }
+    document.addEventListener('focusin', editing);
+    document.addEventListener('focusout', function () { setTimeout(editing, 0); });
     bar.addEventListener('click', e => {
       const el = e.target.closest ? e.target.closest('[data-jump],[data-jump-print]') : null;
       if (!el) return;
       if (el.hasAttribute('data-jump-print')) { window.print(); return; }
       const target = document.getElementById(el.getAttribute('data-jump'));
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (target) {
+        const header = document.querySelector('.app-bar');
+        const sticky = header && /sticky|fixed/.test(getComputedStyle(header).position);
+        const offset = sticky ? header.getBoundingClientRect().height + 12 : 12;
+        window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
+      }
     });
   }
 

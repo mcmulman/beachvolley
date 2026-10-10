@@ -972,4 +972,91 @@
     table.kq-cards > tbody > tr > td { display: block; width: auto; }
     table.kq-cards > tbody > tr > td + td { margin-top: 8px; }
   }
+
+  /* Intrinsic text/set widths must not expand the iPhone layout viewport.
+     Tables retain their own scroll area; the A4 layout is unaffected. */
+  .tournament-sheet h1, .tournament-sheet .guide, .tournament-sheet #tserver-status {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .tournament-sheet .table-scroll { min-width: 0; max-width: 100%; }
+  .tournament-sheet .table-scroll:focus, .tournament-sheet .scrollhint:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  #tserver-status summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
+  #tserver-status button {
+    min-height: 44px; max-width: 100%; white-space: normal;
+    font: inherit; padding: 8px 12px;
+  }
+  @media (max-width: 960px) {
+    .tournament-sheet {
+      padding-left: 10px; padding-right: 10px;
+      padding-left: calc(10px + env(safe-area-inset-left, 0px));
+      padding-right: calc(10px + env(safe-area-inset-right, 0px));
+    }
+    .tournament-sheet .app-bar { padding-left: 10px; padding-right: 10px; }
+    .tournament-sheet #tserver-status { padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important; }
+    .tournament-sheet .teams { table-layout: fixed; }
+    .tournament-sheet .teams .name { word-wrap: break-word; overflow-wrap: break-word; }
+    .tournament-sheet .teams .name .t-nm { width: auto; min-width: 0; }
+    .tournament-sheet .teams .name .t-nm,
+    .tournament-sheet .track .tname .t-nm,
+    .tournament-sheet .stand .nm .t-nm,
+    .tournament-sheet .central-table .teamcol .t-nm {
+      white-space: normal; overflow: visible; text-overflow: clip;
+      word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;
+    }
+    .tournament-sheet .track .tname .t-nm,
+    .tournament-sheet .central-table .teamcol .t-nm { width: 140px; font-size: 12px; }
+  }
+  @media (max-width: 640px) {
+    .tournament-sheet .app-bar__back, .tournament-sheet .app-bar__btn { min-width: 44px; }
+    .tournament-sheet .ngrid input { width: 100%; min-width: 0; }
+    .tournament-sheet .cfgfield > input, .tournament-sheet .cfgfield > select { width: 100%; min-width: 0; }
+    .tournament-sheet .cfgcard-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tournament-sheet .nbtn { min-width: 0; white-space: normal; word-wrap: break-word; }
+    .tournament-sheet .nbtn > span { min-width: 0; }
+    .tournament-sheet .cfg-lbl { min-width: 0; }
+    .tournament-sheet .psets { flex-wrap: wrap; min-width: 0; }
+    .tournament-sheet input.score { width: 44px !important; min-width: 44px !important; height: 44px !important; }
+    .tournament-sheet .score-ok, .tournament-sheet .bl-mtimer { width: 44px; height: 44px; }
+    .tournament-sheet .bl-rdone { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; }
+    .tournament-sheet table.kq-cards, .tournament-sheet table.kq-cards > tbody,
+    .tournament-sheet table.kq-cards > tbody > tr,
+    .tournament-sheet table.kq-cards > tbody > tr > td { display: block; width: 100%; }
+    .tournament-sheet table.kq-cards > tbody > tr > td + td { margin-top: 12px; }
+    .tournament-sheet td.match::before { word-wrap: break-word; overflow-wrap: break-word; }
+    .tournament-sheet .central-table th, .tournament-sheet .central-table td { font-size: 12px; }
+    .tournament-sheet .central-table .teamcol { min-width: 140px; }
+    .tournament-sheet .central-table .round { min-width: 72px; }
+    /* One visual hierarchy on every sheet: readable instructions, quiet setup
+       groups, then clearly separated play/results sections. No data is hidden. */
+    .tournament-sheet h1 { font-size: 20px; line-height: 1.3; margin-bottom: 12px; }
+    .tournament-sheet #standingsSection { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--app-line-soft); }
+    .tournament-sheet .guide { padding: 12px; margin-bottom: 16px; box-shadow: none; font-size: 13px; line-height: 1.5; }
+    .tournament-sheet .guide h2 { font-size: 14px; text-transform: none; letter-spacing: 0; }
+    .tournament-sheet .guide li { margin: 6px 0; }
+    .tournament-sheet .cfgcard { margin-bottom: 20px; }
+    .tournament-sheet .cfg-action-group { padding: 10px; box-shadow: none; }
+    .tournament-sheet .cfg-action-group__label { font-size: 13px; }
+    .tournament-sheet .mobile-schedule-title { margin-top: 20px; font-size: 16px; }
+    .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; font-size: 16px; color: var(--app-blue-dark); }
+    .tournament-sheet .format-info-toggle { width: 100%; }
+    .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
+    .mobile-jumpbar { grid-template-columns: repeat(5, minmax(0, 1fr));
+      padding-left: 8px; padding-right: 8px;
+      padding-left: calc(8px + env(safe-area-inset-left, 0px));
+      padding-right: calc(8px + env(safe-area-inset-right, 0px)); }
+    .mobile-jumpbar .nbtn { min-width: 0; word-wrap: break-word; }
+    .mobile-jumpbar.is-editing { display: none; }
+  }
+  @media (min-width: 641px) and (max-width: 960px) {
+    .tournament-sheet .table-scroll.is-wide { overflow-x: auto; }
+    .tournament-sheet .table-scroll.is-wide table.sched { table-layout: auto; }
+    .tournament-sheet .table-scroll.is-wide td.match,
+    .tournament-sheet .table-scroll.is-wide th[data-field] { min-width: 200px; }
+  }
+  @media (max-height: 480px) and (max-width: 960px) {
+    .tournament-sheet .app-bar, .tournament-sheet .schedule-roundbar { position: static; }
+    .tournament-sheet .mobile-jumpbar { position: static; }
+    .tournament-sheet { padding-bottom: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  }
 }

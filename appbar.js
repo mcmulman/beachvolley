@@ -148,6 +148,19 @@
   }
 
   function build() {
+    document.body.classList.add('tournament-sheet');
+    var alternateSchedule = document.getElementById('roundsContainer') || document.getElementById('ladderSection');
+    if (alternateSchedule && typeof TUI !== 'undefined') {
+      var jumpbar = document.getElementById('jumpbar');
+      if (!jumpbar) {
+        jumpbar = document.createElement('div');
+        jumpbar.id = 'jumpbar';
+        jumpbar.className = 'mobile-jumpbar noprint';
+        document.body.appendChild(jumpbar);
+      }
+      jumpbar.innerHTML = TUI.jumpBarHtml({ schedule: alternateSchedule.id });
+      TUI.wireJumpBar(jumpbar);
+    }
     groupConfigActions();
     addConfigToggle();
     if (document.querySelector('.app-bar')) return;
@@ -220,7 +233,7 @@
     // scrollt (flach, ohne Kanten-Verlauf – siehe app-skin.css). Läuft
     // wiederholt, da Spielpläne oft per innerHTML neu gerendert werden.
     function wrapScrollTables() {
-      var tables = document.querySelectorAll('table.sched, table.track');
+      var tables = document.querySelectorAll('table.sched, table.track, table.stand, table.central-table');
       for (var i = 0; i < tables.length; i++) {
         var t = tables[i];
         var p = t.parentElement;
@@ -230,6 +243,19 @@
         p.insertBefore(wrap, t);
         wrap.appendChild(t);
       }
+      document.querySelectorAll('.table-scroll, .scrollhint').forEach(function (wrap, index) {
+        if (!wrap.querySelector('table')) return;
+        wrap.setAttribute('tabindex', '0');
+        wrap.setAttribute('role', 'region');
+        if (!wrap.hasAttribute('aria-labelledby') && !wrap.hasAttribute('aria-label')) {
+          var caption = wrap.querySelector('caption');
+          if (caption && caption.textContent.trim()) {
+            if (!caption.id) caption.id = 'sheet-scroll-caption-' + index;
+            wrap.setAttribute('aria-labelledby', caption.id);
+          } else if (wrap.closest('#scheduleSection')) wrap.setAttribute('aria-labelledby', 'capSched');
+          else wrap.setAttribute('aria-labelledby', 'standingsSection');
+        }
+      });
     }
     wrapScrollTables();
     if (window.MutationObserver) {

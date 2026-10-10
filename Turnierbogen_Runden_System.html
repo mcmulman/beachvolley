@@ -2,7 +2,7 @@
 <html lang="de" data-i18n>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Turnierbogen – Jeder gegen Jeden</title>
 <meta name="description" content="Jeder gegen Jeden im Beach-Volleyball: Runden, Felder und Teams planen, Ergebnisse lokal erfassen und Spielplan sowie Tabelle offline oder auf A4 nutzen.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Turnierbogen_Runden_System.html">
@@ -97,7 +97,7 @@
   <script src="core/i18n/en.js"></script>
   <script src="core/turnier-native.js"></script>
 </head>
-<body>
+<body class="rounds-sheet">
 
 <div class="noprint" style="margin:0 0 8px">
   <a href="index.html" style="font-size:13px;color:#1f4e79;font-weight:bold;text-decoration:none" data-i18n="chrome.backToOverview">← Zur Übersicht</a>
@@ -216,7 +216,7 @@
 </div>
 
 <div class="noprint schedule-roundbar" id="roundbar"></div>
-<div class="table-scroll is-wide" id="scheduleSection">
+<div class="table-scroll is-wide" id="scheduleSection" tabindex="0" role="region" aria-labelledby="capSched">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="sched">
     <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span></caption>
@@ -232,11 +232,11 @@
 <p class="sub" id="standingsSub"><span class="only-screen" data-i18n="rs.standings.subScreen">Punkte, Ball-Differenz und Platz werden automatisch berechnet.</span><span class="only-print" data-i18n="rs.standings.printHint">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
 
 <p class="input-hint hint-top" id="hintRank"></p>
-<div class="table-scroll" id="standTableWrap">
+<div class="table-scroll" id="standTableWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
   <table class="stand" id="standTable"></table>
 </div>
 
-<div class="table-scroll is-track" id="trackWrap">
+<div class="table-scroll is-track" id="trackWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
   <table class="track" id="trackTable" data-mstd-key="final">
     <tbody id="trackBody"></tbody>
   </table>

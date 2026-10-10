@@ -161,6 +161,7 @@
   function snapshotInView(view, keys) {
     const out = {};
     (keys || []).forEach(k => {
+      if (k.indexOf(store().SERVER_PREFIX) === 0) return;
       const v = view.getItem(k);
       if (v != null) out[k] = v;
     });
@@ -238,6 +239,7 @@
       let value = data[key];
       const sheet = liveSheetOf(key);
       if (sheet) {
+        S.detachServerInView(view, sheet);
         const parsed = S.parseRecord(value, sheet);
         if (parsed.ok) {
           const t = parsed.data;
@@ -313,6 +315,7 @@
     (keys || []).forEach(k => {
       const s = liveSheetOf(k);
       if (s) {
+        store().detachServerInView(view, s);
         revisions[s] = liveRevisionInView(view, s);
         view.setItem(store().REVISION_PREFIX + s, String(revisions[s]));
       }
@@ -358,7 +361,7 @@
   /* Übernimmt einen fremden Schnappschuss (geteilter Link) atomar: bisherigen
      Stand archivieren, Schnappschuss schreiben, Index pflegen.
      → Promise<{ archived }>; reject bei ungültigen Daten/Speicherfehlern. */
-  function importSnapshot(opts, data) {
+  function importSnapshot(opts, data, binding) {
     const S = store();
     const keys = Object.keys(data || {});
     const invalid = function () {
@@ -377,6 +380,9 @@
     return idle().then(() => S.transaction(view => {
       const archived = archiveCurrentInView(view, opts);
       const sheets = writeSnapshotInView(view, data);
+      if (binding && opts && opts.sheet) {
+        view.setItem(S.SERVER_PREFIX + opts.sheet, JSON.stringify(binding));
+      }
       return { archived: archived, sheets: sheets };
     })).then(res => { notifyTabs(res.sheets); return res; });
   }

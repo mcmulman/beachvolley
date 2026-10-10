@@ -18,17 +18,32 @@
 }
 .tf-plan-open:hover { background: #24527f; border-color: #24527f; }
 .tf-open:focus, .tf-panel :focus { outline: 3px solid #1f6fa8; outline-offset: 2px; }
-.tf-overlay { position: fixed; z-index: 10000; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; overflow: auto; }
-.tf-panel { background: #fff; color: #1a1a2e; border-radius: 12px; padding: 20px; width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; font: 16px/1.45 system-ui, sans-serif; box-sizing: border-box; }
-.tf-panel h2 { margin: 0 0 12px; font-size: 22px; }
-.tf-panel p { margin: 10px 0; font-size: 14px; }
-.tf-panel label { display: block; margin: 12px 0; font-size: 15px; }
-.tf-panel input:not([type=checkbox]), .tf-panel textarea, .tf-panel select { display: block; font: inherit; width: 100%; min-height: 44px; padding: 8px; box-sizing: border-box; border: 1px solid #596579; border-radius: 6px; background: #fff; color: #1a1a2e; }
+.tf-overlay { position: fixed; z-index: 10000; top: 0; right: 0; bottom: 0; left: 0; background: rgba(26,58,92,.45); display: flex; align-items: center; justify-content: center; padding: 12px; overflow: auto; box-sizing: border-box; }
+.tf-panel { background: #fff; color: #1a1a2e; border-radius: 14px; padding: 20px; width: 100%; max-width: 440px; max-height: calc(100% - 8px); overflow: auto; font: 16px/1.4 system-ui, sans-serif; box-sizing: border-box; box-shadow: 0 12px 40px rgba(26,58,92,.2); }
+.tf-panel [hidden] { display: none !important; }
+.tf-panel h2 { margin: 0 0 8px; font-size: 22px; color: #1a3a5c; }
+.tf-panel p { margin: 8px 0; font-size: 14px; }
+.tf-panel .tf-note { color: #596579; font-size: 12px; }
+.tf-panel label { display: block; margin: 10px 0; font-size: 14px; font-weight: 600; }
+.tf-panel input:not([type=checkbox]), .tf-panel textarea, .tf-panel select { display: block; margin-top: 4px; font: 16px/1.35 system-ui, sans-serif; font-weight: 400; width: 100%; min-height: 44px; padding: 8px 10px; box-sizing: border-box; border: 1px solid #aeb9c6; border-radius: 8px; background: #fff; color: #1a1a2e; }
 .tf-panel textarea { resize: vertical; }
-.tf-panel .tf-check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
-.tf-check input { width: 22px; height: 22px; flex-shrink: 0; }
+.tf-panel .tf-check { display: flex; align-items: center; min-height: 44px; font-weight: 400; }
+.tf-check input { width: 22px; height: 22px; flex-shrink: 0; margin-right: 10px; }
+.tf-details { border-top: 1px solid #e3e8ee; margin-top: 10px; }
+.tf-details summary { padding: 10px 0; min-height: 44px; box-sizing: border-box; font-size: 13px; color: #596579; cursor: pointer; }
 .tf-panel pre { white-space: pre-wrap; overflow-wrap: break-word; font-size: 12px; background: #eef2f7; padding: 10px; }
-.tf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.tf-actions button { font: inherit; min-height: 44px; padding: 8px 12px; border: 1px solid #596579; border-radius: 6px; background: #fff; color: #1a3a5c; cursor: pointer; }
-.tf-actions button[type=submit] { background: #1a3a5c; color: #fff; }
+.tf-actions { display: flex; margin: 8px -4px 0; }
+.tf-panel button { font: inherit; min-height: 44px; padding: 8px 12px; border: 1px solid transparent; border-radius: 8px; background: #fff; color: #1a3a5c; cursor: pointer; }
+.tf-actions button { margin: 0 4px; }
+.tf-panel .tf-primary { background: #1a3a5c; color: #fff; font-weight: 600; }
+.tf-actions .tf-primary { flex: 1; }
+.tf-panel button:disabled { opacity: .55; cursor: default; }
+.tf-drafts { display: flex; flex-wrap: wrap; margin-top: 4px; }
+.tf-drafts button { padding: 8px; font-size: 12px; color: #596579; text-decoration: underline; }
+.tf-panel .tf-status:empty { display: none; }
+.tf-panel .tf-status { padding: 10px; background: #eef2f7; border-radius: 8px; }
+.tf-panel .tf-error { color: #9c2626; background: #fff1f1; }
+.tf-success { padding: 8px 0 0; }
+.tf-success .tf-primary { width: 100%; margin-top: 16px; }
+@media screen and (max-width: 400px) { .tf-panel { padding: 16px; } }
 @media print { .tf-overlay, .tf-open { display: none !important; } }

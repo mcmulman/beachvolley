@@ -1,10 +1,13 @@
 /* ============================================================================
-   turnier-share.js – Turnier per Link teilen (zwei Varianten)
+   turnier-share.js – dauerhafte Serverturniere und unabhängige Offline-Links
 
    1) SERVER-LINK (Standard, empfohlen): Der Turnierstand wird an ein eigenes
       PHP/MySQL-Backend gesendet (siehe backend/README.md) und dort
       verschlüsselt gespeichert. Der Link enthält nur eine kurze ID:
         Turnierbogen_XY.html#share=<kurze ID>
+      Weitere Veröffentlichungen derselben Instanz aktualisieren denselben
+      Code mit getrennter Bearbeitungsberechtigung und atomarer Serverrevision.
+      Öffentliche Empfänger lesen nur; Rechteübertrag ist explizit geheim.
       Vorteil: kurzer Link, Admin kann Passwort/Zugriff zentral verwalten.
       Nachteil: zum Erstellen UND zum Öffnen ist Internet nötig.
 
@@ -26,13 +29,14 @@
    - Das laufende Turnier lebt immer in IndexedDB (siehe turnier-store.js)
      und wird davon völlig unabhängig ganz normal weiter automatisch
      gespeichert - das Teilen ist rein "on top" und rührt den lokalen Stand
-     NIE an, außer der Nutzer bestätigt aktiv die Übernahme eines *fremden*
+     nicht an (Serverrechte/Wiederholungsrequests liegen separat), außer der Nutzer bestätigt aktiv die Übernahme eines *fremden*
      geteilten Turniers (und selbst dann wird der bisherige Stand vorher
      automatisch archiviert – in derselben Transaktion, siehe
      confirmAndApplySnapshot() / TArchive.importSnapshot()).
    - Netzwerkfehler beim Erstellen/Öffnen eines SERVER-Links führen zu keinem
-     Verlust: Es wird nichts geschrieben, bevor der Server erfolgreich
-     geantwortet hat; ein per Link empfangener, aber (noch) nicht ladbarer
+     Verlust: Ein Übertragungsrequest wird vorher separat lokal gesichert;
+     der laufende Turnierstand wird durch das Veröffentlichen nicht ersetzt.
+     Ein per Link empfangener, aber (noch) nicht ladbarer
      Server-Link bleibt in der Adresszeile stehen (statt verworfen zu
      werden), damit ein erneutes Laden - z. B. sobald wieder Internet
      verfügbar ist - automatisch einen neuen Versuch startet.
@@ -108,7 +112,7 @@
     const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
     let res;
     try {
-      res = await fetch(API_BASE + path, Object.assign({}, opts, ctrl ? { signal: ctrl.signal } : {}));
+      res = await fetch(API_BASE + path, Object.assign({ cache: 'no-store', credentials: 'omit' }, opts, ctrl ? { signal: ctrl.signal } : {}));
     } catch (e) {
       const err = new Error(
         (e && e.name === 'AbortError')
@@ -167,6 +171,194 @@
 
   function buildServerShareUrl(id) {
     return sharePageUrl().toString() + SERVER_PREFIX + encodeURIComponent(id);
+  }
+
+  function secret() {
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) throw new Error(tx('server.crypto', 'Sichere Zufallszahlen sind nicht verfügbar.'));
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return Array.prototype.map.call(bytes, function (n) { return n.toString(16).padStart(2, '0'); }).join('');
+  }
+  function bindingKey(sheet) { return TStore.SERVER_PREFIX + sheet; }
+  function bindInView(view, sheet, binding) { view.setItem(bindingKey(sheet), JSON.stringify(binding)); }
+  function snapshotSignature(snapshot) {
+    const clean = {};
+    Object.keys(snapshot || {}).sort().forEach(function (key) {
+      const record = JSON.parse(snapshot[key]);
+      delete record._revision; delete record.updated;
+      clean[key] = record;
+    });
+    return JSON.stringify(clean);
+  }
+  function parsedServerInput(value) {
+    const parts = String(value || '').split('&edit=');
+    const id = extractServerCode(parts[0]);
+    const token = parts[1] || '';
+    if (!/^[A-Za-z0-9]{1,12}$/.test(id) || (token && !/^[a-f0-9]{64}$/.test(token))) {
+      throw new Error(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.'));
+    }
+    return { id: id, token: token };
+  }
+
+  /* Persist the exact request BEFORE sending. Recovery requires the client's
+     256-bit secret, never a public request ID. Complete an uncertain request
+     before starting a different one, even if local data have changed. */
+  async function publish(o, pw, removePassword) {
+    if (!cloudSharingEnabled()) throw cloudSharingError();
+    if (removePassword) pw = '';
+    sharePageUrl();
+    await TStore.whenIdle();
+    let binding = await TStore.transaction(function (view) {
+      let b = TStore.serverBindingInView(view, o.sheet);
+      if (b && b.readOnly) throw new Error(tx('server.readonly', 'Schreibgeschützte Serveransicht'));
+      if (!b) {
+        b = { instance: secret(), token: secret(), revision: 0, id: null };
+        bindInView(view, o.sheet, b);
+      }
+      return b;
+    });
+    async function transmit(pending) {
+      const data = await apiPost('/share.php?action=' + pending.action, pending.body);
+      if (!data || !/^[A-Za-z0-9]{1,12}$/.test(data.id) || !Number.isSafeInteger(data.revision)
+          || data.revision < 1 || data.formatVersion !== 1 || (binding.id && data.id !== binding.id)) {
+        throw new Error(tx('server.protocol', 'Der Server unterstützt dauerhafte Turniere noch nicht. Bitte Backend aktualisieren.'));
+      }
+      binding = await TStore.transaction(function (view) {
+        const current = TStore.serverBindingInView(view, o.sheet);
+        if (!current || current.instance !== binding.instance) throw new Error(tx('server.replaced', 'Das lokale Turnier wurde inzwischen ersetzt. Der Upload gehört zum vorherigen Turnier.'));
+        current.id = data.id;
+        current.revision = Math.max(current.revision, data.revision);
+        if (current.pending && current.pending.body.requestKey === pending.body.requestKey) {
+          delete current.pending;
+          current.published = snapshotSignature(pending.body.snapshot);
+        }
+        bindInView(view, o.sheet, current);
+        return current;
+      });
+      return data;
+    }
+    const recovery = binding.pending;
+    const recovered = recovery ? await transmit(recovery) : null;
+    const snapshot = await readSnapshot(o);
+    const signature = snapshotSignature(snapshot);
+    const sameRecoveredPassword = recovery && ((!pw && !removePassword && recovery.body.password === undefined)
+      || (pw || '') === recovery.body.password);
+    if (recovered && signature === snapshotSignature(recovery.body.snapshot) && sameRecoveredPassword) {
+      recovered.dirty = false;
+      await renderServerStatus(o);
+      return recovered;
+    }
+    const record = JSON.parse(snapshot[TStore.PREFIX + o.sheet] || '{}');
+    const count = Number(record.config && record.config.teams)
+      || Number(record.config && record.config.men) + Number(record.config && record.config.women) || 0;
+    const teams = [];
+    for (let n = 1; n <= count; n++) teams.push(record.teamNames && record.teamNames[n]
+      || (o.sheet.indexOf('kingqueen') === 0 ? 'Person ' : 'Team ') + n);
+    const body = {
+      formatVersion: 1, sheet: o.sheet, file: o.file || '', type: o.type || '',
+      title: record.title || o.title || '', teams: teams.length ? teams : (Array.isArray(o.teams) ? o.teams : []),
+      snapshot: snapshot, password: pw || '', editToken: binding.token, requestKey: secret()
+    };
+    if (binding.id) {
+      body.id = binding.id; body.expectedRevision = binding.revision;
+      if (!pw && !removePassword) delete body.password;
+    }
+    const pending = { action: binding.id ? 'update' : 'create', body: body };
+    await TStore.transaction(function (view) {
+      const b = TStore.serverBindingInView(view, o.sheet);
+      if (!b || b.instance !== binding.instance) throw new Error(tx('server.replaced', 'Das lokale Turnier wurde inzwischen ersetzt. Der Upload gehört zum vorherigen Turnier.'));
+      if (b.pending) throw new Error(tx('server.busy', 'Eine Übertragung läuft bereits. Bitte erneut versuchen.'));
+      b.pending = pending;
+      bindInView(view, o.sheet, b);
+    });
+    const data = await transmit(pending);
+    data.dirty = snapshotSignature(await readSnapshot(o)) !== signature;
+    await renderServerStatus(o);
+    return data;
+  }
+
+  async function independentCopy(o) {
+    await TStore.whenIdle();
+    await TStore.transaction(function (view) { TStore.detachServerInView(view, o.sheet); });
+    location.reload();
+  }
+
+  function transferUrl(o) {
+    return TStore.serverBinding(o.sheet).then(function (b) {
+      if (!b || !b.id || !b.token || b.readOnly) throw new Error(tx('server.noRights', 'Kein Bearbeitungsrecht vorhanden.'));
+      return buildServerShareUrl(b.id) + '&edit=' + b.token;
+    });
+  }
+  function openTransfer(o) {
+    return transferUrl(o).then(function (url) {
+      openInfoDialog({
+        title: tx('server.transfer', 'Bearbeitungszugang sichern / übertragen'),
+        bodyHtml: '<p>' + escapeHtml(tx('server.secretWarning', 'Geheimer Link: erlaubt Änderungen in einem anderen Browser. Nur ausdrücklich an Mitorganisatoren geben, niemals öffentlich teilen. Rechte vor Browserdatenlöschung oder dem Schließen einer privaten Sitzung separat sichern; gewöhnliche Sicherungsdateien enthalten sie nicht.'))
+          + '</p><input id="tserver-secret" type="text" readonly style="width:100%">'
+      }).querySelector('#tserver-secret').value = url;
+    });
+  }
+
+  let readonlyObserver = null;
+  let readonlyActive = false;
+  let statusOpts = null;
+  function lockServerView() {
+    readonlyActive = true;
+    function allowed(el) {
+      return el.closest && el.closest('#tserver-status, #' + MODAL_ID + ', .schedule-roundbar, .mobile-jumpbar, .app-bar, .format-info-toggle, .cfg-actions-toggle');
+    }
+    function disable() {
+      if (!readonlyActive) return;
+      document.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+        if (allowed(el)) return;
+        if (el.tagName !== 'BUTTON' || !/^(btnShare|btnPrint|btnToggle\w*)$/.test(el.id)) el.disabled = true;
+      });
+    }
+    if (!readonlyObserver) {
+      readonlyObserver = new MutationObserver(disable);
+      readonlyObserver.observe(document.body, { childList: true, subtree: true });
+      ['input', 'change'].forEach(function (event) {
+        document.addEventListener(event, function (e) {
+          if (readonlyActive && !allowed(e.target)) { e.preventDefault(); e.stopImmediatePropagation(); }
+        }, true);
+      });
+    }
+    disable();
+  }
+
+  async function renderServerStatus(o) {
+    if (typeof document === 'undefined' || !o || !o.sheet) return;
+    statusOpts = o;
+    const b = await TStore.serverBinding(o.sheet);
+    const old = document.getElementById('tserver-status');
+    if (old) old.remove();
+    if (!b || !b.id) return;
+    const bar = document.createElement('div');
+    bar.id = 'tserver-status'; bar.className = 'noprint';
+    bar.style.cssText = 'padding:12px;border:1px solid #b4bfd0;background:#eef3fa;margin:12px 0;';
+    const dirty = b.published !== snapshotSignature(await readSnapshot(o));
+    bar.textContent = (b.readOnly ? tx('server.readonly', 'Schreibgeschützte Serveransicht')
+      : dirty ? tx('server.dirty', 'Lokaler Entwurf – noch nicht veröffentlicht')
+        : tx('server.bound', 'Dieser Browser kann aktualisieren'));
+    const more = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = tx('share.moreOptions', 'Weitere Optionen');
+    more.appendChild(summary);
+    bar.appendChild(more);
+    function button(key, de, fn) {
+      const el = document.createElement('button'); el.type = 'button'; el.textContent = tx(key, de);
+      el.style.margin = '4px'; el.addEventListener('click', fn); more.appendChild(el);
+    }
+    button('server.copy', 'Unabhängige lokale Kopie', function () {
+      if (confirm(tx('server.copyConfirm', 'Serverbindung lösen? Dieser Stand wird eine unabhängige lokale Kopie; der Server bleibt unverändert.'))) independentCopy(o);
+    });
+    button('server.load', 'Entwurf sichern + Server laden', function () {
+      location.hash = SERVER_PREFIX + b.id + (b.token ? '&edit=' + b.token : '');
+      location.reload();
+    });
+    if (!b.readOnly) button('server.transfer', 'Bearbeitungszugang sichern / übertragen', function () { openTransfer(o); });
+    document.body.insertBefore(bar, document.body.firstChild);
+    if (b.readOnly) lockServerView();
   }
 
   /* =================================================== Offline-Kodierung
@@ -306,21 +498,23 @@
          keine Verankerung und wuerde ausserhalb des Viewports gerendert
          (unsichtbar, ohne Fehlermeldung). Daher immer top/right/bottom/left. */
       '.tshare-backdrop{position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;background:rgba(20,30,45,.55);' +
-        'display:flex;align-items:center;justify-content:center;padding:16px;' +
+        'display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;' +
+        'padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));' +
+        'padding-left:calc(16px + env(safe-area-inset-left,0px));padding-right:calc(16px + env(safe-area-inset-right,0px));' +
         '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
       '@media print{.tshare-backdrop{display:none !important;}}' +
       '.tshare-panel{background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
-        'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:90vh;overflow:auto;' +
+        'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;' +
         'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}' +
       '.tshare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;' +
-        'padding:16px 18px;border-bottom:1px solid #e2e8f0;}' +
-      '.tshare-head h3{margin:0;font-size:16px;font-weight:800;color:#1a3a5c;}' +
+        'padding:16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:16px;font-weight:800;color:#1a3a5c;}' +
       /* 44x44-Trefferflaeche; negativer Rand haelt die Kopfzeile gleich hoch. */
       '.tshare-x{border:none;background:none;font-size:22px;line-height:1;color:#5a6375;cursor:pointer;padding:2px 6px;border-radius:8px;' +
         'min-width:44px;min-height:44px;margin:-10px -10px -10px 0;flex:0 0 auto;}' +
       '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
       '.tshare-x:hover{background:#eef2f7;}' +
-      '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;}' +
+      '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
       '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
       '.tshare-hint{font-size:12.5px;color:#5a6375;}' +
       '.tshare-error{color:#b3261e;font-weight:600;}' +
@@ -330,6 +524,7 @@
       '.tshare-opt.is-checked{border-color:#1f6fa8;background:#e8f3fb;}' +
       '.tshare-opt-primary{padding:14px 12px;border-width:2px;}' +
       '.tshare-opt input{margin-top:3px;flex:0 0 auto;}' +
+      '.tshare-opt>span{min-width:0;}' +
       '.tshare-opt strong{display:block;font-size:13.5px;color:#1a1a2e;}' +
       '.tshare-opt em{font-style:normal;color:#0a7d2c;font-size:11.5px;font-weight:700;margin-left:4px;}' +
       '.tshare-opt small{display:block;color:#5a6375;font-size:12px;margin-top:2px;}' +
@@ -356,13 +551,15 @@
         'border-top-color:#1f6fa8;animation:tshare-spin .8s linear infinite;}' +
       '@keyframes tshare-spin{to{transform:rotate(360deg);}}' +
       '.tshare-foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;' +
-        'padding:14px 18px;border-top:1px solid #e2e8f0;}' +
+        'padding:14px 18px;border-top:1px solid #e2e8f0;flex:0 0 auto;}' +
       '.tshare-btn{border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:700;' +
-        'cursor:pointer;white-space:nowrap;}' +
+        'cursor:pointer;white-space:normal;min-height:44px;max-width:100%;word-wrap:break-word;}' +
       '.tshare-btn-primary{background:#1a3a5c;color:#fff;}' +
       '.tshare-btn-primary:hover{background:#1f6fa8;}' +
       '.tshare-btn-ghost{background:none;color:#1a3a5c;border:1.5px solid #ccd8e8;}' +
-      '.tshare-btn-ghost:hover{border-color:#1f6fa8;}';
+      '.tshare-btn-ghost:hover{border-color:#1f6fa8;}' +
+      '@media screen and (max-width:640px){.tshare-field input,.tshare-linkrow input{font-size:16px;min-height:44px;}' +
+        '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-head,.tshare-body,.tshare-foot{padding:12px;}}';
     document.head.appendChild(style);
   }
 
@@ -372,10 +569,11 @@
      synthetische Escape aus turnier-native.js dismissDialog()). */
   let shareReturnFocus = null;
   let shareHiddenSiblings = [];
+  let shareViewportCleanup = null;
 
   function shareFocusables(root) {
     return Array.prototype.filter.call(root.querySelectorAll(
-      'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'),
+      'button, [href], input:not([type="hidden"]), select, textarea, summary, [tabindex]:not([tabindex="-1"])'),
       function (el) { return !el.disabled && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); });
   }
 
@@ -392,6 +590,7 @@
   }
 
   function removeShareModal(restoreFocus) {
+    if (shareViewportCleanup) { shareViewportCleanup(); shareViewportCleanup = null; }
     const el = document.getElementById(MODAL_ID);
     if (el) el.remove();
     document.removeEventListener('keydown', onShareEscKey);
@@ -430,6 +629,27 @@
       (footerHtml ? '<div class="tshare-foot">' + footerHtml + '</div>' : '') +
       '</div>';
     document.body.appendChild(root);
+    /* iOS's keyboard resizes the visual viewport, not the layout viewport.
+       Safari 12 falls back to window resize / innerHeight. */
+    const viewport = window.visualViewport;
+    function fitViewport() {
+      root.style.top = (viewport ? viewport.offsetTop : 0) + 'px';
+      root.style.height = (viewport ? viewport.height : window.innerHeight) + 'px';
+      root.style.bottom = 'auto';
+    }
+    fitViewport();
+    window.addEventListener('resize', fitViewport);
+    if (viewport) {
+      viewport.addEventListener('resize', fitViewport);
+      viewport.addEventListener('scroll', fitViewport);
+    }
+    shareViewportCleanup = function () {
+      window.removeEventListener('resize', fitViewport);
+      if (viewport) {
+        viewport.removeEventListener('resize', fitViewport);
+        viewport.removeEventListener('scroll', fitViewport);
+      }
+    };
     Array.prototype.forEach.call(document.body.children, function (n) {
       if (n === root || n.tagName === 'SCRIPT' || n.tagName === 'STYLE' || n.hasAttribute('aria-hidden')) return;
       n.setAttribute('aria-hidden', 'true');
@@ -481,6 +701,8 @@
         '<small>' + escapeHtml(tx('share.password.desc', 'Das Passwort separat an Empfänger weitergeben.')) + '</small>' +
         '</div>' +
         '<details class="tshare-advanced"><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) + '</summary>' +
+        '<small>' + escapeHtml(tx('server.passwordKeep', 'Bei Updates: leer lassen behält das bisherige Lesepasswort.')) + '</small>' +
+        '<label><input type="checkbox" id="tshare-remove-pw"> ' + escapeHtml(tx('server.passwordRemove', 'Lesepasswort beim Update ausdrücklich entfernen')) + '</label>' +
         '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
         '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
         '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.')) + '</small></span>' +
@@ -514,7 +736,7 @@
       const pw = root.querySelector('#tshare-pw').value || '';
       if (mode === 'qr' && cloudSharingEnabled()) {
         renderShareLoading();
-        createServerShare(o, pw);
+        createServerShare(o, pw, root.querySelector('#tshare-remove-pw').checked);
       } else {
         createOfflineShare(o, pw);
       }
@@ -532,8 +754,11 @@
     const nativeShare = nativeApp() && typeof TNative !== 'undefined' && TNative && typeof TNative.shareLink === 'function';
     const root = openShareModalShell(
       tx('share.result.title', 'Link zum Teilen'),
-      '<p class="tshare-hint">' + escapeHtml(tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
-        'Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
+      '<p class="tshare-hint">' + escapeHtml(code
+        ? (o && o.serverUpdated ? tx('server.updated', 'Aktualisiert – Link, Code und QR bleiben gleich. ') : '')
+          + tx('server.result', 'Dieser Browser kann aktualisieren. Öffentlicher Link, Code und QR erlauben nur Lesen.')
+        : tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
+        (o && o.serverDirty ? ' ' + escapeHtml(tx('server.dirty', 'Lokaler Entwurf – noch nicht veröffentlicht')) : '') +
         (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
         (longWarnLen ? '<p class="tshare-error">' + escapeHtml(cloudSharingEnabled() ? tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
           + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
@@ -554,6 +779,9 @@
           '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>'
         : '') +
       '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>' +
+      (code ? '<details><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) +
+        '</summary><button type="button" class="tshare-btn tshare-btn-ghost" data-act="transfer">' +
+        escapeHtml(tx('server.transfer', 'Bearbeitungszugang sichern / übertragen')) + '</button></details>' : '') +
       (nativeShare ? '<p class="tshare-error" id="tshare-native-msg" hidden></p>' : ''),
       (nativeShare ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="native-share">'
         + escapeHtml(tx('native.share.button', 'Teilen…')) + '</button>' : '') +
@@ -596,6 +824,7 @@
       root.querySelector('[data-act="copy-code"]').addEventListener('click', function () { copyText(code, codeInput); });
     }
     root.querySelector('[data-act="done"]').addEventListener('click', closeShareModal);
+    if (code) root.querySelector('[data-act="transfer"]').addEventListener('click', function () { openTransfer(o); });
     if (nativeShare) {
       /* App: System-Teilen-Menü (iOS) bzw. Chooser (Android) mit dem
          öffentlichen Link. Abbrechen bleibt still, Fehler stehen im Dialog. */
@@ -662,25 +891,24 @@
      Wird bei einem Netzwerkfehler über den "Erneut versuchen"-Button im
      Overlay erneut aufgerufen, ohne das Passwort nochmal abzufragen - der
      Nutzer muss bei wackliger Verbindung nicht von vorn anfangen. */
-  function createServerShare(o, pw) {
-    // Der Snapshot wird bei jedem Versuch frisch gelesen, damit auch ein
-    // "Erneut versuchen" nach längerem Warten den aktuellsten Stand teilt.
+  function createServerShare(o, pw, removePassword) {
+    // Unbestätigte Übertragungen werden zuerst identisch wiederholt; danach
+    // wird ggf. ein inzwischen geänderter Entwurf separat veröffentlicht.
     // Die Link-Adresse wird VOR dem Hochladen geprüft (App: öffentliche URL),
     // damit kein Server-Eintrag ohne verwendbaren Link entsteht.
     return Promise.resolve().then(function () {
       sharePageUrl();
-      return readSnapshot(o);
-    }).then(function (snapshot) {
-      return apiPost('/share.php?action=create', {
-        sheet: o.sheet || '', file: o.file || '', type: o.type || '',
-        title: o.title || '', teams: Array.isArray(o.teams) ? o.teams : [],
-        snapshot: snapshot, password: pw || ''
-      });
+      return publish(o, pw, removePassword);
     }).then(function (data) {
-      renderShareResult(buildServerShareUrl(data.id), pw, null, data.id, o);
+      renderShareResult(buildServerShareUrl(data.id), pw, null, data.id, Object.assign({}, o, { serverDirty: data.dirty, serverUpdated: data.revision > 1 }));
     }).catch(function (err) {
       if (err && err.code === 'no-public-url') { renderNoPublicUrl(err); return; }
-      // Es wurde nichts gespeichert - das laufende Turnier ist unberührt.
+      if (err && err.status === 412) {
+        renderConflict(o, pw, removePassword);
+        return;
+      }
+      // Ein Servercommit kann bereits erfolgt sein. Der gespeicherte Request
+      // ermöglicht sichere Wiederholung; der lokale Entwurf ist unberührt.
       const msg = err.network
         ? tx('share.create.network', 'Der Link konnte nicht erstellt werden: {message}', { message: errMsg(err) })
         : (err.status
@@ -688,10 +916,31 @@
           : tx('share.create.read', 'Der Turnierstand konnte nicht gelesen werden: {message}', { message: errMsg(err) }));
       renderShareError(msg, {
         showOfflineFallback: true,
-        onRetry: function () { renderShareLoading(); createServerShare(o, pw); },
+        onRetry: function () { renderShareLoading(); createServerShare(o, pw, removePassword); },
         onOfflineFallback: function () { createOfflineShare(o, pw); }
       });
     });
+  }
+
+  function renderConflict(o, pw, removePassword) {
+    const root = openShareModalShell(tx('server.conflict', 'Serverkonflikt – nichts überschrieben'),
+      '<p>' + escapeHtml(tx('server.conflictHint', 'Ein anderer Bearbeiter hat gespeichert. Dein Entwurf bleibt lokal erhalten. Keine automatische Zusammenführung.'))
+        + '</p>',
+      '<button type="button" class="tshare-btn" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
+      '<button type="button" class="tshare-btn" data-act="load">' + escapeHtml(tx('server.load', 'Entwurf sichern + Server laden')) + '</button>' +
+      '<button type="button" class="tshare-btn" data-act="fork">' + escapeHtml(tx('server.fork', 'Als neues unabhängiges Turnier veröffentlichen')) + '</button>');
+    root.querySelector('[data-act="cancel"]').onclick = closeShareModal;
+    root.querySelector('[data-act="load"]').onclick = function () {
+      TStore.serverBinding(o.sheet).then(function (b) {
+        location.hash = SERVER_PREFIX + b.id + '&edit=' + b.token;
+        location.reload();
+      });
+    };
+    root.querySelector('[data-act="fork"]').onclick = function () {
+      TStore.transaction(function (view) { TStore.detachServerInView(view, o.sheet); }).then(function () {
+        renderShareLoading(); createServerShare(o, pw, removePassword);
+      });
+    };
   }
 
   /* ------------------------------------------------------- Offline-Variante
@@ -728,7 +977,7 @@
   function applyPendingShare(opts) {
     let pending = null;
     try { pending = readPendingHash(); } catch (e) { pending = null; }
-    if (!pending) return Promise.resolve(false);
+    if (!pending) return renderServerStatus(opts).then(function () { return false; }, function () { return false; });
     if (pending.kind === 'server' && !cloudSharingEnabled()) {
       alert(cloudSharingError().message);
       return Promise.resolve(false);
@@ -759,13 +1008,15 @@
     const cur = sheetParts(opts && opts.sheet);
     const modes = (opts && opts.sheetModes) || {};
     const sameBase = want.base && want.base === cur.base;
-    if (!sameBase && !(want.base in modes && cur.base in modes)) return null;
+    const mapped = Object.prototype.hasOwnProperty.call(modes, want.base)
+      && Object.prototype.hasOwnProperty.call(modes, cur.base);
+    if (!sameBase && !mapped) return null;
     try {
       const url = new URL(location.href);
       url.hash = '';
       url.searchParams.delete('restore');
       url.searchParams.set('id', want.id || '_base_');
-      if (want.base in modes) url.searchParams.set('mode', modes[want.base]);
+      if (Object.prototype.hasOwnProperty.call(modes, want.base)) url.searchParams.set('mode', modes[want.base]);
       return url.pathname + url.search;
     } catch (e) { return null; }
   }
@@ -787,12 +1038,20 @@
     return 'rejected';
   }
 
-  function applyServerShare(id, opts) {
+  async function applyServerShare(value, opts) {
+    const input = parsedServerInput(value);
+    const known = await TStore.serverBinding(opts.sheet);
+    const id = input.id;
+    const token = input.token || (known && known.id === id && known.token) || '';
     return apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
-      const mismatch = handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + encodeURIComponent(id));
+      if (!safeServerFile(env) || (env.formatVersion != null && env.formatVersion !== 1)
+          || (env.revision != null && (!Number.isSafeInteger(env.revision) || env.revision < 1))) {
+        throw new Error(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
+      }
+      const mismatch = handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + id + (token ? '&edit=' + token : ''));
       if (mismatch) return mismatch === 'redirect';
       const info = shareInfo(env);
-      return serverUnlockLoop(id, env, info, opts, 0);
+      return serverUnlockLoop(id, env, info, opts, 0, token);
     }, function (err) {
       if (err.network) {
         // Link bleibt bewusst stehen: Dein Turnier auf diesem Gerät bleibt
@@ -811,17 +1070,27 @@
     });
   }
 
-  function serverUnlockLoop(id, env, info, opts, tries) {
+  function serverUnlockLoop(id, env, info, opts, tries, token) {
     let pw = '';
-    if (env.protected) {
+    if (env.protected && !token) {
       pw = prompt(tx('share.pwPrompt', 'Geteiltes Turnier "{info}" ist passwortgeschützt.\nBitte Passwort eingeben:', { info: info }), '');
       if (pw === null) { clearHash(); return Promise.resolve(false); } // abgebrochen
     }
 
-    return apiPost('/share.php?action=unlock', { id: id, password: pw }).then(function (full) {
+    return apiPost('/share.php?action=unlock', { id: id, password: pw, editToken: token || '' }).then(function (full) {
       return { full: full };
     }, function (err) { return { err: err }; }).then(function (r) {
-      if (r.full) return confirmAndApplySnapshot(info, r.full.snapshot, opts);
+      if (r.full) {
+        const full = r.full;
+        if (full.formatVersion != null && full.formatVersion !== 1) throw new Error(tx('server.protocol', 'Der Server unterstützt dauerhafte Turniere noch nicht. Bitte Backend aktualisieren.'));
+        const binding = {
+          instance: secret(), id: id, revision: full.revision || env.revision || 1,
+          readOnly: !(token && full.canEdit === true),
+          token: token && full.canEdit === true ? token : null,
+          published: snapshotSignature(full.snapshot)
+        };
+        return confirmAndApplySnapshot(info, full.snapshot, opts, binding);
+      }
       const err = r.err;
       if (err.network) {
         // Link bleibt stehen, kein lokaler Datenverlust - siehe Kommentar
@@ -835,7 +1104,7 @@
       }
       if (err.code === 'wrong_password' && tries + 1 < MAX_PW_TRIES) {
         alert(tx('share.pwRetry', 'Falsches Passwort, bitte erneut versuchen.'));
-        return serverUnlockLoop(id, env, info, opts, tries + 1);
+        return serverUnlockLoop(id, env, info, opts, tries + 1, token);
       }
       clearHash();
       if (err.code === 'wrong_password') alert(tx('share.pwAbort', 'Falsches Passwort – Übernahme abgebrochen.'));
@@ -882,7 +1151,7 @@
      Transaktion dauerhaft abgeschlossen ist. Schlägt das Speichern fehl,
      bleibt der Link in der Adresszeile (Neuladen = neuer Versuch) und der
      bisherige Stand ist unverändert. → Promise<boolean> */
-  function confirmAndApplySnapshot(info, snapshot, opts) {
+  function confirmAndApplySnapshot(info, snapshot, opts, binding) {
     const ok = confirm(tx('share.confirmApply',
       'Geteiltes Turnier gefunden: "{info}".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
@@ -894,7 +1163,7 @@
       return Promise.resolve(false);
     }
 
-    return TArchive.importSnapshot(opts, snapshot).then(function () {
+    return TArchive.importSnapshot(opts, snapshot, binding).then(function () {
       /* Explizit mit ?id= (und ggf. ?mode=) neu öffnen: ein bloßes reload()
          ohne ?id= ließe Auswahl-Overlay/autoId() einen ANDEREN (leeren)
          Speicherplatz öffnen – die übernommenen Daten wären unsichtbar. */
@@ -942,12 +1211,14 @@
       const local = TNative.localPageFromPublicUrl(input);
       if (local && local.indexOf(OFFLINE_PREFIX) !== -1) { location.href = local; return; }
     }
-    const id = extractServerCode(input);
-    if (!id) { alert(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.')); return; }
     if (!cloudSharingEnabled()) { alert(cloudSharingError().message); return; }
+    let parsed;
+    try { parsed = parsedServerInput(input); } catch (e) { alert(e.message); return; }
+    const id = parsed.id;
+    if (!id) { alert(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.')); return; }
 
     apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
-      const file = env && env.file;
+      const file = safeServerFile(env);
       if (!file) {
         alert(tx('code.noPage', 'Zu diesem Code konnte keine passende Turnierseite gefunden werden.'));
         return;
@@ -962,19 +1233,46 @@
       const sid = dot >= 0 ? sheet.slice(dot + 1) : '_base_';
       const target = /[?&]id=/.test(file) ? file
         : file + (file.indexOf('?') >= 0 ? '&' : '?') + 'id=' + encodeURIComponent(sid);
-      location.href = target + SERVER_PREFIX + encodeURIComponent(id);
+      location.href = target + SERVER_PREFIX + encodeURIComponent(id) + (parsed.token ? '&edit=' + parsed.token : '');
     }).catch(function (err) {
       if (err.network) {
         alert(tx('code.network', 'Der Code konnte gerade nicht überprüft werden:\n{message}'
           + '\n\nBitte Internetverbindung prüfen und erneut versuchen.', { message: errMsg(err) }));
         return;
       }
+
       if (err.status === 404) alert(tx('code.notFound', 'Dieser Code ist ungültig oder das Turnier wurde bereits gelöscht.'));
       else alert(tx('code.server', 'Der Code konnte nicht geladen werden (Serverfehler):\n{message}', { message: errMsg(err) }));
     });
   }
 
+  function safeServerFile(env) {
+    const pages = {
+      'ko-flex': 'Turnierbogen_KO_System.html', 'de-flex': 'Turnierbogen_Doppel_KO_System.html',
+      'gruppen-final': 'Turnierbogen_Gruppen_Finalrunde.html', mpp: 'Turnierbogen_Modified_Pool_Play.html',
+      kingqueen: 'Turnierbogen_King_Queen.html', koc: 'Turnierbogen_King_Queen_of_the_Court.html',
+      runden_rr: 'Turnierbogen_Runden_System.html?mode=rr',
+      runden_swiss: 'Turnierbogen_Runden_System.html?mode=swiss',
+      flex_rr: 'Turnierbogen_Flex_Turnier.html?mode=rr', flex_swiss: 'Turnierbogen_Flex_Turnier.html?mode=swiss'
+    };
+    if (!env || !/^[a-z_-]+(?:\.[A-Za-z0-9_-]+)?$/.test(String(env.sheet || ''))) return null;
+    const base = sheetParts(env.sheet).base;
+    return Object.prototype.hasOwnProperty.call(pages, base) ? pages[base] : null;
+  }
+
+  if (typeof window !== 'undefined') {
+    let statusTimer = null;
+    window.addEventListener('beachl:storage-saved', function (e) {
+      if (!e.detail || !e.detail.sheetId || !e.detail.revision || !document.getElementById('tserver-status')) return;
+      clearTimeout(statusTimer);
+      statusTimer = setTimeout(function () {
+        if (statusOpts && statusOpts.sheet === e.detail.sheetId) renderServerStatus(statusOpts).catch(function () {});
+      }, 50);
+    });
+  }
+
   return {
-    buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare, openByCode, openInfoDialog
+    buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare, openByCode, openInfoDialog,
+    publish, transferUrl, independentCopy, safeServerFile
   };
 });

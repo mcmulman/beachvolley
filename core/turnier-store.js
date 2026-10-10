@@ -45,6 +45,21 @@
   const DB_NAME = 'beachl';
   const DB_VERSION = 1;
   const KV_STORE = 'kv';
+  /* Deliberately NOT a known/exportable beachl.* key. Rights and the latest
+     server revision live outside tournament records, archives and Undo. */
+  const SERVER_PREFIX = '__beachl_server.';
+  function serverBindingInView(view, sheet) {
+    try { return JSON.parse(view.getItem(SERVER_PREFIX + sheet) || 'null'); }
+    catch (e) { return null; }
+  }
+  function detachServerInView(view, sheet) {
+    view.removeItem(SERVER_PREFIX + sheet);
+  }
+  function serverBinding(sheet) {
+    return getItem(SERVER_PREFIX + sheet).then(function (raw) {
+      try { return JSON.parse(raw || 'null'); } catch (e) { return null; }
+    });
+  }
 
   function storageEvent(name, detail) {
     if (name === 'beachl:storage-saved') {
@@ -638,6 +653,7 @@
       Object.keys(before).concat(view.keys()).forEach(function (key) {
         if (key.indexOf(PREFIX) !== 0) return;
         const sheet = key.slice(PREFIX.length);
+        if (before[key] != null && view.getItem(key) == null) detachServerInView(view, sheet);
         const parsed = before[key] == null ? { ok: false } : parseRecord(before[key], sheet);
         const revision = parsed.ok ? Number(parsed.data._revision) || 0 : 0;
         const highWater = Math.max(revision, revisionInView(view, sheet));
@@ -814,6 +830,8 @@
   /* Revisionsprüfung + Vorversion + Datensatz + Index – alles in derselben
      Transaktion. data = Momentaufnahme des Turniers. */
   function saveInView(view, data, sheetId, baseRevision, nowIso) {
+    const binding = serverBindingInView(view, sheetId);
+    if (binding && binding.readOnly) return { ok: false, code: 'server-readonly' };
     const key = keyFor(sheetId);
     const current = view.getItem(key);
     let currentRevision = 0;
@@ -1036,6 +1054,7 @@
 
   function reset(sheetId) {
     return transaction(function (view) {
+      detachServerInView(view, sheetId);
       const current = view.getItem(keyFor(sheetId));
       if (current != null) {
         const parsed = parseRecord(current, sheetId);
@@ -1061,6 +1080,143 @@
     });
   }
 
+  /* ------------------------------------------- Löschen mit Rückgängig
+     Gemeinsam für Startseite (Mehrfachauswahl) und Turnier-Auswahl
+     (turnier-resume-picker.js). Läuft synchron in EINER TStore.transaction:
+     Erwartungsprüfung, Rückgängig-Sicherung und Löschen sind atomar.
+     Schlüssel: 'store:<Bogen-ID>' (Turnier) oder 'beachl.arch.…' (Archiv).
+     Beschädigte Datensätze werden roh gesichert und gelöscht. Die lokale
+     Serverbindung (Rechte/Token) wird gelöst und NIE in die Sicherung
+     übernommen (beachl.q.* ist exportierbar); Rückgängig stellt das Turnier
+     daher als unabhängige lokale Kopie wieder her. Der Server bleibt. */
+  const UNDO_DELETE_PREFIX = QUARANTINE_PREFIX + 'undo-delete.';
+  const UNDO_DELETE_MS = 15000;
+  /* Kennung des gespeicherten Stands: Revision bei lesbaren Datensätzen,
+     sonst Länge + Prüfsumme des Rohtexts; null = kein Datensatz. */
+  function recordTokenInView(view, sheetId) {
+    const value = view.getItem(keyFor(sheetId));
+    if (value == null) return null;
+    const parsed = parseRecord(value, sheetId);
+    if (parsed.ok) return 'r' + (Number(parsed.data._revision) || 0);
+    let h = 5381;
+    for (let i = 0; i < value.length; i++) h = ((h * 33) ^ value.charCodeAt(i)) >>> 0;
+    return 'x' + value.length + '.' + h.toString(36);
+  }
+  function deleteStorageKey(sessionKey) {
+    if (typeof sessionKey !== 'string') return null;
+    if (sessionKey.indexOf('store:') === 0) {
+      const sheet = sessionKey.slice(6);
+      return sheet ? keyFor(sheet) : null;
+    }
+    return sessionKey.indexOf(ARCHIVE_PREFIX) === 0 ? sessionKey : null;
+  }
+  /* items: ['store:…' | 'beachl.arch.…' | { key, expect }]. expect = Kennung
+     aus recordTokenInView; weicht der aktuelle Stand ab, wird NICHTS gelöscht.
+     → { ok:true, undoKey|null, count } | { ok:false, code:'conflict'|'invalid', key } */
+  function deleteEntriesInView(view, items, now) {
+    now = Number.isFinite(now) ? now : Date.now();
+    const list = (items || []).map(function (it) { return typeof it === 'string' ? { key: it } : it; });
+    for (let i = 0; i < list.length; i++) {
+      const it = list[i];
+      if (!it || !deleteStorageKey(it.key)) return { ok: false, code: 'invalid', key: it && it.key };
+      if (Object.prototype.hasOwnProperty.call(it, 'expect') && it.key.indexOf('store:') === 0
+          && recordTokenInView(view, it.key.slice(6)) !== it.expect) {
+        return { ok: false, code: 'conflict', key: it.key };
+      }
+    }
+    const entries = [];
+    list.forEach(function (it) {
+      const storageKey = deleteStorageKey(it.key);
+      const value = view.getItem(storageKey);
+      if (value != null) entries.push({ sessionKey: it.key, storageKey: storageKey, value: value });
+    });
+    let undoKey = null;
+    if (entries.length) {
+      undoKey = UNDO_DELETE_PREFIX + now;
+      let suffix = 1;
+      while (view.getItem(undoKey) != null) undoKey = UNDO_DELETE_PREFIX + now + '-' + suffix++;
+      view.setItem(undoKey, JSON.stringify({
+        type: 'session-delete', expiresAt: now + UNDO_DELETE_MS, entries: entries
+      }));
+    }
+    const idx = readIndexInView(view);
+    list.forEach(function (it) {
+      if (it.key.indexOf('store:') === 0) {
+        const sheet = it.key.slice(6);
+        const current = view.getItem(keyFor(sheet));
+        detachServerInView(view, sheet);
+        if (current != null) {
+          view.setItem(REVISION_PREFIX + sheet, String(revisionInView(view, sheet)));
+          /* Nur lesbare Stände werden Vorversion – ein beschädigter Rohtext
+             darf eine gültige Vorversion nicht verdrängen. */
+          if (parseRecord(current, sheet).ok) view.setItem(backupKeyFor(sheet), current);
+          view.removeItem(keyFor(sheet));
+        }
+        delete idx[sheet];
+      } else {
+        view.removeItem(it.key);
+        if (idx.__archives && typeof idx.__archives === 'object') {
+          delete idx.__archives[it.key];
+          if (!Object.keys(idx.__archives).length) delete idx.__archives;
+        }
+      }
+    });
+    view.setItem(INDEX_KEY, JSON.stringify(idx));
+    return { ok: true, undoKey: undoKey, count: entries.length };
+  }
+  /* → { ok:true, count, sheets } | { ok:false, code:'undo-corrupt'|'undo-expired'|'undo-conflict' }.
+     Alle Prüfungen laufen vor dem ersten Schreibzugriff. */
+  function undoDeleteInView(view, undoKey, now) {
+    now = Number.isFinite(now) ? now : Date.now();
+    if (typeof undoKey !== 'string' || undoKey.indexOf(UNDO_DELETE_PREFIX) !== 0) return { ok: false, code: 'undo-expired' };
+    let undo;
+    try { undo = JSON.parse(view.getItem(undoKey) || 'null'); }
+    catch (e) { return { ok: false, code: 'undo-corrupt' }; }
+    if (!undo || undo.type !== 'session-delete' || !(undo.expiresAt > now)
+        || !Array.isArray(undo.entries)) return { ok: false, code: 'undo-expired' };
+    for (let i = 0; i < undo.entries.length; i++) {
+      const entry = undo.entries[i];
+      if (!entry || typeof entry.value !== 'string' || deleteStorageKey(entry.sessionKey) !== entry.storageKey) {
+        return { ok: false, code: 'undo-corrupt' };
+      }
+      if (view.getItem(entry.storageKey) != null) return { ok: false, code: 'undo-conflict' };
+    }
+    const idx = readIndexInView(view);
+    const sheets = [];
+    undo.entries.forEach(function (entry) {
+      if (entry.sessionKey.indexOf('store:') === 0) {
+        const sheet = entry.sessionKey.slice(6);
+        const parsed = parseRecord(entry.value, sheet);
+        detachServerInView(view, sheet);
+        if (parsed.ok) {
+          const t = parsed.data;
+          t._revision = Math.max(revisionInView(view, sheet), Number(t._revision) || 0) + 1;
+          view.setItem(entry.storageKey, JSON.stringify(t));
+          idx[sheet] = indexEntry(t);
+        } else {
+          view.setItem(entry.storageKey, entry.value);
+          idx[sheet] = { title: 'Nicht lesbarer Turnierstand', filled: 0 };
+        }
+        sheets.push(sheet);
+      } else {
+        view.setItem(entry.storageKey, entry.value);
+        let archive = null;
+        try { archive = JSON.parse(entry.value); } catch (e) { archive = null; }
+        if (archive && typeof archive === 'object') {
+          idx.__archives = idx.__archives || {};
+          idx.__archives[entry.storageKey] = {
+            key: entry.storageKey, file: archive.file || '', sheet: archive.sheet || '',
+            type: archive.type || '', title: archive.title || '', teams: archive.teams || [],
+            savedAt: archive.savedAt, archived: true
+          };
+        }
+      }
+    });
+    view.setItem(INDEX_KEY, JSON.stringify(idx));
+    view.removeItem(undoKey);
+    return { ok: true, count: undo.entries.length, sheets: sheets };
+  }
+
   function hasBackupInView(view, sheetId) {
     const raw = view ? view.getItem(backupKeyFor(sheetId)) : null;
     return raw != null && parseRecord(raw, sheetId).ok;
@@ -1079,6 +1235,8 @@
   function restorePrevious(sheetId) {
     const stamp = Date.now();
     return transaction(function (view) {
+      const binding = serverBindingInView(view, sheetId);
+      if (binding && binding.readOnly) return { ok: false, code: 'server-readonly' };
       const previous = view.getItem(backupKeyFor(sheetId));
       const current = view.getItem(keyFor(sheetId));
       const parsedPrev = previous == null ? { ok: false } : parseRecord(previous, sheetId);
@@ -1382,6 +1540,8 @@
   };
 
   return {
+    SERVER_PREFIX, serverBinding, serverBindingInView, detachServerInView,
+    UNDO_DELETE_PREFIX, UNDO_DELETE_MS, recordTokenInView, deleteEntriesInView, undoDeleteInView,
     SCHEMA, PREFIX, BACKUP_PREFIX, REVISION_PREFIX, QUARANTINE_PREFIX, ARCHIVE_PREFIX, INDEX_KEY, SESSIONS_KEY, SYNC_KEY,
     DB_NAME, DB_VERSION, STORE_NAME: KV_STORE,
     sheetIdFrom, BASE_ID, SHEET_BASES: SHEET_BASES.slice(), sheetBaseOf, isCurrentSheet, pruneUnsupportedIndex,
