@@ -328,10 +328,17 @@
       '.tshare-opt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid #ccd8e8;' +
         'border-radius:10px;padding:10px 12px;cursor:pointer;}' +
       '.tshare-opt.is-checked{border-color:#1f6fa8;background:#e8f3fb;}' +
+      '.tshare-opt-primary{padding:14px 12px;border-width:2px;}' +
       '.tshare-opt input{margin-top:3px;flex:0 0 auto;}' +
       '.tshare-opt strong{display:block;font-size:13.5px;color:#1a1a2e;}' +
       '.tshare-opt em{font-style:normal;color:#0a7d2c;font-size:11.5px;font-weight:700;margin-left:4px;}' +
       '.tshare-opt small{display:block;color:#5a6375;font-size:12px;margin-top:2px;}' +
+      '.tshare-advanced{margin-top:4px;border-top:1px solid #e2e8f0;padding-top:10px;}' +
+      '.tshare-advanced summary{color:#1a3a5c;font-size:13px;font-weight:700;cursor:pointer;padding:4px 0 8px;}' +
+      '.tshare-advanced .tshare-opt{margin-bottom:12px;}' +
+      '.tshare-password{margin:0 0 14px;padding:10px 12px;background:#f3f6fa;border:1px solid #dce5ef;border-radius:10px;}' +
+      '.tshare-password .tshare-field{margin:0;font-size:13px;}' +
+      '.tshare-password>small{display:block;margin-top:6px;color:#5a6375;font-size:11.5px;}' +
       '.tshare-field{display:block;font-size:12.5px;font-weight:700;color:#3a4356;margin-bottom:14px;}' +
       '.tshare-field input{display:block;width:100%;margin-top:6px;padding:10px 12px;font-size:14px;' +
         'border:1.5px solid #ccd8e8;border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
@@ -339,6 +346,10 @@
       '.tshare-linkrow{display:flex;gap:8px;margin-bottom:8px;}' +
       '.tshare-linkrow input{flex:1;min-width:0;padding:9px 10px;font-size:12.5px;border:1.5px solid #ccd8e8;' +
         'border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
+      '.tshare-qr-wrap{text-align:center;margin:0 auto 14px;padding:12px;background:#f3f6fa;border-radius:12px;}' +
+      '.tshare-qr-label{font-weight:700;color:#1a3a5c !important;}' +
+      '.tshare-qr{display:block;width:220px;max-width:100%;height:auto;margin:0 auto;background:#fff;border:8px solid #fff;}' +
+      '.tshare-qr[hidden]{display:none;}' +
       '.tshare-copied{color:#0a7d2c;font-size:12.5px;font-weight:600;margin:0;}' +
       '.tshare-loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0 6px;color:#3a4356;}' +
       '.tshare-spinner{width:30px;height:30px;border-radius:50%;border:3px solid #ccd8e8;' +
@@ -459,22 +470,25 @@
     const root = openShareModalShell(
       tx('share.title', 'Turnier teilen'),
       '<div class="tshare-options">' +
-        (cloudSharingEnabled() ? '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="server" checked>' +
-        '<span><strong>' + escapeHtml(tx('share.server.title', 'Server-Link')) + ' <em>'
-          + escapeHtml(tx('share.server.badge', 'Empfohlen')) + '</em></strong>' +
-        '<small>' + escapeHtml(tx('share.server.desc', 'Kurzer Link über den eigenen Server. Zum Erstellen & Öffnen ist Internet nötig.')) + '</small></span>' +
-        '</label>' : '') +
-        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline"' +
-        (cloudSharingEnabled() ? '' : ' checked') + '>' +
+        '<label class="tshare-opt tshare-opt-primary"><input type="radio" name="tshare-mode" value="qr" checked>' +
+        '<span><strong>' + escapeHtml(tx('share.qr.title', 'QR-Code / Turniercode')) + '</strong>' +
+        '<small>' + escapeHtml(tx('share.qr.desc', 'Zum Scannen oder Eingeben auf der Startseite – inklusive Kurzlink. Internet erforderlich.')) + '</small></span>' +
+        '</label>' +
+        '<div class="tshare-password">' +
+        '<label class="tshare-field" for="tshare-pw">' + escapeHtml(tx('share.password', 'Passwortschutz (optional)')) +
+          '<input type="password" id="tshare-pw" placeholder="' + escapeHtml(tx('share.passwordPlaceholder', 'Leer lassen für keinen Passwortschutz'))
+          + '" autocomplete="new-password"></label>' +
+        '<small>' + escapeHtml(tx('share.password.desc', 'Das Passwort separat an Empfänger weitergeben.')) + '</small>' +
+        '</div>' +
+        '<details class="tshare-advanced"><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) + '</summary>' +
+        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
         '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
         '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.')) + '</small></span>' +
         '</label>' +
-        '</div>' +
-      '<label class="tshare-field">' + escapeHtml(tx('share.password', 'Passwort (optional)')) +
-        '<input type="password" id="tshare-pw" placeholder="' + escapeHtml(tx('share.passwordPlaceholder', 'Leer lassen für keinen Passwortschutz'))
-        + '" autocomplete="new-password"></label>',
+        '</details>' +
+        '</div>',
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">' + escapeHtml(tx('share.create', 'Link erstellen')) + '</button>'
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">' + escapeHtml(tx('share.createQr', 'QR-Code erstellen')) + '</button>'
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
     /* Ersatz fuer ".tshare-opt:has(input:checked)" (Safari erst ab 15.4, siehe
@@ -487,13 +501,18 @@
       });
     }
     root.querySelectorAll('input[name="tshare-mode"]').forEach(function (input) {
-      input.addEventListener('change', syncCheckedOpt);
+      input.addEventListener('change', function () {
+        syncCheckedOpt();
+        root.querySelector('[data-act="create"]').textContent = input.value === 'offline'
+          ? tx('share.createOffline', 'Offline-Link erstellen')
+          : tx('share.createQr', 'QR-Code erstellen');
+      });
     });
     syncCheckedOpt();
     root.querySelector('[data-act="create"]').addEventListener('click', function () {
       const mode = root.querySelector('input[name="tshare-mode"]:checked').value;
       const pw = root.querySelector('#tshare-pw').value || '';
-      if (mode === 'server') {
+      if (mode === 'qr' && cloudSharingEnabled()) {
         renderShareLoading();
         createServerShare(o, pw);
       } else {
@@ -521,11 +540,15 @@
           + 'oder den kürzeren Server-Link verwenden.', { len: longWarnLen }) :
           tx('release.share.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen). Falls er abgeschnitten wird, bitte eine Sicherungsdatei exportieren und teilen.',
             { len: longWarnLen })) + '</p>' : '') +
-      '<label class="tshare-field" style="margin-bottom:8px">' + escapeHtml(tx('share.result.link', 'Link')) +
+        '<div class="tshare-qr-wrap"><p class="tshare-qr-label">' +
+          escapeHtml(tx('share.result.qr', 'QR-Code zum Scannen')) + '</p>' +
+          '<img id="tshare-qr" class="tshare-qr" alt="' +
+          escapeHtml(tx('share.result.qrAlt', 'QR-Code für den Turnierlink')) + '"></div>' +
+        '<label class="tshare-field" style="margin-bottom:8px">' + escapeHtml(tx('share.result.link', 'Link')) +
       '<div class="tshare-linkrow"><input type="text" id="tshare-url" readonly>' +
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>' +
       (code
-        ? '<label class="tshare-field">' + escapeHtml(tx('share.result.code', 'Code')) + ' <small style="font-weight:400;color:#5a6375">'
+        ? '<label class="tshare-field">' + escapeHtml(tx('share.result.code', 'Turniercode')) + ' <small style="font-weight:400;color:#5a6375">'
           + escapeHtml(tx('share.result.codeHint', '(zum Eingeben auf der Startseite, statt den Link zu öffnen)')) + '</small>' +
           '<div class="tshare-linkrow"><input type="text" id="tshare-code" readonly>' +
           '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>'
@@ -538,6 +561,21 @@
     );
     const urlInput = root.querySelector('#tshare-url');
     urlInput.value = url; // per JS statt HTML-Attribut, um Escaping-Probleme bei Sonderzeichen zu vermeiden
+    const qrImage = root.querySelector('#tshare-qr');
+    try {
+      if (typeof qrcode !== 'function') throw new Error('QR-Code-Generator nicht geladen.');
+      const qr = qrcode(0, 'M');
+      qr.addData(url, 'Byte');
+      qr.make();
+      qrImage.src = qr.createDataURL(4, 16);
+    } catch (err) {
+      qrImage.hidden = true;
+      const qrError = document.createElement('p');
+      qrError.className = 'tshare-error';
+      qrError.textContent = tx('share.result.qrUnavailable',
+        'Für diesen Link konnte kein QR-Code erstellt werden. Verwende den Link oder den kürzeren Server-Link.');
+      qrImage.parentNode.appendChild(qrError);
+    }
     const copiedMsg = root.querySelector('#tshare-copied-msg');
     function showCopied() { copiedMsg.hidden = false; }
     function copyText(text, fallbackEl) {
@@ -569,7 +607,7 @@
           url: url,
           title: name,
           text: tx('native.share.text', 'Turnier „{title}“', { title: name })
-            + (code ? '\n' + tx('share.result.code', 'Code') + ': ' + code : '')
+            + (code ? '\n' + tx('share.result.code', 'Turniercode') + ': ' + code : '')
         }).then(null, function (err) {
           if (err && err.code === 'share-busy') return;
           nativeMsg.textContent = tx('native.share.failed', 'Das Teilen-Menü konnte nicht geöffnet werden: {message}', { message: errMsg(err) });

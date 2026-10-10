@@ -23,6 +23,16 @@
       var grid = card.querySelector('.cfgcard-grid');
       if (!grid || card.querySelector('.cfg-setup-toggle')) return;
 
+      var start = grid.querySelector('.cfgfield--start');
+      var end = grid.querySelector('.cfgfield--end');
+      if (start && end) {
+        var times = document.createElement('div');
+        times.className = 'cfg-time-pair';
+        start.parentNode.insertBefore(times, start);
+        times.appendChild(start);
+        times.appendChild(end);
+      }
+
       var content = document.createElement('div');
       content.className = 'cfg-setup-content cfg-actions-content';
       content.id = 'configSetup' + index;
