@@ -11,33 +11,10 @@
   };
 
   // node_modules/@capacitor/core/dist/index.js
-  var createCapacitorPlatforms, initPlatforms, CapacitorPlatforms, addPlatform, setPlatform, ExceptionCode, CapacitorException, getPlatformId, createCapacitor, initCapacitorGlobal, Capacitor, registerPlugin, Plugins, WebPlugin, encode, decode, CapacitorCookiesPluginWeb, CapacitorCookies, readBlobAsBase64, normalizeHttpHeaders, buildUrlParams, buildRequestInit, CapacitorHttpPluginWeb, CapacitorHttp;
+  var ExceptionCode, CapacitorException, getPlatformId, createCapacitor, initCapacitorGlobal, Capacitor, registerPlugin, WebPlugin, encode, decode, CapacitorCookiesPluginWeb, CapacitorCookies, readBlobAsBase64, normalizeHttpHeaders, buildUrlParams, buildRequestInit, CapacitorHttpPluginWeb, CapacitorHttp, SystemBarsStyle, SystemBarType, SystemBarsPluginWeb, SystemBars;
   var init_dist = __esm({
     "node_modules/@capacitor/core/dist/index.js"() {
       /*! Capacitor: https://capacitorjs.com/ - MIT License */
-      createCapacitorPlatforms = (win) => {
-        const defaultPlatformMap = /* @__PURE__ */ new Map();
-        defaultPlatformMap.set("web", { name: "web" });
-        const capPlatforms = win.CapacitorPlatforms || {
-          currentPlatform: { name: "web" },
-          platforms: defaultPlatformMap
-        };
-        const addPlatform2 = (name, platform) => {
-          capPlatforms.platforms.set(name, platform);
-        };
-        const setPlatform2 = (name) => {
-          if (capPlatforms.platforms.has(name)) {
-            capPlatforms.currentPlatform = capPlatforms.platforms.get(name);
-          }
-        };
-        capPlatforms.addPlatform = addPlatform2;
-        capPlatforms.setPlatform = setPlatform2;
-        return capPlatforms;
-      };
-      initPlatforms = (win) => win.CapacitorPlatforms = createCapacitorPlatforms(win);
-      CapacitorPlatforms = /* @__PURE__ */ initPlatforms(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
-      addPlatform = CapacitorPlatforms.addPlatform;
-      setPlatform = CapacitorPlatforms.setPlatform;
       (function(ExceptionCode2) {
         ExceptionCode2["Unimplemented"] = "UNIMPLEMENTED";
         ExceptionCode2["Unavailable"] = "UNAVAILABLE";
@@ -61,18 +38,14 @@
         }
       };
       createCapacitor = (win) => {
-        var _a, _b, _c, _d, _e;
         const capCustomPlatform = win.CapacitorCustomPlatform || null;
         const cap = win.Capacitor || {};
-        const Plugins2 = cap.Plugins = cap.Plugins || {};
-        const capPlatforms = win.CapacitorPlatforms;
-        const defaultGetPlatform = () => {
+        const Plugins = cap.Plugins = cap.Plugins || {};
+        const getPlatform2 = () => {
           return capCustomPlatform !== null ? capCustomPlatform.name : getPlatformId(win);
         };
-        const getPlatform2 = ((_a = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _a === void 0 ? void 0 : _a.getPlatform) || defaultGetPlatform;
-        const defaultIsNativePlatform = () => getPlatform2() !== "web";
-        const isNativePlatform = ((_b = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _b === void 0 ? void 0 : _b.isNativePlatform) || defaultIsNativePlatform;
-        const defaultIsPluginAvailable = (pluginName) => {
+        const isNativePlatform = () => getPlatform2() !== "web";
+        const isPluginAvailable = (pluginName) => {
           const plugin = registeredPlugins.get(pluginName);
           if (plugin === null || plugin === void 0 ? void 0 : plugin.platforms.has(getPlatform2())) {
             return true;
@@ -82,18 +55,13 @@
           }
           return false;
         };
-        const isPluginAvailable = ((_c = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _c === void 0 ? void 0 : _c.isPluginAvailable) || defaultIsPluginAvailable;
-        const defaultGetPluginHeader = (pluginName) => {
-          var _a2;
-          return (_a2 = cap.PluginHeaders) === null || _a2 === void 0 ? void 0 : _a2.find((h) => h.name === pluginName);
+        const getPluginHeader = (pluginName) => {
+          var _a;
+          return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
         };
-        const getPluginHeader = ((_d = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _d === void 0 ? void 0 : _d.getPluginHeader) || defaultGetPluginHeader;
         const handleError = (err) => win.console.error(err);
-        const pluginMethodNoop = (_target, prop, pluginName) => {
-          return Promise.reject(`${pluginName} does not have an implementation of "${prop}".`);
-        };
         const registeredPlugins = /* @__PURE__ */ new Map();
-        const defaultRegisterPlugin = (pluginName, jsImplementations = {}) => {
+        const registerPlugin2 = (pluginName, jsImplementations = {}) => {
           const registeredPlugin = registeredPlugins.get(pluginName);
           if (registeredPlugin) {
             console.warn(`Capacitor plugin "${pluginName}" already registered. Cannot register plugins twice.`);
@@ -111,7 +79,7 @@
             return jsImplementation;
           };
           const createPluginMethod = (impl, prop) => {
-            var _a2, _b2;
+            var _a, _b;
             if (pluginHeader) {
               const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
               if (methodHeader) {
@@ -121,10 +89,10 @@
                   return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
                 }
               } else if (impl) {
-                return (_a2 = impl[prop]) === null || _a2 === void 0 ? void 0 : _a2.bind(impl);
+                return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
               }
             } else if (impl) {
-              return (_b2 = impl[prop]) === null || _b2 === void 0 ? void 0 : _b2.bind(impl);
+              return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
             } else {
               throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
             }
@@ -190,18 +158,14 @@
               }
             }
           });
-          Plugins2[pluginName] = proxy;
+          Plugins[pluginName] = proxy;
           registeredPlugins.set(pluginName, {
             name: pluginName,
             proxy,
-            platforms: /* @__PURE__ */ new Set([
-              ...Object.keys(jsImplementations),
-              ...pluginHeader ? [platform] : []
-            ])
+            platforms: /* @__PURE__ */ new Set([...Object.keys(jsImplementations), ...pluginHeader ? [platform] : []])
           });
           return proxy;
         };
-        const registerPlugin2 = ((_e = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _e === void 0 ? void 0 : _e.registerPlugin) || defaultRegisterPlugin;
         if (!cap.convertFileSrc) {
           cap.convertFileSrc = (filePath) => filePath;
         }
@@ -209,28 +173,20 @@
         cap.handleError = handleError;
         cap.isNativePlatform = isNativePlatform;
         cap.isPluginAvailable = isPluginAvailable;
-        cap.pluginMethodNoop = pluginMethodNoop;
         cap.registerPlugin = registerPlugin2;
         cap.Exception = CapacitorException;
         cap.DEBUG = !!cap.DEBUG;
         cap.isLoggingEnabled = !!cap.isLoggingEnabled;
-        cap.platform = cap.getPlatform();
-        cap.isNative = cap.isNativePlatform();
         return cap;
       };
       initCapacitorGlobal = (win) => win.Capacitor = createCapacitor(win);
       Capacitor = /* @__PURE__ */ initCapacitorGlobal(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
       registerPlugin = Capacitor.registerPlugin;
-      Plugins = Capacitor.Plugins;
       WebPlugin = class {
-        constructor(config) {
+        constructor() {
           this.listeners = {};
           this.retainedEventArguments = {};
           this.windowListeners = {};
-          if (config) {
-            console.warn(`Capacitor WebPlugin "${config.name}" config object was deprecated in v3 and will be removed in v4.`);
-            this.config = config;
-          }
         }
         addListener(eventName, listenerFunc) {
           let firstListener = false;
@@ -274,7 +230,8 @@
           listeners.forEach((listener) => listener(data));
         }
         hasListeners(eventName) {
-          return !!this.listeners[eventName].length;
+          var _a;
+          return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
         }
         registerWindowListener(windowEventName, pluginEventName) {
           this.windowListeners[pluginEventName] = {
@@ -298,7 +255,9 @@
             return;
           }
           const index = listeners.indexOf(listenerFunc);
-          this.listeners[eventName].splice(index, 1);
+          if (index !== -1) {
+            this.listeners[eventName].splice(index, 1);
+          }
           if (!this.listeners[eventName].length) {
             this.removeWindowListener(this.windowListeners[eventName]);
           }
@@ -345,7 +304,7 @@
           try {
             const encodedKey = encode(options.key);
             const encodedValue = encode(options.value);
-            const expires = `; expires=${(options.expires || "").replace("expires=", "")}`;
+            const expires = options.expires ? `; expires=${options.expires.replace("expires=", "")}` : "";
             const path = (options.path || "/").replace("path=", "");
             const domain = options.url != null && options.url.length > 0 ? `domain=${options.url}` : "";
             document.cookie = `${encodedKey}=${encodedValue || ""}${expires}; path=${path}; ${domain};`;
@@ -533,6 +492,32 @@
       };
       CapacitorHttp = registerPlugin("CapacitorHttp", {
         web: () => new CapacitorHttpPluginWeb()
+      });
+      (function(SystemBarsStyle2) {
+        SystemBarsStyle2["Dark"] = "DARK";
+        SystemBarsStyle2["Light"] = "LIGHT";
+        SystemBarsStyle2["Default"] = "DEFAULT";
+      })(SystemBarsStyle || (SystemBarsStyle = {}));
+      (function(SystemBarType2) {
+        SystemBarType2["StatusBar"] = "StatusBar";
+        SystemBarType2["NavigationBar"] = "NavigationBar";
+      })(SystemBarType || (SystemBarType = {}));
+      SystemBarsPluginWeb = class extends WebPlugin {
+        async setStyle() {
+          this.unavailable("not available for web");
+        }
+        async setAnimation() {
+          this.unavailable("not available for web");
+        }
+        async show() {
+          this.unavailable("not available for web");
+        }
+        async hide() {
+          this.unavailable("not available for web");
+        }
+      };
+      SystemBars = registerPlugin("SystemBars", {
+        web: () => new SystemBarsPluginWeb()
       });
     }
   });
@@ -1026,6 +1011,9 @@
         Directory2["Cache"] = "CACHE";
         Directory2["External"] = "EXTERNAL";
         Directory2["ExternalStorage"] = "EXTERNAL_STORAGE";
+        Directory2["ExternalCache"] = "EXTERNAL_CACHE";
+        Directory2["LibraryNoCloud"] = "LIBRARY_NO_CLOUD";
+        Directory2["Temporary"] = "TEMPORARY";
       })(Directory || (Directory = {}));
       (function(Encoding2) {
         Encoding2["UTF8"] = "utf8";
@@ -1116,6 +1104,9 @@
             });
             return { path: result.uri, blob };
           };
+        }
+        readFileInChunks(_options, _callback) {
+          throw this.unavailable("Method not implemented.");
         }
         async initDb() {
           if (this._db !== void 0) {
@@ -1311,9 +1302,7 @@
           const entry = await this.dbRequest("get", [path]);
           if (entry === void 0)
             throw Error("File does not exist.");
-          const entries = await this.dbIndexRequest("by_folder", "getAllKeys", [
-            IDBKeyRange.only(path)
-          ]);
+          const entries = await this.dbIndexRequest("by_folder", "getAllKeys", [IDBKeyRange.only(path)]);
           if (entries.length !== 0)
             throw Error("Folder is not empty.");
           await this.dbRequest("delete", [path]);
@@ -1437,6 +1426,7 @@
           if (entry === void 0)
             throw Error("Entry does not exist.");
           return {
+            name: entry.path.substring(path.length + 1),
             type: entry.type,
             size: entry.size,
             ctime: entry.ctime,
@@ -1677,6 +1667,14 @@
         }
         async minimizeApp() {
           throw this.unimplemented("Not implemented on web.");
+        }
+        async toggleBackButtonHandler() {
+          throw this.unimplemented("Not implemented on web.");
+        }
+        async getAppLanguage() {
+          return {
+            value: navigator.language.split("-")[0].toLowerCase()
+          };
         }
       };
     }
@@ -2521,10 +2519,60 @@
 
   // node_modules/@capacitor/filesystem/dist/esm/index.js
   init_dist();
+
+  // node_modules/@capacitor/synapse/dist/synapse.mjs
+  function s(t) {
+    t.CapacitorUtils.Synapse = new Proxy(
+      {},
+      {
+        get(e, n) {
+          return new Proxy({}, {
+            get(w, o) {
+              return (c, p, r) => {
+                const i = t.Capacitor.Plugins[n];
+                if (i === void 0) {
+                  r(new Error(`Capacitor plugin ${n} not found`));
+                  return;
+                }
+                if (typeof i[o] != "function") {
+                  r(new Error(`Method ${o} not found in Capacitor plugin ${n}`));
+                  return;
+                }
+                (async () => {
+                  try {
+                    const a = await i[o](c);
+                    p(a);
+                  } catch (a) {
+                    r(a);
+                  }
+                })();
+              };
+            }
+          });
+        }
+      }
+    );
+  }
+  function u(t) {
+    t.CapacitorUtils.Synapse = new Proxy(
+      {},
+      {
+        get(e, n) {
+          return t.cordova.plugins[n];
+        }
+      }
+    );
+  }
+  function f(t = false) {
+    typeof window > "u" || (window.CapacitorUtils = window.CapacitorUtils || {}, window.Capacitor !== void 0 && !t ? s(window) : window.cordova !== void 0 && u(window));
+  }
+
+  // node_modules/@capacitor/filesystem/dist/esm/index.js
   init_definitions();
   var Filesystem = registerPlugin("Filesystem", {
     web: () => Promise.resolve().then(() => (init_web2(), web_exports2)).then((m) => new m.FilesystemWeb())
   });
+  f();
 
   // node_modules/@capacitor/share/dist/esm/index.js
   init_dist();
@@ -2548,6 +2596,12 @@
     async convertHeicToJpeg(_options) {
       throw this.unimplemented("Not implemented on web.");
     }
+    async convertRawToJpeg(_options) {
+      throw this.unimplemented("Not implemented on web.");
+    }
+    async copyFile(_options) {
+      throw this.unimplemented("Not implemented on web.");
+    }
     async pickFiles(options) {
       const pickedFiles = await this.openFilePicker(options);
       if (!pickedFiles) {
@@ -2563,7 +2617,8 @@
           mimeType: this.getMimeTypeFromUrl(pickedFile),
           name: this.getNameFromUrl(pickedFile),
           path: void 0,
-          size: this.getSizeFromUrl(pickedFile)
+          size: this.getSizeFromUrl(pickedFile),
+          webPath: URL.createObjectURL(pickedFile)
         };
         if (options === null || options === void 0 ? void 0 : options.readData) {
           file.data = await this.getDataFromFile(pickedFile);
@@ -2597,18 +2652,39 @@
         input.type = "file";
         input.accept = accept;
         input.multiple = limit === 0;
-        input.addEventListener("change", () => {
+        const hasCancelEvent = "oncancel" in input;
+        const onChangeHandler = () => {
           onChangeFired = true;
+          removeAllListeners();
           const files = Array.from(input.files || []);
           resolve2(files);
-        }, { once: true });
-        window.addEventListener("focus", async () => {
-          await this.wait(1e3);
+        };
+        const onCancelHandler = () => {
+          removeAllListeners();
+          resolve2(void 0);
+        };
+        const onFocusHandler = async () => {
+          await this.wait(500);
           if (onChangeFired) {
             return;
           }
+          removeAllListeners();
           resolve2(void 0);
-        }, { once: true });
+        };
+        const removeAllListeners = () => {
+          input.removeEventListener("change", onChangeHandler);
+          if (hasCancelEvent) {
+            input.removeEventListener("cancel", onCancelHandler);
+          } else {
+            window.removeEventListener("focus", onFocusHandler);
+          }
+        };
+        input.addEventListener("change", onChangeHandler, { once: true });
+        if (hasCancelEvent) {
+          input.addEventListener("cancel", onCancelHandler, { once: true });
+        } else {
+          window.addEventListener("focus", onFocusHandler, { once: true });
+        }
         input.click();
       });
     }
@@ -3046,8 +3122,8 @@
     return printError(code, rejectionMessage3(error) || "Printing failed", error);
   }
   function safeJobName(name) {
-    const s = String(name || "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
-    return s || "CompetitionPilot";
+    const s2 = String(name || "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+    return s2 || "CompetitionPilot";
   }
   function safePdfName(name) {
     let base = String(name || "").replace(/\.pdf$/i, "").replace(/[^A-Za-z0-9ÄÖÜäöüß._-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[.-]+|[.-]+$/g, "").slice(0, 80);

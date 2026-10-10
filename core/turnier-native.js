@@ -1,9 +1,10 @@
 /* ============================================================================
    turnier-native.js – App-Funktionen der nativen iOS-/Android-App (Capacitor)
 
-   Im Browser/PWA tut diese Datei NICHTS: window.print bleibt unverändert,
+   Im Browser/PWA bleiben native Funktionen inaktiv: window.print bleibt unverändert,
    Teilen-Links entstehen weiter aus location.href (turnier-share.js), das
-   native Bundle wird nie geladen.
+   native Bundle wird nie geladen. Der gemeinsame Feedback-Einstieg wird auf
+   allen Seiten nachgeladen (Browser/PWA und App; kein automatischer Versand).
 
    In der App (Capacitor.isNativePlatform()):
    - Öffentliche Links: Seiten laufen dort unter capacitor://localhost (iOS)
@@ -47,6 +48,18 @@
   else {
     root.TNative = api;
     api.install();
+    var script = root.document && root.document.currentScript;
+    if (script && script.src) {
+      var base = script.src.replace(/[^\/?#]*(?:[?#].*)?$/, '');
+      var feedback = root.document.createElement('script');
+      feedback.src = base + 'turnier-feedback.js';
+      feedback.async = true;
+      var style = root.document.createElement('link');
+      style.rel = 'stylesheet';
+      style.href = base + 'turnier-feedback.css';
+      root.document.head.appendChild(style);
+      root.document.head.appendChild(feedback);
+    }
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';

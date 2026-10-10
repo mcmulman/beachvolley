@@ -658,6 +658,9 @@
     var page = String(location.pathname || '').split('/').pop() || 'index.html';
     return 'Spiel_Timer.html?from=' + encodeURIComponent(page + (location.search || ''));
   }
+  function timerEnabled() {
+    return !window.TReleaseConfig || window.TReleaseConfig.timer !== false;
+  }
   /* Teamname einer Kartenseite: eingetragener Name, sonst „Team N“; bei
      King/Queen die Spieler:innen mit „&“; sonst die Beschriftung des
      Ergebnis-Kaestchens. */
@@ -762,6 +765,7 @@
   }
   var timerResultDone = false;
   function applyTimerResult() {
+    if (!timerEnabled()) return;
     if (timerResultDone) return;
     var r = readTimerResult();
     if (!r) { timerResultDone = true; return; }
@@ -805,7 +809,7 @@
     if (!box) return;
     var first = box.querySelector('input.score');
     var link = box.querySelector('.bl-mtimer');
-    var href = first && !first.disabled && !td.classList.contains('is-bye') ? matchTimerHref(td) : null;
+    var href = timerEnabled() && first && !first.disabled && !td.classList.contains('is-bye') ? matchTimerHref(td) : null;
     if (!href) {
       if (link) link.parentNode.removeChild(link);
       return;
@@ -857,6 +861,7 @@
   });
 
   function mountTimerLink() {
+    if (!timerEnabled()) return;
     var actions = document.querySelector('.app-bar__actions');
     if (!actions || actions.querySelector('.bl-timer-link')) return;
     var link = document.createElement('a');

@@ -1103,19 +1103,31 @@
     });
   }
   function renderSetup() {
-    renderRuleSelects(el.setupSelects, setupDraft, !!state.match);
-    el.setupRulesNote.hidden = !state.match;
+    renderRuleSelects(el.setupSelects, setupDraft, setupDraft.fromMatch);
+    el.setupRulesNote.hidden = !setupDraft.fromMatch;
     el.setupRulesSummary.textContent = rulesText(setupDraft);
     renderSetupServe();
   }
   /* Aus den Einstellungen erneut geöffnet: „Abbrechen“ statt „Überspringen“. */
-  function openSetup(fromSettings) {
-    var info = TM.ruleInfo(state);
-    el.setupText.hidden = !!fromSettings;
-    el.setupSkip.textContent = fromSettings ? tx('timer.setup.cancel', 'Abbrechen') : tx('timer.setup.skip', 'Überspringen');
+  function openSetup(fromSettings, isNewMatch) {
+    var setupState = isNewMatch && !returnTarget && state.match ? TM.setMatch(state, null, null) : state;
+    var info = TM.ruleInfo(setupState);
+    el.setupText.hidden = !!fromSettings && !isNewMatch;
+    el.setupTitle.textContent = isNewMatch
+      ? tx('timer.new.title', 'Neues Spiel konfigurieren')
+      : tx('timer.setup.title', 'Spiel einrichten');
+    el.setupText.textContent = isNewMatch
+      ? tx('timer.new.text', 'Zeit, Punkte und Sätze starten nach „Neues Spiel starten“ wieder bei 0. Teamnamen und Regeln kannst du hier anpassen.')
+      : tx('timer.setup.text', 'Alles freiwillig – oder überspringen und gleich loszählen.');
+    el.setupDone.textContent = isNewMatch
+      ? tx('timer.new.done', 'Neues Spiel starten')
+      : tx('timer.setup.done', 'Fertig');
+    el.setupSkip.textContent = fromSettings || isNewMatch
+      ? tx('timer.setup.cancel', 'Abbrechen')
+      : tx('timer.setup.skip', 'Überspringen');
     setupDraft = { target: info.target, wins: info.wins, decider: info.decider, twoPoint: info.twoPoint,
-      serveShown: state.serveShown === true, canStart: TM.canStartServe(state),
-      begin: state.serve, first: firstPicks() };
+      serveShown: state.serveShown === true, canStart: !!isNewMatch || TM.canStartServe(state), isNewMatch: !!isNewMatch,
+      fromMatch: !!setupState.match, begin: isNewMatch ? null : state.serve, first: firstPicks() };
     el.setupName.a.value = state.names.a;
     el.setupName.b.value = state.names.b;
     ['a', 'b'].forEach(function (side) {
@@ -1131,10 +1143,12 @@
     if (!draft) return;
     setupDraft = null;
     closeModal(state.clockEnabled ? el.primary : el.plus.a);
-    var next = TM.setSetupDone(state, true);
+    var next = draft.isNewMatch && apply ? TM.reset(TM.clearServe(state)) : state;
+    if (draft.isNewMatch && !returnTarget && next.match) next = TM.setMatch(next, null, null);
+    next = TM.setSetupDone(next, true);
     if (apply) {
       next = TM.setNames(next, el.setupName.a.value, el.setupName.b.value);
-      if (!state.match) next = TM.setRules(next, draft);
+      if (!next.match) next = TM.setRules(next, draft);
       next = TM.setServeShown(next, draft.serveShown);
       ['a', 'b'].forEach(function (side) {
         [0, 1].forEach(function (i) { next = TM.setPlayerName(next, side, i, el.setupPlayer[side][i].value); });
@@ -1142,6 +1156,10 @@
       if (draft.serveShown && draft.canStart && draft.startTouched) next = TM.startServe(next, draft.begin, draft.first);
     }
     commit(next);
+    if (draft.isNewMatch) {
+      if (apply) announce(tx('timer.announce.new', 'Neues Spiel gestartet'));
+      return;
+    }
     if (apply && (state.names.a || state.names.b)) {
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: sideName('a'), b: sideName('b') }));
     }
@@ -1192,6 +1210,7 @@
     el.compact = byId('mt-compact');
     el.endSetLabel = byId('mt-end-set').querySelector('.mt-tl');
     el.reset = byId('mt-reset');
+    el.newMatch = byId('mt-new');
     el.resetConfirm = byId('mt-reset-confirm');
     el.resetYes = byId('mt-reset-yes');
     el.resetNo = byId('mt-reset-no');
@@ -1236,6 +1255,7 @@
     el.ruleSelects = Array.prototype.slice.call(doc.querySelectorAll('[data-rule]'));
     el.setup = byId('mt-setup');
     el.setupBox = byId('mt-setup-box');
+    el.setupTitle = byId('mt-setup-title');
     el.setupName = { a: byId('mt-setup-a'), b: byId('mt-setup-b') };
     el.setupRulesToggle = byId('mt-setup-rules-toggle');
     el.setupRulesPanel = byId('mt-setup-rules-panel');
@@ -1373,7 +1393,7 @@
       });
     });
     el.setupDone.addEventListener('click', function () { closeSetup(true); });
-    el.setupOpen.addEventListener('click', function () { openSetup(true); });
+    el.setupOpen.addEventListener('click', function () { openSetup(true, false); });
     el.setupSkip.addEventListener('click', function () { closeSetup(false); });
     el.setupServe.addEventListener('click', function () {
       if (!setupDraft) return;
@@ -1461,6 +1481,7 @@
     el.reset.addEventListener('click', function () {
       if (el.resetConfirm.hidden) showResetConfirm(); else hideResetConfirm(true);
     });
+    el.newMatch.addEventListener('click', function () { openSetup(false, true); });
     el.resetYes.addEventListener('click', onResetConfirmed);
     el.resetNo.addEventListener('click', function () { hideResetConfirm(true); });
     el.resetConfirm.addEventListener('keydown', function (e) {

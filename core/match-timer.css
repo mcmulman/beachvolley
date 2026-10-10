@@ -613,7 +613,9 @@
   border-radius: 12px;
 }
 .mt-confirm p { margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
-.mt-confirm button { margin: 4px 8px 0 0; max-width: 100%; }
+.mt-confirm-actions { display: flex; justify-content: flex-end; }
+.mt-confirm-actions button { flex: 1 1 0; margin: 0; max-width: 100%; }
+.mt-confirm-actions button + button { margin-left: 8px; }
 .mt-confirm .mt-confirm-yes { color: #fff; background: #a61b1b; border-color: #a61b1b; }
 
 /* Seitenwechsel-Rhythmus: Beschriftung links, Auswahl rechts. */

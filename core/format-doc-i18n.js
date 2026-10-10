@@ -87,8 +87,13 @@
     style.textContent =
       '.doc-en-summary{display:none;padding:24px;background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(31,78,121,0.08);}' +
       '.doc-en-summary .doc-en-note{margin-top:20px;padding:10px 12px;background:#f7fafd;border-left:4px solid #1f4e79;font-size:13px;color:#5a6375;}' +
-      '.doc-generated-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;}' +
-      '.doc-generated-toolbar .back-link{margin-bottom:0;}' +
+      // .topbar: the html element carries the same marker class and must not become a flex container.
+      '.topbar.doc-generated-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:8px;}' +
+      '.topbar.doc-generated-toolbar>*{margin-right:12px;margin-bottom:12px;}' +
+      '.topbar.doc-generated-toolbar>:last-child{margin-right:0;}' +
+      '.topbar.doc-generated-toolbar .back-link,.topbar.doc-generated-toolbar .print-btn{display:inline-flex;align-items:center;min-height:44px;}' +
+      '.topbar.doc-generated-toolbar .top-actions{display:flex;align-items:center;}' +
+      '.topbar.doc-generated-toolbar .top-actions>*+*{margin-left:8px;}' +
       'html.doc-generated-toolbar .wrap>.back-link{display:none;}' +
       'html.doc-en .page>:not(.topbar):not(.doc-en-summary){display:none!important;}' +
       'html.doc-en .page>.doc-en-summary{display:block!important;}' +

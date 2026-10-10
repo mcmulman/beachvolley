@@ -4,6 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title data-i18n="timer.docTitle">Score Counter – Punkte, Sätze &amp; Spielzeit</title>
+<meta name="description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
+<link rel="canonical" href="https://mcmulman.github.io/beachvolley/Spiel_Timer.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="de_DE">
+<meta property="og:title" content="Score Counter – Punkte, Sätze &amp; Spielzeit">
+<meta property="og:description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
+<meta property="og:url" content="https://mcmulman.github.io/beachvolley/Spiel_Timer.html">
+<meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
+<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Score Counter – Punkte, Sätze &amp; Spielzeit">
+<meta name="twitter:description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
+<meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -130,14 +143,17 @@
       <button type="button" class="mt-toggle" id="mt-compact" aria-label="Zur Kompaktansicht wechseln" data-i18n-attr="aria-label:timer.compactAria"><span class="mt-ic" aria-hidden="true"><svg class="ic-compact" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/></svg><svg class="ic-normal" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg></span><span class="mt-tl" id="mt-compact-label" data-i18n="timer.compact">Kompakt</span></button>
     </div>
     <div class="mt-toolbar mt-reset-toolbar">
+      <button type="button" class="mt-toggle" id="mt-new"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span class="mt-tl" data-i18n="timer.new">Neu</span></button>
       <button type="button" class="mt-toggle mt-plain--danger" id="mt-reset" aria-expanded="false" aria-controls="mt-reset-confirm"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></span><span class="mt-tl" data-i18n="timer.reset">Zurücksetzen</span></button>
     </div>
     <p class="mt-wake-status" id="mt-wake-hint" data-i18n="timer.keepAwakeHint" hidden>Display bleibt an, solange die Zeit läuft (braucht mehr Akku).</p>
     <p class="mt-wake-status" id="mt-wake-status" role="status" aria-live="polite" hidden></p>
     <div class="mt-confirm" id="mt-reset-confirm" role="group" aria-labelledby="mt-reset-question" hidden>
       <p id="mt-reset-question" data-i18n="timer.resetQuestion">Zeit, Spielstand und Sätze auf 0 setzen? Die Namen bleiben erhalten.</p>
-      <button type="button" class="mt-plain mt-confirm-yes" id="mt-reset-yes" data-i18n="timer.resetYes">Ja, zurücksetzen</button>
-      <button type="button" class="mt-plain" id="mt-reset-no" data-i18n="timer.resetNo">Abbrechen</button>
+      <div class="mt-confirm-actions">
+        <button type="button" class="mt-plain" id="mt-reset-no" data-i18n="timer.resetNo">Abbrechen</button>
+        <button type="button" class="mt-plain mt-confirm-yes" id="mt-reset-yes" data-i18n="timer.resetYes">Ja, zurücksetzen</button>
+      </div>
     </div>
   </div>
   <div class="mt-vh" id="mt-announce" role="status" aria-live="polite" aria-atomic="true"></div>

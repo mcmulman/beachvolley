@@ -87,6 +87,15 @@
   const REQUEST_TIMEOUT_MS = 10000; // vermeidet endloses "Hängen" bei totem Netz
   const LONG_URL_WARN = 6000; // Warnschwelle beim Offline-Link (Messenger/Browser könnten kappen)
 
+  function cloudSharingEnabled() {
+    return typeof TReleaseConfig === 'undefined' || TReleaseConfig.cloudSharing !== false;
+  }
+  function cloudSharingError() {
+    const error = new Error(tx('release.share.disabled',
+      'Server-Codes und Server-Links sind in dieser App-Version nicht verfügbar. Bitte einen vollständigen Offline-Link oder eine Sicherungsdatei verwenden.'));
+    error.code = 'cloud-sharing-disabled';
+    return error;
+  }
   /* ============================================================ Server-API
      network:true markiert Fehler, bei denen der Server gar nicht erreicht
      wurde (offline, Timeout, DNS, CORS) - im Unterschied zu einer regulären
@@ -94,6 +103,7 @@
      entscheiden, ob ein empfangener Link verworfen werden darf oder ob er
      für einen späteren, erneuten Versuch erhalten bleiben soll. */
   async function request(path, opts) {
+    if (!cloudSharingEnabled()) throw cloudSharingError();
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
     let res;
@@ -449,12 +459,13 @@
     const root = openShareModalShell(
       tx('share.title', 'Turnier teilen'),
       '<div class="tshare-options">' +
-        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="server" checked>' +
+        (cloudSharingEnabled() ? '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="server" checked>' +
         '<span><strong>' + escapeHtml(tx('share.server.title', 'Server-Link')) + ' <em>'
           + escapeHtml(tx('share.server.badge', 'Empfohlen')) + '</em></strong>' +
         '<small>' + escapeHtml(tx('share.server.desc', 'Kurzer Link über den eigenen Server. Zum Erstellen & Öffnen ist Internet nötig.')) + '</small></span>' +
-        '</label>' +
-        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
+        '</label>' : '') +
+        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline"' +
+        (cloudSharingEnabled() ? '' : ' checked') + '>' +
         '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
         '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.')) + '</small></span>' +
         '</label>' +
@@ -505,9 +516,11 @@
       '<p class="tshare-hint">' + escapeHtml(tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. ' +
         'Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
         (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
-        (longWarnLen ? '<p class="tshare-error">' + escapeHtml(tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
+        (longWarnLen ? '<p class="tshare-error">' + escapeHtml(cloudSharingEnabled() ? tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
           + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
-          + 'oder den kürzeren Server-Link verwenden.', { len: longWarnLen })) + '</p>' : '') +
+          + 'oder den kürzeren Server-Link verwenden.', { len: longWarnLen }) :
+          tx('release.share.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen). Falls er abgeschnitten wird, bitte eine Sicherungsdatei exportieren und teilen.',
+            { len: longWarnLen })) + '</p>' : '') +
       '<label class="tshare-field" style="margin-bottom:8px">' + escapeHtml(tx('share.result.link', 'Link')) +
       '<div class="tshare-linkrow"><input type="text" id="tshare-url" readonly>' +
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>' +
@@ -678,6 +691,10 @@
     let pending = null;
     try { pending = readPendingHash(); } catch (e) { pending = null; }
     if (!pending) return Promise.resolve(false);
+    if (pending.kind === 'server' && !cloudSharingEnabled()) {
+      alert(cloudSharingError().message);
+      return Promise.resolve(false);
+    }
     const run = pending.kind === 'offline'
       ? function () { return applyOfflineShare(pending.value, opts); }
       : function () { return applyServerShare(pending.value, opts); };
@@ -889,6 +906,7 @@
     }
     const id = extractServerCode(input);
     if (!id) { alert(tx('code.invalidInput', 'Bitte einen gültigen Code oder Link eingeben.')); return; }
+    if (!cloudSharingEnabled()) { alert(cloudSharingError().message); return; }
 
     apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
       const file = env && env.file;

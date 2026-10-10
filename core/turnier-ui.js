@@ -1024,7 +1024,7 @@
       const confirmed = tbody.__confirmedMatches && tbody.__confirmedMatches.has(td.getAttribute('data-mid'));
       const checked = confirmed || (begun[round] && tbody.__checkedMatches
         && tbody.__checkedMatches.has(td.getAttribute('data-mid')));
-      const required = checked || (begun[round] && +round < opened);
+      const required = checked || +round < opened;
       if (required) td.setAttribute('data-score-required', '');
       else td.removeAttribute('data-score-required');
       markScoreInputs(td, null);
@@ -1034,7 +1034,7 @@
       td.classList.toggle('bl-match-invalid', invalid);
       td.classList.toggle('bl-match-valid', active.length > 0 && complete);
       const summary = rounds[round] || (rounds[round] = { open: 0, invalid: 0, checked: false });
-      summary.checked = summary.checked || invalid || (begun[round] && +round < opened);
+      summary.checked = summary.checked || invalid || +round < opened;
       if (!complete) {
         if (!active.length || active.some(inp => String(inp.value || '').trim() === '')) summary.open++;
         else summary.invalid++;
@@ -1340,11 +1340,17 @@
     rootEl.addEventListener('input', e => {
       const el = e.target;
       if (!el.classList || !el.classList.contains('score')) return;
+      const card = el.closest ? el.closest('td.match[data-round]') : null;
+      const round = card ? +card.getAttribute('data-round') || 0 : 0;
+      if (round > (+rootEl.getAttribute('data-opened-round') || 0)) {
+        rootEl.setAttribute('data-opened-round', String(round));
+      }
       const raw = el.value;
       const jump = /[:\s]/.test(raw);
       el.value = raw.replace(/[^0-9]/g, '').slice(0, 3);
       onChange(el.getAttribute('data-mid'), +el.getAttribute('data-set'),
         el.getAttribute('data-side'), el.value);
+      markRoundStatus(rootEl);
       if (jump) focusNext(el, fields(), fields);
     });
     rootEl.addEventListener('keydown', e => {

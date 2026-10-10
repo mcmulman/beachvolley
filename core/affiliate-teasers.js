@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  if (typeof TReleaseConfig !== 'undefined' ||
+      (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' &&
+       window.Capacitor.isNativePlatform())) return;
+
   var products = [
     {
       asin: 'B07Z6VQ2ZG',
