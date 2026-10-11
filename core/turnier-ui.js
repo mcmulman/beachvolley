@@ -993,6 +993,7 @@
 
   function applyRoundFilter(tbody, filter) {
     if (!tbody) return;
+    tbody.classList.toggle('show-all-rounds', filter === 'all');
     const page = typeof location === 'undefined' ? '' : location.pathname + location.search;
     if (tbody.getAttribute('data-round-state-page') !== page) {
       tbody.setAttribute('data-round-state-page', page);
@@ -1589,11 +1590,13 @@
       list[j].select();
       return true;
     }
+    const targetSig = scoreSig(list[j]);
     el.blur();
     const now = fresh();
     const anchor = el.isConnected ? el : document.querySelector(sig);
     const k = anchor ? now.indexOf(anchor) : -1;
-    const target = k >= 0 ? now[k + dir] : list[j].isConnected ? list[j] : null;
+    const replacement = targetSig ? document.querySelector(targetSig) : null;
+    const target = k >= 0 ? now[k + dir] : replacement && now.indexOf(replacement) >= 0 ? replacement : null;
     if (target) {
       target.focus();
       target.select();
@@ -1604,6 +1607,83 @@
   }
   function focusNext(el, list, fresh) { return focusStep(el, list, 1, fresh); }
   function focusPrev(el, list, fresh) { return focusStep(el, list, -1, fresh); }
+
+  function visibleScoreFields() {
+    return Array.prototype.slice.call(document.querySelectorAll('input.score'))
+      .filter(inp => !inp.disabled && !inp.readOnly && inp.getClientRects().length);
+  }
+  function stepScoreFocus(el, dir) {
+    return focusStep(el, visibleScoreFields(), dir, visibleScoreFields);
+  }
+  function focusScoreTarget(from, to) {
+    const sig = scoreSig(to);
+    if (!sig) return false;
+    if (from && from.blur) from.blur();
+    const target = document.querySelector(sig);
+    if (!target || target.disabled || target.readOnly || !target.getClientRects().length) return false;
+    target.focus();
+    target.select();
+    return true;
+  }
+
+  /* Only a focus/viewport change may reveal an edited score. Ordinary scrolling
+     must neither steal focus nor pull the user back to the current game. */
+  function wireScoreViewport() {
+    if (document.body.__scoreViewport) return document.body.__scoreViewport;
+    let queued = false;
+    function reveal() {
+      queued = false;
+      const active = document.activeElement;
+      const editing = active && active.matches && active.matches('input.score:not(:disabled)')
+        && !active.readOnly;
+      const mobile = window.matchMedia('(max-width: 960px)').matches;
+      const viewport = window.visualViewport;
+      const height = viewport ? viewport.height : window.innerHeight;
+      const offset = viewport ? viewport.offsetTop : 0;
+      document.body.classList.toggle('score-editing', !!editing && mobile);
+      document.body.classList.toggle('score-short-viewport', !!editing && mobile && height < 420);
+      document.body.style.setProperty('--score-keyboard-bottom',
+        Math.max(0, window.innerHeight - offset - height) + 'px');
+      document.body.style.setProperty('--score-viewport-top', offset + 'px');
+      if (!editing || !mobile || window.matchMedia('print').matches) return;
+      let top = offset + 8, bottom = offset + height - 8;
+      document.querySelectorAll('.app-bar,.schedule-roundbar').forEach(bar => {
+        const r = bar.getBoundingClientRect();
+        if (/sticky|fixed/.test(getComputedStyle(bar).position) && r.bottom > top && r.top < bottom) {
+          top = Math.max(top, r.bottom + 8);
+        }
+      });
+      const toast = document.getElementById('bl-toast');
+      if (toast && toast.getClientRects().length && toast.classList.contains('show')) {
+        const r = toast.getBoundingClientRect();
+        /* The feedback slides upward by 16px while appearing. Reserve its
+           final footprint, even on the first frame with opacity still zero. */
+        if (r.top > top && r.top < bottom) bottom = r.top - 24;
+      }
+      const r = active.getBoundingClientRect();
+      const card = active.closest('td.match,.kqmatch');
+      const names = card && card.querySelector('.pnames');
+      if (names && /sticky/.test(getComputedStyle(names).position)) {
+        top = Math.max(top, names.getBoundingClientRect().bottom + 8);
+      }
+      const context = names ? names.getBoundingClientRect().top : card ? card.getBoundingClientRect().top : r.top;
+      const start = names && /sticky/.test(getComputedStyle(names).position) ? r.top
+        : r.bottom - context <= bottom - top ? context : r.top;
+      const delta = r.bottom > bottom ? r.bottom - bottom : start < top ? start - top : 0;
+      if (delta) window.scrollBy(0, delta);
+    }
+    function scheduleReveal() {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(reveal);
+    }
+    document.addEventListener('focusin', scheduleReveal);
+    document.addEventListener('focusout', scheduleReveal);
+    window.addEventListener('resize', scheduleReveal);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleReveal);
+    document.body.__scoreViewport = scheduleReveal;
+    return scheduleReveal;
+  }
 
   /* ======================================================= FELDER & ZEITPLAN
      Mehr Felder als gleichzeitig moegliche Spiele bringen nichts – deshalb
@@ -2072,6 +2152,6 @@
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, neededFieldsForPlan, fillPlanFixes, timefit,
-    wireScoreInputs, courtLadderHtml, paintCourtLadder
+    wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };
 });

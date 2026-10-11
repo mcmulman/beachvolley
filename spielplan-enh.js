@@ -73,6 +73,7 @@
     toast.textContent = SAVED;
     toast.classList.remove('error', 'warning');
     toast.classList.add('show');
+    if (revealScore) revealScore();
     clearTimeout(toastT);
     toastT = setTimeout(function () { toast.classList.remove('show'); }, 1400);
   }
@@ -113,6 +114,7 @@
       toast.appendChild(button);
       toast.classList.remove('error', 'warning');
       toast.classList.add('show');
+      if (revealScore) revealScore();
       clearTimeout(toastT);
       toastT = setTimeout(function () {
         toast.classList.remove('show');
@@ -172,6 +174,7 @@
     }
     toast.classList.remove('error', 'warning');
     toast.classList.add(kind, 'show');
+    if (revealScore) revealScore();
     clearTimeout(toastT);
     if (kind !== 'error') {
       toastT = setTimeout(function () {
@@ -291,34 +294,58 @@
     sanitizeScore(el);
   }, true);
 
-  /* The round-robin template keeps every round in the DOM while its round
-     filter hides inactive rows. Enter must skip those hidden inputs and blur
-     first so the change handler can complete a corrected score. */
+  var revealScore = window.TUI ? window.TUI.wireScoreViewport() : null;
+  function touchScore(e) {
+    if (e.button !== 0) return;
+    var from = document.activeElement, to = e.target;
+    if (!window.TUI || from === to || !from || !from.matches || !to || !to.matches
+        || !from.matches('input.score:not(:disabled)') || from.readOnly
+        || !to.matches('input.score[data-mid]:not(:disabled)') || to.readOnly) return;
+    e.preventDefault();
+    window.TUI.focusScoreTarget(from, to);
+  }
+  document.addEventListener('mousedown', touchScore, true);
+  var scoreTouch = null;
+  document.addEventListener('touchstart', function (e) {
+    scoreTouch = null;
+    if (e.touches.length !== 1) return;
+    var to = e.target, btn = to && to.closest ? to.closest('[data-score-ok]') : null;
+    var input = btn ? btn.closest('.sbox').querySelector('input.score:not(:disabled)') : to;
+    if (!input || !input.matches || !input.matches('input.score[data-mid]:not(:disabled)') || input.readOnly) return;
+    scoreTouch = { sig: scoreInputSig(input), ok: !!btn, x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, true);
+  document.addEventListener('touchend', function (e) {
+    var tap = scoreTouch;
+    scoreTouch = null;
+    if (!tap || !e.changedTouches.length) return;
+    var point = e.changedTouches[0];
+    if (Math.abs(point.clientX - tap.x) > 10 || Math.abs(point.clientY - tap.y) > 10) return;
+    var input = document.querySelector(tap.sig);
+    if (!input || input.disabled || input.readOnly) return;
+    if (tap.ok) {
+      var btn = input.closest('.sbox').querySelector('[data-score-ok]');
+      if (!btn) return;
+      e.preventDefault();
+      confirmScore(btn);
+    } else if (document.activeElement !== input) {
+      e.preventDefault();
+      window.TUI.focusScoreTarget(document.activeElement, input);
+    }
+  }, { capture: true, passive: false });
+  document.addEventListener('touchcancel', function () { scoreTouch = null; }, true);
+
+  /* Shared order, including Court ladders which do not use wireScoreInputs.
+     Blur/save/rebuild precedes looking up a fresh visible neighbour. */
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' || !e.target || !e.target.matches
-        || !e.target.matches('input.score[data-rr-round]')) return;
+    var el = e.target;
+    if (!window.TUI || !el || !el.matches || !el.matches('input.score[data-mid]:not(:disabled)') || el.readOnly) return;
+    var back = e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey);
+    if (!back && ['Tab', 'Enter', 'ArrowDown', ':', '-', '/'].indexOf(e.key) < 0) return;
+    var moved = window.TUI.stepScoreFocus(el, back ? -1 : 1);
+    if (!moved && e.key === 'Tab') return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    var currentId = e.target.id;
-    e.target.blur();
-    var visible = Array.prototype.slice.call(document.querySelectorAll('input.score[data-rr-round]:not(:disabled)'))
-      .filter(function (inp) { return inp.getClientRects().length > 0; });
-    var current = visible.findIndex(function (inp) { return inp.id === currentId; });
-    if (current >= 0 && current + 1 < visible.length) {
-      visible[current + 1].focus();
-      if (visible[current + 1].select) visible[current + 1].select();
-    }
-  }, true);
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== ':' && e.key !== '-' && e.key !== '/') return;
-    var el = e.target;
-    if (!el || !el.classList || !el.classList.contains('score') || el.disabled) return;
-    var partner = scorePartner(el);
-    if (!partner || partner.disabled) return;
-    e.preventDefault();
-    partner.focus();
-    if (partner.select) partner.select();
+    if (!moved && e.key === 'Enter') el.blur();
   }, true);
 
   /* ------------------------------------------------------- OK-Knopf (iPad)
@@ -354,7 +381,7 @@
      zum naechsten Feld unterbleibt komplett und alle Kaestchen bleiben
      gelb markiert. Deshalb: der Knopf nimmt (siehe "mousedown" unten) nie
      selbst den Fokus, und wir loesen die Auto-Vervollstaendigung/Validierung
-     HIER kontrolliert per "change" aus - anschliessend werden Anchor/Liste
+     HIER kontrolliert per blur() aus - anschliessend werden Anchor/Liste
      ueber eine stabile Signatur (data-mid/-set/-side bzw. ID) NEU aus dem
      (ggf. frisch aufgebauten) DOM geholt, statt alte Knoten weiterzunutzen. */
   document.addEventListener('mousedown', function (e) {
@@ -371,20 +398,19 @@
     return inp.id ? 'input.score#' + inp.id : null;
   }
 
-  document.addEventListener('click', function (e) {
-    var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
-    if (!btn) return;
-    e.preventDefault();
+  function confirmScore(btn) {
     var box = btn.closest('.sbox');
     var boxInputs = box ? Array.prototype.slice.call(box.querySelectorAll('input.score')) : [];
     if (!boxInputs.length) return;
     var sigs = boxInputs.map(scoreInputSig);
-    /* Autovervollstaendigung/Validierung ZUERST ausloesen (ersetzt das
-       native "blur", das der Knopf per "mousedown" oben bewusst verhindert)
-       - erst DANACH steht fest, ob das Kaestchenpaar wirklich vollstaendig
-       ist (die Gegenseite kann durch genau dieses "change" gerade erst
-       automatisch befuellt werden). */
-    boxInputs.forEach(function (inp) { if (!inp.disabled) inp.dispatchEvent(new Event('change', { bubbles: true })); });
+    /* Erst blur -> change/save/rebuild, dann frische Knoten. Ohne aktives
+       Ergebnisfeld validieren wir das explizit bestaetigte Paar per change. */
+    var focused = document.activeElement;
+    if (focused && focused.matches && focused.matches('input.score')) focused.blur();
+    else sigs.forEach(function (sig) {
+      var inp = sig && document.querySelector(sig);
+      if (inp && !inp.disabled) inp.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     /* Ab hier keine der oben gelesenen DOM-Referenzen mehr verwenden - das
        "change" kann (siehe Kommentar oben) bereits einen kompletten
        Neuaufbau ausgeloest haben. Alles Weitere ueber die Signaturen frisch
@@ -405,7 +431,7 @@
       return;
     }
     var anchor = freshInputs[freshInputs.length - 1];
-    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
+    var list = window.TUI.visibleScoreFields();
     var idx = list.indexOf(anchor);
     var next = idx >= 0 ? list[idx + 1] : null;
     if (next) {
@@ -414,6 +440,12 @@
     } else if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();
     }
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-score-ok]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    confirmScore(btn);
   }, true);
 
   /* ------------------------------------------------ Runde abschliessen (✓)
@@ -512,10 +544,23 @@
      Bewusst rein am Markup entschieden: ein Spiel gilt als erledigt, wenn
      alle aktiven Kaestchen der Zelle gefuellt und keines ungueltig ist.    */
   function update() {
+    layoutCourtCards();
     injectRoundButtons();
     if (window.TUI) {
       document.querySelectorAll('table.sched > tbody').forEach(function (body) {
         window.TUI.markRoundStatus(body);
+      });
+    }
+
+    function layoutCourtCards() {
+      document.querySelectorAll('.table-scroll.is-wide table.sched').forEach(function (table) {
+        var wrapper = table.closest('.table-scroll');
+        var row = table.querySelector('tr.rmatches');
+        var columns = row ? row.children.length : 0;
+        var width = wrapper.clientWidth;
+        table.classList.toggle('wrap-courts', !!columns && width / columns < 320);
+        wrapper.classList.toggle('wrap-courts-container', table.classList.contains('wrap-courts'));
+        table.style.setProperty('--court-columns', String(Math.max(1, Math.floor(width / 320))));
       });
     }
     document.querySelectorAll('input.score').forEach(function (inp) {
@@ -539,7 +584,6 @@
     });
     document.querySelectorAll('td.match').forEach(syncMatchTimerLink);
     applyTimerResult();
-    fitMatchTimerLinks();
 
     /* OK-Knopf (.score-ok, siehe unten): grün statt grau, sobald BEIDE
        Kaestchen des zugehoerigen Kaestchenpaars (.sbox) ausgefuellt UND
@@ -581,22 +625,6 @@
     if (!host || !window.MutationObserver) return;
     new MutationObserver(schedule).observe(host, { childList: true, subtree: true });
   }
-
-  /* --------------------------------------------------------- Pfeiltasten */
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    var el = e.target;
-    if (!el || !el.classList || !el.classList.contains('score')) return;
-    var list = Array.prototype.slice.call(document.querySelectorAll('input.score:not([disabled])'));
-    var idx = list.indexOf(el);
-    if (idx < 0) return;
-    var next = idx + (e.key === 'ArrowDown' ? 1 : -1);
-    if (next >= 0 && next < list.length) {
-      e.preventDefault();
-      list[next].focus();
-      if (list[next].select) list[next].select();
-    }
-  }, true);
 
   function layoutKpis() {
     if (window.TUI) window.TUI.layoutKpis();
@@ -760,13 +788,14 @@
      nach eingetragenem Ergebnis unsichtbar (Platz bleibt, Layout ruhig).
      tabindex=-1 wie beim ✓: die Tab-Reihenfolge der Kaestchen bleibt. */
   function syncMatchTimerLink(td) {
-    var box = td.querySelector('.sset .sbox');
-    if (!box) return;
-    var first = box.querySelector('input.score');
-    var link = box.querySelector('.bl-mtimer');
+    var head = td.querySelector('.pnames');
+    if (!head) return;
+    var first = td.querySelector('input.score');
+    var link = td.querySelector('.bl-mtimer');
     var href = timerEnabled() && first && !first.disabled && !td.classList.contains('is-bye') ? matchTimerHref(td) : null;
     if (!href) {
       if (link) link.parentNode.removeChild(link);
+      head.classList.remove('has-match-counter');
       return;
     }
     if (!link) {
@@ -775,8 +804,9 @@
       link.setAttribute('tabindex', '-1');
       link.setAttribute('data-bl-match-timer', '');
       link.innerHTML = '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg>';
-      box.insertBefore(link, box.firstChild);
     }
+    if (link.parentNode !== head) head.insertBefore(link, head.querySelector('.pside-b'));
+    head.classList.add('has-match-counter');
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
     var label = tx('enh.matchTimerAria', 'Score Counter für {a} gegen {b} öffnen',
       { a: matchSideName(td, 'a'), b: matchSideName(td, 'b') });
@@ -784,23 +814,6 @@
       link.setAttribute('aria-label', label);
       link.setAttribute('title', label);
     }
-  }
-  /* Zu schmale Karten (z. B. King/Queen am Handy): ⏱ ausblenden, statt die
-     Kaestchen aus der Karte zu schieben. Erst alle zeigen, dann gesammelt
-     messen (ein Layout-Durchlauf), dann ausblenden. */
-  function fitMatchTimerLinks() {
-    var links = Array.prototype.slice.call(document.querySelectorAll('.bl-mtimer'));
-    links.forEach(function (l) { l.style.display = ''; });
-    var hide = links.filter(function (l) {
-      var td = l.closest('td.match');
-      var box = l.parentNode;
-      if (!td || !box) return false;
-      var tr = td.getBoundingClientRect();
-      if (!tr.width) return false;
-      var br = box.getBoundingClientRect();
-      return br.left < tr.left - 0.5 || br.right > tr.right + 0.5;
-    });
-    hide.forEach(function (l) { l.style.display = 'none'; });
   }
   window.addEventListener('resize', function () { schedule(); });
   document.addEventListener('click', function () { schedule(); });
