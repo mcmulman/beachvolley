@@ -48,6 +48,12 @@
   /* Deliberately NOT a known/exportable beachl.* key. Rights and the latest
      server revision live outside tournament records, archives and Undo. */
   const SERVER_PREFIX = '__beachl_server.';
+  const NEW_UI_PREFIX = '__beachl_new_ui.';
+  const ORIGIN_PREFIX = '__beachl_origin.';
+  function markNewInView(view, sheetId, origin) {
+    view.setItem(NEW_UI_PREFIX + sheetId, '1');
+    if (origin) view.setItem(ORIGIN_PREFIX + sheetId, origin);
+  }
   function serverBindingInView(view, sheet) {
     try { return JSON.parse(view.getItem(SERVER_PREFIX + sheet) || 'null'); }
     catch (e) { return null; }
@@ -129,9 +135,8 @@
     return /^beachl\.(t|b|r|q|arch)\./.test(key);
   }
   /* Basis-IDs der aktuellen Bögen (sheetIdFrom(base), deckungsgleich mit
-     STORE_BASE_MAP in index.html). Datensätze anderer Bogen-IDs bleiben
-     unverändert gespeichert, erscheinen aber weder im Index noch werden sie
-     aus Sicherungen importiert. */
+     STORE_BASE_MAP in index.html). Andere Bogen-IDs bleiben in Store und
+     Sicherungen unverändert erhalten, erscheinen aber nicht im aktiven Index. */
   const SHEET_BASES = ['de-flex', 'flex_rr', 'flex_swiss', 'gruppen-final', 'ko-flex',
     'kingqueen', 'koc', 'mpp', 'runden_rr', 'runden_swiss'];
   function sheetBaseOf(sheetId) {
@@ -190,6 +195,7 @@
       setItem: function (key, value) {
         guard();
         key = String(key); value = String(value);
+        if (Object.prototype.hasOwnProperty.call(data, key) && data[key] === value) return;
         if (!Object.prototype.hasOwnProperty.call(data, key)) sorted = null;
         data[key] = value;
         changes[key] = { value: value };
@@ -824,7 +830,7 @@
       if (!parsed.ok) return { t: emptyTournament(sheetId, cfgDefaults), issue: parsed.code };
       return { t: normalize(parsed.data, sheetId, cfgDefaults) };
     }
-    return { t: emptyTournament(sheetId, cfgDefaults) };
+    return { t: emptyTournament(sheetId, cfgDefaults), isNew: true };
   }
 
   /* Revisionsprüfung + Vorversion + Datensatz + Index – alles in derselben
@@ -901,10 +907,22 @@
   }
 
   /* ------------------------------------------------------- async Persistenz */
+  let initialUiState = null;
   function load(sheetId, cfgDefaults) {
     return transaction(function (view) {
-      return loadInView(view, sheetId, cfgDefaults, true);
+      const original = view.getItem(keyFor(sheetId));
+      const validExisting = original != null && parseRecord(original, sheetId).ok;
+      const res = loadInView(view, sheetId, cfgDefaults, true);
+      const binding = serverBindingInView(view, sheetId);
+      res.readOnly = !!(binding && binding.readOnly);
+      res.fromFormat = view.getItem(ORIGIN_PREFIX + sheetId) === 'format';
+      if (validExisting && !res.issue && !res.readOnly && view.getItem(NEW_UI_PREFIX + sheetId) === '1') {
+        res.isNew = true;
+        view.removeItem(NEW_UI_PREFIX + sheetId);
+      }
+      return res;
     }, { tracked: false }).then(function (res) {
+      initialUiState = { sheet: sheetId, isNew: !!res.isNew, readOnly: !!res.readOnly, fromFormat: !!res.fromFormat };
       if (res.issue) storageIssue(res.issue, sheetId);
       if (res.saved) notifyTabs(sheetId, res.saved);
       return res.t;
@@ -1054,7 +1072,6 @@
 
   function reset(sheetId) {
     return transaction(function (view) {
-      detachServerInView(view, sheetId);
       const current = view.getItem(keyFor(sheetId));
       if (current != null) {
         const parsed = parseRecord(current, sheetId);
@@ -1062,6 +1079,7 @@
         if (view.getItem(backupKeyFor(sheetId)) == null) view.setItem(backupKeyFor(sheetId), current);
         view.removeItem(keyFor(sheetId));
       }
+      detachServerInView(view, sheetId);
       view.setItem(REVISION_PREFIX + sheetId, String(Math.max(revisionInView(view, sheetId),
         current == null ? 0 : Number(parseRecord(current, sheetId).data._revision) || 0)));
       const idx = readIndexInView(view);
@@ -1548,6 +1566,7 @@
     emptyTournament, normalize, parseRecord,
     // async (Promise) – IndexedDB bzw. in der App SQLite maßgeblich
     load, save, reset, hasBackup, restorePrevious, index, updateIndex,
+    initialUiState: function () { return initialUiState; }, markNewInView,
     ready, readEntries, transaction, getItem, setItem, removeItem,
     isPending, whenIdle, hasUnsavedWork, allowLeave, leaveAllowed, storage, backend, loadNativeBundle,
     // synchron, rein (für transaction()-Callbacks und Tests)

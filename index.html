@@ -880,9 +880,9 @@
   </a>
   <div class="appbar-spacer"></div>
   <div class="appbar-actions">
-    <span class="i18n-slot" data-i18n-switch="pill"></span>
     <span id="offline-status" class="pill" style="display:none"></span>
     <button id="install-btn" class="pill pill--primary" style="display:none"><svg class="bl-ic bl-ic--btn" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span class="lbl" data-i18n="home.install">Installieren</span></button>
+    <span class="i18n-slot" data-i18n-switch="pill"></span>
   </div>
 </div>
 
@@ -1883,17 +1883,20 @@
   async function importTournamentBackupText(text) {
     try {
       const backup = JSON.parse(text);
-      /* Verworfene Einträge nicht mehr unterstützter Bögen schon in der
-         Rückfrage ankündigen; Prüffehler meldet anschließend importAll(). */
-      let discardedNote = '';
+      /* Retired records stay in storage but remain outside the active overview.
+         Unknown keys are put in backup-exportable quarantine. */
+      let importNotes = '';
       try {
         const plan = TBackup.validateBackup(backup);
-        if (plan.discarded) discardedNote = '\n\n' + T('home.backup.importDiscarded', { count: plan.discarded });
+        if (plan.retired) importNotes += '\n\n' + T('home.backup.importRetired', { count: plan.retired });
+        if (plan.preserved) importNotes += '\n\n' + T('home.backup.importPreserved', { count: plan.preserved });
       } catch (validationError) { /* wird von importAll() gemeldet */ }
-      if (!confirm(T('home.backup.confirmImport') + discardedNote)) return;
+      if (!confirm(T('home.backup.confirmImport') + importNotes)) return;
       const result = await TBackup.importAll(backup);
       alert(T('home.backup.importDone', { added: result.added, skipped: result.skipped })
-        + (result.discarded ? '\n\n' + T('home.backup.importDiscarded', { count: result.discarded }) : ''));
+        + (result.retired ? '\n\n' + T('home.backup.importRetired', { count: result.retired }) : '')
+        + (result.preserved ? '\n\n' + T('home.backup.importPreserved', { count: result.preserved }) : ''));
+
       await loadSessions();
       if (result.undoKey) {
         showSessionUndo(T('home.backup.imported', { count: result.added }), result.undoKey, TBackup.undoImport);

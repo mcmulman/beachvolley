@@ -76,13 +76,6 @@
       background: var(--app-blue, #163a5c) !important;
       border-color: var(--app-blue, #163a5c) !important;
     }
-    /* Destruktive Aktionen (rot) – app-skin.css trifft [onclick*="clear/reset"],
-       dynamische Bögen binden per addEventListener ohne onclick-Attribut. */
-    #btnClearScores, #btnReset {
-      background: #fdecec !important; color: #c02626 !important;
-      border-color: #f3c9c9 !important; box-shadow: none !important;
-    }
-    #btnClearScores:hover, #btnReset:hover { background: #f8d7d7 !important; }
 
     /* Team-Art-Badge (♂/♀/⚥): siehe genderBadge()/nameGenderRowHtml() im Script
        unten – kein Kern-Bibliotheks-Element, daher lokales CSS. Team-Art wird
@@ -124,7 +117,7 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="flex.guide.principle">Feste Teams (Herren-, Damen- oder Mixed-Teams) treten gemeinsam
-      in <b>einem</b> fairen Turnier an – Team-Art (♂/♀/⚥) lässt sich direkt unter „Teamnamen“ je Team
+      in <b>einem</b> fairen Turnier an – Team-Art (♂/♀/⚥) lässt sich direkt unter „Team / Namen“ je Team
       hinterlegen und wird bei der Startrunden-Auslosung (Schweizer System) berücksichtigt, damit nicht
       z.B. alle Damen-Teams gleich gegeneinander antreten.</span></li>
     <li><span class="hi" data-i18n="flex.guide.pairingLabel">Paarungsmodus:</span> <span data-i18n-html="flex.guide.pairing">Standardmäßig <b>Schweizer System</b> – bei einem breiten
@@ -182,25 +175,21 @@
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-mode">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.mode">Spielmodus</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-teams">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.teams">Teams</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-games">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.games">Spiele gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perTeam">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perTeam">Spiele pro Team</span></div>
-    <div class="cfgres-item">
-      <span class="cfgres-val" id="rv-fields">–</span>
-      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
-      <span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder (gewählt · benötigt)</span>
-    </div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende (Mindestbedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit/Spiel (verfügbar · mind.)</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Gesamtzeit (Plan / Bedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.buffer">Zeitreserve</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.setMode">Satzmodus</span> <span class="cfgres-val" id="rv-mode">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-modeNote" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span> <span class="cfgres-val" id="rv-rounds">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.teams">Teams</span> <span class="cfgres-val" id="rv-teams">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.games">Spiele gesamt</span> <span class="cfgres-val" id="rv-games">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.perTeam">Spiele pro Team</span> <span class="cfgres-val" id="rv-perTeam">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder</span> <span class="cfgres-val" id="rv-fields">–</span>
+      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende ca.</span> <span class="cfgres-val" id="rv-fitEnd">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-fitEndNote" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span> <span class="cfgres-val" id="rv-subsets">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit pro Spiel</span> <span class="cfgres-val" id="rv-perGame">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-perGameNote" hidden></span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Zeitbedarf</span> <span class="cfgres-val" id="rv-duration">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-durationNote" hidden></span></div>
   </div>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="flex.btn.namesGender">Teamnamen &amp; Team-Art</span></button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="flex.btn.namesGender">Team / Namen</span></button>
     <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
     <button type="button" class="nbtn" id="btnDrawStart"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> <span data-i18n="flex.btn.drawStart">Startrunde auslosen</span></button>
     <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
@@ -239,7 +228,7 @@
 <div class="row">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
-      <caption id="capTeams" data-i18n="sheet.teams.caption">Teams (Namen eintragen)</caption>
+      <caption id="capTeams" data-i18n="sheet.teams.caption">Teams</caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -285,6 +274,10 @@
 <script src="core/qrcode-generator.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
+<script src="core/team-reorder.js"></script>
+<script src="core/format-switch.js"></script>
+<script src="core/planning-engine.js"></script>
+<script src="core/planning-actions.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -391,7 +384,7 @@
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.sheet = storageSheetId(initialMode);
   S.config.mode = initialMode;
-  let needSave = syncAutoTitle();
+  let needSave = TStore.initialUiState().fromFormat ? false : syncAutoTitle();
   if(TStore.applyUrlConfig(S, {
       teams:  TStore.urlInt(4, 24),
       fields: TStore.urlInt(1, 10),
@@ -487,16 +480,19 @@
   }
 
   /* ----------------------------------------------------------- Aufbau */
-  function compute(){
-    B = TFormat.buildRounds({
-      mode: S.config.mode, teams: S.config.teams, fields: S.config.fields,
-      rounds: S.config.rounds, setMode: S.config.setMode,
-      roundModes: S.frozenModes, startTime: S.config.startTime,
+  function planFor(c){
+    return TPlanning.apply(TFormat.buildRounds({
+      mode: c.mode, teams: c.teams, fields: c.fields,
+      rounds: c.rounds, setMode: c.setMode,
+      roundModes: S.frozenModes, startTime: c.startTime,
       absent: S.absent, results: S.results,
       fixedPairs: isSwiss() ? S.frozen : {},
       round1: isSwiss() ? S.round1 : null
-    });
-    freezeStarted();
+    }), c, S.results);
+  }
+  function compute(){
+    B = planFor(S.config);
+    if(freezeStarted()) B = planFor(S.config);
     return B;
   }
 
@@ -505,14 +501,20 @@
      auf andere Teams wandern bzw. ungültig werden. */
   function freezeStarted(){
     let changed = false;
+    let released = false;
     B.rounds.forEach(rd => {
-      if(!rd.frozen) return;
+      if(!rd.frozen){
+        /* Ohne Eingabe gibt es nichts zu schützen: der Satzmodus folgt wieder der Konfiguration. */
+        if(S.frozenModes[rd.round]){ delete S.frozenModes[rd.round]; changed = released = true; }
+        return;
+      }
       if(!S.frozenModes[rd.round]){ S.frozenModes[rd.round] = rd.setMode; changed = true; }
       if(isSwiss() && !S.frozen[rd.round] && B.pairs[rd.round]){
         S.frozen[rd.round] = B.pairs[rd.round]; changed = true;
       }
     });
     if(changed) TStore.save(S);
+    return released;
   }
 
   /* Der Strukturschlüssel beschreibt, was im DOM steht: Paarungen, Satzmodus
@@ -532,7 +534,7 @@
      Schweizer System beim Tippen das Kästchen unter dem Finger verschwinden. */
   function rebuild(){
     compute();
-    const k = keyOf();
+    const k = keyOf() + '#' + JSON.stringify(TPlanning.signature(B));
     if(k !== structureKey){
       structureKey = k;
       const a = document.activeElement;
@@ -701,11 +703,16 @@
     const box = $('timeplanBox');
     if(!box) return;
     box.innerHTML = TUI.timeTableHtml(B.slots,
-      { time: TC.fromMin(B.endMin), text: T('flex.timeplan.end') });
+      { time: TC.fromMin(B.endMin), text: T('flex.timeplan.end') }, B.planningPauses);
   }
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    if(planningActions) planningActions.refresh();
+    ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
+      get: () => S, save: () => save(),
+      rebuild: () => { structureKey = ''; rebuild(); }
+    }));
     document.querySelectorAll('[data-team-name]').forEach(td => {
       const n = +td.getAttribute('data-team-name');
       if (!Number.isFinite(n)) return;
@@ -1145,10 +1152,6 @@
     if(S.absent.length){
       items.push({ txt: T('flex.notice.absent', { list: S.absent.map(labeler()).join(', ') }), warn:false });
     }
-    const overEnd = TC.toMin(S.config.endTime);
-    if(overEnd != null && B.endMin > overEnd){
-      items.push({ txt: T('flex.notice.overEnd', { end: TC.fromMin(B.endMin), planned: S.config.endTime }), warn:true });
-    }
     const mixed = new Set(B.rounds.map(r => r.setMode));
     if(mixed.size > 1){
       items.push({ txt: T('flex.notice.mixedModes', { modes: Array.from(mixed).map(setModeLabel).join(', ') }), warn:false });
@@ -1170,16 +1173,17 @@
     const vals = Object.values(per);
     const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
     $('rv-perTeam').textContent = (lo === hi ? lo : lo + '–' + hi);
-    $('rv-fields').textContent = c.fields;
     const win = TC.toMin(c.endTime) - TC.toMin(c.startTime);
-    const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[c.setMode], 10);
-    $('rv-fitFields').textContent = need ? T('sheet.kpi.minFields', { n: need }) : T('sheet.kpi.noFit');
+    const need = TUI.neededFieldsForPlan(B, win, S.config.setMode, 10);
+    TUI.fillFieldKpi(c.fields, need);
     TUI.fillTimeKpis({
-      slots: B.slots, startMin: B.startMin, needEndMin: B.endMin,
+      plan: B, slots: B.slots, startMin: B.startMin, needEndMin: B.endMin,
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: c.setMode, games: games, modeLabel: setModeLabel(c.setMode),
       teams: c.teams
     });
+    TUI.fillPlanFixes({ plan: B, config: c, setMode: c.setMode, build: planFor,
+      message: B.endMin > TC.toMin(c.endTime) ? T('flex.notice.overEnd', { end: TC.fromMin(B.endMin), planned: c.endTime }) : '' });
 
     applyDocTitle();
     $('capSched').textContent = T('sheet.schedule.title');
@@ -1221,6 +1225,7 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
+    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, S.results, S.config.planning.locked);
     S.sheet = storageSheetId(S.config.mode || 'swiss');
     return TStore.save(S);
   }
@@ -1301,7 +1306,10 @@
     if(btn) btn.classList.toggle('active', !p.hidden);
   }
 
+  let planningActions;
   function wire(){
+    planningActions = TPlanningActions.mount({ get: () => S, plan: () => B, build: planFor,
+      save: () => save(), rebuild: () => { structureKey = ''; rebuild(); } });
     ['roundMode','teamCount','roundCount','fieldCount','setMode','startTime','endTime']
       .forEach(id => $(id).addEventListener('change', onChange));
 
@@ -1426,13 +1434,7 @@
       setTimeout(()=>{ b.textContent = old; }, 1500);
     });
 
-    $('btnTimefit').addEventListener('click', () => {
-      const win = TC.toMin(S.config.endTime) - TC.toMin(S.config.startTime);
-      const need = TC.neededFields(B.rounds, win, TC.MODE_MIN[S.config.setMode], 10);
-      if(!need){ alert(T('sheet.alert.timefitRounds')); return; }
-      S.config.fields = need; $('fieldCount').value = need;
-      save(); structureKey=''; rebuild();
-    });
+    $('btnTimefit').addEventListener('click', () => TUI.timefit());
 
     const onRoundNav = e => {
       const f = TUI.roundBarValue(e, B.slots, roundFilter, TUI.lastFilledRound(B.slots, S.results));
@@ -1466,6 +1468,7 @@
   fillSelects();
   wire();
   rebuild();
+  TFormatSwitch.mount({ get: () => S });
 })().catch(function(err){
   console.error(err);
   const box = document.createElement('div');

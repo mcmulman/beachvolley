@@ -361,6 +361,64 @@
   /* Übernimmt einen fremden Schnappschuss (geteilter Link) atomar: bisherigen
      Stand archivieren, Schnappschuss schreiben, Index pflegen.
      → Promise<{ archived }>; reject bei ungültigen Daten/Speicherfehlern. */
+  function validTournamentRecord(t, sheet) {
+    const object = v => !!v && typeof v === 'object' && !Array.isArray(v);
+    const integer = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+    if (!object(t) || t.schema !== SCHEMA || t.sheet !== sheet || !object(t.config)) return false;
+    const c = t.config, base = sheet.split('.')[0];
+    const mixed = base === 'kingqueen', court = base === 'koc';
+    let count = c.teams;
+    if (mixed) {
+      if (!integer(c.men, 0, 128) || !integer(c.women, 0, 128)) return false;
+      count = c.men + c.women;
+    }
+    if (!integer(count, 2, 128)) return false;
+    if (!mixed && c.teams !== count) return false;
+    for (const key of ['teams', 'players', 'men', 'women', 'fields', 'courts', 'rounds', 'roundMinutes']) {
+      if (c[key] != null && !integer(c[key], key === 'men' || key === 'women' ? 0 : 1, key === 'rounds' ? 256 : 128)) return false;
+    }
+    if (c.groups != null && c.groups !== 'auto' && !integer(c.groups, 0, 128)) return false;
+    if (['editToken', 'serverBinding', '_server', '_serverBinding'].some(k => has(t, k))) return false;
+    const ref = v => (integer(v, 1, count) || (typeof v === 'string' && /^[1-9]\d{0,2}$/.test(v) && +v <= count));
+    const list = v => Array.isArray(v) && v.length <= 128 && v.every(ref);
+    const pair = v => Array.isArray(v) && v.length === 2 && v.every(ref) && +v[0] !== +v[1];
+    const pairs = v => Array.isArray(v) && v.length <= 64 && v.every(pair);
+    if (t.absent != null && !list(t.absent)) return false;
+    if (t.round1 != null && !pairs(t.round1)) return false;
+    for (const key of ['teamNames', 'fieldNames', 'genders']) {
+      if (t[key] == null) continue;
+      if (!object(t[key]) || !Object.keys(t[key]).every(k => (key === 'fieldNames' && k === '0' || /^[1-9]\d{0,2}$/.test(k)) && +k <= 128
+          && typeof t[key][k] === 'string' && t[key][k].length <= 500)) return false;
+    }
+    if (c.levels != null && (!object(c.levels) || !Object.keys(c.levels).every(k =>
+        /^[1-9]\d{0,2}$/.test(k) && +k <= 128 && integer(c.levels[k], 1, 5)))) return false;
+    if (t.frozen != null) {
+      if (!object(t.frozen) || !Object.keys(t.frozen).every(k => /^[1-9]\d{0,2}$/.test(k) && +k <= 256)) return false;
+      for (const key of Object.keys(t.frozen)) {
+        const f = t.frozen[key];
+        if (mixed) {
+          if (!object(f) || !Array.isArray(f.matches) || f.matches.length > 32
+              || !f.matches.every(m => Array.isArray(m) && m.length === 2 && m.every(pair))) return false;
+          if (f.byePlayer != null && !ref(f.byePlayer)) return false;
+          if (f.byeTeam != null && !pair(f.byeTeam)) return false;
+          if (f.idle != null && !list(f.idle)) return false;
+        } else if (court) {
+          if (!Array.isArray(f) || f.length > 128 || !f.every(list)) return false;
+        } else if (!pairs(f)) return false;
+      }
+    }
+    return true;
+  }
+
+  function validShareSnapshot(data, sheet) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+    const keys = Object.keys(data);
+    if (keys.length !== 1 || keys[0] !== LIVE_PREFIX + sheet || typeof data[keys[0]] !== 'string'
+        || data[keys[0]].length > 300000) return false;
+    try { return validTournamentRecord(JSON.parse(data[keys[0]]), sheet); }
+    catch (e) { return false; }
+  }
+
   function importSnapshot(opts, data, binding) {
     const S = store();
     const keys = Object.keys(data || {});
@@ -369,7 +427,7 @@
       err.code = 'invalid-snapshot';
       return Promise.reject(err);
     };
-    if (!data || typeof data !== 'object' || !keys.length) return invalid();
+    if (!opts || !validShareSnapshot(data, opts.sheet)) return invalid();
     for (let i = 0; i < keys.length; i++) {
       const k = keys[i], v = data[k];
       const sheet = liveSheetOf(k);
@@ -450,34 +508,39 @@
      derselben Transaktion mit weitergezählter Revision gespeichert und als
      result.tournament geliefert (schützt vor veralteten Tabs).
      → Promise<{ archived, title, blocked, tournament?, error? }> (nie reject) */
+  function startNewInView(view, o, title) {
+    const S = store();
+    const archived = archiveCurrentInView(view, o);
+    const revisions = clearLiveInView(view, o.keys, o.sheet);
+    let tournament = null;
+    if (typeof o.fresh === 'function' && o.sheet) {
+      tournament = o.fresh(title);
+      if (tournament) {
+        const candidate = Object.assign({}, tournament, {
+          schema: SCHEMA,
+          sheet: o.sheet,
+          updated: new Date().toISOString(),
+          _revision: Math.max(revisions[o.sheet] || 0, liveRevisionInView(view, o.sheet)) + 1
+        });
+        view.setItem(LIVE_PREFIX + o.sheet, JSON.stringify(candidate));
+        S.updateIndexInView(view, candidate);
+        tournament = candidate;
+      }
+    }
+    return { archived: archived, title: title, blocked: false, tournament: tournament };
+  }
   function startNew(opts) {
     const o = opts || {};
     const title = newTitle(o.type);
     const S = (function () { try { return store(); } catch (e) { return null; } })();
     if (!S) return Promise.resolve({ archived: null, title: title, blocked: true, error: new Error('TStore fehlt') });
-    return idle().then(() => S.transaction(view => {
-      const archived = archiveCurrentInView(view, o);
-      const revisions = clearLiveInView(view, o.keys, o.sheet);
-      let tournament = null;
-      if (typeof o.fresh === 'function' && o.sheet) {
-        tournament = o.fresh(title);
-        if (tournament) {
-          /* Revision zählt über die bisherige hinaus weiter: ein veralteter
-             Tab mit dem alten Stand bekommt beim Speichern "conflict". */
-          const candidate = Object.assign({}, tournament, {
-            schema: SCHEMA,
-            sheet: o.sheet,
-            updated: new Date().toISOString(),
-            _revision: Math.max(revisions[o.sheet] || 0, liveRevisionInView(view, o.sheet)) + 1
-          });
-          view.setItem(LIVE_PREFIX + o.sheet, JSON.stringify(candidate));
-          S.updateIndexInView(view, candidate);
-          tournament = candidate;
-        }
-      }
-      return { archived: archived, title: title, blocked: false, tournament: tournament };
-    })).then(res => {
+    return idle().then(() => S.transaction(view => startNewInView(view, o, title))).then(res => {
       notifyTabs([o.sheet]);
+      if (root && typeof root.dispatchEvent === 'function' && typeof root.CustomEvent === 'function') {
+        root.dispatchEvent(new root.CustomEvent('beachl:tournament-started', {
+          detail: { sheet: o.sheet || '' }
+        }));
+      }
       if (res.archived && root && typeof root.dispatchEvent === 'function' && typeof root.CustomEvent === 'function') {
         root.dispatchEvent(new root.CustomEvent('beachl:tournament-archived', {
           detail: { key: res.archived, file: o.file || '', sheet: o.sheet || '' }
@@ -493,9 +556,9 @@
     pendingRestore, clearPendingParam,
     // async (Promise) – IndexedDB über TStore.transaction
     snapshot, save, writeSnapshot, meta, restore, remove, clearLive,
-    applyPendingRestore, startNew, importSnapshot,
+    applyPendingRestore, startNew, importSnapshot, validTournamentRecord, validShareSnapshot,
     // synchron, für eigene TStore.transaction()-Callbacks
     snapshotInView, saveInView, writeSnapshotInView, metaInView, removeInView,
-    restoreInView, clearLiveInView, archiveCurrentInView
+    restoreInView, clearLiveInView, archiveCurrentInView, startNewInView
   };
 });

@@ -73,13 +73,6 @@
       background: var(--app-blue, #163a5c) !important;
       border-color: var(--app-blue, #163a5c) !important;
     }
-    /* Destruktive Aktionen (rot) – app-skin.css trifft [onclick*="clear/reset"],
-       dynamische Bögen binden per addEventListener ohne onclick-Attribut. */
-    #btnClearScores, #btnReset {
-      background: #fdecec !important; color: #c02626 !important;
-      border-color: #f3c9c9 !important; box-shadow: none !important;
-    }
-    #btnClearScores:hover, #btnReset:hover { background: #f8d7d7 !important; }
   </style>
   <!-- Aeltere iPads (Safari < 14.1): Flexbox-"gap"-Erkennung + Ersatzabstaende.
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
@@ -157,29 +150,22 @@
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-groups">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.groups">Gruppen</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-grpGames">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.grpGames">Spiele Vorrunde</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-finGames">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.finGames">Spiele Finalrunde</span></div>
-    <div class="cfgres-item">
-      <span class="cfgres-val" id="rv-perTeam">–</span>
-      <span class="cfgres-val cfgres-val--sub" id="rv-perTeamBreak">–</span>
-      <span class="cfgres-lbl" data-i18n="sheet.kpi.perTeamTotal">Spiele pro Team (gesamt)</span>
-    </div>
-    <div class="cfgres-item">
-      <span class="cfgres-val" id="rv-fields">–</span>
-      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields">–</span>
-      <span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder (gewählt · benötigt)</span>
-    </div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-fitEnd">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende (Mindestbedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-subsets">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perGame">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit/Spiel (verfügbar · mind.)</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Gesamtzeit (Plan / Bedarf)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-buffer">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.buffer">Zeitreserve</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.groups">Gruppen</span> <span class="cfgres-val" id="rv-groups">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-groupsNote" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.grpGames">Spiele Vorrunde</span> <span class="cfgres-val" id="rv-grpGames">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.finGames">Spiele Finalrunde</span> <span class="cfgres-val" id="rv-finGames">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.perTeamTotal">Spiele pro Team</span> <span class="cfgres-val" id="rv-perTeam">–</span>
+      <span class="cfgres-val cfgres-val--sub" id="rv-perTeamBreak">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder</span> <span class="cfgres-val" id="rv-fields">–</span>
+      <span class="cfgres-val cfgres-val--sub" id="rv-fitFields" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.fitEnd">Ende ca.</span> <span class="cfgres-val" id="rv-fitEnd">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-fitEndNote" hidden></span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.subsets">Sätze gesamt</span> <span class="cfgres-val" id="rv-subsets">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.perGame">Zeit pro Spiel</span> <span class="cfgres-val" id="rv-perGame">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-perGameNote" hidden></span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-lbl" data-i18n="sheet.kpi.duration">Zeitbedarf</span> <span class="cfgres-val" id="rv-duration">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-durationNote" hidden></span></div>
   </div>
   <p class="input-hint" id="gamesBreakdown"></p>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Teamnamen</span></button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Team / Namen</span></button>
     <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>
     <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
     <button type="button" class="nbtn" id="btnToggleRankImport"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="gf.btn.rankImport">Rangliste importieren</span></button>
@@ -226,7 +212,7 @@
 <div class="row" id="livebox">
   <div style="flex:0 0 46%">
     <table class="teams">
-      <caption data-i18n="sheet.teams.caption">Teams (Namen eintragen)</caption>
+      <caption data-i18n="sheet.teams.caption">Teams</caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -310,6 +296,10 @@
 <script src="core/qrcode-generator.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
+<script src="core/team-reorder.js"></script>
+<script src="core/format-switch.js"></script>
+<script src="core/planning-engine.js"></script>
+<script src="core/planning-actions.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -490,13 +480,16 @@
 
 
   /* ----------------------------------------------------------- Aufbau */
-  function compute(){
-    B = TFormat.build({
-      teams: S.config.teams, groups: S.config.groups, fields: S.config.fields,
-      setMode: S.config.setMode, finalSetMode: S.config.finalSetMode || null,
-      finalMode: S.config.finalMode, startTime: S.config.startTime,
+  function planFor(c){
+    return TPlanning.apply(TFormat.build({
+      teams: c.teams, groups: c.groups, fields: c.fields,
+      setMode: c.setMode, finalSetMode: c.finalSetMode || null,
+      finalMode: c.finalMode, startTime: c.startTime,
       absent: S.absent, results: S.results
-    });
+    }), c, S.results);
+  }
+  function compute(){
+    B = planFor(S.config);
     return B;
   }
   function keyOf(){
@@ -509,7 +502,7 @@
      erhalten (AGENTS.md §9). */
   function rebuild(){
     compute();
-    const k = keyOf();
+    const k = keyOf() + '#' + JSON.stringify(TPlanning.signature(B));
     if(k !== structureKey){
       structureKey = k;
       buildStructure();
@@ -568,6 +561,11 @@
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    if(planningActions) planningActions.refresh();
+    ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
+      get: () => S, save: () => save(),
+      rebuild: () => { structureKey = ''; rebuild(); }
+    }));
     const lbl = labeler();
 
     // Teamnamen in Liste und laufender Tabelle
@@ -827,10 +825,6 @@
     if(S.absent.length){
       items.push({ txt: T('gf.notice.absent', { list: S.absent.map(labeler()).join(', ') }), warn:false });
     }
-    const overEnd = TC.toMin(S.config.endTime);
-    if(overEnd != null && B.endMin > overEnd){
-      items.push({ txt: T('gf.notice.overEnd', { end: TC.fromMin(B.endMin), planned: S.config.endTime }), warn:true });
-    }
     $('noticeBox').innerHTML = items.length
       ? '<div class="notebox' + (items.some(i=>i.warn) ? ' is-warn' : '') + '"><ul>'
         + items.map(i => '<li>' + TUI.esc(i.txt) + '</li>').join('') + '</ul></div>'
@@ -897,7 +891,7 @@
     const body = fin.note ? T('gf.perTeam.bodyNote', params) : T('gf.perTeam.body', params);
     const text = T('gf.perTeam.text', { body: body });
     return { grpLo:gLo, grpHi:gHi, fin, totalLabel: rangeLabel(tLo, tHi),
-      shortBreak: grpLabel + ' + ' + finLabel, text, body };
+      shortBreak: T('ui.kpi.phaseGames', { group: grpLabel, final: finLabel }), text, body };
   }
 
 
@@ -908,29 +902,31 @@
     if(!box) return;
     const slots = B.grpSlots.concat(B.finSlots);
     box.innerHTML = TUI.timeTableHtml(slots,
-      { time: TC.fromMin(B.endMin), text: T('gf.timeplan.evaluation') });
+      { time: TC.fromMin(B.endMin), text: T('gf.timeplan.evaluation') }, B.planningPauses);
   }
 
   function paintSummary(){
     const c = S.config;
     const grpGames = B.groupRounds.reduce((a,r)=>a+r.matches.length,0);
     const finGames = B.finalRounds.reduce((a,r)=>a+r.matches.length,0);
-    $('rv-groups').textContent = B.groupNames.length + ' × ' + B.groupNames.map(g=>B.groups[g].length).join('/');
+    $('rv-groups').textContent = B.groupNames.length;
+    TUI.fillKpiNote('rv-groupsNote', T('ui.kpi.groupSizes', { sizes: B.groupNames.map(g=>B.groups[g].length).join(' / ') }));
     $('rv-grpGames').textContent = grpGames;
     $('rv-finGames').textContent = finGames;
     const pt = perTeamGames();
     $('rv-perTeam').textContent = pt.totalLabel;
     $('rv-perTeamBreak').textContent = pt.shortBreak;
     $('gamesBreakdown').textContent = pt.text;
-    $('rv-fields').textContent = c.fields;
     const win = (TC.toMin(c.endTime) - TC.toMin(c.startTime));
-    const need = TC.neededFields(B.groupRounds.concat(B.finalRounds), win, TC.MODE_MIN[c.setMode], 10);
-    $('rv-fitFields').textContent = need ? T('sheet.kpi.minFields', { n: need }) : T('sheet.kpi.noFit');
+    const need = TUI.neededFieldsForPlan(B, win, S.config.setMode, 10);
+    TUI.fillFieldKpi(c.fields, need);
     TUI.fillTimeKpis({
-      slots: B.grpSlots.concat(B.finSlots), startMin: B.startMin, needEndMin: B.endMin,
+      plan: B, slots: B.grpSlots.concat(B.finSlots), startMin: B.startMin, needEndMin: B.endMin,
       windowStartMin: TC.toMin(c.startTime), windowEndMin: TC.toMin(c.endTime),
       setMode: c.setMode, games: grpGames + finGames
     });
+    TUI.fillPlanFixes({ plan: B, config: c, setMode: c.setMode, build: planFor,
+      message: B.endMin > TC.toMin(c.endTime) ? T('gf.notice.overEnd', { end: TC.fromMin(B.endMin), planned: c.endTime }) : '' });
     $('capGrp').textContent = T('gf.schedule.grpCaption', { mode: modeLabel(c.setMode) });
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('gf.schedule.grpScreenAdd'),
@@ -995,7 +991,8 @@
   }
 
   /* -------------------------------------------------------------- Aktionen */
-  function save(){ return TStore.save(S); }
+  function save(){
+    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, S.results, S.config.planning.locked); return TStore.save(S); }
   /* Team endgültig löschen: Nummern dahinter rücken nach. Bei einer
      importierten Rangliste (Blöcke) rücken damit alle nachfolgenden Teams
      in der Rangliste auf und die Blöcke werden neu aufgeteilt, damit eine
@@ -1040,7 +1037,10 @@
     if(btn) btn.classList.toggle('active', !p.hidden);
   }
 
+  let planningActions;
   function wire(){
+    planningActions = TPlanningActions.mount({ get: () => S, plan: () => B, build: planFor,
+      save: () => save(), rebuild: () => { structureKey = ''; rebuild(); } });
     ['teamCount','groupCount','fieldCount','finalMode','setMode','finalSetMode','startTime','endTime']
       .forEach(id => $(id).addEventListener('change', onChange));
 
@@ -1138,13 +1138,7 @@
       setTimeout(()=>{ b.textContent = old; }, 1500);
     });
 
-    $('btnTimefit').addEventListener('click', () => {
-      const win = TC.toMin(S.config.endTime) - TC.toMin(S.config.startTime);
-      const need = TC.neededFields(B.groupRounds.concat(B.finalRounds), win, TC.MODE_MIN[S.config.setMode], 10);
-      if(!need){ alert(T('sheet.alert.timefit')); return; }
-      S.config.fields = need; $('fieldCount').value = need;
-      save(); rebuild();
-    });
+    $('btnTimefit').addEventListener('click', () => TUI.timefit());
 
     const onRoundNav = e => {
       const f = TUI.roundBarValue(e, B.grpSlots, roundFilter, TUI.lastFilledRound(B.grpSlots, S.results));
@@ -1176,6 +1170,7 @@
   wire();
   await applyPendingRankImportFromHash();
   rebuild();
+  TFormatSwitch.mount({ get: () => S });
 })().catch(function(err){
   console.error(err);
   const box = document.createElement('div');

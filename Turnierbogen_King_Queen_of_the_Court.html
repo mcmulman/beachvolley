@@ -37,9 +37,6 @@
     #btnToggleNames { background: var(--app-blue-dark, #1f4e79) !important; color:#fff !important;
       border-color: var(--app-blue-dark, #1f4e79) !important; box-shadow:0 2px 8px rgba(26,58,92,.22) !important; }
     #btnToggleNames:hover { background: var(--app-blue, #163a5c) !important; border-color: var(--app-blue, #163a5c) !important; }
-    #btnClearScores, #btnReset { background:#fdecec !important; color:#c02626 !important;
-      border-color:#f3c9c9 !important; box-shadow:none !important; }
-    #btnClearScores:hover, #btnReset:hover { background:#f8d7d7 !important; }
 
     /* ===================================================== FELD-LEITER
        Eigenes Markup (keine Bracket-/Tabellen-Wiederverwendung, siehe
@@ -161,16 +158,16 @@
   </div>
 
   <div class="cfgresult" id="cfgResult">
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-courts">–</span><span class="cfgres-lbl" data-i18n="enh.kpi.fields">Felder</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-perCourt">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.perCourt">Teams/Feld</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-rounds">–</span><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span></div>
-    <div class="cfgres-item is-primary"><span class="cfgres-val" id="rv-duration">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.duration">Gesamtzeit (alle Runden)</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-end">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.end">Voraussichtliches Ende</span></div>
-    <div class="cfgres-item"><span class="cfgres-val" id="rv-roundMinutes">–</span><span class="cfgres-lbl" data-i18n="kotc.kpi.roundMinutes">Min./Runde</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.fields">Felder</span> <span class="cfgres-val" id="rv-courts">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="kotc.kpi.perCourt">Teams pro Feld</span> <span class="cfgres-val" id="rv-perCourt">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="sheet.kpi.rounds">Runden</span> <span class="cfgres-val" id="rv-rounds">–</span></div>
+    <div class="cfgres-item is-primary"><span class="cfgres-lbl" data-i18n="kotc.kpi.duration">Dauer</span> <span class="cfgres-val" id="rv-duration">–</span> </div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="kotc.kpi.end">Ende</span> <span class="cfgres-val" id="rv-end">–</span></div>
+    <div class="cfgres-item"><span class="cfgres-lbl" data-i18n="kotc.kpi.roundMinutes">Zeit pro Runde</span> <span class="cfgres-val" id="rv-roundMinutes">–</span></div>
   </div>
 
   <div class="cfgcard-actions">
-    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Teamnamen</span></button>
+    <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Team / Namen</span></button>
     <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
     <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
@@ -198,7 +195,7 @@
 <div id="noticeBox"></div>
 
 <table class="teams">
-  <caption data-i18n="sheet.teams.caption">Teams (Namen eintragen)</caption>
+  <caption data-i18n="sheet.teams.caption">Teams</caption>
   <tbody id="teamsBody"></tbody>
 </table>
 
@@ -233,6 +230,8 @@
 <script src="core/qrcode-generator.js"></script>
 <script src="core/turnier-share.js"></script>
 <script src="core/turnier-ui.js"></script>
+<script src="core/team-reorder.js"></script>
+<script src="core/format-switch.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -438,6 +437,10 @@
   }
 
   function paint(){
+    ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
+      get: () => S, save: () => TStore.save(S),
+      rebuild: () => { structureKey = ''; rebuild(); }
+    }));
     const lbl = labeler();
     document.querySelectorAll('[data-team-name]').forEach(td => {
       const n = +td.getAttribute('data-team-name');
@@ -462,7 +465,7 @@
     // Konfigurations-Badges
     $('rv-courts').textContent = B.courtCount;
     const sizes = B.rounds[0] ? B.rounds[0].courts.map(c => c.teams.length) : [];
-    $('rv-perCourt').textContent = sizes.length ? Array.from(new Set(sizes)).sort((a,b)=>a-b).join('/') : '–';
+    $('rv-perCourt').textContent = sizes.length ? Array.from(new Set(sizes)).sort((a,b)=>a-b).join(' / ') : '–';
     $('rv-rounds').textContent = B.rounds.length;
     const totalMin = B.rounds.length * B.perRound;
     $('rv-duration').textContent = Math.floor(totalMin/60) + ':' + String(totalMin%60).padStart(2,'0') + ' h';
@@ -477,7 +480,7 @@
       }));
     // Endstand
     const rows = B.placements.map(p => {
-      return '<tr' + (p.team!=null?' data-team="'+p.team+'"':'') + '>'
+      return '<tr' + (p.team!=null?' data-team="'+TUI.esc(p.team)+'"':'') + '>'
         + '<td class="pl">' + p.place + (p.shared?'=':'') + '.</td>'
         + '<td class="nm">' + (ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : TUI.esc(ctx.teamLabel(p.team))) + '</td>'
         + '<td class="pts">' + p.points + '</td>'
@@ -619,6 +622,7 @@
      paint() hätte die Vorversion überschrieben und „Rückgängig“ ausgehebelt. */
   TStore.save(S);
   applyDocTitle();
+  TFormatSwitch.mount({ get: () => S });
 })().catch(function(err){
   console.error(err);
   const box = document.createElement('div');

@@ -11,15 +11,13 @@
       Vorteil: kurzer Link, Admin kann Passwort/Zugriff zentral verwalten.
       Nachteil: zum Erstellen UND zum Öffnen ist Internet nötig.
 
-   2) OFFLINE-LINK (optional, wie früher): Der komplette Turnierstand steckt
-      Base64-kodiert direkt im Link selbst, hinter einem eigenen Präfix:
+   2) OFFLINE-LINK (optional): Der komplette Turnierstand steckt Base64-kodiert
+      direkt im Link selbst, hinter einem eigenen Präfix:
         Turnierbogen_XY.html#shareoffline=<Kopfdaten+Nutzdaten, Base64>
-      Ein optionales Passwort verschlüsselt die Nutzdaten mit einem simplen,
-      passwortabhängigen XOR-Bytestrom (deterministisch aus dem Passwort
-      abgeleitet). WICHTIG: Das ist bewusst KEINE kryptografisch sichere
-      Verschlüsselung, sondern nur eine Verschleierung – sie verhindert das
-      zufällige Mitlesen des Links, schützt aber nicht vor gezieltem Knacken.
-      Vorteil: funktioniert komplett ohne Server/Internet, auch unter file://.
+      Ein optionales Passwort schützt die Nutzdaten mit PBKDF2-SHA256 und
+      AES-256-GCM (v2, zufälliges Salt/Nonce, authentifizierte Kopfdaten).
+      Vorteil: funktioniert ohne Server/Internet. Passwortschutz benötigt
+      WebCrypto in einem sicheren Kontext (HTTPS/localhost, native App).
       Nachteil: sehr lange Links, die manche Messenger/Browser kappen können.
 
    Der Nutzer wählt beim Teilen zwischen beiden Varianten. Empfangene Links
@@ -220,8 +218,8 @@
     async function transmit(pending) {
       const data = await apiPost('/share.php?action=' + pending.action, pending.body);
       if (!data || !/^[A-Za-z0-9]{1,12}$/.test(data.id) || !Number.isSafeInteger(data.revision)
-          || data.revision < 1 || data.formatVersion !== 1 || (binding.id && data.id !== binding.id)) {
-        throw new Error(tx('server.protocol', 'Der Server unterstützt dauerhafte Turniere noch nicht. Bitte Backend aktualisieren.'));
+          || data.revision < 1 || data.formatVersion !== 2 || (binding.id && data.id !== binding.id)) {
+        throw new Error(tx('server.protocol', 'Der Server unterstützt das aktuelle Turnierformat nicht. Bitte Backend aktualisieren.'));
       }
       binding = await TStore.transaction(function (view) {
         const current = TStore.serverBindingInView(view, o.sheet);
@@ -255,7 +253,7 @@
     for (let n = 1; n <= count; n++) teams.push(record.teamNames && record.teamNames[n]
       || (o.sheet.indexOf('kingqueen') === 0 ? 'Person ' : 'Team ') + n);
     const body = {
-      formatVersion: 1, sheet: o.sheet, file: o.file || '', type: o.type || '',
+      formatVersion: 2, sheet: o.sheet, file: o.file || '', type: o.type || '',
       title: record.title || o.title || '', teams: teams.length ? teams : (Array.isArray(o.teams) ? o.teams : []),
       snapshot: snapshot, password: pw || '', editToken: binding.token, requestKey: secret()
     };
@@ -361,10 +359,21 @@
     if (b.readOnly) lockServerView();
   }
 
-  /* =================================================== Offline-Kodierung
-     Bytes/Text-Helfer + Passwort-Bytestrom (XOR): FNV-1a als Startwert,
-     mulberry32 als schneller, deterministischer PRNG - beide bewusst simpel
-     gehalten (siehe Kopfkommentar: nur Verschleierung, keine echte Krypto). */
+  /* =================================================== Offline-Kodierung */
+  const OFFLINE_V2 = 'v2.';
+  const KDF_ITERATIONS = 600000;
+  const MAX_OFFLINE_BYTES = 450000;
+  function cryptoUnavailable() {
+    const err = new Error(tx('share.cryptoUnavailable',
+      'Sicherer Passwortschutz ist hier nicht verfügbar. Bitte die App oder eine HTTPS-Seite verwenden. Es wurde kein ungeschützter Ersatzlink erstellt.'));
+    err.code = 'crypto-unavailable';
+    return err;
+  }
+  function secureCrypto() {
+    if (typeof crypto === 'undefined' || !crypto.subtle || !crypto.getRandomValues
+        || (typeof isSecureContext !== 'undefined' && !isSecureContext)) throw cryptoUnavailable();
+    return crypto;
+  }
   function strToBytes(s) { return new TextEncoder().encode(s); }
   function bytesToStr(b) { return new TextDecoder().decode(b); }
   function bytesToBase64Url(bytes) {
@@ -380,78 +389,88 @@
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
   }
-  function seedFromPassword(pw) {
-    let h = 0x811c9dc5;
-    const s = String(pw || '');
-    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-    return (h >>> 0) || 1;
+  async function offlineKey(password, salt) {
+    const subtle = secureCrypto().subtle;
+    const material = await subtle.importKey('raw', strToBytes(password), 'PBKDF2', false, ['deriveKey']);
+    return subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: KDF_ITERATIONS, hash: 'SHA-256' },
+      material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
   }
-  function mulberry32(seed) {
-    let a = seed;
-    return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+  function offlineHeader(env) {
+    return strToBytes(JSON.stringify([env.v, env.sheet, env.type, env.title, env.teams, env.ts,
+      env.enc, env.kdf, env.iterations, env.salt, env.iv]));
   }
-  function xorWithPassword(bytes, password) {
-    const rnd = mulberry32(seedFromPassword(password));
-    const out = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) out[i] = bytes[i] ^ Math.floor(rnd() * 256);
-    return out;
-  }
-
-  /* Envelope = Klartext-Kopf (Titel/Typ/Teams für die Vorschau) + payload:
-     unverschlüsseltes oder XOR-verschleiertes JSON des Snapshots. */
-  function offlineEncode(opts, password) {
+  async function offlineEncode(opts, password) {
     const snapshotJson = JSON.stringify(opts.snapshot || {});
-    let payload, enc;
-    if (password) {
-      payload = bytesToBase64Url(xorWithPassword(strToBytes(snapshotJson), password));
-      enc = true;
-    } else {
-      payload = snapshotJson;
-      enc = false;
-    }
+    if (strToBytes(snapshotJson).length > 300000) throw new Error(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
     const envelope = {
-      v: 1,
+      v: 2,
       sheet: opts.sheet || '',
       type: opts.type || '',
       title: opts.title || '',
       teams: Array.isArray(opts.teams) ? opts.teams : [],
       ts: Date.now(),
-      enc: enc,
-      payload: payload
+      enc: !!password,
+      payload: snapshotJson
     };
-    return bytesToBase64Url(strToBytes(JSON.stringify(envelope)));
+    if (password) {
+      const c = secureCrypto();
+      const salt = c.getRandomValues(new Uint8Array(16)), iv = c.getRandomValues(new Uint8Array(12));
+      envelope.kdf = 'PBKDF2-SHA256';
+      envelope.iterations = KDF_ITERATIONS;
+      envelope.salt = bytesToBase64Url(salt);
+      envelope.iv = bytesToBase64Url(iv);
+      const key = await offlineKey(password, salt);
+      envelope.payload = bytesToBase64Url(new Uint8Array(await c.subtle.encrypt({
+        name: 'AES-GCM', iv: iv, additionalData: offlineHeader(envelope), tagLength: 128
+      }, key, strToBytes(snapshotJson))));
+    }
+    return OFFLINE_V2 + bytesToBase64Url(strToBytes(JSON.stringify(envelope)));
   }
 
   function offlineDecodeEnvelope(hashValue) {
     try {
-      const json = bytesToStr(base64UrlToBytes(hashValue));
+      if (typeof hashValue !== 'string' || hashValue.indexOf(OFFLINE_V2) !== 0
+          || hashValue.length > MAX_OFFLINE_BYTES * 2) return null;
+      const bytes = base64UrlToBytes(hashValue.slice(OFFLINE_V2.length));
+      if (bytes.length > MAX_OFFLINE_BYTES) return null;
+      const json = bytesToStr(bytes);
       const env = JSON.parse(json);
-      if (!env || env.v !== 1 || typeof env.payload !== 'string') return null;
+      if (!env || env.v !== 2 || typeof env.payload !== 'string' || typeof env.enc !== 'boolean'
+          || !safeServerFile(env) || typeof env.type !== 'string' || env.type.length > 500
+          || typeof env.title !== 'string' || env.title.length > 500 || !Number.isFinite(env.ts)
+          || !Array.isArray(env.teams) || env.teams.length > 128
+          || !env.teams.every(t => typeof t === 'string' && t.length <= 500)) return null;
+      if (env.enc && (env.kdf !== 'PBKDF2-SHA256' || env.iterations !== KDF_ITERATIONS
+          || typeof env.salt !== 'string' || !/^[A-Za-z0-9_-]{22}$/.test(env.salt)
+          || typeof env.iv !== 'string' || !/^[A-Za-z0-9_-]{16}$/.test(env.iv)
+          || !/^[A-Za-z0-9_-]+$/.test(env.payload) || base64UrlToBytes(env.payload).length < 16)) return null;
       return env;
     } catch (e) { return null; }
   }
 
   /* Entschlüsselt/parst die Nutzdaten eines Offline-Envelopes. Wirft bei
      falschem Passwort oder beschädigten Daten (JSON.parse schlägt fehl). */
-  function offlineResolveSnapshot(env, password) {
+  async function offlineResolveSnapshot(env, password) {
+    if (!env || env.v !== 2) throw new Error(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
     let json;
     if (env.enc) {
-      const bytes = xorWithPassword(base64UrlToBytes(env.payload), password || '');
-      json = bytesToStr(bytes);
+      if (env.kdf !== 'PBKDF2-SHA256' || env.iterations !== KDF_ITERATIONS) throw new Error('Invalid KDF');
+      const salt = base64UrlToBytes(env.salt), iv = base64UrlToBytes(env.iv);
+      if (salt.length !== 16 || iv.length !== 12) throw new Error('Invalid salt/nonce');
+      const key = await offlineKey(password || '', salt);
+      json = bytesToStr(new Uint8Array(await secureCrypto().subtle.decrypt({
+        name: 'AES-GCM', iv: iv, additionalData: offlineHeader(env), tagLength: 128
+      }, key, base64UrlToBytes(env.payload))));
     } else {
       json = env.payload;
     }
     return JSON.parse(json); // wirft bei falschem Passwort/kaputten Daten
   }
 
-  function buildOfflineShareUrl(opts, password) {
-    const hash = OFFLINE_PREFIX + offlineEncode(opts, password);
-    return sharePageUrl().toString() + hash;
+  async function buildOfflineShareUrl(opts, password) {
+    const page = sharePageUrl().toString();
+    const hash = OFFLINE_PREFIX + await offlineEncode(opts, password);
+    return page + hash;
   }
 
   /* ================================================================== Hash
@@ -946,8 +965,8 @@
   /* ------------------------------------------------------- Offline-Variante
      Rein clientseitig, funktioniert ohne Server/Internet. */
   function createOfflineShare(o, pw) {
-    return readSnapshot(o).then(function (snapshot) {
-      const url = buildOfflineShareUrl({
+    return readSnapshot(o).then(async function (snapshot) {
+      const url = await buildOfflineShareUrl({
         sheet: o.sheet, type: o.type, title: o.title, teams: o.teams, snapshot: snapshot
       }, pw || null);
       renderShareResult(url, pw, url.length > LONG_URL_WARN ? url.length : null, null, o);
@@ -1044,8 +1063,10 @@
     const id = input.id;
     const token = input.token || (known && known.id === id && known.token) || '';
     return apiGet('/share.php?id=' + encodeURIComponent(id)).then(function (env) {
-      if (!safeServerFile(env) || (env.formatVersion != null && env.formatVersion !== 1)
-          || (env.revision != null && (!Number.isSafeInteger(env.revision) || env.revision < 1))) {
+      if (!safeServerFile(env) || env.formatVersion !== 2
+          || !Number.isSafeInteger(env.revision) || env.revision < 1
+          || typeof env.title !== 'string' || typeof env.type !== 'string'
+          || !Array.isArray(env.teams) || typeof env.protected !== 'boolean') {
         throw new Error(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
       }
       const mismatch = handleSheetMismatch(env.sheet, opts, SERVER_PREFIX + id + (token ? '&edit=' + token : ''));
@@ -1082,11 +1103,17 @@
     }, function (err) { return { err: err }; }).then(function (r) {
       if (r.full) {
         const full = r.full;
-        if (full.formatVersion != null && full.formatVersion !== 1) throw new Error(tx('server.protocol', 'Der Server unterstützt dauerhafte Turniere noch nicht. Bitte Backend aktualisieren.'));
+        if (!safeServerFile(full) || full.formatVersion !== 2 || full.sheet !== env.sheet
+            || !Number.isSafeInteger(full.revision) || full.revision < 1
+            || typeof full.canEdit !== 'boolean' || typeof full.title !== 'string'
+            || typeof full.type !== 'string' || !Array.isArray(full.teams)
+            || typeof full.protected !== 'boolean' || !full.snapshot || typeof full.snapshot !== 'object') {
+          throw new Error(tx('server.protocol', 'Der Server unterstützt das aktuelle Turnierformat nicht. Bitte Backend aktualisieren.'));
+        }
         const binding = {
-          instance: secret(), id: id, revision: full.revision || env.revision || 1,
-          readOnly: !(token && full.canEdit === true),
-          token: token && full.canEdit === true ? token : null,
+          instance: secret(), id: id, revision: full.revision,
+          readOnly: !(token && full.canEdit),
+          token: token && full.canEdit ? token : null,
           published: snapshotSignature(full.snapshot)
         };
         return confirmAndApplySnapshot(info, full.snapshot, opts, binding);
@@ -1114,9 +1141,13 @@
     });
   }
 
-  function applyOfflineShare(hashValue, opts) {
+  async function applyOfflineShare(hashValue, opts) {
     const env = offlineDecodeEnvelope(hashValue);
-    if (!env) { clearHash(); alert(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.')); return false; }
+    if (!env) { clearHash(); alert(tx('share.invalidOffline', 'Ungültiger Link.')); return false; }
+    if (env.enc) {
+      try { secureCrypto(); }
+      catch (e) { clearHash(); alert(e.message); return false; }
+    }
     const mismatch = handleSheetMismatch(env.sheet, opts, OFFLINE_PREFIX + hashValue);
     if (mismatch) return mismatch === 'redirect';
 
@@ -1129,13 +1160,13 @@
         pw = prompt(tx('share.pwPrompt', 'Geteiltes Turnier "{info}" ist passwortgeschützt.\nBitte Passwort eingeben:', { info: info }), '');
         if (pw === null) { clearHash(); return false; } // abgebrochen
       }
-      try { snapshot = offlineResolveSnapshot(env, pw); }
+      try { snapshot = await offlineResolveSnapshot(env, pw); }
       catch (e) {
         tries++;
         if (!env.enc || tries >= MAX_PW_TRIES) {
           clearHash();
           alert(env.enc ? tx('share.pwAbort', 'Falsches Passwort – Übernahme abgebrochen.')
-            : tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
+            : tx('share.invalidOffline', 'Ungültiger Link.'));
           return false;
         }
         alert(tx('share.pwRetry', 'Falsches Passwort, bitte erneut versuchen.'));
@@ -1152,6 +1183,12 @@
      bleibt der Link in der Adresszeile (Neuladen = neuer Versuch) und der
      bisherige Stand ist unverändert. → Promise<boolean> */
   function confirmAndApplySnapshot(info, snapshot, opts, binding) {
+    if (typeof TArchive === 'undefined' || !TArchive.validShareSnapshot
+        || !opts || !TArchive.validShareSnapshot(snapshot, opts.sheet)) {
+      clearHash();
+      alert(tx('share.invalid', 'Der Link enthält keine gültigen Turnierdaten.'));
+      return Promise.resolve(false);
+    }
     const ok = confirm(tx('share.confirmApply',
       'Geteiltes Turnier gefunden: "{info}".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
@@ -1273,6 +1310,7 @@
 
   return {
     buildShareUrl: buildServerShareUrl, openShareDialog, applyPendingShare, openByCode, openInfoDialog,
-    publish, transferUrl, independentCopy, safeServerFile
+    publish, transferUrl, independentCopy, safeServerFile,
+    offlineEncode, offlineDecodeEnvelope, offlineResolveSnapshot, buildOfflineShareUrl
   };
 });

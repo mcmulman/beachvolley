@@ -61,9 +61,10 @@
       throw new Error(tx('backup.err.entry', 'Die Sicherungsdatei enthält einen unzulässigen Eintrag.'));
     }
     if (key.indexOf(TStore.PREFIX) === 0 || key.indexOf(TStore.BACKUP_PREFIX) === 0) {
-      const tournament = parseJSON(value, key);
       const sheetId = key.slice(key.indexOf(TStore.PREFIX) === 0
         ? TStore.PREFIX.length : TStore.BACKUP_PREFIX.length);
+      if (!TStore.isCurrentSheet(sheetId)) return;
+      const tournament = parseJSON(value, key);
       if (!tournament || tournament.schema !== TStore.SCHEMA || tournament.sheet !== sheetId) {
         throw new Error(tx('backup.err.incompatible', 'Turnierdaten in der Sicherungsdatei sind nicht kompatibel.'));
       }
@@ -73,6 +74,8 @@
         throw new Error(tx('backup.err.revision', 'Die gespeicherte Löschrevision ist ungültig.'));
       }
     } else if (key.indexOf('beachl.arch.') === 0) {
+      const archiveSheet = key.slice(TStore.ARCHIVE_PREFIX.length);
+      if (!TStore.isCurrentSheet(archiveSheet)) return;
       const archive = parseJSON(value, key);
       if (!archive || !archive.sheet || !archive.data || typeof archive.data !== 'object') {
         throw new Error(tx('backup.err.archive', 'Ein Archiv-Eintrag in der Sicherungsdatei ist ungültig.'));
@@ -151,46 +154,16 @@
 
   function recordSheet(key) {
     if (typeof key !== 'string') return null;
-    const prefixes = [TStore.PREFIX, TStore.BACKUP_PREFIX, TStore.REVISION_PREFIX];
+    const prefixes = [TStore.PREFIX, TStore.BACKUP_PREFIX, TStore.REVISION_PREFIX, TStore.ARCHIVE_PREFIX];
     for (let i = 0; i < prefixes.length; i++) {
       if (key.indexOf(prefixes[i]) === 0) return key.slice(prefixes[i].length);
     }
     return null;
   }
 
-  /* Gehört der Eintrag zum aktuellen Schema UND zu einem aktuellen Bogen?
-     Nicht unterstützte Einträge (Roh-Schlüssel entfernter Bögen, Bogen-IDs
-     ohne aktuellen Bogen) werden nicht übernommen – auch nicht umgerechnet –,
-     sondern gezählt und gemeldet. Unterstützte Einträge werden anschließend
-     vollständig geprüft; ist einer davon ungültig, wird die Datei abgewiesen. */
-  function isSupportedEntry(entry) {
-    const key = entry.key;
-    if (!isKnownKey(key)) return false;
-    if (key === TStore.INDEX_KEY || key === TStore.SESSIONS_KEY) return true;
-    if (key.indexOf(TStore.ARCHIVE_PREFIX) === 0) {
-      let archive = null;
-      try { archive = JSON.parse(entry.value); } catch (e) { archive = null; }
-      const sheet = archive && typeof archive.sheet === 'string' && archive.sheet
-        ? archive.sheet : key.slice(TStore.ARCHIVE_PREFIX.length);
-      return TStore.isCurrentSheet(sheet);
-    }
-    if (key.indexOf(TStore.QUARANTINE_PREFIX) === 0) {
-      /* Ungültiger Ursprung zählt als unterstützt, damit validateBackup ihn abweist. */
-      if (entry.originalKey != null) {
-        const origin = recordSheet(entry.originalKey);
-        return origin == null || TStore.isCurrentSheet(origin);
-      }
-      const rest = key.slice(TStore.QUARANTINE_PREFIX.length);
-      if (rest.indexOf('undo-import.') === 0 || rest.indexOf('undo-delete.') === 0) return true;
-      return TStore.isCurrentSheet(rest);
-    }
-    return TStore.isCurrentSheet(recordSheet(key));
-  }
-
-  function isDataEntry(entry) {
-    return entry.key !== TStore.INDEX_KEY && entry.key !== TStore.SESSIONS_KEY
-      && entry.key.indexOf(TStore.QUARANTINE_PREFIX + 'undo-') !== 0;
-  }
+  /* Known old-sheet records stay opaque and intact; only active sheets are
+     interpreted. Unknown keys are retained as quarantine payloads on import. */
+  function isSupportedEntry(entry) { return isKnownKey(entry.key); }
 
   function mergeIndex(current, incoming, addedEntries) {
     const merged = Object.assign(Object.create(null), incoming, current);
@@ -200,7 +173,8 @@
       }
     });
     addedEntries.forEach(function (entry) {
-      if (entry.key.indexOf(TStore.PREFIX) !== 0) return;
+      if (entry.key.indexOf(TStore.PREFIX) !== 0
+          || !TStore.isCurrentSheet(entry.key.slice(TStore.PREFIX.length))) return;
       const tournament = JSON.parse(entry.value);
       merged[tournament.sheet] = {
         title: tournament.title || '',
@@ -212,11 +186,9 @@
     return merged;
   }
 
-  /* Prüft die Datei vollständig (rein, synchron) und liefert den Importplan:
-     { entries: unterstützte Einträge, discarded, discardedKeys }.
-     Struktur, Duplikate und Größe werden für ALLE Einträge geprüft, der Inhalt
-     für alle unterstützten. Enthält die Datei nur nicht unterstützte Einträge,
-     wird sie abgewiesen. */
+  /* Prüft die Datei vollständig und trennt bekannte Speicher-Schlüssel von
+     unbekannten Alt-Einträgen, die beim Import in exportierbarer Quarantäne
+     erhalten bleiben. */
   function validateBackup(backup) {
     if (!backup || backup.format !== FORMAT || backup.version !== VERSION
         || !Array.isArray(backup.entries)) {
@@ -225,7 +197,8 @@
     let bytes = 0;
     const seen = Object.create(null);
     const supported = [];
-    const discardedKeys = [];
+    const preservedEntries = [];
+    const retiredKeys = [];
     backup.entries.forEach(function (entry) {
       if (!entry || typeof entry.key !== 'string' || seen[entry.key]) {
         throw new Error(tx('backup.err.duplicate', 'Die Sicherungsdatei enthält doppelte Einträge.'));
@@ -237,10 +210,12 @@
       bytes += entry.key.length + entry.value.length;
       if (bytes > MAX_BYTES) throw new Error(tx('backup.err.tooLarge', 'Die Sicherung ist größer als 25 MB.'));
       if (!isSupportedEntry(entry)) {
-        discardedKeys.push(entry.key);
+        preservedEntries.push(entry);
         return;
       }
       validateEntry(entry.key, entry.value);
+      const sheet = recordSheet(entry.key);
+      if (sheet && !TStore.isCurrentSheet(sheet)) retiredKeys.push(entry.key);
       if (entry.originalKey != null && (typeof entry.originalKey !== 'string'
           || (entry.originalKey.indexOf(TStore.PREFIX) !== 0
             && entry.originalKey.indexOf(TStore.BACKUP_PREFIX) !== 0)
@@ -257,12 +232,15 @@
       }
       supported.push(entry);
     });
-    if (discardedKeys.length && !supported.some(isDataEntry)) {
+    if (!preservedEntries.length && !supported.some(function (entry) {
+      return entry.key !== TStore.INDEX_KEY && entry.key !== TStore.SESSIONS_KEY
+        && entry.key.indexOf(TStore.QUARANTINE_PREFIX + 'undo-') !== 0;
+    })) {
       throw new Error(tx('backup.err.onlyUnsupported',
-        'Die Sicherungsdatei enthält nur Einträge nicht mehr unterstützter Turnierbögen oder unbekannte Einträge (Anzahl: {count}). Es wurde nichts importiert.',
-        { count: discardedKeys.length }));
+        'Die Sicherungsdatei enthält keine Turnier- oder Archivdaten. Es wurde nichts importiert.'));
     }
-    return { entries: supported, discarded: discardedKeys.length, discardedKeys: discardedKeys };
+    return { entries: supported, preservedEntries: preservedEntries, retiredKeys: retiredKeys,
+      preserved: preservedEntries.length, retired: retiredKeys.length };
   }
 
   /* Synchron, innerhalb einer TStore.transaction(): vorhandene Schlüssel
@@ -278,7 +256,7 @@
     plan.entries.forEach(function (entry) {
       if (entry.key === TStore.INDEX_KEY) return;
       if (view.getItem(entry.key) != null) { skipped++; return; }
-      if (entry.key.indexOf(TStore.PREFIX) === 0) {
+      if (entry.key.indexOf(TStore.PREFIX) === 0 && TStore.isCurrentSheet(entry.key.slice(TStore.PREFIX.length))) {
         const sheet = entry.key.slice(TStore.PREFIX.length);
         const t = JSON.parse(entry.value);
         t._revision = Math.max(TStore.revisionInView(view, sheet), Number(t._revision) || 0) + 1;
@@ -286,6 +264,13 @@
       } else {
         added.push(entry);
       }
+    });
+    plan.preservedEntries.forEach(function (entry, i) {
+      const stamp = Date.now();
+      let key = TStore.QUARANTINE_PREFIX + 'backup-entry.' + stamp + '-' + i;
+      let n = 1;
+      while (view.getItem(key) != null) key = TStore.QUARANTINE_PREFIX + 'backup-entry.' + stamp + '-' + i + '-' + n++;
+      added.push({ key: key, value: JSON.stringify({ type: 'preserved-backup-entry', key: entry.key, value: entry.value }) });
     });
     const currentIndexRaw = view.getItem(TStore.INDEX_KEY);
     let currentIndex = {};
@@ -307,7 +292,8 @@
     view.setItem(TStore.INDEX_KEY, JSON.stringify(merged));
     let undoKey = null;
     const undoEntries = added.filter(function (entry) {
-      return entry.key.indexOf(TStore.REVISION_PREFIX) !== 0;
+      if (entry.key.indexOf(TStore.REVISION_PREFIX) !== 0) return true;
+      return !TStore.isCurrentSheet(entry.key.slice(TStore.REVISION_PREFIX.length));
     });
     if (undoEntries.length) {
       const stamp = Date.now();
@@ -323,15 +309,14 @@
         entries: undoEntries
       }));
     }
-    return { added: added.length, skipped: skipped, discarded: plan.discarded,
-      discardedKeys: plan.discardedKeys.slice(), undoKey: undoKey };
+    return { added: added.length, skipped: skipped, preserved: plan.preserved,
+      preservedKeys: plan.preservedEntries.map(function (entry) { return entry.key; }),
+      retired: plan.retired, retiredKeys: plan.retiredKeys.slice(), undoKey: undoKey };
   }
 
-  /* → Promise<{ added, skipped, discarded, discardedKeys, undoKey }>.
-     Alles-oder-nichts für die unterstützten Einträge: eine einzige
-     IndexedDB-Transaktion; ungültige Dateien und Dateien ohne unterstützte
-     Einträge werden vorher abgewiesen. discarded > 0 muss sichtbar gemeldet
-     werden (nicht übernommene Einträge nicht mehr unterstützter Bögen). */
+  /* → Promise<{ added, skipped, retired, preserved, undoKey }>.
+     Der gesamte Import ist atomar; retired records bleiben unverändert und
+     unbekannte Schlüssel werden als exportierbare Quarantäne erhalten. */
   function importAll(backup) {
     try { validateBackup(backup); }
     catch (e) { return Promise.reject(e); }
@@ -368,8 +353,10 @@
         if (key.indexOf(TStore.PREFIX) === 0) {
           const sheet = key.slice(TStore.PREFIX.length);
           const record = JSON.parse(entry.value);
-          const revision = Math.max(TStore.revisionInView(view, sheet), Number(record._revision) || 0);
-          view.setItem(TStore.REVISION_PREFIX + sheet, String(revision));
+          if (TStore.isCurrentSheet(sheet)) {
+            const revision = Math.max(TStore.revisionInView(view, sheet), Number(record._revision) || 0);
+            view.setItem(TStore.REVISION_PREFIX + sheet, String(revision));
+          }
           delete index[sheet];
         } else if (key.indexOf(TStore.ARCHIVE_PREFIX) === 0) {
           if (index.__archives) delete index.__archives[key];

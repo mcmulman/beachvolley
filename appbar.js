@@ -2,6 +2,50 @@
    „← Zur Übersicht"-Navizeile. Rein Bildschirm-relevant; die Leiste ist .noprint
    und damit im Druck unsichtbar. */
 (function () {
+  var sectionToggles = [];
+  var initialUiApplied = false;
+  var namesPreference = 'BEACHL.uiSection.v1:' + location.pathname + ':names';
+
+  function namesPanel() {
+    var input = document.querySelector('[data-name-input]');
+    return input && input.closest('.namepanel, #rosterSection');
+  }
+
+  function rememberNames() {
+    var panel = namesPanel();
+    if (!panel) return;
+    try { localStorage.setItem(namesPreference, panel.hidden ? '0' : '1'); } catch (e) {}
+  }
+
+  function initializeVisibility() {
+    if (initialUiApplied || !document.body.hasAttribute('data-bar-title')) return;
+    var state = window.TStore && window.TStore.initialUiState && window.TStore.initialUiState();
+    var panel = namesPanel(), button = document.getElementById('btnToggleNames');
+    if (!state || !panel || !button) return;
+    initialUiApplied = true;
+    if (state.readOnly) return;
+    if (state.isNew) sectionToggles.forEach(function (toggle) { toggle.setExpanded(true, true, false); });
+    var preference = null;
+    try { preference = localStorage.getItem(namesPreference); } catch (e) {}
+    var show = state.isNew || preference === '1';
+    var input = document.querySelector('[data-name-input]');
+    if (!button.disabled && input && !input.disabled && !input.readOnly && panel.hidden === show) button.click();
+    rememberNames();
+    if (window.MutationObserver) {
+      new MutationObserver(rememberNames).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+    }
+  }
+
+  window.addEventListener('beachl:tournament-started', function () {
+    sectionToggles.forEach(function (toggle) { toggle.setExpanded(true, true, false); });
+    try { localStorage.setItem(namesPreference, '1'); } catch (e) {}
+    setTimeout(function () {
+      var panel = namesPanel(), button = document.getElementById('btnToggleNames');
+      var input = document.querySelector('[data-name-input]');
+      if (panel && panel.hidden && button && !button.disabled && input && !input.disabled && !input.readOnly) button.click();
+    }, 0);
+  });
+
   /* Titel fuer die App-Leiste: die Bogen setzen ihn ueber
      document.body.dataset.barTitle ("KO-System · 8 Teams · 4 Felder").
      Fallback fuer Seiten ohne diese Angabe: der Fenstertitel ohne das Wort
@@ -34,60 +78,93 @@
       }
 
       var content = document.createElement('div');
-      content.className = 'cfg-setup-content cfg-actions-content';
+      content.className = 'cfg-setup-content';
       content.id = 'configSetup' + index;
-      content.hidden = false;
       grid.parentNode.insertBefore(content, grid);
       content.appendChild(grid);
-
       var actions = card.querySelector('.cfg-action-content');
-      if (actions && actions !== content) content.appendChild(actions);
+      if (actions) content.appendChild(actions);
 
-      var toggle = document.createElement('button');
-      toggle.type = 'button';
-      toggle.className = 'nbtn cfg-setup-toggle cfg-actions-toggle';
-      toggle.setAttribute('aria-expanded', 'true');
-      toggle.setAttribute('aria-controls', content.id);
-      // Die Kartenüberschrift wird zur Beschriftung des Umschalters (eine Zeile statt zwei).
       var head = card.querySelector('.cfgcard-head');
-      var label = document.createElement('span');
-      label.className = 'cfg-setup-toggle__label';
-      if (head) {
-        if (head.hasAttribute('data-i18n')) label.setAttribute('data-i18n', head.getAttribute('data-i18n'));
-        label.textContent = head.textContent.trim();
-        head.parentNode.removeChild(head);
-      } else {
-        toggle.setAttribute('data-label-key', 'chrome.configToggle');
-        label.textContent = 'Konfiguration';
+      if (!head) {
+        head = document.createElement('div');
+        head.className = 'cfgcard-head';
+        card.insertBefore(head, content);
       }
-      toggle.appendChild(label);
-      var state = document.createElement('span');
-      state.className = 'cfg-setup-toggle__state';
-      state.innerHTML = '<span class="cfg-setup-toggle__open" data-i18n="chrome.configOpen">Öffnen</span>'
-        + '<span class="cfg-setup-toggle__close" data-i18n="chrome.configClose">Schließen</span>'
-        + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"'
-        + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
-        + '<path class="cfg-setup-toggle__open" d="m6 9 6 6 6-6"/>'
-        + '<path class="cfg-setup-toggle__close" d="m6 6 12 12m0-12L6 18"/></svg>';
-      toggle.appendChild(state);
-      toggle.addEventListener('click', function () {
-        content.hidden = !content.hidden;
-        toggle.setAttribute('aria-expanded', String(!content.hidden));
-      });
+      var heading = document.createElement('span');
+      heading.className = 'cfgcard-head__label';
+      if (head.hasAttribute('data-i18n')) {
+        heading.setAttribute('data-i18n', head.getAttribute('data-i18n'));
+        head.removeAttribute('data-i18n');
+      }
+      heading.textContent = head.textContent.trim() || 'Konfiguration';
+      head.textContent = '';
+      head.appendChild(heading);
+
+      var reveal = document.createElement('button');
+      reveal.type = 'button';
+      reveal.className = 'nbtn cfg-setup-toggle cfg-actions-toggle section-toggle-open noprint';
+      reveal.setAttribute('data-i18n', 'ui.section.configShow');
+      reveal.textContent = 'Turnier-Konfiguration einblenden';
+      head.appendChild(reveal);
+
       var toolbar = card.querySelector('.cfgcard-actions');
       card.classList.add('cfgcard--collapsible');
-      if (toolbar) {
-        toolbar.insertBefore(toggle, toolbar.firstChild);
-        card.insertBefore(toolbar, content);
-      } else {
-        card.insertBefore(toggle, content);
+      if (toolbar) card.appendChild(toolbar);
+      if (window.TI18n && window.TI18n.active()) window.TI18n.apply(head);
+      if (window.TUI && window.TUI.wireSectionToggle) {
+        sectionToggles.push(window.TUI.wireSectionToggle(content, reveal, head, {
+          collapsedContent: card.querySelector('.cfg-actions-quick'),
+          relatedContent: Array.prototype.slice.call(document.querySelectorAll('#rosterSection, #rosterActions')),
+          preferenceId: 'setup-' + index,
+          showKey: 'ui.section.configShow',
+          hideKey: 'ui.section.configHide',
+          showText: 'Turnier-Konfiguration einblenden',
+          hideText: 'Turnier-Konfiguration ausblenden',
+          focusSelector: 'input,select,button'
+        }));
+      }
+    });
+  }
+
+  function addGuideToggle() {
+    document.querySelectorAll('.guide').forEach(function (guide, index) {
+      var heading = guide.querySelector('h2');
+      if (!heading || guide.querySelector('.guide-content')) return;
+      var header = document.createElement('div');
+      header.className = 'guide-heading';
+      var content = document.createElement('div');
+      content.className = 'guide-content';
+      content.id = 'guideContent' + index;
+      heading.setAttribute('tabindex', '-1');
+      guide.insertBefore(header, guide.firstChild);
+      header.appendChild(heading);
+      while (header.nextSibling) content.appendChild(header.nextSibling);
+      guide.appendChild(content);
+
+      var reveal = document.createElement('button');
+      reveal.type = 'button';
+      reveal.className = 'section-toggle-open guide-toggle-open noprint';
+      reveal.setAttribute('data-i18n', 'ui.section.guideShow');
+      reveal.textContent = 'Kurzanleitung einblenden';
+      header.appendChild(reveal);
+      if (window.TUI && window.TUI.wireSectionToggle) {
+        sectionToggles.push(window.TUI.wireSectionToggle(content, reveal, header, {
+          preferenceId: 'guide-' + guide.id,
+          showKey: 'ui.section.guideShow',
+          hideKey: 'ui.section.guideHide',
+          showText: 'Kurzanleitung einblenden',
+          hideText: 'Kurzanleitung ausblenden',
+          defaultExpanded: true,
+          focusTarget: heading
+        }));
       }
     });
   }
 
   function groupConfigActions() {
     document.querySelectorAll('.cfgcard-actions').forEach(function (toolbar, index) {
-      if (toolbar.querySelector('.cfg-actions-toggle')) return;
+      if (toolbar.querySelector('.cfg-actions-primary')) return;
       var card = toolbar.closest('.cfgcard');
       if (!card) return;
       var buttons = Array.prototype.slice.call(toolbar.querySelectorAll('button'));
@@ -121,13 +198,31 @@
       primary.className = 'cfg-actions-primary';
       primary.setAttribute('role', 'group');
       primary.setAttribute('aria-label', 'Teilen und Speichern');
+      var quick = document.createElement('div');
+      quick.className = 'cfg-actions-quick noprint';
+      quick.setAttribute('role', 'group');
+      quick.setAttribute('aria-label', 'Zurücksetzen');
+      quick.setAttribute('data-i18n-attr', 'aria-label:chrome.group.reset');
+      quick.hidden = true;
 
       // Move the existing buttons so their handlers and state stay intact.
       buttons.forEach(function (button) {
         if (button.matches('#btnShare, #btnSave, [onclick*="shareTournament"], [onclick*="manualSave"]')) {
           primary.appendChild(button);
         } else if (button.matches('#btnClearScores, #btnReset, [onclick*="clearScores"], [onclick*="resetTournament"]')) {
+          button.classList.add('cfg-reset-action');
           reset.appendChild(button);
+          var shortcut = button.cloneNode(true);
+          shortcut.removeAttribute('id');
+          shortcut.removeAttribute('onclick');
+          shortcut.className = 'nbtn cfg-reset-action cfg-quick-action';
+          shortcut.setAttribute('data-quick-action', button.id);
+          shortcut.addEventListener('click', function () { button.click(); });
+          quick.appendChild(shortcut);
+          if (window.MutationObserver) {
+            new MutationObserver(function () { shortcut.disabled = button.disabled; })
+              .observe(button, { attributes: true, attributeFilter: ['disabled'] });
+          }
         } else if (button.matches('#btnToggleNames, #btnToggleFields, #btnToggleAbsent, #btnToggleDropout, [onclick*="toggleNames"], [onclick*="toggleFields"], [onclick*="toggleAbsent"], [onclick*="toggleDropout"]')) {
           teams.appendChild(button);
         } else {
@@ -139,13 +234,97 @@
       });
       toolbar.querySelectorAll('.spacer').forEach(function (spacer) { spacer.remove(); });
 
+      if (quick.children.length) toolbar.appendChild(quick);
       if (primary.children.length) toolbar.appendChild(primary);
       toolbar.parentNode.insertBefore(content, toolbar.nextSibling);
-      document.querySelectorAll('#namepanel, #fieldpanel, #absentpanel, #dropoutpanel').forEach(function (panel) {
+      document.querySelectorAll('.namepanel, #dropoutpanel').forEach(function (panel) {
         if (!panel.closest('.cfgcard') || panel.closest('.cfgcard') === card) content.appendChild(panel);
       });
     });
   }
+  function addTeamCaptionEditors() {
+    var original = document.getElementById('btnToggleNames');
+    addCaptionEditors('table.teams caption, table.roster caption, #menStandTable caption, #womenStandTable caption',
+      'team', '[data-name-input]', 'sheet.teams.editNames', 'Team / Namen bearbeiten', original);
+    addCaptionEditors('table.timeplan caption', 'timeplan', '.cfg-setup-content input[type="time"]',
+      'sheet.timeplan.editSettings', 'Zeiteinstellungen bearbeiten');
+  }
+
+  function addCaptionEditors(selector, kind, inputSelector, ariaKey, ariaLabel, original) {
+    var first = document.querySelector(inputSelector);
+    var editable = !!(first && !first.disabled && !first.readOnly && (kind !== 'team' || (original && !original.disabled)));
+    document.querySelectorAll(selector).forEach(function (caption) {
+      var captionKey = caption.getAttribute('data-i18n') || caption.getAttribute('data-team-caption-key');
+      if (caption.closest('table.teams') && !/^(sheet|ko|dko)\.teams\.caption$/.test(captionKey || '')) return;
+      var edit = caption.querySelector('.' + kind + '-caption-edit');
+      if (!edit) {
+        var title = caption.querySelector('.cap-title');
+        if (!title) {
+          title = document.createElement('span');
+          title.className = 'cap-title';
+          title.textContent = caption.textContent;
+          var key = caption.getAttribute('data-i18n') || caption.getAttribute('data-team-caption-key');
+          if (key) {
+            title.setAttribute('data-i18n', key);
+            caption.setAttribute('data-team-caption-key', key);
+            caption.removeAttribute('data-i18n');
+          }
+          caption.textContent = '';
+          caption.appendChild(title);
+          if (key === 'ko.teams.caption' || key === 'dko.teams.caption') {
+            var hint = document.createElement('span');
+            hint.className = 'cap-hint only-print';
+            hint.setAttribute('data-i18n', 'sheet.teams.seedHint');
+            hint.textContent = 'Nr. 1 = Favorit.';
+            caption.appendChild(hint);
+          }
+        }
+        edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'caption-edit ' + kind + '-caption-edit noprint';
+        edit.setAttribute('aria-label', ariaLabel);
+        edit.setAttribute('data-i18n-attr', 'aria-label:' + ariaKey);
+        var icon = document.querySelector('#btnToggleNames svg');
+        if (icon) edit.appendChild(icon.cloneNode(true));
+        var label = document.createElement('span');
+        label.className = 'caption-edit-label team-caption-label';
+        title.parentNode.insertBefore(label, title);
+        label.appendChild(title);
+        label.appendChild(edit);
+        edit.addEventListener('click', function () {
+          openConfigEditor(inputSelector, kind === 'team' ? original : null);
+        });
+        if (window.TI18n && window.TI18n.active()) window.TI18n.apply(caption);
+      }
+      if (edit.hidden === editable) edit.hidden = !editable;
+    });
+  }
+
+  function openConfigEditor(inputSelector, original) {
+    var input = document.querySelector(inputSelector);
+    if (!input || input.disabled || input.readOnly) return false;
+    var content = document.querySelector('.cfg-setup-content');
+    if (content && content.hidden) document.querySelector('.cfg-setup-toggle').click();
+    if (original && !input.offsetHeight) original.click();
+    input = document.querySelector(inputSelector);
+    input.focus();
+    var top = 12, bottom = window.innerHeight - 12;
+    document.querySelectorAll('.app-bar, .mobile-jumpbar').forEach(function (bar) {
+      var style = window.getComputedStyle(bar), box = bar.getBoundingClientRect();
+      if (!box.height || (style.position !== 'fixed' && style.position !== 'sticky')) return;
+      if (box.top < window.innerHeight / 2) top = Math.max(top, box.bottom + 12);
+      else bottom = Math.min(bottom, box.top - 12);
+    });
+    var box = input.getBoundingClientRect();
+    window.scrollTo(0, Math.max(0, window.pageYOffset + box.top - top - Math.max(0, (bottom - top - box.height) / 2)));
+    return true;
+  }
+
+  window.TSheetEditors = window.TSheetEditors || {};
+  window.TSheetEditors.openTimeEditor = function () {
+    return openConfigEditor('.cfg-setup-content input[type="time"]');
+  };
+
 
   function build() {
     document.body.classList.add('tournament-sheet');
@@ -163,6 +342,7 @@
     }
     groupConfigActions();
     addConfigToggle();
+    addGuideToggle();
     if (document.querySelector('.app-bar')) return;
 
     // vorhandene Navizeile finden (enthält Link zur Übersicht)
@@ -233,6 +413,10 @@
     // scrollt (flach, ohne Kanten-Verlauf – siehe app-skin.css). Läuft
     // wiederholt, da Spielpläne oft per innerHTML neu gerendert werden.
     function wrapScrollTables() {
+      var language = document.querySelector('.app-bar__actions .i18n-switch');
+      if (language && language.nextElementSibling) language.parentNode.appendChild(language);
+      initializeVisibility();
+      addTeamCaptionEditors();
       var tables = document.querySelectorAll('table.sched, table.track, table.stand, table.central-table');
       for (var i = 0; i < tables.length; i++) {
         var t = tables[i];
@@ -265,7 +449,7 @@
         pending = true;
         setTimeout(function () { pending = false; wrapScrollTables(); }, 50);
       });
-      mo.observe(document.body, { childList: true, subtree: true });
+      mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly'] });
     }
   }
 

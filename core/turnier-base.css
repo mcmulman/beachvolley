@@ -6,6 +6,15 @@
    Einbindungsreihenfolge: turnier-base.css → spielplan.css → app-skin.css
    ========================================================================== */
   :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; }
+  .format-switch { grid-column:1 / -1; width:100%; min-width:0; margin-top:8px; }
+  .format-switch > label { display:block; font-weight:bold; margin-bottom:4px; }
+  .format-switch-controls { display:flex; align-items:center; }
+  .format-switch-controls select { flex:1; min-width:0; max-width:100%; min-height:44px; }
+  .format-switch-controls button { flex:none; min-height:44px; margin-left:6px; }
+  .format-switch p { margin:4px 0 0; font-size:12px; color:#555; overflow-wrap:break-word; }
+  .format-switch-return { display:inline-block; margin-top:6px; padding:8px 0; }
+  .format-switch[hidden] { display:none !important; }
+  @media print { .format-switch, .format-switch * { display:none !important; } }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
   body {
@@ -234,7 +243,7 @@
     }
     .noprint { display:none !important; }
     .format-info-toggle { display:none !important; }
-    .format-info-content[hidden] { display:block !important; }
+    .guide-content[hidden], .format-info-content[hidden] { display:block !important; }
     /* Round selection is screen-only; a printed schedule includes every round.
        Spacer rows (tr.rgap) stay hidden in print, see spielplan.css. */
     .sched > tbody > tr[data-round][hidden]:not(.rgap) { display:table-row !important; }
@@ -635,3 +644,130 @@
   html body .bl-mtimer svg { width: 17px; height: 17px; }
 }
 .bl-ic--inl, .kqcourt-head .bl-ic { width:16px; height:16px; vertical-align:-3px; }
+
+/* Team editor controls use margins, not flex gap, for Safari 12. */
+@media screen {
+  html body #nameGrid.ngrid {
+    display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 12px;
+  }
+  html body #nameGrid .team-reorder-row,
+  html body #rosterSection td.rname.team-reorder-row {
+    display:flex; align-items:center; flex-wrap:nowrap; gap:0;
+    min-width:0; padding:6px; border:1px solid var(--app-line, #cdd8e6);
+    border-radius:var(--app-radius-sm, 8px); background:#fff;
+  }
+  html body #nameGrid .team-reorder-row > .nrow {
+    display:flex; flex-direction:row; align-items:center; gap:0;
+    flex:1 1 0%; min-width:0; margin:0;
+  }
+  html body #nameGrid .team-reorder-row .nnum,
+  html body #rosterSection .team-editor-number {
+    flex:0 0 22px; min-width:22px; text-align:center;
+    color:#40536b; font-size:12px; font-weight:700; margin-right:4px;
+  }
+  html body #nameGrid .team-reorder-row input[data-name-input],
+  html body #rosterSection input[data-name-input] {
+    flex:1 1 0%; min-width:0; width:0; height:40px !important; min-height:40px !important;
+    border:1px solid var(--app-line-strong, #aab8cc); border-radius:var(--app-radius-sm, 8px);
+    padding:6px 8px; font-size:14px; background:#fff;
+  }
+  html body .team-reorder {
+    display:inline-flex; flex:0 0 auto; height:40px; margin-left:6px;
+    border:0;
+    border-radius:var(--app-radius-sm, 8px); background:#fff;
+  }
+  html body .team-reorder .team-move {
+    -webkit-appearance:none; appearance:none; display:inline-flex;
+    align-items:center; justify-content:center; width:40px; min-width:40px;
+    height:40px; min-height:40px; padding:0; margin:0; border:1px solid var(--app-line-strong, #aab8cc); border-radius:0;
+    background:transparent; color:#1a3a5c; cursor:pointer;
+  }
+  html body .team-reorder .team-move:first-child { border-radius:7px 0 0 7px; }
+  html body .team-reorder .team-move:last-child { border-left:0; border-radius:0 7px 7px 0; }
+  html body .team-reorder .team-move:hover:not(:disabled) { background:var(--app-tonal, #eef2f7); }
+  html body .team-reorder .team-move:disabled { color:#65748a; cursor:default; }
+  html body .team-reorder .team-move:focus { outline:2px solid #1f6fa8; outline-offset:1px; }
+  html body #nameGrid .team-reorder-row .team-del,
+  html body #rosterSection .rname .team-del {
+    width:40px; min-width:40px; height:40px; min-height:40px;
+    margin-left:4px; border:1px solid transparent; border-radius:var(--app-radius-sm, 8px);
+    color:#52647a; background:transparent; opacity:1;
+  }
+  html body #nameGrid .team-reorder-row .team-del:hover:not(:disabled),
+  html body #nameGrid .team-reorder-row .team-del:focus,
+  html body #rosterSection .rname .team-del:hover:not(:disabled),
+  html body #rosterSection .rname .team-del:focus { color:#b42318; border-color:#e3b4b4; background:#fdecec; }
+  html body #nameGrid .team-reorder-row .team-del:disabled,
+  html body #rosterSection .rname .team-del:disabled { color:#65748a; }
+  html body #nameGrid .team-editor-card { min-width:0; }
+  html body #nameGrid .team-editor-extra {
+    display:flex; flex-direction:row; align-items:center; justify-content:flex-end;
+    gap:0; margin-top:4px; color:#40536b; font-size:12px;
+  }
+  html body #nameGrid .ngender {
+    flex:0 0 38px; width:38px; min-width:0; height:40px;
+    margin-left:4px; padding:4px 2px; border-radius:var(--app-radius-sm, 8px);
+  }
+  html body #namepanel .nactions, html body #rosterActions { gap:0; margin-top:12px; }
+  html body #namepanel .nactions .nbtn, html body #rosterActions .nbtn {
+    min-height:40px; margin:0 8px 6px 0; border-radius:var(--app-radius-sm, 8px);
+  }
+  html body #namepanel #btnClearNames, html body #rosterActions #btnClearNames { color:#52647a; border-color:var(--app-line-strong, #aab8cc); }
+  html body #namepanel #btnClearNames:hover, html body #namepanel #btnClearNames:focus,
+  html body #rosterActions #btnClearNames:hover, html body #rosterActions #btnClearNames:focus { color:#b42318; border-color:#b42318; background:#fdecec; }
+  html body #rosterSection { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  html body #rosterSection > div { min-width:0; }
+  html body #rosterSection table.roster, html body #rosterSection table.roster tbody { display:block; }
+  html body #rosterSection table.roster thead { display:none; }
+  html body #rosterSection table.roster tr { display:flex; flex-wrap:wrap; margin-bottom:10px; }
+  html body #rosterSection table.roster td.num, html body #rosterSection table.roster td.rdel { display:none; }
+  html body #rosterSection table.roster td.rname { flex:1 1 100%; }
+  html body #rosterSection table.roster td.rlevel,
+  html body #rosterSection table.roster td.rabsent { display:flex; align-items:center; width:auto; border:0; padding:4px 6px; }
+  html body #rosterSection table.roster td.rlevel select { min-height:40px; }
+  html body #rosterSection .team-editor-field-label { display:flex; align-items:center; gap:0; color:#40536b; font-size:12px; }
+  html body #rosterSection .team-editor-field-label > span { margin-right:6px; }
+  html body #rosterSection .team-editor-field-label input { min-width:20px; min-height:20px; }
+  html body .team-reorder[hidden], html body .team-reorder-hint[hidden], html body #rosterSection[hidden] { display:none !important; }
+}
+@media screen and (min-width:1400px) {
+  html body #nameGrid.ngrid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+@media screen and (max-width:900px) {
+  html body #nameGrid.ngrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media screen and (max-width:560px) {
+  html body #nameGrid.ngrid, html body #rosterSection { grid-template-columns:minmax(0,1fr); }
+  html body #namepanel { padding:8px; }
+  html body #nameGrid .team-reorder-row { padding:4px; }
+  html body #nameGrid .team-reorder-row .nnum { flex-basis:18px; min-width:18px; margin-right:2px; }
+  html body #nameGrid .team-reorder { margin-left:4px; }
+  html body #nameGrid .team-reorder-row .team-del { margin-left:2px; }
+
+}
+@media screen and (max-width:900px), screen and (pointer:coarse) {
+  html body #nameGrid .team-reorder-row input[data-name-input],
+  html body #rosterSection input[data-name-input] { height:44px !important; min-height:44px !important; }
+  html body .team-reorder { height:44px; }
+  html body .team-reorder .team-move { height:44px; min-height:44px; width:44px; min-width:44px; }
+  html body #nameGrid .team-reorder-row .team-del, html body #rosterSection .rname .team-del { height:44px; min-height:44px; width:44px; min-width:44px; }
+  html body #nameGrid .ngender, html body #rosterSection table.roster td.rlevel select { height:44px; min-height:44px; }
+  html body #namepanel .nactions .nbtn, html body #rosterActions .nbtn { min-height:44px; }
+}
+@media print { .team-reorder, .team-reorder-hint { display:none !important; } }
+
+/* Inline planning editors use margin spacing, including Safari 12. */
+@media screen {
+  .planning-controls, .planning-summary { max-width:100%; margin:10px 0; }
+  .planning-panel { padding:12px; }
+  .planning-fields, .planning-setting { display:flex; flex-wrap:wrap; align-items:center; }
+  .planning-field { display:flex; flex-direction:column; flex:1 1 130px; min-width:0; margin:8px 12px 8px 0; }
+  .planning-field input, .planning-field select { box-sizing:border-box; width:100%; min-width:0; min-height:44px; font:inherit; }
+  .planning-setting { padding:6px 0; }
+  .planning-setting > span { flex:1 1 170px; overflow-wrap:break-word; }
+  .planning-setting .nbtn, .planning-panel .nbtn { min-width:44px; min-height:44px; margin:4px; }
+  .planning-error { color:#9b1c1c; margin:6px 0 0; }
+  .planning-match-meta { display:block; font-size:12px; color:#334155; margin-bottom:6px; }
+}
+.planning-match-meta { display:block; font-size:10px; }
+.timeplan .planning-pause { color:#334155; font-style:italic; }

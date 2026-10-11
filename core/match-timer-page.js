@@ -377,6 +377,7 @@
     el.settings.hidden = !open;
     el.root.classList.toggle('has-settings', open);
     el.settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    el.settingsClose.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) {
       el.settings.scrollIntoView({ block: 'nearest' });
       el.setupOpen.focus();
@@ -397,9 +398,15 @@
     return out;
   }
   function setBackgroundHidden(hidden) {
-    [el.bar, el.root].forEach(function (node) {
+    [el.bar, el.root, el.footer, el.dockedControls].forEach(function (node) {
       if (!node) return;
-      if (hidden) node.setAttribute('aria-hidden', 'true'); else node.removeAttribute('aria-hidden');
+      if (hidden) {
+        node.setAttribute('aria-hidden', 'true');
+        node.setAttribute('inert', '');
+      } else {
+        node.removeAttribute('aria-hidden');
+        node.removeAttribute('inert');
+      }
     });
   }
   function openModal(box, focusEl, onClose) {
@@ -602,8 +609,25 @@
         (state.serveShown ? tx('timer.serve.on', 'An') : tx('timer.serve.off', 'Aus')));
     }
   }
+  function syncDockMetrics() {
+    if (!el.dockedControls) return 0;
+    var height = el.dockedControls.getBoundingClientRect().height;
+    if (height > 0 && !doc.body.classList.contains('mt-keyboard-open')) {
+      doc.documentElement.style.setProperty('--mt-dock-height', Math.max(124, Math.ceil(height)) + 'px');
+    }
+    return height;
+  }
   function renderTransfer() {
-    el.transfer.hidden = !(returnTarget && TM.resultFor(state));
+    var wasHidden = el.transfer.hidden;
+    var visible = !!(returnTarget && TM.resultFor(state));
+    el.transfer.hidden = !visible;
+    if (visible && wasHidden) {
+      root.requestAnimationFrame(function () {
+        if (el.transfer.hidden) return;
+        syncDockMetrics();
+        el.transfer.scrollIntoView(false);
+      });
+    }
   }
   /* Auswertung über das ganze Spiel: Name A · Sätze a : b · Name B. */
   function renderLead() {
@@ -670,9 +694,34 @@
   function wantsWake() {
     return (state.status === 'running' || !state.clockEnabled) && state.keepAwake && !doc.hidden && !pageUnloading;
   }
+  function updateFooterStatus() {
+    var values = [
+      { node: el.footerStatusSound, active: state.sound, shortKey: 'timer.footerStatus.soundOnShort', shortFallback: 'Punkt-Ton', longKey: 'timer.footerStatus.soundOn', longFallback: 'Punkt- und Satzton' },
+      { node: el.footerStatusKeepAwake, active: state.keepAwake && el.wakeStatus.hidden, shortKey: 'timer.footerStatus.keepAwakeOnShort', shortFallback: 'Sperrt nicht', longKey: 'timer.footerStatus.keepAwakeOn', longFallback: 'Auto-Sperre aus' },
+      { node: el.footerStatusTimer, active: state.clockEnabled, shortKey: 'timer.footerStatus.timerShownShort', shortFallback: 'Uhr sichtbar', longKey: 'timer.footerStatus.timerShown', longFallback: 'Spielzeituhr da' },
+      { node: el.footerStatusCompact, active: isCompact(), shortKey: 'timer.footerStatus.compactOnShort', shortFallback: 'Weniger Anzeige', longKey: 'timer.footerStatus.compactOn', longFallback: 'Anzeige reduziert' }
+    ];
+    var any = false;
+    values.forEach(function (item) {
+      item.node.hidden = !item.active;
+      if (item.active) {
+        var shortNode = item.node.querySelector('.mt-status-short');
+        var longNode = item.node.querySelector('.mt-status-long');
+        var shortText = tx(item.shortKey, item.shortFallback);
+        var longText = tx(item.longKey, item.longFallback);
+        if (shortNode.textContent !== shortText) shortNode.textContent = shortText;
+        if (longNode.textContent !== longText) longNode.textContent = longText;
+        any = true;
+      }
+    });
+    el.wakeHint.hidden = !any;
+    el.root.classList.toggle('has-footer-status', any);
+    syncDockMetrics();
+  }
   function wakeMessage(key) {
     el.wakeStatus.textContent = key ? tx(key, key) : '';
     el.wakeStatus.hidden = !key;
+    updateFooterStatus();
   }
   function nativeWakePlugin() {
     if (wakePlugin) return wakePlugin;
@@ -777,10 +826,21 @@
       });
     });
   }
+  function setClockVisibility(enabled) {
+    commit(TM.setClockEnabled(state, enabled, now()));
+  }
+
   function render() {
     var compact = isCompact();
     el.clock.hidden = !state.clockEnabled;
-    el.clockOpen.hidden = state.clockEnabled;
+    el.clockToggleIcon.hidden = !state.clockEnabled;
+    el.clockToggleEye.hidden = state.clockEnabled;
+    el.clockToggle.setAttribute('aria-expanded', state.clockEnabled ? 'true' : 'false');
+    el.clockToggle.setAttribute('aria-pressed', state.clockEnabled ? 'true' : 'false');
+    el.clockToggle.setAttribute('aria-label', state.clockEnabled
+      ? tx('timer.clockClose', 'Timer ausblenden und pausieren')
+      : tx('timer.clockOpen', 'Timer einblenden'));
+    el.clockClose.setAttribute('aria-expanded', state.clockEnabled ? 'true' : 'false');
     el.root.classList.toggle('is-points-only', !state.clockEnabled);
     renderTime();
     el.root.setAttribute('data-status', state.status);
@@ -830,16 +890,11 @@
 
     el.sound.setAttribute('aria-pressed', state.sound ? 'true' : 'false');
     el.keepAwake.setAttribute('aria-pressed', state.keepAwake ? 'true' : 'false');
-    el.wakeHint.hidden = !state.keepAwake;
-    el.wakeHint.textContent = state.clockEnabled
-      ? tx('timer.keepAwakeHint', 'Display bleibt an, solange die Zeit läuft (braucht mehr Akku).')
-      : tx('timer.keepAwakePointsHint', 'Display bleibt beim Punktezählen an (braucht mehr Akku).');
-    el.compactLabel.textContent = compact ? tx('timer.normal', 'Normal') : tx('timer.compact', 'Kompakt');
-    el.compactLabel.setAttribute('data-i18n', compact ? 'timer.normal' : 'timer.compact');
+    updateFooterStatus();
+    el.compactLabel.textContent = tx('timer.compact', 'Kompakt');
+    el.compactLabel.setAttribute('data-i18n', 'timer.compact');
     el.compact.setAttribute('aria-pressed', compact ? 'true' : 'false');
-    el.compact.setAttribute('aria-label', compact
-      ? tx('timer.normalAria', 'Zur Normalansicht wechseln')
-      : tx('timer.compactAria', 'Zur Kompaktansicht wechseln'));
+    el.compact.setAttribute('aria-label', tx('timer.compactAria', 'Kompaktansicht'));
     el.compact.hidden = false;
     el.root.classList.toggle('is-compact', compact);
     fitCompactNames();
@@ -1035,6 +1090,9 @@
     el.resetConfirm.hidden = false;
     el.reset.setAttribute('aria-expanded', 'true');
     el.resetNo.focus();
+    if (el.resetConfirm.getBoundingClientRect().bottom > el.footer.getBoundingClientRect().top) {
+      el.resetConfirm.scrollIntoView(true);
+    }
   }
   function hideResetConfirm(focusReset) {
     if (el.resetConfirm.hidden) return;
@@ -1193,7 +1251,11 @@
     el.root = byId('match-timer');
     if (!el.root) return;
     el.clock = byId('mt-clock');
-    el.clockOpen = byId('mt-clock-open');
+    el.footer = byId('mt-footer');
+    el.dockedControls = byId('mt-docked-controls');
+    el.clockToggle = byId('mt-clock-toggle');
+    el.clockToggleIcon = el.clockToggle.querySelector('.mt-clock-icon');
+    el.clockToggleEye = el.clockToggle.querySelector('.section-toggle-eye');
     el.clockClose = byId('mt-clock-close');
     el.warning = byId('mt-storage-warning');
     el.status = byId('mt-status');
@@ -1206,6 +1268,10 @@
     el.keepAwake = byId('mt-keep-awake');
     el.wakeStatus = byId('mt-wake-status');
     el.wakeHint = byId('mt-wake-hint');
+    el.footerStatusSound = byId('mt-status-sound');
+    el.footerStatusKeepAwake = byId('mt-status-keep-awake');
+    el.footerStatusTimer = byId('mt-status-timer');
+    el.footerStatusCompact = byId('mt-status-compact');
     el.compactLabel = byId('mt-compact-label');
     el.compact = byId('mt-compact');
     el.endSetLabel = byId('mt-end-set').querySelector('.mt-tl');
@@ -1312,6 +1378,8 @@
       el.setupPlayerLabel[side] = el.setupPlayer[side].map(function (input) { return doc.querySelector('label[for="' + input.id + '"]'); });
     });
 
+    root.addEventListener('resize', syncDockMetrics);
+    root.addEventListener('orientationchange', syncDockMetrics);
     var loaded = TM.load(storage());
     state = loaded.state;
     storageOk = loaded.readable;
@@ -1322,12 +1390,12 @@
 
     el.primary.addEventListener('click', onPrimary);
     el.clockClose.addEventListener('click', function () {
-      commit(TM.setClockEnabled(state, false, now()));
-      el.clockOpen.focus();
+      setClockVisibility(false);
+      el.clockToggle.focus();
     });
-    el.clockOpen.addEventListener('click', function () {
-      commit(TM.setClockEnabled(state, true, now()));
-      el.clockClose.focus();
+    el.clockToggle.addEventListener('click', function () {
+      setClockVisibility(!state.clockEnabled);
+      el.clockToggle.focus();
     });
     el.mode.addEventListener('change', onMode);
     el.undo.addEventListener('click', onUndo);
@@ -1463,14 +1531,10 @@
       commit(TM.setSound(state, !state.sound));
       /* Bestätigungston im Klick: schaltet zugleich die Audio-Wiedergabe frei (iOS). */
       if (state.sound) beep(660);
-      announce(state.sound ? tx('timer.announce.soundOn', 'Ton an') : tx('timer.announce.soundOff', 'Ton aus'));
     });
     el.keepAwake.addEventListener('click', function () {
       var enabled = !state.keepAwake;
       commit(TM.setKeepAwake(state, enabled));
-      announce(enabled
-        ? el.wakeHint.textContent
-        : tx('timer.announce.keepAwakeOff', 'Bildschirm darf sich wieder abschalten'));
     });
     el.compact.addEventListener('click', function () {
       var enabled = !isCompact();
@@ -1478,6 +1542,14 @@
       if (!commit(TM.setCompact(state, enabled))) render();
       el.compact.focus();
     });
+    function updateKeyboardVisibility() {
+      var active = doc.activeElement;
+      var textInput = active && active.tagName === 'INPUT' &&
+        (active.type === 'text' || active.type === 'search' || active.type === 'email' || active.type === 'tel' || active.type === 'url');
+      doc.body.classList.toggle('mt-keyboard-open', !!textInput);
+    }
+    doc.addEventListener('focusin', updateKeyboardVisibility);
+    doc.addEventListener('focusout', function () { setTimeout(updateKeyboardVisibility, 0); });
     el.reset.addEventListener('click', function () {
       if (el.resetConfirm.hidden) showResetConfirm(); else hideResetConfirm(true);
     });

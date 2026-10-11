@@ -1,7 +1,7 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v164';
+const CACHE_VERSION = 'beachl-turniere-v170';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
@@ -33,6 +33,7 @@ const PRECACHE = [
   './core/match-timer.js',
   './core/match-timer-page.js',
   './core/match-timer.css',
+  './core/section-toggle.css',
   './core/turnier-base.css',
   './core/compat.js',
   './core/compat-flexgap.css',
@@ -48,6 +49,10 @@ const PRECACHE = [
   './core/turnier-store.js',
   './core/turnier-backup.js',
   './core/turnier-ui.js',
+  './core/planning-engine.js',
+  './core/planning-actions.js',
+  './core/team-reorder.js',
+  './core/format-switch.js',
   './core/turnier-i18n.js',
   './core/format-doc-i18n.js',
   './core/i18n/de.js',
@@ -78,7 +83,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.indexOf('beachl-turniere-') === 0 && k !== CACHE_VERSION).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -107,35 +112,45 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
   if (/\.php(?:$|\/)/i.test(url.pathname) || /\/(?:api|backend)\//.test(url.pathname) || req.cache === 'no-store') return;
 
-  if (isFreshFirst(req)) {
-    /* `no-cache` erzwingt eine Revalidierung beim Server (billiges 304), damit
-       nicht der HTTP-Cache des Browsers eine veraltete Seite zurückgibt. */
-    const fresh = new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' });
-    event.respondWith(
-      caches.open(CACHE_VERSION).then(cache =>
-        fetch(fresh).then(res => {
-          if (res && res.status === 200 && res.type === 'basic') cache.put(req, res.clone());
-          return res;
-        }).catch(() =>
-          cache.match(req, { ignoreSearch: true })
-            .then(cached => cached || (req.mode === 'navigate' ? cache.match('./index.html') : undefined))
-        )
-      )
-    );
-    return;
+  const freshFirst = isFreshFirst(req);
+  /* Nur den HTTP-Cache-Modus ändern; Headers, Credentials und übrige
+     Request-Eigenschaften müssen beim Revalidieren erhalten bleiben. */
+  const fresh = freshFirst ? new Request(req, { cache: 'no-cache' }) : req;
+  const cacheReady = caches.open(CACHE_VERSION).catch(error => {
+    console.warn('Turnier-Cache nicht verfügbar:', error);
+    return null;
+  });
+  function cachedResponse() {
+    return cacheReady.then(cache => {
+      if (!cache) return undefined;
+      return cache.match(req, { ignoreSearch: true })
+        .then(cached => cached || (req.mode === 'navigate' ? cache.match('./index.html') : undefined))
+        .catch(error => {
+          console.warn('Turnier-Cache konnte nicht gelesen werden:', error);
+          return undefined;
+        });
+    });
   }
+  let cacheWrite = Promise.resolve();
+  const network = fetch(fresh).then(res => {
+    if (res && res.status === 200 && res.type === 'basic') {
+      const copy = res.clone();
+      cacheWrite = cacheReady.then(cache => cache ? cache.put(req, copy) : undefined).catch(error => {
+        console.warn('Turnier-Cache konnte nicht aktualisiert werden:', error);
+      });
+    }
+    return res;
+  });
 
-  event.respondWith(
-    caches.open(CACHE_VERSION).then(cache =>
-      cache.match(req, { ignoreSearch: true }).then(cached => {
-        const network = fetch(req).then(res => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            cache.put(req, res.clone());
-          }
-          return res;
-        }).catch(() => cached);
-        return cached || network;
-      })
-    )
-  );
+  /* Auch nach einer sofortigen Cache-Antwort muss die Revalidierung fertig
+     werden. Quota-/Cachefehler dürfen erfolgreiche Netzantworten nicht stören. */
+  event.waitUntil(network.then(() => cacheWrite).catch(() => { }));
+  if (freshFirst) {
+    event.respondWith(network.catch(error => cachedResponse().then(cached => {
+      if (cached) return cached;
+      throw error;
+    })));
+  } else {
+    event.respondWith(cachedResponse().then(cached => cached || network));
+  }
 });

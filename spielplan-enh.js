@@ -598,53 +598,8 @@
     }
   }, true);
 
-  /* ------------------------------------------------- Kennzahlen-Übersicht
-     Zweistufig: oben wenige große Kacheln mit den Key-Infos (Teams, Felder,
-     Spiele pro Team, Ende, Zeitreserve), darunter eine ruhige Detailzeile.
-     Die bestehenden Elemente (#rv-…) werden nur umsortiert, damit die
-     bogeneigene Befüllung inkl. is-warn unverändert weiterarbeitet.       */
-  var KPI_MAIN = [
-    ['rv-teams', tx('enh.kpi.teams', 'Teams')], ['rv-participants', tx('enh.kpi.participants', 'Personen')],
-    ['rv-groups', tx('enh.kpi.groups', 'Gruppen')],
-    ['rv-fields', tx('enh.kpi.fields', 'Felder')], ['rv-perTeam', tx('enh.kpi.perTeam', 'Spiele pro Team')],
-    ['rv-perPerson', tx('enh.kpi.perPerson', 'Spiele pro Person')],
-    ['rv-fitEnd', tx('enh.kpi.fitEnd', 'Ende ca.')], ['rv-buffer', tx('enh.kpi.buffer', 'Zeitreserve')]
-  ];
-  var KPI_MORE = [
-    ['rv-mode', tx('enh.kpi.mode', 'Modus')], ['rv-rounds', tx('enh.kpi.rounds', 'Runden')],
-    ['rv-size', tx('enh.kpi.size', 'Baumgröße')], ['rv-byes', tx('enh.kpi.byes', 'Freilose Runde 1')],
-    ['rv-games', tx('enh.kpi.games', 'Spiele')], ['rv-grpGames', tx('enh.kpi.grpGames', 'Spiele Vorrunde')],
-    ['rv-finGames', tx('enh.kpi.finGames', 'Spiele Finalrunde')],
-    ['rv-subsets', tx('enh.kpi.subsets', 'Sätze')], ['rv-perGame', tx('enh.kpi.perGame', 'Zeit pro Spiel (verfügbar / nötig)')],
-    ['rv-duration', tx('enh.kpi.duration', 'Zeitfenster / Bedarf')],
-    ['rv-roundMinutes', tx('kotc.kpi.roundMinutes', 'Min./Runde')]
-  ];
   function layoutKpis() {
-    var box = document.querySelector('.cfgresult');
-    if (!box || box.classList.contains('kpi2') || box.querySelectorAll('.cfgres-item').length < 5) return;
-    var main = document.createElement('div'); main.className = 'kpi-main';
-    var more = document.createElement('div'); more.className = 'kpi-more';
-    function move(list, target) {
-      list.forEach(function (d) {
-        var el = document.getElementById(d[0]);
-        var item = el && el.closest('.cfgres-item');
-        if (!item || item.parentNode !== box) return;
-        item.classList.remove('is-primary');
-        item.setAttribute('data-kpi', d[0].slice(3));
-        var lbl = item.querySelector('.cfgres-lbl');
-        if (lbl) { lbl.setAttribute('title', lbl.textContent); lbl.textContent = d[1]; }
-        if (target === more && lbl) item.insertBefore(lbl, item.firstChild);
-        target.appendChild(item);
-      });
-    }
-    move(KPI_MAIN, main);
-    move(KPI_MORE, more);
-    Array.prototype.slice.call(box.children).forEach(function (rest) {
-      if (rest.classList && rest.classList.contains('cfgres-item')) main.appendChild(rest);
-    });
-    box.appendChild(main);
-    if (more.children.length) box.appendChild(more);
-    box.classList.add('kpi2');
+    if (window.TUI) window.TUI.layoutKpis();
   }
 
   /* ------------------------------------------- Einzelspiel-Timer (App-Leiste)

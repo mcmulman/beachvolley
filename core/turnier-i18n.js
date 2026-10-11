@@ -329,6 +329,7 @@
       '.i18n-switch .ic svg{display:block;width:20px;height:20px;margin-right:6px;border-radius:50%;}' +
       '.i18n-switch .code{font-size:13px;font-weight:800;letter-spacing:.04em;}' +
       '.i18n-switch .lbl{display:none !important;}' +
+      '@media (max-width:767px){.i18n-switch .code{display:none !important;}.i18n-switch .ic svg{margin-right:0;}}' +
       '@media print{.i18n-switch{display:none !important;}}';
     (d.head || d.documentElement).appendChild(st);
   }
@@ -365,7 +366,7 @@
       btn.disabled = true;
       switchTo(target);
     });
-    container.insertBefore(btn, container.firstChild);
+    container.appendChild(btn);
     return btn;
   }
 

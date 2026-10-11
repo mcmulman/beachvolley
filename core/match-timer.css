@@ -11,6 +11,7 @@
    Fallback), kein inset, kein clamp(); Abstände in Flex-Containern über
    margin.
    ========================================================================== */
+@import url("section-toggle.css") screen;
 .mt-body {
   margin: 0;
   min-height: 100vh;
@@ -93,8 +94,10 @@
   max-width: 640px;
   margin: 0 auto;
   padding: 12px 12px 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-area-inset-bottom, 0px))) + 12px);
 }
+/* Fokus/scrollIntoView landen über der angedockten Footer-Leiste statt dahinter. */
+html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-area-inset-bottom, 0px))) + 12px); }
 .mt-card {
   background: #fff;
   border: 1px solid #ccd8e8;
@@ -203,12 +206,12 @@
 #mt-sound .ic-on,
 #mt-sound[aria-pressed="true"] .ic-off,
 #mt-compact .ic-normal,
-.mt.is-compact #mt-compact .ic-compact { display: none; }
+#mt-compact[aria-pressed="true"] .ic-compact { display: none; }
 .mt-btn--primary[data-action="pause"] .ic-pause,
 .mt-btn--primary[data-action="clear"] .ic-clear,
 .mt-btn--stop[data-action="resume"] .ic-play,
 #mt-sound[aria-pressed="true"] .ic-on,
-.mt.is-compact #mt-compact .ic-normal { display: block; }
+#mt-compact[aria-pressed="true"] .ic-normal { display: block; }
 .mt button:disabled { opacity: .4; cursor: default; }
 
 /* ── Spielstand ── */
@@ -498,7 +501,7 @@
   .mt .mt-actions {
     position: -webkit-sticky;
     position: sticky;
-    bottom: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     z-index: 20;
@@ -506,10 +509,6 @@
     padding: 0;
     background: #eef2f7;
     border: 0;
-  }
-  @media (max-width: 360px) {
-    .mt-iconbtn.i18n-switch .code { display: none; }
-    .mt-iconbtn.i18n-switch .ic svg { margin-right: 0; }
   }
   .mt .mt-actions > .mt-toggle { min-height: 56px; }
   .mt.has-settings .mt-actions { position: static; margin: 10px 0 0; padding: 0; border: 0; }
@@ -525,27 +524,12 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  min-height: 44px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  color: #4a5468;
-  cursor: pointer;
 }
 .mt-clock .mt-status { max-width: calc(100% - 88px); }
-.mt-clock-close:hover { background: #eef2f7; color: #1a3a5c; }
-.mt-clock-open { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px; padding: 0; cursor: pointer; }
-.mt-clock-open[hidden] { display: none; }
-/* Einstellungen (4) und Spielaktionen (3) je in einer Zeile: Symbol über
-   kurzer Beschriftung. */
-.mt-toolbar, .mt-actions { display: flex; margin: 0; }
+/* Spielaktionen: Symbol über kurzer Beschriftung. */
+.mt-actions, .mt-reset-toolbar { display: flex; margin: 0; }
 .mt-actions { margin: 10px 0 0; }
-.mt-toolbar > .mt-toggle, .mt-actions > .mt-toggle {
+.mt-reset-toolbar > .mt-toggle, .mt-actions > .mt-toggle {
   -webkit-box-flex: 1;
   flex: 1 1 0;
   min-width: 0;
@@ -559,8 +543,7 @@
   font-size: 12.5px;
   line-height: 1.2;
 }
-.mt-toolbar > .mt-toggle:first-child, .mt-actions > .mt-toggle:first-child { margin-left: 0; }
-.mt-toolbar > .mt-toggle[hidden] { display: none; }
+.mt-reset-toolbar > .mt-toggle:first-child, .mt-actions > .mt-toggle:first-child { margin-left: 0; }
 /* „Satz beenden“ ist die wichtigste Spielaktion: doppelt so breit, gefüllt,
    Symbol neben der Beschriftung. */
 .mt-actions > #mt-end-set {
@@ -575,11 +558,10 @@
 }
 .mt-actions > #mt-end-set .mt-ic { margin: 0 8px 0 0; }
 .mt-actions > #mt-end-set:disabled { color: #4a5468; background: #e3e9f1; border-color: #e3e9f1; opacity: 1; }
-.mt-toolbar .mt-ic, .mt-actions .mt-ic { margin: 0 0 3px; line-height: 1; }
-.mt-toolbar > .mt-toggle { border: 1px solid #c6d2e0; background: #fff; color: #34445c; font-weight: 600; font-size: 12px; }
-.mt-toolbar > .mt-toggle:hover { background: #f1f5fa; }
-.mt-toolbar > .mt-toggle[aria-pressed="true"] { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
-.mt-toolbar .mt-tl, .mt-actions .mt-tl { max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+.mt-reset-toolbar .mt-ic, .mt-actions .mt-ic { margin: 0 0 3px; line-height: 1; }
+.mt-reset-toolbar > .mt-toggle { border: 1px solid #c6d2e0; background: #fff; color: #34445c; font-weight: 600; font-size: 12px; }
+.mt-reset-toolbar > .mt-toggle:hover { background: #f1f5fa; }
+.mt-reset-toolbar .mt-tl, .mt-actions .mt-tl { max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
 .mt-toggle:disabled { opacity: .45; cursor: default; }
 .mt-toggle, .mt-plain {
   min-height: 44px;
@@ -603,7 +585,7 @@
   line-height: 1.4;
 }
 .mt-plain--danger { color: #a61b1b; border-color: #a61b1b; }
-.mt-toolbar > .mt-plain--danger { color: #a61b1b; border-color: #e6b8b8; }
+.mt-reset-toolbar > .mt-plain--danger { color: #a61b1b; border-color: #e6b8b8; }
 .mt-confirm {
   width: 100%;
   margin: 0 0 8px;
@@ -822,6 +804,112 @@
 .mt-reset-toolbar > .mt-toggle { flex-direction: row; }
 .mt-reset-toolbar .mt-ic { margin: 0 8px 0 0; }
 
+.mt-docked-controls {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+}
+.mt-docked-controls[aria-hidden="true"] { display: none; }
+.mt-footer-status {
+  max-width: 648px;
+  margin: 0 auto;
+  padding: 6px 4px 4px;
+  color: #4a5468;
+  background: #fff;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+}
+.mt-footer-status[hidden] { display: none !important; }
+.mt-footer-status-item[hidden] { display: block !important; visibility: hidden; }
+.mt-footer-status-inner { display: flex; max-width: 640px; margin: 0 auto; }
+.mt-footer-status-item {
+  display: block;
+  -webkit-box-flex: 1;
+  flex: 1 1 0;
+  min-width: 44px;
+  margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mt-footer-status-item:first-child { margin-left: 0; }
+.mt-status-short, .mt-status-long { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-status-long { display: none; }
+@media (min-width: 400px) {
+  .mt-status-short { display: none; }
+  .mt-status-long { display: block; }
+}
+.mt-footer {
+  position: relative;
+  z-index: 30;
+  padding: 6px 4px;
+  padding-right: calc(4px + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(4px + env(safe-area-inset-left, 0px));
+  background: #fff;
+  border-top: 1px solid #c6d2e0;
+  box-shadow: 0 -2px 12px rgba(26, 58, 92, .12);
+}
+.mt-footer-inner { display: flex; max-width: 640px; margin: 0 auto; }
+.mt-footer-button {
+  position: relative;
+  display: flex;
+  -webkit-box-flex: 1;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 56px;
+  margin: 0 0 0 2px;
+  padding: 4px 2px;
+  border: 1px solid #c6d2e0;
+  border-radius: 10px;
+  color: #34445c;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mt-footer-button:first-child { margin-left: 0; }
+.mt-footer-check {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1a3a5c;
+  visibility: hidden;
+  pointer-events: none;
+}
+.mt-footer-button[aria-pressed="true"] .mt-footer-check { visibility: visible; }
+.mt-footer-button .mt-ic { display: block; margin: 0 0 2px; line-height: 1; }
+.mt-footer-button .mt-ic svg[hidden] { display: none !important; }
+.mt-footer-button .mt-tl { max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; }
+.mt-footer-button[aria-pressed="true"], .mt-footer-clock[aria-expanded="true"] {
+  color: #fff;
+  background: #1a3a5c;
+  border-color: #1a3a5c;
+}
+.mt-footer-button[aria-pressed="false"], .mt-footer-clock[aria-expanded="false"] {
+  color: #34445c;
+  background: #f7f9fc;
+  border-color: #65758b;
+}
+.mt-footer-button:focus-visible { outline: 3px solid #ffb300; outline-offset: 2px; }
+.mt-footer[aria-hidden="true"] { display: none; }
+.mt-keyboard-open .mt-docked-controls { display: none; }
+.mt-keyboard-open .mt, .mt-keyboard-open .mt.is-compact,
+.mt-keyboard-open .mt.has-footer-status, .mt-keyboard-open .mt.is-compact.has-footer-status { padding-bottom: 20px; }
+
 /* ── Startdialog: Namen (+ Regeln eingeklappt) ── */
 /* .mt-modal-box (später, zentriert) überstimmen: Felder links ausgerichtet. */
 .mt-modal-box.mt-setup-box { text-align: left; }
@@ -938,7 +1026,7 @@
 .mt-modal button:focus:not(:focus-visible) { outline: none; }
 
 /* ── Kompaktansicht ── */
-.mt.is-compact { padding: 6px 6px 10px; }
+.mt.is-compact { padding: 6px 6px 10px; padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-area-inset-bottom, 0px))) + 12px); }
 .mt.is-compact .mt-clock { padding: 6px; }
 .mt.is-compact .mt-status { font-size: 12px; padding: 1px 8px; }
 .mt.is-compact .mt-time { font-size: 40px; margin: 2px 0; }
@@ -984,16 +1072,7 @@
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
-.mt.is-compact .mt-reset-toolbar { justify-content: flex-end; }
-.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) > .mt-toggle {
-  flex: 1 1 0; flex-direction: row; min-height: 44px; padding: 6px;
-}
-.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) .mt-ic { margin: 0; }
-.mt.is-compact .mt-quick-controls > .mt-toolbar:not(.mt-reset-toolbar) .mt-tl {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
-}
-.mt.is-compact .mt-reset-toolbar { margin-top: 6px; }
+.mt.is-compact .mt-reset-toolbar { justify-content: flex-end; margin-top: 6px; }
 .mt.is-compact .mt-reset-toolbar > #mt-reset {
   flex: 0 0 44px; min-height: 44px; padding: 6px;
 }
@@ -1039,8 +1118,6 @@
 @media (max-width: 300px) {
   .mt { padding-left: 6px; padding-right: 6px; }
   .mt.is-compact .mt-clock-actions { grid-template-columns: repeat(2, minmax(44px, 1fr)); grid-gap: 6px; gap: 6px; }
-  .mt-iconbtn.i18n-switch .code { display: none; }
-  .mt-iconbtn.i18n-switch .ic svg { margin-right: 0; }
   /* Smartwatch-Größe: Kopfleiste scrollt weg, damit Zeit, Spielstand und
      „+1“ den ganzen Bildschirm nutzen; der Status steckt dann in Farbe der
      Zeit und Beschriftung der Haupttaste. */
@@ -1078,6 +1155,6 @@
 }
 @media print {
   .mt-cur-bar,
-  .mt-bar, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-serve, .mt-actions, .mt-mode, .mt-modal,
+  .mt-bar, .mt-docked-controls, .mt-settings, .mt-clock-actions, .mt-plus, .mt-corr, .mt-serve, .mt-actions, .mt-mode, .mt-modal,
   .mt-transfer { display: none !important; }
 }

@@ -11,7 +11,7 @@
    ändert nur die Anzahl sichtbarer Satzspalten, nie die gespeicherten Daten.
    ========================================================================== */
 (function (root, factory) {
-  const api = factory(
+  const api = factory(root,
     root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null),
     root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null)
   );
@@ -20,7 +20,7 @@
     root.TUI = api;
     api.wireFormatInfo(root.document);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC, TStore) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, TC, TStore) {
   'use strict';
 
   /* ------------------------------------------------------------ Hilfsmittel */
@@ -37,7 +37,9 @@
   }
   function tx(key, de, params) {
     const I = i18n();
-    if (I) return I.t(key, params);
+    const text = I ? I.t(key, params) : key;
+    // A missing key (e.g. an older cached dictionary) must never surface raw.
+    if (text !== key) return text;
     const s = de && typeof de === 'object'
       ? (params && Number(params.count) === 1 ? de.one : de.other) : de;
     return String(s).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? String(params[k]) : m));
@@ -189,7 +191,7 @@
     const side = (cls, ref, team) =>
       '<span class="pside ' + cls + '">'
       + '<span class="t ' + (cls === 'pside-a' ? 't-a' : 't-b') + '" '
-      + (team != null ? 'data-team="' + team + '"' : '') + '>'
+      + (team != null ? 'data-team="' + esc(team) + '"' : '') + '>'
       + cardNameHtml(ref, team, ctx) + '</span></span>';
 
     const extra = m.label ? '<span class="mnote-slot">' + esc(term(m.label)) + '</span>' : '';
@@ -306,7 +308,7 @@
         + '<span class="rmode">' + esc(ctx.modeLabel || '') + '</span>';
       if (byes.length) {
         meta += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
-          + byes.map(t => '<span data-team="' + t + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
+          + byes.map(t => '<span data-team="' + esc(t) + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
           + '</span>';
       }
       meta += '</span>';
@@ -484,7 +486,7 @@
       const bdDisp = per ? (Math.round(effBd * 100) / 100) : effBd;
       const teamHtml = ctx.teamNameHtml ? ctx.teamNameHtml(r.team) : esc(ctx.teamLabel(r.team));
 
-      html += '<tr' + (row.shared ? ' class="is-tie"' : '') + ' data-team="' + r.team + '">';
+      html += '<tr' + (row.shared ? ' class="is-tie"' : '') + ' data-team="' + esc(r.team) + '">';
 
       if (editable) {
         html += '<td class="pl mstd-cell' + (row.hasPlace ? ' is-manual' : '') + '">'
@@ -532,7 +534,7 @@
       if (editable) {
         const hasAny = row.hasPlace || row.dPts || row.dBd;
         html += '<td class="mstd-actcol noprint">' + (hasAny
-          ? '<button type="button" class="mstd-reset-row" data-team="' + r.team + '" title="'
+          ? '<button type="button" class="mstd-reset-row" data-team="' + esc(r.team) + '" title="'
             + esc(tx('ui.manual.resetRowTitle', 'Korrektur für dieses Team zurücksetzen')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
           : '') + '</td>';
       }
@@ -609,7 +611,7 @@
       const teamHtml = p.team != null
         ? (ctx && ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : esc(ctx ? ctx.teamLabel(p.team) : String(p.team)))
         : '&nbsp;';
-      html += '<tr' + (p.team != null ? ' data-team="' + p.team + '"' : '') + '>';
+      html += '<tr' + (p.team != null ? ' data-team="' + esc(p.team) + '"' : '') + '>';
       if (editable) {
         html += '<td class="pl mstd-cell' + (row.hasPlace ? ' is-manual' : '') + '">'
           + '<input type="number" min="1" class="mstd-in" data-field="place" value="' + row.place + '"></td>'
@@ -617,7 +619,7 @@
           + '<td class="src mstd-cell' + (row.hasSource ? ' is-manual' : '') + '">'
           + '<input type="text" class="mstd-in mstd-text" data-field="source" value="' + esc(row.source) + '">'
           + (p.team != null && (row.hasPlace || row.hasSource)
-              ? ' <button type="button" class="mstd-reset-row" data-team="' + p.team + '" title="'
+              ? ' <button type="button" class="mstd-reset-row" data-team="' + esc(p.team) + '" title="'
                 + esc(tx('ui.manual.resetRow', 'Zurücksetzen')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
               : '')
           + '</td>';
@@ -788,14 +790,14 @@
     html += '<td class="mstd-actcol noprint"></td></tr>';
     /* Team-Zeilen */
     teams.forEach(t => {
-      html += '<tr class="grp" data-team="' + t + '" data-line="pts">'
-        + '<td class="tname teamcol" rowspan="2" data-team-name="' + t + '"><span class="t-line">Team ' + esc(t) + '</span></td>'
+      html += '<tr class="grp" data-team="' + esc(t) + '" data-line="pts">'
+        + '<td class="tname teamcol" rowspan="2" data-team-name="' + esc(t) + '"><span class="t-line">Team ' + esc(t) + '</span></td>'
         + '<td class="lbl">' + ptsLabel + '</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
       html += '<td class="mstd-cell noprint" data-corr="dPts"></td>'
         + '<td class="pos" rowspan="2" data-pos></td>'
         + '<td class="mstd-actcol mstd-rowact noprint" rowspan="2" data-actcol></td></tr>';
-      html += '<tr data-team="' + t + '" data-line="bd"><td class="lbl">' + bdLabel + '</td>';
+      html += '<tr data-team="' + esc(t) + '" data-line="bd"><td class="lbl">' + bdLabel + '</td>';
       for (let r = 1; r <= roundCount; r++) html += '<td class="rcell" data-round="' + r + '"></td>';
       html += '<td class="mstd-cell noprint" data-corr="dBd"></td></tr>';
     });
@@ -829,11 +831,11 @@
   /* Papierkorb-Button „Team endgültig löschen“ – gleiche Funktion im
      Teamnamen- und im Ausfall-Panel (Bogen delegiert [data-remove-team]). */
   function teamDelBtnHtml(t, label, canRemove) {
-    return '<button type="button" class="team-del" data-remove-team="' + t + '"'
+    return '<button type="button" class="team-del" data-remove-team="' + esc(t) + '"'
       + (canRemove ? '' : ' disabled')
       + ' title="' + esc(canRemove ? tx('ui.team.deleteTitle', 'Team endgültig löschen')
         : tx('ui.team.deleteMin', 'Mindestanzahl an Teams erreicht'))
-      + '" aria-label="' + esc(tx('ui.team.deleteAria', '{label} löschen', { label: label })) + '">'
+      + '" aria-label="' + esc(tx('ui.team.deleteAria', '{label} endgültig entfernen', { label: label })) + '">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
       + '</button>';
   }
@@ -842,7 +844,7 @@
     const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
     return teams.map(t => {
       const row = '<label class="nrow"><span class="nnum">' + t + '</span>'
-        + '<input type="text" data-name-input="' + t + '" value="' + esc(teamNames[t] || '')
+        + '<input type="text" data-name-input="' + esc(t) + '" value="' + esc(teamNames[t] || '')
         + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false"></label>';
       if (!o.removable) return row;
       return '<div class="nrow-del">' + row
@@ -863,7 +865,7 @@
     const o = opts || {};
     const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
     return teams.map(t => {
-      const chk = '<label class="chk"><input type="checkbox" data-absent-input="' + t + '"'
+      const chk = '<label class="chk"><input type="checkbox" data-absent-input="' + esc(t) + '"'
         + (set.has(t) ? ' checked' : '') + '> ' + esc(ctx.teamLabel(t)) + '</label>';
       if (!o.removable) return chk;
       return '<div class="absent-row">' + chk
@@ -1149,21 +1151,95 @@
     }
   }
 
+  function wireSectionToggle(content, trigger, closeContainer, options) {
+    if (!content || !trigger || !closeContainer || content.__sectionToggleWired) return null;
+    options = options || {};
+    content.__sectionToggleWired = true;
+    const related = options.relatedContent || [];
+    const controls = [content.id].concat(related.map(function (panel) { return panel.id; })).join(' ');
+
+    const close = content.ownerDocument.createElement('button');
+    close.type = 'button';
+    close.className = 'mt-clock-close section-toggle-close noprint';
+    close.setAttribute('data-i18n-attr', 'aria-label:' + options.hideKey);
+    close.setAttribute('aria-label', tx(options.hideKey, options.hideText || 'Hide section'));
+    close.setAttribute('aria-controls', controls);
+    close.innerHTML = '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>';
+    if (options.closeFirst && closeContainer === content && content.parentNode) {
+      close.classList.add('section-toggle-close--external');
+      content.parentNode.insertBefore(close, content);
+    } else if (options.closeFirst) closeContainer.insertBefore(close, closeContainer.firstChild);
+    else closeContainer.appendChild(close);
+
+    const label = content.ownerDocument.createElement('span');
+    label.setAttribute('data-i18n', options.showKey);
+    label.textContent = tx(options.showKey, options.showText || 'Show section');
+    trigger.removeAttribute('data-i18n');
+    trigger.classList.add('section-toggle-open');
+    trigger.innerHTML = '<svg class="nico section-toggle-eye" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>';
+    trigger.appendChild(label);
+    trigger.setAttribute('data-i18n-attr', 'aria-label:' + options.showKey);
+    trigger.setAttribute('aria-label', tx(options.showKey, options.showText || 'Show section'));
+    trigger.setAttribute('aria-controls', controls);
+    const I = i18n();
+    if (I) I.apply(trigger);
+
+    const prefKey = 'BEACHL.uiSection.v1:'
+      + (root.location ? root.location.pathname : '') + ':' + (options.preferenceId || content.id);
+    let initial = options.defaultExpanded !== false;
+    try {
+      const saved = root.localStorage && root.localStorage.getItem(prefKey);
+      if (saved === '0') initial = false;
+      else if (saved === '1') initial = true;
+    } catch (e) {}
+
+    function setExpanded(expanded, save, focus) {
+      content.hidden = !expanded;
+      trigger.hidden = expanded;
+      close.hidden = !expanded;
+      if (options.collapsedContent) options.collapsedContent.hidden = expanded;
+      related.forEach(function (panel) {
+        panel.classList.toggle('section-content-collapsed', !expanded);
+      });
+      trigger.setAttribute('aria-expanded', String(expanded));
+      close.setAttribute('aria-expanded', String(expanded));
+      if (save) {
+        try {
+          if (root.localStorage) root.localStorage.setItem(prefKey, expanded ? '1' : '0');
+        } catch (e) {}
+      }
+      if (focus) {
+        if (!expanded) trigger.focus();
+        else {
+          const target = options.focusTarget || (options.focusSelector ? content.querySelector(options.focusSelector) : close);
+          (target || close).focus();
+        }
+      }
+    }
+
+    trigger.addEventListener('click', function () { setExpanded(true, true, true); });
+    close.addEventListener('click', function () { setExpanded(false, true, true); });
+    setExpanded(initial, false, false);
+    return { trigger, close, setExpanded };
+  }
+
   function wireFormatInfo(doc) {
-    if (!doc || doc.__formatInfoWired) return;
-    doc.__formatInfoWired = true;
-    doc.addEventListener('click', event => {
-      const button = event.target.closest ? event.target.closest('[data-format-info-toggle]') : null;
-      if (!button) return;
+    if (!doc) return;
+    const buttons = doc.querySelectorAll('[data-format-info-toggle]');
+    for (let i = 0; i < buttons.length; i++) {
+      const button = buttons[i];
       const content = doc.getElementById(button.getAttribute('aria-controls'));
-      if (!content) return;
-      const expanded = button.getAttribute('aria-expanded') === 'true';
-      button.setAttribute('aria-expanded', String(!expanded));
-      content.hidden = expanded;
-      const label = button.querySelector('.format-info-toggle-label');
-      if (label) label.textContent = tx(expanded ? 'ui.format.details' : 'ui.format.hide',
-        expanded ? 'Wertung & Details anzeigen' : 'Wertung & Details ausblenden');
-    });
+      if (!content) continue;
+      wireSectionToggle(content, button, content, {
+        closeFirst: true,
+        defaultExpanded: button.getAttribute('aria-expanded') === 'true',
+        preferenceId: 'details-' + content.id,
+        showKey: 'ui.section.detailsShow',
+        hideKey: 'ui.section.detailsHide',
+        showText: 'Wertung & Details anzeigen',
+        hideText: 'Wertung & Details ausblenden'
+      });
+    }
   }
 
   function syncModeSummary(doc) {
@@ -1550,8 +1626,12 @@
 
   /* Kompakte Zeitplan-Uebersicht (zweispaltig): auf dem Ausdruck sieht die
      Turnierleitung auf einen Blick, wann welche Runde startet.              */
-  function timeTableHtml(slots, endLabel) {
-    const rows = (slots || []).map(s => ({ t: fmtTime(s.startMin), n: slotTitle(s) }));
+  function timeTableHtml(slots, endLabel, pauses) {
+    const rows = (slots || []).map(s => ({ min: s.startMin, t: fmtTime(s.startMin), n: slotTitle(s) }));
+    (pauses || []).forEach(p => rows.push({ min: p.startMin, pause: true,
+      t: fmtTime(p.startMin) + '–' + fmtTime(p.endMin),
+      n: tx('planning.pauseRow', 'Pause') }));
+    rows.sort((a, b) => a.min - b.min);
     if (endLabel) rows.push({ t: endLabel.time, n: endLabel.text });
     const half = Math.ceil(rows.length / 2);
     const thTime = esc(tx('ui.timeplan.time', 'Zeit'));
@@ -1560,27 +1640,91 @@
       + '<th>' + thTime + '</th><th>' + thRound + '</th><th>' + thTime + '</th><th>' + thRound + '</th></tr></thead><tbody>';
     for (let i = 0; i < half; i++) {
       const a = rows[i], b = rows[i + half];
-      html += '<tr><td>' + (a ? esc(a.t) : '') + '</td><td>' + (a ? esc(a.n) : '') + '</td>'
-        + '<td>' + (b ? esc(b.t) : '') + '</td><td>' + (b ? esc(b.n) : '') + '</td></tr>';
+      const cells = r => '<td' + (r && r.pause ? ' class="planning-pause"' : '') + '>' + (r ? esc(r.t) : '') + '</td><td'
+        + (r && r.pause ? ' class="planning-pause"' : '') + '>' + (r ? esc(r.n) : '') + '</td>';
+      html += '<tr>' + cells(a) + cells(b) + '</tr>';
     }
     return html + '</tbody></table>';
   }
 
-  /* ===================================================== KENNZAHLEN-KACHELN
-     Die Planungswerte, die der Bogen "Alle gegen Alle" schon lange zeigt:
-     Wie viel Zeit steht je Spiel zur Verfuegung, wie viel wird mindestens
-     gebraucht, wann waere man fruehestens fertig. Fuellt nur die Kacheln,
-     die im jeweiligen Bogen vorhanden sind.
-       o = { slots, startMin, needEndMin, windowStartMin, windowEndMin,
-             setMode, games, modeLabel, teams }                              */
-  function fillTimeKpis(o) {
-    const set = (id, txt, warn) => {
+  function fillKpiNote(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  function setKpi(id, text, warn) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    const item = el.closest('.cfgres-item');
+    if (item) item.classList.toggle('is-warn', !!warn);
+  }
+
+  function planningRounds(plan, setMode) {
+    const phases = plan.groupRounds
+      ? [{ rounds: plan.groupRounds, mode: setMode },
+        { rounds: plan.finalRounds, mode: plan.finalSetMode }]
+      : [{ rounds: plan.finalRounds || plan.rounds || [], mode: plan.finalSetMode || setMode }];
+    const rounds = [];
+    phases.forEach(phase => (phase.rounds || []).forEach(round => {
+      const mode = round.setMode || phase.mode;
+      rounds.push({ round, mode, minutes: TC.MODE_MIN[String(mode)] || 25 });
+    }));
+    return rounds;
+  }
+
+  /* Use the effective round/phase modes, not a new selection for frozen rounds. */
+  function neededFieldsForPlan(plan, windowMin, setMode, maxFields) {
+    if (plan.planning && typeof TPlanning !== 'undefined') return TPlanning.neededFields(plan, windowMin, maxFields);
+    const rounds = planningRounds(plan, setMode);
+    const minutes = rounds.map(entry => entry.minutes);
+    if (!plan.groupRounds && (!minutes.length || minutes.every(value => value === minutes[0]))) {
+      return TC.neededFields(rounds.map(entry => entry.round), windowMin,
+        minutes[0] || TC.MODE_MIN[String(setMode)] || 25, maxFields || 10);
+    }
+    for (let fields = 1; fields <= (maxFields || 10); fields++) {
+      const need = rounds.reduce((total, entry) => total
+        + TC.assignSlots([entry.round], fields, { teamOf: plan.resolve }).length * entry.minutes, 0);
+      if (need <= windowMin) return fields;
+    }
+    return null;
+  }
+
+  function fillFieldKpi(selected, needed) {
+    const warn = needed != null && selected < needed;
+    setKpi('rv-fields', selected, warn);
+    const note = needed == null
+      ? ''
+      : selected < needed
+        ? tx('ui.kpi.fieldsNeeded', 'mind. {n} nötig', { n: needed })
+        : selected > needed
+          ? tx('ui.kpi.fieldsEnough', '{n} reichen', { n: needed }) : '';
+    fillKpiNote('rv-fitFields', note);
+  }
+
+  /* Preserve the labels and their DOM reading order, including after a language change. */
+  function layoutKpis() {
+    const box = document.querySelector('.cfgresult');
+    if (!box || box.classList.contains('kpi2')) return;
+    const main = document.createElement('div'); main.className = 'kpi-main';
+    const more = document.createElement('div'); more.className = 'kpi-more';
+    const primary = ['rv-teams', 'rv-participants', 'rv-groups', 'rv-fields', 'rv-courts',
+      'rv-perTeam', 'rv-perPerson', 'rv-duration', 'rv-fitEnd', 'rv-end'];
+    primary.forEach(id => {
       const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = txt;
-      const item = el.closest ? el.closest('.cfgres-item') : null;
-      if (item) item.classList.toggle('is-warn', !!warn);
-    };
+      if (el && el.closest('.cfgres-item')) main.appendChild(el.closest('.cfgres-item'));
+    });
+    Array.prototype.slice.call(box.children).forEach(item => {
+      if (item.classList.contains('cfgres-item')) more.appendChild(item);
+    });
+    box.appendChild(main);
+    if (more.children.length) box.appendChild(more);
+    box.classList.add('kpi2');
+  }
+
+  function fillTimeKpis(o) {
     const fmtDur = m => {
       const v = Math.max(0, Math.round(m));
       return Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0') + ' h';
@@ -1588,25 +1732,253 @@
     const slots = o.slots || [];
     const winMin = Math.max(0, o.windowEndMin - o.windowStartMin);
     const needMin = Math.max(0, o.needEndMin - o.startMin);
-    const minPerGame = TC.MODE_MIN[String(o.setMode)] || 25;
-    const availPerGame = slots.length ? Math.floor(winMin / slots.length) : 0;
-    const def = TC.modeDef(o.setMode) || {};
-    const setsMin = TC.isMulti(o.setMode) ? 2 : 1;
-    const setsMax = TC.isMulti(o.setMode) && TC.hasDecidingSet(o.setMode) ? 3 : setsMin;
-    const games = o.games || 0;
-    const setsLo = games * setsMin, setsHi = games * setsMax;
-    const perSet = Math.round(minPerGame / setsMax);
+    const rounds = o.plan ? planningRounds(o.plan, o.setMode) : [];
+    const durations = slots.map(slot => slot.minutes || TC.MODE_MIN[String(o.setMode)] || 25);
+    const minPerGame = durations.length ? Math.min.apply(null, durations) : 0;
+    const maxPerGame = durations.length ? Math.max.apply(null, durations) : 0;
+    const retimeMin = o.plan && o.plan.planning ? o.plan.planning.retimeMin : null;
+    const lockedSlots = retimeMin == null ? [] : slots.filter(s => s.lockedCount);
+    const playableSlots = retimeMin == null ? slots.length : slots.filter(s => s.matches.some(m => m) && !s.lockedCount).length;
+    const availableStart = retimeMin == null ? o.windowStartMin
+      : Math.max(o.windowStartMin, retimeMin,
+          lockedSlots.reduce((end, s) => Math.max(end, s.endMin), o.windowStartMin));
+    let pauseMin = 0, pauseEnd = availableStart;
+    (o.plan && o.plan.planningPauses || []).forEach(p => {
+      const start = Math.max(availableStart, pauseEnd, p.startMin);
+      const end = Math.min(o.windowEndMin, p.endMin);
+      if (end > start) pauseMin += end - start;
+      pauseEnd = Math.max(pauseEnd, end);
+    });
+    const availableMin = o.windowEndMin - availableStart - pauseMin;
+    const availPerGame = playableSlots ? Math.max(0, Math.floor(availableMin / playableSlots)) : 0;
+    const setCounts = (mode, games) => {
+      const min = TC.isMulti(mode) ? 2 : 1;
+      const max = TC.hasDecidingSet(mode) ? 3 : min;
+      return [games * min, games * max];
+    };
+    const sets = rounds.length ? rounds.reduce((total, entry) => {
+      const count = setCounts(entry.mode, entry.round.matches.length);
+      return [total[0] + count[0], total[1] + count[1]];
+    }, [0, 0]) : setCounts(o.setMode, o.games || 0);
+    const setsLo = sets[0], setsHi = sets[1];
+    const over = needMin > winMin;
+    const modes = Array.from(new Set(rounds.map(entry => entry.mode)));
+    if (o.modeLabel != null) {
+      const label = modes.length ? modes.map(mode => term(TC.modeDef(mode).label)).join(' / ') : o.modeLabel;
+      setKpi('rv-mode', label);
+      fillKpiNote('rv-modeNote', modes.some(mode => mode !== o.setMode)
+        ? tx('ui.kpi.frozenModes', 'Gestartete Runden behalten ihren Satzmodus') : '');
+    }
+    if (o.teams != null) setKpi('rv-teams', o.teams);
+    setKpi('rv-fitEnd', fmtTime(o.needEndMin), o.needEndMin > o.windowEndMin);
+    fillKpiNote('rv-fitEndNote', o.needEndMin > o.windowEndMin
+      ? tx('ui.kpi.endLate', 'nach Ende {time}', { time: fmtTime(o.windowEndMin) }) : '');
+    setKpi('rv-subsets', setsLo === setsHi ? setsLo : setsLo + '–' + setsHi);
+    setKpi('rv-perGame', tx('ui.kpi.minutes', '{n} Min.',
+      { n: minPerGame === maxPerGame ? minPerGame : minPerGame + '–' + maxPerGame }), over);
+    const mixed = minPerGame !== maxPerGame;
+    fillKpiNote('rv-perGameNote', !mixed && availPerGame === minPerGame ? '' : mixed
+      ? (over ? tx('ui.kpi.gameAverageShort', 'nur {n} Min. im Schnitt verfügbar', { n: availPerGame })
+        : tx('ui.kpi.gameAverage', '{n} Min. im Schnitt verfügbar', { n: availPerGame }))
+      : (over ? tx('ui.kpi.gameShort', 'nur {n} Min. verfügbar', { n: availPerGame })
+        : tx('ui.kpi.gameAvailable', '{n} Min. verfügbar', { n: availPerGame })));
+    setKpi('rv-duration', fmtDur(needMin), over);
+    fillKpiNote('rv-durationNote', tx('ui.kpi.window', 'Zeitfenster {time}', { time: fmtDur(winMin) })
+      + ' · ' + (over
+        ? tx('ui.kpi.overrun', '{time} zu lang', { time: fmtDur(needMin - winMin) })
+        : tx('ui.kpi.reserve', '{time} Reserve', { time: fmtDur(winMin - needMin) })));
+  }
 
-    if (o.modeLabel != null) set('rv-mode', o.modeLabel);
-    if (o.teams != null) set('rv-teams', o.teams);
-    set('rv-fitEnd', fmtTime(o.needEndMin), o.needEndMin > o.windowEndMin);
-    set('rv-subsets', (setsLo === setsHi ? setsLo : setsLo + '–' + setsHi)
-      + tx('ui.kpi.perSet', ' · ≈{min} Min/Satz', { min: perSet }));
-    set('rv-perGame', tx('ui.kpi.perGame', '{avail} / {min} Min', { avail: availPerGame, min: minPerGame }),
-      availPerGame < minPerGame);
-    set('rv-duration', fmtDur(winMin) + ' / ' + fmtDur(needMin), needMin > winMin);
-    set('rv-buffer', (winMin - needMin >= 0 ? '+' : '−') + fmtDur(Math.abs(winMin - needMin)),
-      winMin < needMin);
+  /* Planungsmeldung unter den KPI: die bogenspezifische Endzeit-Meldung (o.message)
+     als normale .notebox zwischen Infoleiste und Aktionen, darunter nur Optionen, die
+     ein Engine-Neuaufbau (o.build) als passend bestätigt. Angewendet wird über den
+     normalen change-Pfad der Konfig-Felder, also mit save() und Rückgängig-Toast. */
+  let fixCache = { key: null, result: null };
+  let fixObserver = null;
+
+  function planFits(plan, cfg, setMode) {
+    const start = TC.toMin(cfg.startTime), end = TC.toMin(cfg.endTime);
+    if (start == null || end == null) return true;
+    if (plan.endMin > end) return false;
+    const need = neededFieldsForPlan(plan, end - start, setMode, 10);
+    return need == null || +cfg.fields >= need;
+  }
+
+  function fixControl(id) {
+    const el = document.getElementById(id);
+    if (!el || el.disabled) return null;
+    const field = el.closest('.cfgfield');
+    return field && field.hidden ? null : el;
+  }
+
+  function fixOptions(el) {
+    return Array.prototype.map.call(el.options, option => option.value).filter(value => value !== '');
+  }
+
+  /* Vorschläge in fester Priorität: mildester noch passender Satzmodus, dann weniger
+     Runden, dann mehr (nutzbare) Felder, notfalls eine Kombination. Eine spätere Endzeit
+     ist nachrangig, weil die Turnierlaufzeit meist feststeht. */
+  function planFixes(o) {
+    const cfg = o.config;
+    if (planFits(o.plan, cfg, o.setMode)) return null;
+    const probe = patch => {
+      const next = Object.assign({}, cfg, patch);
+      try { return { plan: o.build(next), cfg: next }; } catch (e) { return null; }
+    };
+    const fits = patch => {
+      const p = probe(patch);
+      return !!p && planFits(p.plan, p.cfg, p.cfg.setMode);
+    };
+    const modeLabel = mode => term(TC.modeDef(mode).label);
+    const fixes = [];
+    let modes = null;
+    [['setMode', cfg.setMode, 'ui.kpi.fixMode', 'Kürzer: {mode}'],
+      ['finalSetMode', o.plan.finalSetMode || cfg.finalSetMode, 'ui.kpi.fixFinalMode', 'Finalrunde kürzer: {mode}']]
+      .some(entry => {
+        const el = entry[0] in cfg ? fixControl(entry[0]) : null;
+        const current = TC.MODE_MIN[String(entry[1])];
+        if (!el || !current) return false;
+        const shorter = fixOptions(el).filter(mode => TC.MODE_MIN[mode] < current)
+          .sort((a, b) => TC.MODE_MIN[b] - TC.MODE_MIN[a]);
+        if (!modes) modes = { id: entry[0], list: shorter };
+        const value = shorter.find(mode => fits({ [entry[0]]: mode }));
+        if (value) fixes.push({ set: [[entry[0], value]], label: tx(entry[2], entry[3], { mode: modeLabel(value) }) });
+        return !!value;
+      });
+    const roundsEl = fixControl('roundCount');
+    let roundValues = [];
+    if (roundsEl && o.plan.rounds) {
+      // Not below played rounds and at most halved, so the format remains meaningful.
+      const played = o.plan.rounds.reduce((max, round) => round.frozen ? Math.max(max, round.round) : max,
+        Math.ceil(o.plan.rounds.length / 2));
+      roundValues = fixOptions(roundsEl).map(Number)
+        .filter(n => n >= played && n < o.plan.rounds.length).sort((a, b) => b - a);
+      const value = roundValues.find(n => fits({ rounds: n }));
+      if (value) fixes.push({ set: [['roundCount', String(value)]], label: tx('ui.kpi.fixRounds', { one: 'Auf {count} Runde reduzieren', other: 'Auf {count} Runden reduzieren' }, { count: value }) });
+    }
+    // Only selectable court counts: the select is capped at the games playable in parallel.
+    const fieldsEl = fixControl('fieldCount');
+    const fieldValues = fieldsEl ? fixOptions(fieldsEl).map(Number).filter(n => n > +cfg.fields).sort((a, b) => a - b) : [];
+    const fieldValue = fieldValues.find(n => fits({ fields: n }));
+    if (fieldValue) fixes.push({ set: [['fieldCount', String(fieldValue)]], label: tx('ui.kpi.fixFields', { one: 'Auf {count} Feld erhöhen', other: 'Auf {count} Felder erhöhen' }, { count: fieldValue }) });
+    if (!fixes.length && modes) {
+      const control = modes.id === 'setMode' ? 'setMode' : 'finalSetMode';
+      const key = modes.id;
+      const combo = [].concat.apply([], modes.list.map(mode => roundValues.map(n => ({ mode, rounds: n }))
+        .concat(fieldValues.map(n => ({ mode, fields: n })))))
+        .find(c => fits(c.rounds ? { [key]: c.mode, rounds: c.rounds } : { [key]: c.mode, fields: c.fields }));
+      if (combo) fixes.push(combo.rounds
+        ? { set: [[control, combo.mode], ['roundCount', String(combo.rounds)]],
+          label: tx('ui.kpi.fixModeRounds', { one: '{mode}, {count} Runde', other: '{mode}, {count} Runden' }, { mode: modeLabel(combo.mode), count: combo.rounds }) }
+        : { set: [[control, combo.mode], ['fieldCount', String(combo.fields)]],
+          label: tx('ui.kpi.fixModeFields', { one: '{mode}, {count} Feld', other: '{mode}, {count} Felder' }, { mode: modeLabel(combo.mode), count: combo.fields }) });
+    }
+    let hint = '';
+    if (!fixes.length && modes && modes.list.length) {
+      const shortest = modes.list[modes.list.length - 1];
+      const p = probe({ [modes.id]: shortest });
+      const over = p ? p.plan.endMin - TC.toMin(cfg.endTime) : 0;
+      if (over > 0) hint = tx('ui.kpi.fixShortest', 'Auch mit „{mode}“ noch {time} zu lang.',
+        { mode: modeLabel(shortest), time: Math.floor(over / 60) + ':' + String(over % 60).padStart(2, '0') + ' h' });
+    }
+    const primary = fixes.slice(0, 3);
+    const endMin = Math.ceil(o.plan.endMin / 5) * 5;
+    if (fixControl('endTime') && endMin < 24 * 60 && endMin > TC.toMin(cfg.endTime)
+      && fits({ endTime: TC.fromMin(endMin) })) {
+      primary.push({ set: [['endTime', TC.fromMin(endMin)]], secondary: true, label: tx('ui.kpi.fixEnd', 'Ende auf {time} verlängern', { time: TC.fromMin(endMin) }) });
+    }
+    return { fixes: primary, hint };
+  }
+
+  let lastFix = null;
+  function currentFixes(o) {
+    const key = JSON.stringify([o.config, o.plan.endMin, planningRounds(o.plan, o.setMode)
+      .map(entry => entry.round.matches.length + entry.mode + (entry.round.frozen ? 'f' : ''))]);
+    if (fixCache.key !== key) fixCache = { key, result: planFixes(o) || { fixes: [], hint: '' } };
+    return fixCache.result;
+  }
+
+  // All values first, one change event last: one save, one undo step.
+  function applyFix(set) {
+    const els = set.map(entry => document.getElementById(entry[0]));
+    if (els.some(el => !el || el.disabled)) return;
+    els.forEach((el, i) => { el.value = set[i][1]; });
+    els[els.length - 1].dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function adjustPlanManually() {
+    if (window.TSheetEditors && window.TSheetEditors.openTimeEditor()) return;
+    const content = document.querySelector('.cfg-setup-content');
+    const toggle = document.querySelector('.cfg-setup-toggle');
+    if (content && content.hidden && toggle) toggle.click();
+    const input = document.getElementById('endTime');
+    if (input && !input.disabled) input.focus();
+  }
+
+  /* „Zeit optimieren“: passt der Plan, auf die kleinste ausreichende Feldzahl senken;
+     sonst den ersten Vorschlag der Planungsmeldung anwenden (gleiche Priorität). */
+  function timefit() {
+    const o = lastFix;
+    if (!o) return;
+    const start = TC.toMin(o.config.startTime), end = TC.toMin(o.config.endTime);
+    if (planFits(o.plan, o.config, o.setMode)) {
+      const el = fixControl('fieldCount');
+      if (!el || start == null || end == null) return;
+      const max = Math.max.apply(null, fixOptions(el).map(Number));
+      const need = neededFieldsForPlan(o.plan, end - start, o.setMode, max);
+      if (need && need < +o.config.fields) applyFix([['fieldCount', String(need)]]);
+      return;
+    }
+    const first = currentFixes(o).fixes.find(fix => !fix.secondary);
+    if (first) applyFix(first.set);
+    else window.alert(tx('ui.kpi.timefitNone', 'Weder ein kürzerer Satzmodus noch weniger Runden oder mehr Felder reichen. Ende verlängern oder selbst anpassen.'));
+  }
+
+  function fillPlanFixes(o) {
+    const box = document.querySelector('.cfgresult');
+    if (!box) return;
+    lastFix = o;
+    let bar = document.getElementById('kpiFix');
+    const problem = !!o.message || !planFits(o.plan, o.config, o.setMode);
+    if (!problem) {
+      if (bar) bar.hidden = true;
+      return;
+    }
+    const editable = !!fixControl('endTime');
+    const result = editable ? currentFixes(o) : { fixes: [], hint: '' };
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'kpiFix';
+      bar.className = 'notebox is-warn kpi-fix noprint';
+      bar.addEventListener('click', event => {
+        const button = event.target.closest('button');
+        if (!button || button.disabled) return;
+        if (button.classList.contains('kpi-fix__self')) { adjustPlanManually(); return; }
+        const fix = (bar._fixes || [])[+button.getAttribute('data-fix-index')];
+        if (fix) applyFix(fix.set);
+      });
+      const target = document.getElementById('endTime');
+      if (!fixObserver && target && window.MutationObserver) {
+        fixObserver = new MutationObserver(() => {
+          const opts = document.querySelector('#kpiFix .kpi-fix__opts');
+          if (opts && target.disabled) opts.hidden = true;
+        });
+        fixObserver.observe(target, { attributes: true, attributeFilter: ['disabled'] });
+      }
+    }
+    // Directly after the info strip (badges plus optional game info), before the actions.
+    let anchor = box;
+    while (anchor.nextElementSibling && anchor.nextElementSibling.matches('.input-hint')) anchor = anchor.nextElementSibling;
+    if (anchor.nextSibling !== bar) anchor.parentNode.insertBefore(bar, anchor.nextSibling);
+    bar._fixes = result.fixes;
+    const lines = [o.message, result.hint].filter(Boolean);
+    bar.innerHTML = (lines.length ? '<ul>' + lines.map(line => '<li>' + esc(line) + '</li>').join('') + '</ul>' : '')
+      + (editable ? '<div class="kpi-fix__opts">'
+        + result.fixes.map((fix, i) => '<button type="button" class="' + (fix.secondary ? 'kpi-fix__link kpi-fix__alt' : 'nbtn kpi-fix__btn')
+          + '" data-fix-index="' + i + '" data-fix-control="' + esc(fix.set.map(e => e[0]).join(' '))
+          + '" data-fix-value="' + esc(fix.set.map(e => e[1]).join(' ')) + '">' + esc(fix.label) + '</button>').join('')
+        + '<button type="button" class="kpi-fix__link kpi-fix__self">' + esc(tx('ui.kpi.fixSelf', 'Selbst anpassen')) + '</button></div>' : '');
+    bar.hidden = false;
   }
 
   /* ============================================================ FELD-LEITER
@@ -1692,14 +2064,14 @@
   }
 
   return {
-    esc, fmtTime, fmtDiff, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
+    esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireFormatInfo, syncModeSummary,
-    maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis,
+    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
+    maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, courtLadderHtml, paintCourtLadder
   };
 });

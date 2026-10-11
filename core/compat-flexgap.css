@@ -117,6 +117,14 @@
   .no-flexgap .cfgresult > *:not(:last-child) { margin-right: 10px; }
   .no-flexgap .cfgresult > * { margin-bottom: 10px; }
   .no-flexgap .cfgresult { margin-bottom: -8px; }                     /* eigene 2px */
+  .no-flexgap .cfgresult.kpi2 { margin-bottom: 0; }
+  .no-flexgap .cfgresult.kpi2 > * { margin-right: 0; margin-bottom: 0; }
+  .no-flexgap .kpi2 .kpi-more > * { margin-right: 16px; margin-bottom: 5px; }
+  .no-flexgap .kpi2 .kpi-more .cfgres-item > * + * { margin-top: 0; margin-left: 6px; }
+  .no-flexgap .kpi-fix__opts > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .kpi-fix__opts > * { margin-bottom: 6px; }
+  .no-flexgap .kpi-fix__opts { margin-bottom: -3px; }
+
   .no-flexgap .cfgcard-actions > *:not(:last-child) { margin-right: 10px; }
   .no-flexgap .cfgcard-actions > * { margin-bottom: 8px; }
   .no-flexgap .cfgcard-actions { margin-bottom: -8px; }

@@ -1,5 +1,6 @@
 /* app-skin.css – App-like Bildschirm-Oberfläche für die Turnierbögen.
    ALLE Regeln sind auf @media screen beschränkt → keine Auswirkung auf die Druckausgabe. */
+@import url("core/section-toggle.css") screen;
 @media screen {
 
   :root {
@@ -278,12 +279,10 @@
     .app-bar__btn { padding: 0; min-width: 40px; }
     .app-bar__title { font-size: 14px; }
   }
-  /* Unter ~440px bliebe vom Titel nur ein Fragment („Je…“) übrig – reines
-     Rauschen, denn der volle Bogen-Titel steht direkt darunter als <h1>.
-     visibility statt display: der Titel hält weiter den Platz (flex:1), die
-     Aktionen bleiben rechtsbündig. */
+  /* Auf kleinen Displays bleibt der gekürzte Titel als Orientierung sichtbar;
+     die Sprachkennung wird unter 768px global ausgeblendet. */
   @media (max-width: 440px) {
-    .app-bar__title { visibility: hidden; }
+    .app-bar__title { font-size: 12px; }
   }
   @media (max-width: 380px) {
     .app-bar__back .lbl { display: none; }
@@ -423,8 +422,50 @@
     padding: 12px 16px 12px 16px;
     margin: 0 0 16px;
   }
-  /* „Wertung & Details anzeigen“: sekundäre Aktion in der Anleitung –
-     ruhiger Outline-Button statt eines zweiten dunklen Primär-Buttons. */
+  .guide-heading {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin-bottom: 6px;
+  }
+  .guide-heading h2 { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .guide .guide-heading { margin-bottom: 6px; }
+  .guide-content[hidden] { display: none; }
+  .section-toggle-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    margin-left: auto;
+    padding: 7px 10px;
+    border: 1px solid var(--app-line);
+    border-radius: var(--app-radius-md);
+    background: #fff;
+    color: var(--app-blue-dark);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+  .section-toggle-open { white-space: nowrap; }
+  .section-toggle-open > .section-toggle-eye { flex: 0 0 16px; width: 16px; height: 16px; margin-right: 6px; }
+  .section-toggle-open > span { flex: 0 0 auto; }
+  .section-toggle-open:hover { background: var(--app-tonal); }
+  .section-toggle-open:focus-visible,
+  .section-toggle-close:focus-visible { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  .section-toggle-close {
+    position: static;
+    flex: 0 0 44px;
+    margin-left: 8px;
+  }
+  .section-toggle-open[hidden], .section-toggle-close[hidden] { display: none !important; }
+  .guide-heading .section-toggle-close { order: 2; }
+  .guide-heading .section-toggle-open { order: 2; }
+  .section-toggle-close--external { display: flex; margin: 0 0 4px auto; }
+  /* „Wertung & Details anzeigen“ bleibt ein ruhiger Outline-Button. */
   .format-info-toggle {
     background: #fff;
     color: var(--app-blue-dark);
@@ -517,7 +558,6 @@
     display: flex; align-items: center; gap: 8px;
     margin: 0 0 9px;
   }
-  .cfgcard-head::after { content: ""; flex: 1; height: 1px; background: var(--app-line-soft); }
   /* Felder fliessen in kompakte Zeilen: Titel breit, Zahlen-Auswahlen schmal,
      Modus mittel, Zeiten schmal. Auf breiten Bildschirmen passt alles in eine
      Zeile; .cfgfield-row loest sich dafuer auf (display: contents). */
@@ -563,16 +603,17 @@
   /* Ergebnis-Readout – groß & gut sichtbar. */
   .cfgresult { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
   .cfgres-item {
-    flex: 1 1 120px; min-width: 108px;
+    flex: 1 1 120px; min-width: 0;
     display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 10px 8px;
     background: var(--app-tint);
     border: 1px solid var(--app-line-soft);
     border-radius: 10px;
   }
+  .cfgres-item > [hidden] { display: none; }
   .cfgres-item.is-primary { background: #eaf5ee; border-color: #bfe0c8; }
   .cfgres-item.is-warn { background: #fdeeee; border-color: #e6b8b8; }
-  .cfgres-val { font-size: 20px; font-weight: 800; color: var(--app-blue-dark); line-height: 1.05; text-align: center; }
+  .cfgres-val { max-width: 100%; overflow-wrap: break-word; font-size: 20px; font-weight: 800; color: var(--app-blue-dark); line-height: 1.05; text-align: center; }
   .cfgres-val--sub { font-size: 13px; font-weight: 600; color: var(--app-muted); text-align: center; line-height: 1.1; margin-top: -1px; }
   .cfgres-item.is-primary .cfgres-val { color: var(--app-green); }
   .cfgres-item.is-warn .cfgres-val { color: #c0392b; }
@@ -591,44 +632,39 @@
     margin-left: auto;
   }
   .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
+  .cfg-actions-quick { display: flex; flex-wrap: wrap; }
+  .cfg-actions-quick[hidden] { display: none !important; }
+  .cfg-actions-quick > .nbtn + .nbtn { margin-left: 8px; }
+  .nbtn.cfg-reset-action {
+    background: #fdecec; color: #c02626; border-color: #f3c9c9;
+    box-shadow: none; white-space: normal;
+  }
+  .nbtn.cfg-reset-action:hover { background: #fbe0e0; }
   .cfgcard-actions .nbtn, .cfg-action-group__buttons > .nbtn { min-height: 44px; }
-  /* Kopfzeile = Umschalter (Kartentitel) links, Teilen/Speichern rechts. */
-  .cfgcard--collapsible > .cfgcard-actions { margin-top: 0; padding-top: 0; border-top: 0; }
-  .nbtn.cfg-setup-toggle {
-    display: inline-flex; align-items: center;
-    margin: 0; padding: 0; min-height: 44px;
-    background: #f6f8fc; border-color: #b7c9df; box-shadow: none;
-    color: var(--app-blue-dark);
-    font-size: 13px; font-weight: 750; text-transform: none;
+  caption > .caption-edit-label {
+    display: inline-flex; align-items: center; vertical-align: middle;
+    flex-wrap: nowrap; white-space: nowrap;
   }
-  .nbtn.cfg-setup-toggle:hover { background: #eef4fb; }
-  .cfg-setup-toggle__label { padding: 10px 12px; text-align: left; }
-  .cfg-setup-toggle__state {
+  caption > .caption-edit-label > .cap-title { display: inline; flex: 0 0 auto; }
+  .caption-edit {
     display: inline-flex; align-items: center; justify-content: center;
-    align-self: stretch; flex-shrink: 0;
-    min-width: 44px; margin-left: auto; padding: 8px 10px;
-    border-left: 1px solid #b7c9df; background: #eaf2fb;
-    border-radius: 0 9px 9px 0; font-weight: 600;
+    flex: 0 0 44px; width: 44px; height: 44px; padding: 14px; margin: -12px 0 -12px 4px;
+    vertical-align: middle; border: 0; border-radius: 8px;
+    background: transparent; color: var(--app-blue-dark); cursor: pointer;
   }
-  .cfg-setup-toggle__state svg { margin-left: 6px; flex-shrink: 0; }
-  .cfg-setup-toggle[aria-expanded="true"] .cfg-setup-toggle__open,
-  .cfg-setup-toggle[aria-expanded="false"] .cfg-setup-toggle__close { display: none; }
-  .cfg-setup-toggle .cfg-actions-chevron { margin-left: 2px; }
-  .cfg-actions-chevron {
-    width: 7px; height: 7px; margin-left: 5px;
-    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-  }
-  .cfg-actions-toggle[aria-expanded="true"] .cfg-actions-chevron {
-    transform: rotate(225deg) translate(-2px, -1px);
-  }
-  .cfg-setup-toggle[aria-expanded="true"] .cfg-actions-chevron {
-    transform: rotate(225deg) translate(-2px, -1px);
-  }
+  .caption-edit svg { display: block; width: 16px; height: 16px; flex-shrink: 0; }
+  .caption-edit[hidden] { display: none !important; }
+  .caption-edit:hover { background: var(--app-tonal); }
+  .caption-edit:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  .cfgcard-head { position: relative; }
+  .cfgcard-head__label { flex: 1 1 auto; min-width: 0; }
+  .cfgcard-head .section-toggle-open,
+  .cfgcard-head .section-toggle-close { order: 2; flex: 0 0 auto; }
+  .nbtn.cfg-setup-toggle { margin: 0; text-transform: none; }
   .cfg-setup-content[hidden] { display: none; }
+  .section-content-collapsed { display: none !important; }
   .cfg-setup-content { margin-bottom: 2px; }
-  .cfg-actions-content { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--app-line-soft); }
-  .cfg-actions-content[hidden] { display: none; }
+  .cfgcard--collapsible > .cfgcard-actions { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--app-line-soft); }
   .cfg-action-content { margin-top: 12px; }
   .cfg-action-groups {
     display: grid;
@@ -637,14 +673,10 @@
     gap: 12px;
   }
   .cfg-action-group {
-    min-width: 0; padding: 12px;
-    border: 1px solid var(--app-line-soft); border-radius: 10px;
-    background: #f6f8fc;
+    min-width: 0;
   }
-  .cfg-action-group--danger { background: #fff8f8; border-color: #f3c9c9; }
   .cfg-action-group__label {
-    margin-bottom: 10px; padding-bottom: 8px;
-    border-bottom: 1px solid var(--app-line-soft);
+    margin-bottom: 8px;
     font-size: 12px; font-weight: 750;
     color: var(--app-blue-dark);
   }
@@ -674,8 +706,11 @@
     .cfgcard-grid > .cfgfield--end { flex: 1 1 120px; max-width: none; }
   }
   @media (max-width: 560px) {
+    .cfgcard-head { flex-wrap: wrap; }
+    .cfgcard-head .section-toggle-open { flex: 1 1 100%; }
     .cfgres-item { flex-basis: calc(50% - 5px); }
-    .cfgcard-actions > .cfg-actions-toggle { flex: 1 1 100%; }
+    .cfg-actions-quick { width: 100%; }
+    .cfg-actions-quick > .nbtn { flex: 1 1 0; min-width: 0; }
     .cfg-actions-primary { width: 100%; }
     .cfg-actions-primary > .nbtn { flex: 1 1 0; }
     .cfg-action-groups { grid-template-columns: minmax(0, 1fr); }
@@ -684,19 +719,20 @@
   /* Zweistufige Übersicht (spielplan-enh.js layoutKpis): große Key-Kacheln
      + ruhige Detailzeile. Reserve grün, bei Zeitmangel rot (is-warn). */
   .cfgresult.kpi2 { display: block; }
-  .kpi2 .kpi-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+  .kpi2 .kpi-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); grid-gap: 8px; gap: 8px; }
   .kpi2 .kpi-main .cfgres-item { min-width: 0; padding: 10px 7px 8px; background: #fff; border: 1px solid #c9d6e6; }
+  .kpi2 .kpi-main .cfgres-item.is-warn { background: #fdeeee; border-color: #e6b8b8; }
   .kpi2 .kpi-main .cfgres-val { font-size: 26px; }
   .kpi2 .kpi-main .cfgres-lbl { font-size: 11.5px; }
   .kpi2 .kpi-main .cfgres-val--sub { font-size: 13px; font-weight: 600; }
-  .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) { background: #eaf5ee; border-color: #bfe0c8; }
-  .kpi2 .kpi-main .cfgres-item[data-kpi="buffer"]:not(.is-warn) .cfgres-val { color: var(--app-green); }
+  .kpi2 .kpi-main .cfgres-item.is-primary:not(.is-warn) { background: #eaf5ee; border-color: #bfe0c8; }
+  .kpi2 .kpi-main .cfgres-item.is-primary:not(.is-warn) .cfgres-val { color: var(--app-green); }
   .kpi2 .kpi-more {
     display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 8px; padding: 8px 10px;
     background: var(--app-tint); border: 1px solid var(--app-line-soft); border-radius: 10px;
   }
   .kpi2 .kpi-more .cfgres-item {
-    flex: 0 0 auto; min-width: 0; flex-direction: row; align-items: baseline; gap: 6px;
+    flex: 0 1 auto; min-width: 0; max-width: 100%; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 6px;
     padding: 0; background: none; border: 0; border-radius: 0;
   }
   .kpi2 .kpi-more .cfgres-lbl { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
@@ -709,6 +745,20 @@
     .kpi2 .kpi-main .cfgres-val:not(.cfgres-val--sub) { font-size: 22px; }
     .kpi2 .kpi-main .cfgres-item:last-child:nth-child(odd) { grid-column: span 2; }
     .kpi2 .kpi-more { gap: 4px 14px; }
+  }
+  /* Planungsmeldung (TUI.fillPlanFixes): .notebox.is-warn im Risiko-Rot zwischen
+     Infoleiste und Aktionen, darunter die Ein-Klick-Optionen als .nbtn;
+     die nachrangige Endzeit-Option und „Selbst anpassen“ als Textlink. */
+  .kpi-fix[hidden], .kpi-fix__opts[hidden] { display: none; }
+  /* Planungsrisiko in denselben Rottönen wie die roten Badges; Textfarben AA auf #fdecec. */
+  .notebox.is-warn.kpi-fix { border-left-color: #c02626; background: #fdecec; color: #1f2933; }
+  .kpi-fix .nbtn { background: #fff; border-color: #e6b8b8; color: #9b1c1c; }
+  .kpi-fix__opts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 6px 0 3px; }
+  .kpi-fix__opts .nbtn { max-width: 100%; white-space: normal; text-align: left; }
+  .kpi-fix__link { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: #9b1c1c;
+    font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+  @media (max-width: 560px) {
+    .kpi-fix__btn { flex: 1 1 100%; }
   }
 
   /* Hinweis-/Legenden-Boxen dezent. */
