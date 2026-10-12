@@ -13,17 +13,292 @@
 (function (root, factory) {
   const api = factory(root,
     root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null),
-    root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null)
+    root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null),
+    root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null)
   );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else {
     root.TUI = api;
     api.wireFormatInfo(root.document);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, TC, TStore) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, TC, TStore, TSport) {
   'use strict';
 
   /* ------------------------------------------------------------ Hilfsmittel */
+  let activeSport = TSport ? TSport.BEACH : null;
+  function configureProfile(id, options) {
+    const profile = TSport && TSport.get(id, 1);
+    if (!profile) throw new Error('Unsupported sport profile: ' + id);
+    const opts = options || {};
+    activeSport = profile;
+    if (root.document && root.document.body) {
+      root.document.body.setAttribute('data-sport', id);
+      const heading = root.document.querySelector('h1');
+      if (heading) {
+        let label = root.document.querySelector('.sport-profile-label');
+        if (!label) {
+          label = root.document.createElement('p');
+          label.className = 'sport-profile-label';
+          heading.parentNode.insertBefore(label, heading.nextSibling);
+        }
+        label.textContent = tx(profile.nameKey, id);
+        let glossary = root.document.getElementById('sport-profile-glossary');
+        if (!glossary) {
+          glossary = root.document.createElement('details');
+          glossary.id = 'sport-profile-glossary';
+          glossary.className = 'sport-profile-glossary';
+          heading.parentNode.insertBefore(glossary, label.nextSibling);
+        }
+        const glossaryTitle = tx('sport.glossary.title', 'Sportbegriffe');
+        const glossaryParticipant = tx('sport.glossary.participant', 'Teilnehmende');
+        const glossarySurface = tx('sport.glossary.surface', 'Spielfläche');
+        const glossaryUnit = tx('sport.glossary.unit', 'Wertungseinheit');
+        const glossaryNote = tx('sport.glossary.note',
+          'Die Begriffe beschreiben die App-Felder. Maßgeblich sind die veröffentlichte Ausschreibung und die Regeln dieses Turniers.');
+        glossary.innerHTML = '<summary>' + esc(glossaryTitle) + '</summary>'
+          + '<dl><div><dt>' + esc(glossaryParticipant) + '</dt><dd>' + esc(participantWord()) + '</dd></div>'
+          + '<div><dt>' + esc(glossarySurface) + '</dt><dd>' + esc(surfaceWord()) + '</dd></div>'
+          + '<div><dt>' + esc(glossaryUnit) + '</dt><dd>' + esc(unitWord()) + '</dd></div></dl>'
+          + '<p>' + esc(glossaryNote) + '</p>';
+      }
+      const section = root.document.getElementById('configSection');
+      if (section && id === 'volleyball.indoor') {
+        let controls = root.document.getElementById('sport-profile-controls');
+        if (!controls) {
+          controls = root.document.createElement('div');
+          controls.id = 'sport-profile-controls';
+          controls.className = 'sport-profile-controls';
+          const field = root.document.createElement('label');
+          field.className = 'cfgfield';
+          const caption = root.document.createElement('span');
+          caption.textContent = tx('sport.ranking.label', 'Gruppenwertung');
+          const select = root.document.createElement('select');
+          select.id = 'ranking-profile-select';
+          profile.rankingProfiles.forEach(function (rankingId) {
+            const option = root.document.createElement('option');
+            option.value = rankingId;
+            option.textContent = tx(profile.rankingProfileLabels[rankingId], rankingId);
+            select.appendChild(option);
+          });
+          field.appendChild(caption);
+          field.appendChild(select);
+          const note = root.document.createElement('p');
+          note.className = 'sport-profile-note';
+          note.textContent = tx('sport.ranking.note', 'Wertungsvorgabe des Turniers; keine allgemeine Verbandsakkreditierung.');
+          controls.appendChild(field);
+          controls.appendChild(note);
+          const setup = section.querySelector('.cfg-action-groups')
+            || section.querySelector('.cfg-setup-content') || section;
+          setup.appendChild(controls);
+        }
+        const select = controls.querySelector('#ranking-profile-select');
+        const record = opts.getTournament ? opts.getTournament() : null;
+        if (select) {
+          select.value = record && record.config && record.config.rankingProfile
+            ? record.config.rankingProfile : profile.rankingProfiles[0];
+          const uiState = root.TStore && root.TStore.initialUiState();
+          select.disabled = !!(uiState && uiState.readOnly) || !opts.getTournament || !opts.repaint;
+          if (select.getAttribute('data-bound') !== '1') {
+            select.setAttribute('data-bound', '1');
+            select.addEventListener('change', function () {
+              const state = opts.getTournament && opts.getTournament();
+              if (!state || !state.config || profile.rankingProfiles.indexOf(select.value) < 0) return;
+              const previous = state.config.rankingProfile || profile.rankingProfiles[0];
+              state.config.rankingProfile = select.value;
+              try { TC.configureProfile(id, state.config.customSetTarget, select.value, state.config.modeMinutes); }
+              catch (e) { state.config.rankingProfile = previous; select.value = previous; throw e; }
+              Promise.resolve(opts.save ? opts.save(state) : TStore.save(state)).then(function (saved) {
+                if (!saved) {
+                  state.config.rankingProfile = previous;
+                  TC.configureProfile(id, state.config.customSetTarget, previous, state.config.modeMinutes);
+                  select.value = previous;
+                  return;
+                }
+                opts.repaint();
+              }).catch(function (error) {
+                state.config.rankingProfile = previous;
+                TC.configureProfile(id, state.config.customSetTarget, previous, state.config.modeMinutes);
+                select.value = previous;
+                root.console.error('Ranking profile could not be saved', error);
+              });
+            });
+          }
+        }
+      }
+      if (section && id !== 'volleyball.beach') mountModeEstimateControls(section, profile, opts);
+    }
+    return true;
+  }
+  function mountModeEstimateControls(section, profile, opts) {
+    let box = root.document.getElementById('sport-mode-estimate-controls');
+    if (!box) {
+      box = root.document.createElement('div');
+      box.id = 'sport-mode-estimate-controls';
+      box.className = 'sport-profile-controls';
+      const modeLabel = root.document.createElement('label');
+      modeLabel.className = 'cfgfield';
+      const modeCaption = root.document.createElement('span');
+      modeCaption.textContent = tx('sport.estimates.label', 'Modus für Zeitschätzung');
+      const mode = root.document.createElement('select');
+      mode.id = 'sport-estimate-mode';
+      profile.modeIds.forEach(function (modeId) {
+        const option = root.document.createElement('option');
+        option.value = modeId;
+        option.textContent = tx('setMode.' + modeId, modeId);
+        mode.appendChild(option);
+      });
+      modeLabel.appendChild(modeCaption);
+      modeLabel.appendChild(mode);
+
+      const minutesLabel = root.document.createElement('label');
+      minutesLabel.className = 'cfgfield';
+      const minutesCaption = root.document.createElement('span');
+      minutesCaption.textContent = tx('sport.estimates.minutes', 'Minuten');
+      const minutes = root.document.createElement('input');
+      minutes.id = 'sport-estimate-minutes';
+      minutes.type = 'number';
+      minutes.min = '1';
+      minutes.max = '360';
+      minutes.step = '1';
+      minutes.inputMode = 'numeric';
+      minutesLabel.appendChild(minutesCaption);
+      minutesLabel.appendChild(minutes);
+
+      const customLabel = root.document.createElement('label');
+      customLabel.className = 'cfgfield';
+      const customCaption = root.document.createElement('span');
+      customCaption.textContent = tx('sport.customTarget.label', 'Freies Satzziel (11–50)');
+      const custom = root.document.createElement('input');
+      custom.id = 'sport-custom-set-target';
+      custom.type = 'number';
+      custom.min = '11';
+      custom.max = '50';
+      custom.step = '1';
+      custom.inputMode = 'numeric';
+      customLabel.appendChild(customCaption);
+      customLabel.appendChild(custom);
+
+      const note = root.document.createElement('p');
+      note.className = 'sport-profile-note';
+      note.textContent = tx('sport.estimates.note', 'Bearbeitbare Planungs-Schätzung; tatsächliche Spieldauer variiert, dies ist keine offizielle Zeitvorgabe.');
+      box.appendChild(modeLabel);
+      box.appendChild(minutesLabel);
+      box.appendChild(customLabel);
+      box.appendChild(note);
+      const setup = section.querySelector('.cfg-action-groups')
+        || section.querySelector('.cfg-setup-content') || section;
+      setup.appendChild(box);
+
+      function refresh(record) {
+        const id = mode.value;
+        const estimates = record.config.modeMinutes || {};
+        minutes.value = String(Object.prototype.hasOwnProperty.call(estimates, id)
+          ? estimates[id] : TC.modeMinutes(id));
+        customLabel.hidden = profile.id !== 'volleyball.indoor' || id !== 'indoor-custom';
+        custom.value = String(record.config.customSetTarget || 25);
+      }
+      function saveChange(property, value, previous, input) {
+        const record = opts.getTournament && opts.getTournament();
+        if (!record || !record.config) return;
+        record.config[property] = value;
+        try {
+          TC.configureProfile(record.sport.id, record.config.customSetTarget,
+            record.config.rankingProfile, record.config.modeMinutes);
+        } catch (error) {
+          record.config[property] = previous;
+          input.value = String(previous);
+          throw error;
+        }
+        Promise.resolve(opts.save ? opts.save(record) : TStore.save(record)).then(function (saved) {
+          if (!saved) {
+            record.config[property] = previous;
+            TC.configureProfile(record.sport.id, record.config.customSetTarget,
+              record.config.rankingProfile, record.config.modeMinutes);
+            input.value = String(previous);
+            return;
+          }
+          opts.repaint();
+        }).catch(function (error) {
+          record.config[property] = previous;
+          TC.configureProfile(record.sport.id, record.config.customSetTarget,
+            record.config.rankingProfile, record.config.modeMinutes);
+          input.value = String(previous);
+          root.console.error('Sport settings could not be saved', error);
+        });
+      }
+      mode.addEventListener('change', function () {
+        const record = opts.getTournament && opts.getTournament();
+        if (record) refresh(record);
+      });
+      minutes.addEventListener('change', function () {
+        const value = Number(minutes.value);
+        if (!Number.isInteger(value) || value < 1 || value > 360) {
+          minutes.setAttribute('aria-invalid', 'true');
+          const record = opts.getTournament && opts.getTournament();
+          if (record) refresh(record);
+          return;
+        }
+        minutes.removeAttribute('aria-invalid');
+        const record = opts.getTournament && opts.getTournament();
+        if (!record) return;
+        const previous = record.config.modeMinutes && record.config.modeMinutes[mode.value];
+        const next = Object.assign({}, record.config.modeMinutes || {});
+        next[mode.value] = value;
+        saveChange('modeMinutes', next, record.config.modeMinutes || {}, minutes);
+        if (previous === value) refresh(record);
+      });
+      custom.addEventListener('change', function () {
+        const value = Number(custom.value);
+        if (!Number.isInteger(value) || value < 11 || value > 50) {
+          custom.setAttribute('aria-invalid', 'true');
+          const record = opts.getTournament && opts.getTournament();
+          if (record) refresh(record);
+          return;
+        }
+        custom.removeAttribute('aria-invalid');
+        const record = opts.getTournament && opts.getTournament();
+        if (record) saveChange('customSetTarget', value, record.config.customSetTarget || 25, custom);
+      });
+    }
+    const record = opts.getTournament && opts.getTournament();
+    const uiState = root.TStore && root.TStore.initialUiState();
+    const mode = box.querySelector('#sport-estimate-mode');
+    const minutes = box.querySelector('#sport-estimate-minutes');
+    const custom = box.querySelector('#sport-custom-set-target');
+    if (!record || !record.config || !mode || !minutes || !custom) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    mode.value = record.config.setMode || profile.modeIds[0];
+    minutes.value = String(record.config.modeMinutes && record.config.modeMinutes[mode.value]
+      || TC.modeMinutes(mode.value));
+    custom.value = String(record.config.customSetTarget || 25);
+    box.querySelector('#sport-custom-set-target').parentNode.hidden =
+      profile.id !== 'volleyball.indoor' || mode.value !== 'indoor-custom';
+    [mode, minutes, custom].forEach(function (input) {
+      input.disabled = !!(uiState && uiState.readOnly) || !opts.getTournament || !opts.repaint;
+    });
+  }
+  function profileTerm(key, fallback) {
+    const value = activeSport && activeSport[key];
+    return value ? tx(value, fallback) : fallback;
+  }
+  function participantWord() {
+    const key = activeSport && activeSport.participantKey;
+    return key ? tx(key, 'Team') : 'Team';
+  }
+  function surfaceWord() {
+    const key = activeSport && activeSport.surfaceKey;
+    return key ? tx(key, 'Feld') : 'Feld';
+  }
+  function surfaceLabel(index) {
+    return surfaceWord() + ' ' + String(index);
+  }
+  function unitWord() {
+    const key = activeSport && activeSport.matchUnitKey;
+    return key ? tx(key, 'Satz') : 'Satz';
+  }
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -66,7 +341,7 @@
     const absentHtml = '<span class="abt">' + esc(tx('ui.absent', 'ausgefallen')) + '</span>';
     if (!n) return absent ? absentHtml : '';
     const nm = ((teamNames && teamNames[n]) || '').trim();
-    const label = '<span class="t-line">Team ' + esc(n) + '</span>'
+    const label = '<span class="t-line">' + esc(participantWord()) + ' ' + esc(n) + '</span>'
       + (nm ? '<span class="tnm t-nm">(' + esc(nm) + ')</span>' : '');
     return absent ? label + ' ' + absentHtml : label;
   }
@@ -79,7 +354,7 @@
     return function (n) {
       if (n == null) return '';
       const nm = teamNames && teamNames[n];
-      return nm ? String(nm) : ('Team ' + n);
+      return nm ? String(nm) : (participantWord() + ' ' + n);
     };
   }
 
@@ -147,12 +422,13 @@
   /* ========================================================= 2. SPIEL-KARTE */
   function setColumnHtml(matchId, setNo, label, placeholder, names, target) {
     const ph = placeholder ? ' placeholder="' + esc(placeholder) + '"' : '';
+    const maxLength = activeSport && activeSport.id.indexOf('table-tennis.') === 0 ? '' : ' maxlength="3"';
     /* aria-label mit Teamname und Satz („Team A, Satz 2“) – sonst liest der
        Screenreader nur "Feld" bzw. bei mehreren Saetzen identische Namen. */
     const inp = side => {
       const nm = names && names[side];
       const al = nm ? (label ? nm + ', ' + label : nm) : '';
-      return '<input class="score" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3"' +
+      return '<input class="score" type="text" inputmode="numeric" pattern="[0-9]*"' + maxLength +
         ' data-mid="' + esc(matchId) + '" data-set="' + setNo + '" data-side="' + side + '"' +
         ' autocomplete="off"' + (al ? ' aria-label="' + esc(al) + '"' : '') + ph + '>';
     };
@@ -174,17 +450,24 @@
 
   /* m: {id, a, b, round?, label?, places?}  a/b sind TeamRef oder Teamnummer */
   function matchCellHtml(m, ctx) {
-    const setCnt = TC.modeDef(ctx.setMode).sets;
-    const deciding = TC.hasDecidingSet(ctx.setMode);
+    const setMode = m.setMode || ctx.setMode;
+    const def = TC.modeDef(setMode);
+    const setCnt = def.sets;
     const ta = ctx.resolve(m.a), tb = ctx.resolve(m.b);
     const isBye = (m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye');
 
     const inputNames = { a: sideLabel(m.a, ta, ctx), b: sideLabel(m.b, tb, ctx) };
-    const tgt = n => TC.targetForSet(ctx.setMode, n);
-    let sets = setColumnHtml(m.id, 1, setCnt <= 1 ? tx('ui.score.points', 'Punkte')
-      : tx('ui.score.setN', 'Satz {n}', { n: 1 }), null, inputNames, tgt(1));
-    if (setCnt >= 2) sets += setColumnHtml(m.id, 2, tx('ui.score.setN', 'Satz {n}', { n: 2 }), null, inputNames, tgt(2));
-    if (deciding) sets += setColumnHtml(m.id, 3, tx('ui.score.decider', 'Entsch.'), 'TB', inputNames, tgt(3));
+    const tgt = n => TC.targetForSet(setMode, n);
+    let sets = '';
+    for (let n = 1; n <= setCnt; n++) {
+      const finalTarget = n === setCnt && (def.finalTarget != null || def.decidingSet);
+      const label = def.unit === 'game'
+        ? tx('ui.score.gameN', 'Spiel {n}', { n: n })
+        : finalTarget ? tx('ui.score.decider', 'Entsch.')
+          : setCnt === 1 ? tx('ui.score.points', 'Punkte')
+            : tx('ui.score.setN', 'Satz {n}', { n: n });
+      sets += setColumnHtml(m.id, n, label, finalTarget ? 'TB' : null, inputNames, tgt(n));
+    }
 
     /* t-a/t-b richten die Namen nach aussen aus, .t-line haelt "Team 12"
        einzeilig – beides wie im Bogen "Alle gegen Alle".                     */
@@ -195,6 +478,9 @@
       + cardNameHtml(ref, team, ctx) + '</span></span>';
 
     const extra = m.label ? '<span class="mnote-slot">' + esc(term(m.label)) + '</span>' : '';
+    const referees = ctx.showReferees
+      ? '<span class="m-referees" data-referees>' + esc(tx('ui.match.referees', 'Schiedsgericht: noch nicht festgelegt')) + '</span>'
+      : '';
     /* Nur EINE Beschriftung: ein sprechender Titel ("Spiel um Platz 3") ersetzt
        die technische Platzangabe, sonst stünde beides doppelt auf dem Bogen. */
     const places = (m.places && !m.label)
@@ -203,6 +489,7 @@
 
     return '<td class="match' + (isBye ? ' is-bye' : '') + '"'
       + ' data-mid="' + esc(m.id) + '"'
+      + (setMode != null ? ' data-set-mode="' + esc(setMode) + '"' : '')
       + (m.round != null ? ' data-round="' + m.round + '"' : '')
       + ' data-col="' + (m.field != null ? m.field : 0) + '"'
       + (m.slot != null ? ' data-slot="' + m.slot + '"' : '')
@@ -210,7 +497,7 @@
       + (m.group ? ' data-group="' + esc(m.group) + '"' : '')
       + '>'
       + '<span class="pair">'
-      + extra + places
+      + extra + places + referees
       + '<span class="pnames">'
       + side('pside-a', m.a, ta)
       + side('pside-b', m.b, tb)
@@ -305,7 +592,7 @@
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
         + (s.startMin != null ? esc(fmtTime(s.startMin) + '–' + fmtTime(s.endMin)) : '')
         + '</span>'
-        + '<span class="rmode">' + esc(ctx.modeLabel || '') + '</span>';
+        + '<span class="rmode">' + esc(tx('setMode.' + (s.setMode || ctx.setMode), ctx.modeLabel || '')) + '</span>';
       if (byes.length) {
         meta += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
           + byes.map(t => '<span data-team="' + esc(t) + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
@@ -389,6 +676,10 @@
     const requireComplete = td.hasAttribute('data-score-required');
     let invalid = false;
     td.querySelectorAll('input.score').forEach(inp => {
+      if (inp.getAttribute('data-match-closed') === '1') {
+        inp.disabled = false;
+        inp.removeAttribute('data-match-closed');
+      }
       inp.classList.remove('win', 'invalid');
       inp.removeAttribute('aria-invalid');
       const set = inp.getAttribute('data-set') || '1';
@@ -415,6 +706,32 @@
       } else if (va > vb) a.classList.add('win');
       else if (vb > va) b.classList.add('win');
     });
+    const def = TC.modeDef(setMode);
+    if (def.matchWins) {
+      let aWins = 0, bWins = 0, decided = false;
+      Object.keys(boxes).sort((a, b) => Number(a) - Number(b)).forEach(set => {
+        const a = boxes[set].a, b = boxes[set].b;
+        if (!a || !b || decided || a.value === '' || b.value === '') return;
+        const target = (a.closest('.sset') && +a.closest('.sset').getAttribute('data-target'))
+          || TC.targetForSet(setMode, +set);
+        const av = Number(a.value), bv = Number(b.value);
+        if (!TC.setValid(av, bv, target)) return;
+        if (av > bv) aWins++; else bWins++;
+        if (aWins >= def.matchWins || bWins >= def.matchWins) decided = true;
+        if (decided) {
+          Object.keys(boxes).forEach(later => {
+            if (+later <= +set) return;
+            const nextA = boxes[later].a, nextB = boxes[later].b;
+            const unused = !String(nextA.value || '').trim() && !String(nextB.value || '').trim();
+            if (unused) {
+              nextA.disabled = nextB.disabled = true;
+              nextA.setAttribute('data-match-closed', '1');
+              nextB.setAttribute('data-match-closed', '1');
+            }
+          });
+        }
+      });
+    }
     if (requireComplete && !invalid) td.removeAttribute('data-score-required');
   }
 
@@ -467,12 +784,21 @@
 
     const perSfx = per ? tx('ui.stand.perGame', '/Sp') : '';
     const deltaTitle = esc(tx('ui.manual.deltaTitle', 'Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert'));
+    const isTableTennis = activeSport && activeSport.id.indexOf('table-tennis.') === 0;
+    const isNonBeach = activeSport && activeSport.id !== 'volleyball.beach';
+    const pointLabel = !isNonBeach ? tx('ui.stand.balls', 'Bälle')
+      : tx('ui.criteria.points', 'Punkte');
+    const diffLabel = !isNonBeach ? tx('ui.stand.diff', 'Diff')
+      : isTableTennis ? tx('ui.criteria.pointsDiff', 'Punktedifferenz')
+        : tx('ui.criteria.bd', 'Ball-Differenz');
     let html = '<thead><tr>'
-      + '<th class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th class="nm">' + tx('ui.stand.team', 'Team') + '</th>'
+      + '<th class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th class="nm">' + participantWord() + '</th>'
       + '<th>' + tx('ui.stand.games', 'Sp.') + '</th><th>' + tx('ui.stand.won', 'S') + '</th>'
       + (o.showDraw ? '<th>' + tx('ui.stand.drawn', 'U') + '</th>' : '') + '<th>' + tx('ui.stand.lost', 'N') + '</th>'
       + '<th>' + tx('ui.stand.pts', 'Pkt') + perSfx + '</th>'
-      + '<th>' + tx('ui.stand.balls', 'Bälle') + '</th><th>' + tx('ui.stand.diff', 'Diff') + perSfx + '</th>'
+      + (isNonBeach ? '<th>' + unitWord() + '</th>' : '')
+      + '<th>' + pointLabel + '</th>'
+      + '<th>' + diffLabel + perSfx + '</th>'
       + (editable ? '<th class="mstd-actcol noprint"></th>' : '')
       + '</tr></thead><tbody>';
 
@@ -522,6 +848,7 @@
         html += '<td><b>' + ptsDisp + '</b>' + manualDeltaBadge(tx('ui.manual.pts', 'Punkte'), row.dPts) + '</td>';
       }
 
+      if (isNonBeach) html += '<td>' + s.setsFor + ':' + s.setsAgainst + '</td>';
       html += '<td>' + s.ballsFor + ':' + s.ballsAgainst + '</td>';
 
       if (editable) {
@@ -750,10 +1077,18 @@
 
   /* Erklärt über der Tabelle, wonach gewertet wurde – auch im Ausdruck. */
   function criteriaHint(criteria) {
+    const isTableTennis = activeSport && activeSport.id.indexOf('table-tennis.') === 0;
+    const isNonBeach = activeSport && activeSport.id !== 'volleyball.beach';
     const names = { pts: tx('ui.criteria.pts', 'Punkte'), ptsPer: tx('ui.criteria.ptsPer', 'Punkte je Spiel'),
-      bd: tx('ui.criteria.bd', 'Ball-Differenz'), bdPer: tx('ui.criteria.bdPer', 'Ball-Differenz je Spiel'),
+      bd: tx(isNonBeach ? 'ui.criteria.pointsDiff' : 'ui.criteria.bd', isNonBeach ? 'Punktedifferenz' : 'Ball-Differenz'),
+      bdPer: tx(isNonBeach ? 'ui.criteria.pointsDiffPer' : 'ui.criteria.bdPer', isNonBeach ? 'Punktedifferenz je Match' : 'Ball-Differenz je Spiel'),
       h2h: tx('ui.criteria.h2h', 'direkter Vergleich'),
-      ballsFor: tx('ui.criteria.ballsFor', 'erzielte Bälle'), ballsForPer: tx('ui.criteria.ballsForPer', 'erzielte Bälle je Spiel') };
+      ballsFor: tx(isNonBeach ? 'ui.criteria.points' : 'ui.criteria.ballsFor', isNonBeach ? 'Punkte' : 'erzielte Bälle'),
+      ballsForPer: tx('ui.criteria.ballsForPer', 'erzielte Bälle je Spiel'),
+      sd: tx(isTableTennis ? 'ui.criteria.gamesDiff' : 'ui.criteria.sd',
+        isTableTennis ? 'Spieldifferenz' : 'Satzdifferenz'),
+      sdPer: tx(isTableTennis ? 'ui.criteria.gamesDiffPer' : 'ui.criteria.sdPer',
+        isTableTennis ? 'Spieldifferenz je Match' : 'Satzdifferenz je Spiel') };
     return tx('ui.criteria.hint', 'Reihenfolge bei Gleichstand: {list} → Losentscheid. Ein „=“ hinter dem Platz bedeutet: hier entscheidet das Los.',
       { list: criteria.map(c => names[c] || c).join(' → ') });
   }
@@ -764,9 +1099,12 @@
   function trackTableHtml(teams, roundCount, ctx, opts) {
     const o = opts || {};
     const ptsLabel = o.ptsLabel || tx('ui.track.pts', 'Punkte');
-    const bdLabel = tx('ui.track.bd', 'Ball-Differenz');
+    const bdLabel = activeSport && activeSport.id !== 'volleyball.beach'
+      ? tx('ui.criteria.pointsDiff', 'Punktedifferenz') : tx('ui.track.bd', 'Ball-Differenz');
     const winPts = o.winPts || 1; // Punkte je Sieg (für Musterzeile)
-    let html = '<thead><tr><th class="tname teamcol">' + tx('ui.track.team', 'Team / Name') + '</th><th class="lbl">'
+    const participantHeader = activeSport && activeSport.id !== 'volleyball.beach'
+      ? participantWord() + ' / ' + tx('ui.track.name', 'Name') : tx('ui.track.team', 'Team / Name');
+    let html = '<thead><tr><th class="tname teamcol">' + participantHeader + '</th><th class="lbl">'
       + tx('ui.track.cumulative', 'kumuliert') + '</th>';
     for (let r = 1; r <= roundCount; r++) html += '<th>R' + r + '</th>';
     html += '<th class="mstd-actcol noprint">' + tx('ui.track.corr', 'Korr.') + '</th><th class="pos">' + tx('ui.track.place', 'Platz') + '</th>'
@@ -780,7 +1118,7 @@
     }
     html += '<tr class="grp ex ex-start"><td class="tname teamcol" rowspan="2">'
       + '<span class="ex-badge">' + tx('ui.track.example', 'Beispiel') + '</span>'
-      + '<span class="t-line">Team X</span><span class="tnm t-nm">' + tx('ui.track.teamName', '(Teamname)') + '</span>'
+      + '<span class="t-line">' + participantWord() + ' X</span><span class="tnm t-nm">' + tx('ui.track.teamName', '(Teamname)') + '</span>'
       + '</td><td class="lbl">' + ptsLabel + '</td>';
     ptsEx.forEach(v => html += '<td>' + v + '</td>');
     html += '<td class="mstd-actcol noprint"></td><td class="pos" rowspan="2">3.</td>'
@@ -845,10 +1183,10 @@
     return teams.map(t => {
       const row = '<label class="nrow"><span class="nnum">' + t + '</span>'
         + '<input type="text" data-name-input="' + esc(t) + '" value="' + esc(teamNames[t] || '')
-        + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false"></label>';
+        + '" placeholder="' + esc(participantWord()) + ' ' + t + '" autocomplete="off" spellcheck="false"></label>';
       if (!o.removable) return row;
       return '<div class="nrow-del">' + row
-        + teamDelBtnHtml(t, teamNames[t] || ('Team ' + t), canRemove) + '</div>';
+        + teamDelBtnHtml(t, teamNames[t] || (participantWord() + ' ' + t), canRemove) + '</div>';
     }).join('');
   }
   function fieldPanelHtml(count, fieldNames) {
@@ -856,7 +1194,7 @@
     for (let f = 0; f < count; f++) {
       html += '<label class="nrow"><span class="nnum">' + (f + 1) + '</span>'
         + '<input type="text" data-field-input="' + f + '" value="' + esc(fieldNames[f] || '')
-        + '" placeholder="' + esc(tx('ui.field.n', 'Feld {n}', { n: f + 1 })) + '" autocomplete="off" spellcheck="false"></label>';
+        + '" placeholder="' + esc(surfaceLabel(f + 1)) + '" autocomplete="off" spellcheck="false"></label>';
     }
     return html;
   }
@@ -1030,7 +1368,7 @@
       const required = checked || +round < opened;
       if (required) td.setAttribute('data-score-required', '');
       else td.removeAttribute('data-score-required');
-      markScoreInputs(td, null);
+      markScoreInputs(td, td.getAttribute('data-set-mode'));
       const invalid = active.some(inp => inp.classList.contains('invalid'))
         || (needed && !active.length && required);
       const complete = !needed || (active.length > 0 && active.every(inp => String(inp.value || '').trim() !== '') && !invalid);
@@ -1256,17 +1594,33 @@
      (AGENTS.md §4). Unentschieden erscheint nur, wenn es der Satzmodus
      ueberhaupt zulaesst.                                                     */
   function scoringTablesHtml(setMode, criteria) {
-    const drawPossible = TC.isMulti(setMode) && !TC.hasDecidingSet(setMode);
+    const def = TC.modeDef(setMode);
+    const drawPossible = TC.isMulti(setMode) && !def.matchWins && !TC.hasDecidingSet(setMode);
+    const profile = TC.activeProfile();
+    const ranking = TC.activeRanking();
+    const indoorPoints = ranking === 'indoor-3-2-1-0';
+    const winPoints = indoorPoints ? 3 : TC.WIN_PTS;
+    const lossPoints = indoorPoints ? 0 : TC.LOSS_PTS;
+    const setLabel = profile.indexOf('table-tennis.') === 0 ? 'Spiel' : 'Satz';
     let w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
       + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
-      + '<tr><td>' + tx('ui.scoring.win', 'Sieg') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.WIN_PTS }) + '</td></tr>';
+      + '<tr><td>' + tx(indoorPoints ? 'ui.scoring.clearWin' : 'ui.scoring.win', indoorPoints ? 'Sieg ohne Satzverlust' : 'Sieg') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: winPoints }) + '</td></tr>';
+    if (indoorPoints) {
+      w += '<tr><td>' + tx('ui.scoring.closeWin', 'Sieg mit Satzverlust') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 2 }) + '</td></tr>'
+       + '<tr><td>' + tx('ui.scoring.closeLoss', 'Niederlage mit Satzgewinn') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 1 }) + '</td></tr>';
+    }
     if (drawPossible) w += '<tr><td>' + tx('ui.scoring.draw', 'Unentschieden') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.DRAW_PTS }) + '</td></tr>';
-    w += '<tr><td>' + tx('ui.scoring.loss', 'Niederlage') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.LOSS_PTS }) + '</td></tr>'
-      + '<tr><td>' + tx('ui.scoring.bye', 'Freilos / spielfrei') + '</td><td>' + tx('ui.scoring.byePts', '{count} Punkte, ohne Ball-Differenz', { count: TC.WIN_PTS }) + '</td></tr>'
+    w += '<tr><td>' + tx(indoorPoints ? 'ui.scoring.clearLoss' : 'ui.scoring.loss', indoorPoints ? 'Niederlage ohne Satzgewinn' : 'Niederlage') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: lossPoints }) + '</td></tr>'
+      + '<tr><td>' + tx('ui.scoring.bye', 'Freilos / spielfrei') + '</td><td>' + tx(profile.indexOf('table-tennis.') === 0 ? 'ui.scoring.byePtsGeneric' : 'ui.scoring.byePts', profile.indexOf('table-tennis.') === 0 ? '{count} Punkte, ohne Punktedifferenz' : '{count} Punkte, ohne Ball-Differenz', { count: winPoints }) + '</td></tr>'
       + '</table>';
 
+    const tableTennis = profile.indexOf('table-tennis.') === 0;
     const names = { pts: tx('ui.criteria.pts', 'Punkte'), ptsPer: tx('ui.criteria.ptsPer', 'Punkte je Spiel'),
-      bd: tx('ui.criteria.bd', 'Ball-Differenz'), bdPer: tx('ui.criteria.bdPer', 'Ball-Differenz je Spiel'),
+      bd: tableTennis ? tx('ui.criteria.pointsDiff', 'Punktedifferenz') : tx('ui.criteria.bd', 'Ball-Differenz'),
+      bdPer: tableTennis ? tx('ui.criteria.pointsDiffPer', 'Punktedifferenz je Match') : tx('ui.criteria.bdPer', 'Ball-Differenz je Spiel'),
+      sd: tableTennis ? tx('ui.criteria.gamesDiff', 'Spieldifferenz') : tx('ui.criteria.sd', 'Satzdifferenz'),
+      sdPer: tableTennis ? tx('ui.criteria.gamesDiffPer', 'Spieldifferenz je Match') : tx('ui.criteria.sdPer', 'Satzdifferenz je Spiel'),
+      won: tx('ui.criteria.won', 'Siege'), wonPer: tx('ui.criteria.wonPer', 'Siege je Spiel'),
       h2h: tx('ui.criteria.h2h', 'direkter Vergleich'),
       ballsFor: tx('ui.scoring.ballsFor', 'erzielte Ballpunkte'), ballsForPer: tx('ui.scoring.ballsForPer', 'erzielte Ballpunkte je Spiel') };
     const chain = (criteria || ['pts', 'bd', 'ballsFor', 'h2h']).slice();
@@ -1353,9 +1707,10 @@
       if (!td) return false;
       const ins = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
       if (!ins.length) return false;
-      const mode = setMode || (onChange.setMode ? onChange.setMode() : null);
-      rootEl.__checkedMatches.add(td.getAttribute('data-mid'));
-      rootEl.__confirmedMatches.add(td.getAttribute('data-mid'));
+      const matchId = td.getAttribute('data-mid');
+      const mode = setMode || (onChange.setMode ? onChange.setMode(matchId) : null);
+      rootEl.__checkedMatches.add(matchId);
+      rootEl.__confirmedMatches.add(matchId);
       td.setAttribute('data-score-required', '');
       markScoreInputs(td, mode);
       const bad = ins.filter(inp => inp.classList.contains('invalid'));
@@ -1437,7 +1792,8 @@
       }
       const raw = el.value;
       const jump = /[:\s]/.test(raw);
-      el.value = raw.replace(/[^0-9]/g, '').slice(0, 3);
+      const digits = raw.replace(/[^0-9]/g, '');
+      el.value = TC.activeProfile().indexOf('table-tennis.') === 0 ? digits : digits.slice(0, 3);
       onChange(el.getAttribute('data-mid'), +el.getAttribute('data-set'),
         el.getAttribute('data-side'), el.value);
       markRoundStatus(rootEl);
@@ -1467,7 +1823,7 @@
       if (!el.classList || !el.classList.contains('score') || el.disabled) return;
       if (!onChange.setMode) return;
       const setNo = +el.getAttribute('data-set');
-      const target = TC.targetForSet(onChange.setMode(), setNo);
+      const target = TC.targetForSet(onChange.setMode(el.getAttribute('data-mid')), setNo);
       const other = el.getAttribute('data-side') === 'a' ? 'b' : 'a';
       const p = rootEl.querySelector('input.score[data-mid="' + el.getAttribute('data-mid')
         + '"][data-set="' + setNo + '"][data-side="' + other + '"]');
@@ -1525,7 +1881,7 @@
           td = rootEl.querySelector('td.match[data-mid="' + mid + '"]');
         }
         if (!td) return;
-        if (!validateCard(td, onChange.setMode ? onChange.setMode() : null)) return;
+        if (!validateCard(td, onChange.setMode ? onChange.setMode(td.getAttribute('data-mid')) : null)) return;
         const moved = focusNextFieldCard(td);
         if (!moved && current) {
           const roundList = cards();
@@ -1750,7 +2106,7 @@
     const rounds = [];
     phases.forEach(phase => (phase.rounds || []).forEach(round => {
       const mode = round.setMode || phase.mode;
-      rounds.push({ round, mode, minutes: TC.MODE_MIN[String(mode)] || 25 });
+      rounds.push({ round, mode, minutes: TC.modeMinutes(mode) });
     }));
     return rounds;
   }
@@ -1762,7 +2118,7 @@
     const minutes = rounds.map(entry => entry.minutes);
     if (!plan.groupRounds && (!minutes.length || minutes.every(value => value === minutes[0]))) {
       return TC.neededFields(rounds.map(entry => entry.round), windowMin,
-        minutes[0] || TC.MODE_MIN[String(setMode)] || 25, maxFields || 10);
+        minutes[0] || TC.modeMinutes(setMode), maxFields || 10);
     }
     for (let fields = 1; fields <= (maxFields || 10); fields++) {
       const need = rounds.reduce((total, entry) => total
@@ -1813,7 +2169,7 @@
     const winMin = Math.max(0, o.windowEndMin - o.windowStartMin);
     const needMin = Math.max(0, o.needEndMin - o.startMin);
     const rounds = o.plan ? planningRounds(o.plan, o.setMode) : [];
-    const durations = slots.map(slot => slot.minutes || TC.MODE_MIN[String(o.setMode)] || 25);
+    const durations = slots.map(slot => slot.minutes || TC.modeMinutes(o.setMode));
     const minPerGame = durations.length ? Math.min.apply(null, durations) : 0;
     const maxPerGame = durations.length ? Math.max.apply(null, durations) : 0;
     const retimeMin = o.plan && o.plan.planning ? o.plan.planning.retimeMin : null;
@@ -1832,8 +2188,9 @@
     const availableMin = o.windowEndMin - availableStart - pauseMin;
     const availPerGame = playableSlots ? Math.max(0, Math.floor(availableMin / playableSlots)) : 0;
     const setCounts = (mode, games) => {
-      const min = TC.isMulti(mode) ? 2 : 1;
-      const max = TC.hasDecidingSet(mode) ? 3 : min;
+      const def = TC.modeDef(mode);
+      const min = def.matchWins || def.sets;
+      const max = def.sets;
       return [games * min, games * max];
     };
     const sets = rounds.length ? rounds.reduce((total, entry) => {
@@ -1844,7 +2201,7 @@
     const over = needMin > winMin;
     const modes = Array.from(new Set(rounds.map(entry => entry.mode)));
     if (o.modeLabel != null) {
-      const label = modes.length ? modes.map(mode => term(TC.modeDef(mode).label)).join(' / ') : o.modeLabel;
+      const label = modes.length ? modes.map(mode => tx('setMode.' + mode, TC.modeDef(mode).label)).join(' / ') : o.modeLabel;
       setKpi('rv-mode', label);
       fillKpiNote('rv-modeNote', modes.some(mode => mode !== o.setMode)
         ? tx('ui.kpi.frozenModes', 'Gestartete Runden behalten ihren Satzmodus') : '');
@@ -1909,17 +2266,17 @@
       const p = probe(patch);
       return !!p && planFits(p.plan, p.cfg, p.cfg.setMode);
     };
-    const modeLabel = mode => term(TC.modeDef(mode).label);
+    const modeLabel = mode => tx('setMode.' + mode, TC.modeDef(mode).label);
     const fixes = [];
     let modes = null;
     [['setMode', cfg.setMode, 'ui.kpi.fixMode', 'Kürzer: {mode}'],
       ['finalSetMode', o.plan.finalSetMode || cfg.finalSetMode, 'ui.kpi.fixFinalMode', 'Finalrunde kürzer: {mode}']]
       .some(entry => {
         const el = entry[0] in cfg ? fixControl(entry[0]) : null;
-        const current = TC.MODE_MIN[String(entry[1])];
+        const current = TC.modeMinutes(entry[1]);
         if (!el || !current) return false;
-        const shorter = fixOptions(el).filter(mode => TC.MODE_MIN[mode] < current)
-          .sort((a, b) => TC.MODE_MIN[b] - TC.MODE_MIN[a]);
+        const shorter = fixOptions(el).filter(mode => TC.modeMinutes(mode) < current)
+          .sort((a, b) => TC.modeMinutes(b) - TC.modeMinutes(a));
         if (!modes) modes = { id: entry[0], list: shorter };
         const value = shorter.find(mode => fits({ [entry[0]]: mode }));
         if (value) fixes.push({ set: [[entry[0], value]], label: tx(entry[2], entry[3], { mode: modeLabel(value) }) });
@@ -2144,6 +2501,11 @@
   }
 
   return {
+    configureProfile,
+    participantWord,
+    surfaceWord,
+    surfaceLabel,
+    unitWord,
     esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,

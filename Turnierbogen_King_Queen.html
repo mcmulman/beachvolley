@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Turnierbogen – King &amp; Queen</title>
+<title>CompetitionPilot – King &amp; Queen</title>
 <meta name="description" content="King &amp; Queen im Beach-Volleyball planen: wechselnde Teams und individuelle Wertung, lokale Ergebniseingabe, Rangliste und druckbarer A4-Turnierbogen.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Turnierbogen_King_Queen.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
-<meta property="og:title" content="Turnierbogen – King &amp; Queen">
+<meta property="og:title" content="CompetitionPilot – King &amp; Queen">
 <meta property="og:description" content="King &amp; Queen im Beach-Volleyball planen: wechselnde Teams und individuelle Wertung, lokale Ergebniseingabe, Rangliste und druckbarer A4-Turnierbogen.">
 <meta property="og:url" content="https://mcmulman.github.io/beachvolley/Turnierbogen_King_Queen.html">
 <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
-<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta property="og:image:alt" content="CompetitionPilot App-Symbol">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Turnierbogen – King &amp; Queen">
+<meta name="twitter:title" content="CompetitionPilot – King &amp; Queen">
 <meta name="twitter:description" content="King &amp; Queen im Beach-Volleyball planen: wechselnde Teams und individuelle Wertung, lokale Ergebniseingabe, Rangliste und druckbarer A4-Turnierbogen.">
 <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="core/turnier-base.css">
@@ -80,6 +80,7 @@
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
   <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
@@ -250,7 +251,7 @@
   const SHEET = TStore.sheetIdFrom('kingqueen');
   const $ = id => document.getElementById(id);
 
-  const DEFAULTS = { men:4, women:4, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', setMode:'21', levels:{} };
+  const DEFAULTS = { men:4, women:4, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', levels:{} };
   const SHEET_FILE = 'Turnierbogen_King_Queen.html';
   const SHEET_TYPE = 'King & Queen';
 
@@ -275,8 +276,14 @@
              fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
   }
   let S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.config.levels = S.config.levels || {};
 
@@ -330,7 +337,7 @@
       for(let n=0;n<=16;n++) m.add(new Option(T('kq.opt.men', { count: n }), n));
       for(let n=0;n<=16;n++) w.add(new Option(T('kq.opt.women', { count: n }), n));
       for(let n=1;n<=10;n++) rc.add(new Option(T('kq.opt.rounds', { count: n }), n));
-      TC.SET_MODES.forEach(md => sm.add(new Option(modeLabel(md.id), md.id)));
+      TC.modesForProfile(S.sport.id).forEach(md => sm.add(new Option(modeLabel(md.id), md.id)));
     }
     m.value = String(S.config.men);
     w.value = String(S.config.women);

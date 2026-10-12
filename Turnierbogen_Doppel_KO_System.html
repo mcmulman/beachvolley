@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Turnierbogen – Doppel-K.-o.-System (flexibel)</title>
+<title>CompetitionPilot – Doppel-K.-o.-System (flexibel)</title>
 <meta name="description" content="Beach-Volleyball mit Doppel-KO organisieren: Gewinner- und Verliererbaum, flexible Teams und Felder, lokale Ergebnisse und druckbarer A4-Spielplan.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Turnierbogen_Doppel_KO_System.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
-<meta property="og:title" content="Turnierbogen – Doppel-K.-o.-System (flexibel)">
+<meta property="og:title" content="CompetitionPilot – Doppel-K.-o.-System (flexibel)">
 <meta property="og:description" content="Beach-Volleyball mit Doppel-KO organisieren: Gewinner- und Verliererbaum, flexible Teams und Felder, lokale Ergebnisse und druckbarer A4-Spielplan.">
 <meta property="og:url" content="https://mcmulman.github.io/beachvolley/Turnierbogen_Doppel_KO_System.html">
 <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
-<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta property="og:image:alt" content="CompetitionPilot App-Symbol">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Turnierbogen – Doppel-K.-o.-System (flexibel)">
+<meta name="twitter:title" content="CompetitionPilot – Doppel-K.-o.-System (flexibel)">
 <meta name="twitter:description" content="Beach-Volleyball mit Doppel-KO organisieren: Gewinner- und Verliererbaum, flexible Teams und Felder, lokale Ergebnisse und druckbarer A4-Spielplan.">
 <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="core/turnier-base.css">
@@ -35,6 +35,8 @@
     .placelist td.nm { text-align:left; }
     .placelist td.src { font-size:11px; color:#555; }
     .final-empty { color:#666; font-style:italic; padding:8px 0; }
+    .m-referees { display:block; text-align:center; font-size:10px; color:#33465d; }
+    @media print { .m-referees { font-size:7pt; } }
 
     /* Turnierbaum: je Runde eine Spalte, Paarungen untereinander.
        Gleiches Markup wie beim reinen KO-System (TUI.bracketColumnsHtml),
@@ -84,6 +86,7 @@
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
   <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
@@ -132,6 +135,15 @@
     </div>
     <label class="cfgfield cfgfield--mode"><span data-i18n="sheet.cfg.setMode">Satzmodus</span>
       <select id="setMode"></select>
+    </label>
+    <label class="cfgfield cfgfield--mode" id="volleyballPresetField" hidden>
+      <span data-i18n="dko.preset.label">Lokales Volleyball-Veranstalterprofil</span>
+      <select id="volleyballPreset">
+        <option value="custom" data-i18n="dko.preset.custom">Individuell – Satzmodus frei wählen</option>
+        <option value="a" data-i18n="dko.preset.a">Lokal A · Best of 3, alle Sätze bis 15</option>
+        <option value="a-plus" data-i18n="dko.preset.aPlus">Lokal A+ · späte Baumrunden bis 21</option>
+      </select>
+      <small class="input-hint" data-i18n="dko.preset.scope">A/A+ sind lokale Veranstalterbezeichnungen, keine FIVB-/DVV-Regelprofile.</small>
     </label>
     <label class="cfgfield cfgfield--start"><span data-i18n="sheet.cfg.start">Start</span>
       <input type="time" id="startTime" value="10:00">
@@ -268,7 +280,7 @@
      KO-Baum (2n-2 statt n-1) – deshalb ist die Teamzahl bewusst auf 16
      begrenzt (siehe docs/format-double-elimination.html "Ablauf"). Unter
      4 Teams gibt es keine sinnvolle Verlierer-Runde. */
-  const DEFAULTS = { teams:8, fields:4, groups:0, bracketMode:'double', setMode:'21', finalMode:'doubleko',
+  const DEFAULTS = { teams:8, fields:4, groups:0, bracketMode:'double', finalMode:'doubleko',
     startTime:'10:00', endTime:'15:00' };
 
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen. */
@@ -295,11 +307,29 @@
       && !(cur.absent || []).length;
     return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
              keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams,
-             fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
+             fresh: title => {
+               const fresh = TStore.emptyTournament(SHEET, DEFAULTS);
+               fresh.config.volleyballPreset = fresh.sport.id.indexOf('volleyball.') === 0 ? 'a' : 'custom';
+               fresh.config.teams = 8;
+               return Object.assign(fresh, { title:title });
+             } };
   }
   let S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  const oldEventHasData = Object.keys(S.results || {}).length || Object.keys(S.teamNames || {}).length
+    || Object.keys(S.fieldNames || {}).length || (S.absent || []).length || S.title;
+  if (!S.config.volleyballPreset) {
+    S.config.volleyballPreset = S.sport.id.indexOf('volleyball.') === 0
+      ? (TStore.initialUiState().isNew ? 'a' : (oldEventHasData ? 'custom' : 'a'))
+      : 'custom';
+  }
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
@@ -310,9 +340,10 @@
   S.config.bracketMode = 'double';
   S.config.finalMode = 'doubleko';
   if(TStore.applyUrlConfig(S, {
-      teams:  TStore.urlInt(4, 16),
+      teams:  TStore.urlInt(4, S.sport.id.indexOf('volleyball.') === 0 ? 32 : 16),
       fields: TStore.urlInt(1, 10),
-      setMode: TStore.urlOneOf(TC.SET_MODES.map(m => m.id))
+      setMode: TStore.urlOneOf(TC.modesForProfile(S.sport.id).map(m => m.id)),
+      volleyballPreset: TStore.urlOneOf(['custom', 'a', 'a-plus'])
   })) TStore.save(S);
   let B = null;
   let structureKey = '';
@@ -320,11 +351,13 @@
 
   /* ------------------------------------------------------------ Kontext */
   function labeler(){ return TUI.makeLabeler(S.teamNames); }
-  function fieldLabel(i){ return S.fieldNames[i] || T('ui.field.n', { n: i+1 }); }
+  function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
     return { setMode: mode, teamLabel: labeler(),
              teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)),
              fieldLabel: fieldLabel,
+             showReferees: S.sport.id.indexOf('volleyball.') === 0
+               && (S.config.volleyballPreset === 'a' || S.config.volleyballPreset === 'a-plus'),
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
              fields: S.config.fields, modeLabel: modeLabel(mode) };
@@ -338,12 +371,17 @@
   function fillSelects(){
     const t = $('teamCount');
     if(!t.options.length){
-      for(let n=MIN_TEAMS;n<=16;n++) t.add(new Option(T('common.teams', { count: n }), n));
-      TC.SET_MODES.forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
+      const maxTeams = S.sport.id.indexOf('volleyball.') === 0 ? 32 : 16;
+      for(let n=MIN_TEAMS;n<=maxTeams;n++) t.add(new Option(T('common.teams', { count: n }), n));
+      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
     }
     t.value = S.config.teams;
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     $('setMode').value = S.config.setMode;
+    $('volleyballPresetField').hidden = S.sport.id.indexOf('volleyball.') !== 0;
+    $('volleyballPreset').value = S.config.volleyballPreset || 'custom';
+    $('setMode').disabled = $('volleyballPreset').value !== 'custom'
+      && S.sport.id.indexOf('volleyball.') === 0;
     $('startTime').value = S.config.startTime;
     $('endTime').value = S.config.endTime;
     $('session-title-input').value = S.title || '';
@@ -353,6 +391,7 @@
     S.config.teams = +$('teamCount').value;
     S.config.fields = +$('fieldCount').value;
     S.config.setMode = $('setMode').value;
+    S.config.volleyballPreset = $('volleyballPreset').value;
     S.config.startTime = $('startTime').value || '10:00';
     S.config.endTime = $('endTime').value || '15:00';
   }
@@ -361,7 +400,10 @@
   function planFor(c){
     return TPlanning.apply(TFormat.build({
       teams: c.teams, groups: 0, bracketMode: 'double', fields: c.fields,
-      setMode: c.setMode, finalMode: 'doubleko', startTime: c.startTime,
+      setMode: c.volleyballPreset === 'custom' || S.sport.id.indexOf('volleyball.') !== 0
+        ? c.setMode : (S.sport.id === 'volleyball.beach' ? '2x15tb' : 'indoor-a'),
+      finalMode: 'doubleko', startTime: c.startTime,
+      volleyballPreset: c.volleyballPreset, sportId: S.sport.id,
       absent: S.absent, results: S.results
     }), c, S.results);
   }
@@ -371,7 +413,7 @@
   }
   function keyOf(){
     const c = S.config;
-    return [c.teams,c.fields,c.setMode,c.startTime].join('|');
+    return [c.teams,c.fields,c.setMode,c.volleyballPreset,c.startTime].join('|');
   }
 
   function rebuild(){
@@ -415,10 +457,13 @@
     $('bracketWB').innerHTML = TUI.bracketColumnsHtml(bracket.wbRounds);
     $('bracketLB').innerHTML = TUI.bracketColumnsHtml(bracket.lbRounds);
     if(bracket.grandFinal){
-      $('bracketGF').innerHTML = TUI.bracketColumnsHtml([
+      const finalColumns = [];
+      if (bracket.thirdPlace) finalColumns.push({ title: T('dko.bracket.third'), matches: [bracket.thirdPlace] });
+      finalColumns.push(
         { title: T('dko.gf.game1'), matches: [bracket.grandFinal.m1] },
         { title: T('dko.gf.reset'), matches: [bracket.grandFinal.m2] }
-      ]);
+      );
+      $('bracketGF').innerHTML = TUI.bracketColumnsHtml(finalColumns);
     } else {
       $('bracketGF').innerHTML = '';
     }
@@ -468,6 +513,7 @@
       if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
+      const matchMode = m.setMode || ctx.setMode;
       /* Das Reset-Spiel wird nur benoetigt, wenn der Verlierer-Runden-Champion
          das erste Grand-Final-Spiel gewinnt (siehe AGENTS.md/Doku). Ist das
          (noch) nicht der Fall, bleibt die Zeile gesperrt statt Ergebnisse
@@ -481,8 +527,8 @@
          springt faelschlich ins ungenutzte TB-Feld statt zum naechsten Spiel. */
       const res = S.results[id];
       const s1 = res && res[0], s2 = res && res[1];
-      const decidingNotNeeded = TC.hasDecidingSet(ctx.setMode) && s1 && s2
-        && !TC.decidingSetNeeded(s1[0], s1[1], s2[0], s2[1], ctx.setMode);
+      const decidingNotNeeded = TC.hasDecidingSet(matchMode) && s1 && s2
+        && !TC.decidingSetNeeded(s1[0], s1[1], s2[0], s2[1], matchMode);
       td.querySelectorAll('input.score').forEach(inp => {
         const set = +inp.getAttribute('data-set');
         inp.disabled = open || bye || resetLocked || (set === 3 && decidingNotNeeded);
@@ -490,8 +536,15 @@
         const v = (S.results[id] && S.results[id][set-1]) ? S.results[id][set-1][side==='a'?0:1] : null;
         if(document.activeElement !== inp) inp.value = (v == null ? '' : v);
       });
-      TUI.paintMatch(td, m.result, ctx);
-      TUI.markScoreInputs(td, ctx.setMode);
+      TUI.paintMatch(td, m.result, Object.assign({}, ctx, { setMode: matchMode }));
+      TUI.markScoreInputs(td, matchMode);
+      const refereeLine = td.querySelector('[data-referees]');
+      if (refereeLine) {
+        const names = (m.referees || []).map(n => labeler()(n));
+        refereeLine.textContent = names.length
+          ? T('dko.referees', { teams: names.join(', ') })
+          : T('dko.referees.pending');
+      }
       TUI.paintByeCard(td, { winner: bye ? m.bye : null }, ctx);
       td.classList.toggle('is-reset-locked', resetLocked);
     });
@@ -519,10 +572,11 @@
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
     const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('dko.place.empty')) + '</td></tr>';
-    const placeRule = T('dko.place.rule');
+    const hasBronze = !!(B.bracket && B.bracket.thirdPlace);
+    const placeRule = T(hasBronze ? 'dko.place.ruleBronze' : 'dko.place.rule');
     $('hintRank').innerHTML = TUI.hintHtml(
-      T('dko.place.hintScreen', { rule: placeRule }),
-      T('dko.place.hintPrint', { rule: placeRule }));
+      T(hasBronze ? 'dko.place.hintScreenBronze' : 'dko.place.hintScreen', { rule: placeRule }),
+      T(hasBronze ? 'dko.place.hintPrintBronze' : 'dko.place.hintPrint', { rule: placeRule }));
   }
 
   function paintNotices(){
@@ -601,7 +655,7 @@
       + '<div class="grow"><table><caption>' + E('dko.scoring.placesCaption') + '</caption>'
       + '<tr><th>' + E('ui.rank.place') + '</th><th>' + E('dko.scoring.method') + '</th></tr>'
       + '<tr><td>1 / 2</td><td>' + E('dko.scoring.p12') + '</td></tr>'
-      + '<tr><td>3</td><td>' + E('dko.scoring.p3') + '</td></tr>'
+      + '<tr><td>3</td><td>' + E(B.bracket && B.bracket.thirdPlace ? 'dko.scoring.p3Bronze' : 'dko.scoring.p3') + '</td></tr>'
       + '<tr><td>' + E('dko.scoring.from4') + '</td><td>' + E('dko.scoring.from4Text') + '</td></tr>'
       + '</table></div></div>';
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + E('dko.legend.format') + ' · '
@@ -620,7 +674,7 @@
     const d = TC.modeDef(B.finalSetMode);
     $('g-mode').textContent = T('dko.guide.mode', { mode: modeLabel(d.id), win: d.target+1, lose: d.target-1 });
     $('g-final').textContent = T('dko.guide.final');
-    $('g-places').textContent = T('dko.guide.places');
+    $('g-places').textContent = T(B.bracket && B.bracket.thirdPlace ? 'dko.guide.placesBronze' : 'dko.guide.places');
   }
 
   /* -------------------------------------------------------------- Aktionen */
@@ -646,6 +700,8 @@
   function onChange(){
     const prevTeams = S.config.teams;
     readConfig();
+    $('setMode').disabled = S.sport.id.indexOf('volleyball.') === 0
+      && S.config.volleyballPreset !== 'custom';
     if(S.config.teams !== prevTeams){
       S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     }
@@ -661,7 +717,7 @@
   function wire(){
     planningActions = TPlanningActions.mount({ get: () => S, plan: () => B, build: planFor,
       save: () => save(), rebuild: () => { structureKey = ''; rebuild(); } });
-    ['teamCount','fieldCount','setMode','startTime','endTime']
+    ['teamCount','fieldCount','setMode','volleyballPreset','startTime','endTime']
       .forEach(id => $(id).addEventListener('change', onChange));
 
     $('session-title-input').addEventListener('input', e => {
@@ -761,7 +817,10 @@
       compute();
       paint();
     };
-    onScore.setMode = () => B.finalSetMode;
+    onScore.setMode = id => {
+      const match = B.matchById[id];
+      return match && match.setMode ? match.setMode : B.finalSetMode;
+    };
     TUI.wireScoreInputs($('schedFinBody'), onScore);
   }
 

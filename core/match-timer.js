@@ -68,7 +68,7 @@
   var SWITCH_AUTO = 0;
   var SWITCH_OFF = -1;
   var SWITCH_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10];
-  var MAX_TARGETS = 5;
+  var MAX_TARGETS = 7;
   var MAX_REF = 80;
   var RETURN_PAGE = /^(?:index\.html|Turnierbogen_[A-Za-z0-9_]+\.html)(?:\?[^#\s\\]*)?$/;
 

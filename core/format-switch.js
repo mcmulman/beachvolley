@@ -5,8 +5,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
 
+  const Sport = root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null);
   const RETURN_PREFIX = '__beachl_format_return.';
-  const modes = ['15', '21', '2x15', '2x21', '2x15tb', '2x21tb'];
+  const beachModes = ['15', '21', '2x15', '2x21', '2x15tb', '2x21tb'];
   const targets = [
     { id: 'runden_rr', file: 'Turnierbogen_Runden_System.html', type: 'Jeder gegen Jeden', mode: 'rr', min: 4, max: 24 },
     { id: 'runden_swiss', file: 'Turnierbogen_Runden_System.html', type: 'Schweizer System', mode: 'swiss', min: 4, max: 24 },
@@ -28,10 +29,11 @@
   const copy = v => JSON.parse(JSON.stringify(v));
   function targetFor(id) { return targets.find(t => t.id === id); }
   function sourceBase(sheet) { return typeof sheet === 'string' ? sheet.split('.')[0] : ''; }
-  function defaults(t) {
+  function defaults(t, sportId) {
     if (t.id === 'koc') return { teams: 12, courts: 3, rounds: null, roundMinutes: 15, startTime: '10:00' };
-    if (t.id === 'kingqueen') return { men: 4, women: 4, rounds: 4, fields: 2, startTime: '10:00', endTime: '14:00', setMode: '21', levels: {} };
-    const c = { teams: 8, fields: 4, setMode: '21', startTime: '10:00', endTime: '14:00' };
+    const setMode = Sport ? Sport.get(sportId || 'volleyball.beach', 1).defaultMode : '2x21tb';
+    if (t.id === 'kingqueen') return { men: 4, women: 4, rounds: 4, fields: 2, startTime: '10:00', endTime: '14:00', setMode: setMode, levels: {} };
+    const c = { teams: 8, fields: 4, setMode: setMode, startTime: '10:00', endTime: '14:00' };
     if (t.mode) Object.assign(c, { mode: t.mode, rounds: null });
     if (grouped(t.id)) Object.assign(c, { groups: 'auto', finalMode: 'placement', finalSetMode: '', endTime: '14:30' });
     if (t.id === 'ko-flex') Object.assign(c, { groups: 0, finalMode: 'ko', thirdPlace: true });
@@ -45,7 +47,20 @@
     const note = (key, params) => notices.push({ key: 'formatSwitch.' + key, params: params || {} });
     const blocked = key => { note(key || 'invalid'); return { blocked: true, notices: notices }; };
     if (!target || !targetFor(base) || targetId === base || !object(source.config)) return blocked('invalidTarget');
-    const c = source.config, cfg = defaults(target);
+    const sourceProfile = Sport ? Sport.recordSport(source) : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
+    if (!sourceProfile.ok || (Sport && !Sport.supportsFormat(sourceProfile.profile.id, targetId))) return blocked('invalidTarget');
+    const profile = Sport && Sport.get(sourceProfile.profile.id, sourceProfile.profile.version);
+    const modes = profile ? profile.modeIds : beachModes;
+    const c = source.config, cfg = defaults(target, sourceProfile.profile.id);
+    if (profile && c.rankingProfile != null && profile.rankingProfiles.indexOf(c.rankingProfile) < 0) return blocked();
+    if (c.customSetTarget != null
+        && (!Number.isInteger(c.customSetTarget) || c.customSetTarget < 11 || c.customSetTarget > 50)) return blocked();
+    if (c.modeMinutes != null && (!object(c.modeMinutes)
+        || Object.keys(c.modeMinutes).some(mode => !modes.includes(mode)
+          || !integer(c.modeMinutes[mode], 1, 360)))) return blocked();
+    if (c.rankingProfile != null) cfg.rankingProfile = c.rankingProfile;
+    if (c.customSetTarget != null) cfg.customSetTarget = c.customSetTarget;
+    if (c.modeMinutes && Object.keys(c.modeMinutes).length) cfg.modeMinutes = copy(c.modeMinutes);
     const sourcePeople = base === 'kingqueen', targetPeople = targetId === 'kingqueen';
     const sourceCourt = base === 'koc', targetCourt = targetId === 'koc';
     const count = sourcePeople ? c.men + c.women : c.teams;
@@ -58,13 +73,23 @@
     if (!object(names) || !object(fields)
         || !Object.keys(names).every(k => /^[1-9]\d*$/.test(k) && typeof names[k] === 'string')
         || !Object.keys(fields).every(k => /^\d+$/.test(k) && typeof fields[k] === 'string')) return blocked();
-    const tournament = { title: source.title || '', config: cfg, teamNames: {}, fieldNames: {} };
+    const sport = Sport ? Sport.recordSport(source) : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
+    if (!sport.ok) return blocked('invalid');
+    const tournament = {
+      title: source.title || '',
+      sport: Sport ? Sport.value(sport.profile) : { id: 'volleyball.beach', version: 1 },
+      config: cfg,
+      teamNames: {},
+      fieldNames: {}
+    };
     if (sourcePeople !== targetPeople) {
       note(targetPeople ? 'peopleRoster' : 'teamRoster', { count: targetPeople ? 8 : cfg.teams, sourceCount: count });
       if (sourcePeople && Object.keys(c.levels || {}).length) note('levels');
     } else {
-      if (!integer(count, target.min, target.max)) {
-        note('countRange', { count: count, min: target.min, max: target.max });
+      const maxTeams = targetId === 'de-flex' && /^volleyball\./.test(sport.profile.id)
+        ? 32 : target.max;
+      if (!integer(count, target.min, maxTeams)) {
+        note('countRange', { count: count, min: target.min, max: maxTeams });
         return { blocked: true, notices: notices };
       }
       cfg.teams = count;
@@ -130,14 +155,25 @@
     return { blocked: false, tournament: tournament, notices: notices };
   }
 
-  function urlFor(target, sheet) {
+  function urlFor(target, sheet, sportId) {
     const id = sheet.indexOf('.') < 0 ? '_base_' : sheet.slice(sheet.indexOf('.') + 1);
-    return target.file + '?id=' + encodeURIComponent(id) + (target.mode ? '&mode=' + target.mode : '');
+    const params = new URLSearchParams();
+    params.set('id', id);
+    if (target.mode) params.set('mode', target.mode);
+    if (sportId && sportId !== 'volleyball.beach') params.set('sport', sportId);
+    return target.file + '?' + params.toString();
+  }
+  function fileFor(target, sportId) {
+    const params = new URLSearchParams();
+    if (target.mode) params.set('mode', target.mode);
+    if (sportId && sportId !== 'volleyball.beach') params.set('sport', sportId);
+    const query = params.toString();
+    return target.file + (query ? '?' + query : '');
   }
   function archiveCopy(view, target, sheet, data) {
     const S = root.TStore;
     root.TArchive.archiveCurrentInView(view, {
-      sheet: sheet, file: target.file + (target.mode ? '?mode=' + target.mode : ''),
+      sheet: sheet, file: fileFor(target, (data.sport || { id: 'volleyball.beach' }).id),
       type: target.type, title: data.title, teams: Object.values(data.teamNames || {}),
       keys: [S.PREFIX + sheet], empty: false
     });
@@ -171,14 +207,19 @@
         id = Date.now().toString(36) + Array.from(bytes, n => n.toString(36)).join('');
         sheet = target.base + '.' + id;
       } while (view.getItem(S.PREFIX + sheet) != null || view.getItem(S.SERVER_PREFIX + sheet) != null);
+        const sourceSport = Sport ? Sport.recordSport(parsed.data)
+          : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
+      if (!sourceSport.ok) throw new Error('formatSwitch.invalid');
       const result = A.startNewInView(view, {
         sheet: sheet, keys: [S.PREFIX + sheet], empty: true,
         fresh: () => Object.assign(S.emptyTournament(sheet, {}), copy(mapped.tournament))
       }, mapped.tournament.title);
       if (!A.validTournamentRecord(result.tournament, sheet)) throw new Error('formatSwitch.invalid');
       S.markNewInView(view, sheet, 'format');
-      view.setItem(RETURN_PREFIX + sheet, JSON.stringify({ sheet: source.sheet, target: sourceBase(source.sheet) }));
-      return { url: urlFor(target, sheet), sourceRevision: source._revision, sourceUpdated: source.updated };
+      view.setItem(RETURN_PREFIX + sheet, JSON.stringify({
+        sheet: source.sheet, target: sourceBase(source.sheet), sport: sourceSport.profile.id
+      }));
+      return { url: urlFor(target, sheet, sourceSport.profile.id), sourceRevision: source._revision, sourceUpdated: source.updated };
     }, { sheetId: source.sheet }));
   }
 
@@ -186,6 +227,9 @@
     const doc = root.document, S = root.TStore, I = root.TI18n;
     const section = doc.getElementById('configSection');
     if (!section || doc.getElementById('formatSwitchTarget')) return;
+    const profileResult = Sport ? Sport.recordSport(opts.get()) : null;
+    const profile = profileResult && profileResult.ok ? Sport.get(profileResult.profile.id, 1) : null;
+    const modes = profile ? profile.modeIds : beachModes;
     const t = (key, params) => I.t('formatSwitch.' + key, params);
     const noticeText = n => {
       const params = Object.assign({}, n.params);
@@ -202,7 +246,7 @@
     const select = box.querySelector('select'), button = box.querySelector('button'), status = box.querySelector('p');
     select.add(new Option(t('choose'), ''));
     const base = sourceBase(opts.get().sheet);
-    targets.filter(target => target.id !== base).forEach(target => {
+    targets.filter(target => target.id !== base && (!profile || Sport.supportsFormat(profile.id, target.id))).forEach(target => {
       const label = flex(target.id) ? I.term(target.type) + ' · ' + I.term(target.mode === 'rr' ? 'Jeder gegen Jeden' : 'Schweizer System') : I.term(target.type);
       select.add(new Option(label, target.id));
     });
@@ -254,10 +298,11 @@
     S.getItem(RETURN_PREFIX + opts.get().sheet).then(raw => {
       if (!raw) return;
       const info = JSON.parse(raw), target = targetFor(info.target);
-      if (!target || S.sheetBaseOf(info.sheet) !== target.base) throw new Error('Invalid format return reference');
+      if (!target || S.sheetBaseOf(info.sheet) !== target.base
+          || !Sport || !Sport.get(info.sport, 1)) throw new Error('Invalid format return reference');
       const link = doc.createElement('a');
       link.className = 'format-switch-return';
-      link.href = urlFor(target, info.sheet);
+      link.href = urlFor(target, info.sheet, info.sport);
       link.textContent = t('undo');
       link.title = t('undoHint');
       box.appendChild(link);

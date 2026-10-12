@@ -3,31 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="home.title">Beach-Volleyball Turniervorlagen</title>
-  <meta name="description" content="Beach-Volleyball-Turnierbögen, offline nutzbar: Spielplan, Ergebnisse und Tabelle am Bildschirm oder als A4-Ausdruck – Jeder gegen Jeden, Gruppen, KO und mehr.">
+  <title data-i18n="home.title">CompetitionPilot</title>
+  <meta name="description" content="CompetitionPilot hilft dir, Turniere zu planen, Spielpläne zu erstellen und Ergebnisse übersichtlich zu verwalten.">
   <link rel="canonical" href="https://mcmulman.github.io/beachvolley/">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Beach-Volleyball Turniervorlagen">
+  <meta property="og:site_name" content="CompetitionPilot">
   <meta property="og:locale" content="de_DE">
-  <meta property="og:title" content="Beach-Volleyball Turniervorlagen">
-  <meta property="og:description" content="Beach-Volleyball-Turnierbögen, offline nutzbar: Spielplan, Ergebnisse und Tabelle am Bildschirm oder als A4-Ausdruck – Jeder gegen Jeden, Gruppen, KO und mehr.">
+  <meta property="og:title" content="CompetitionPilot">
+  <meta property="og:description" content="CompetitionPilot hilft dir, Turniere zu planen, Spielpläne zu erstellen und Ergebnisse übersichtlich zu verwalten.">
   <meta property="og:url" content="https://mcmulman.github.io/beachvolley/">
   <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-512.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+  <meta property="og:image:alt" content="CompetitionPilot App-Symbol">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Beach-Volleyball Turniervorlagen">
-  <meta name="twitter:description" content="Beach-Volleyball-Turnierbögen, offline nutzbar: Spielplan, Ergebnisse und Tabelle am Bildschirm oder als A4-Ausdruck – Jeder gegen Jeden, Gruppen, KO und mehr.">
+  <meta name="twitter:title" content="CompetitionPilot">
+  <meta name="twitter:description" content="CompetitionPilot hilft dir, Turniere zu planen, Spielpläne zu erstellen und Ergebnisse übersichtlich zu verwalten.">
   <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-512.png">
-  <meta name="twitter:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+  <meta name="twitter:image:alt" content="CompetitionPilot App-Symbol">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -110,6 +110,10 @@
     .pill--primary { background: var(--blue-dark); border-color: var(--blue-dark); color: #fff; }
     @media (max-width: 560px) {
       .appbar .brand-title { display: none; }
+      .sport-choice { margin-top: 12px; }
+      .sport-choice-inner { align-items: stretch; flex-direction: column; }
+      .sport-choice-inner > * + * { margin-left: 0; margin-top: 6px; }
+      .sport-choice select { width: 100%; min-width: 0; }
       .pill .lbl { display: none; }
       .pill { padding: 8px; }
       /* Status-Text (z. B. „Offline-Modus nicht verfügbar“) darf auf sehr
@@ -146,6 +150,46 @@
       max-width: 600px;
       margin: 0 auto;
       line-height: 1.5;
+    }
+    .home-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 46px 24px 44px;
+      text-align: left;
+      background: linear-gradient(115deg, #142f4c 0%, #1a3a5c 56%, #24547a 100%);
+    }
+    .home-hero-inner { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; }
+    .home-hero .logo { display: none; }
+    .home-hero-kicker {
+      margin: 0 0 10px !important;
+      color: #b8d4ee;
+      font-size: 11px !important;
+      font-weight: 800;
+      letter-spacing: .13em;
+      line-height: 1.4 !important;
+      text-transform: uppercase;
+    }
+    .home-hero h1 {
+      max-width: 780px;
+      margin-bottom: 10px;
+      font-size: clamp(32px, 5vw, 48px);
+      line-height: 1.08;
+      letter-spacing: -.025em;
+    }
+    .home-hero p:last-child { max-width: 680px; margin: 0; font-size: 16px; line-height: 1.55; }
+    .home-format-priority {
+      max-width: 1080px;
+      margin: -8px auto 16px;
+      padding: 0 20px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .home-format-priority a { color: var(--blue-dark); font-weight: 700; }
+    @media (max-width: 560px) {
+      .home-hero { padding: 36px 20px 34px; }
+      .home-hero h1 { font-size: 34px; }
+      .home-hero p:last-child { font-size: 14px; }
     }
 
     /* DE/EN-Prototyp: Hinweis nur in der englischen Ansicht (data-i18n-only). */
@@ -263,6 +307,23 @@
     .wizard-result-btn { flex: 0 0 auto; }
     .wizard-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
     .wizard-hint a { color: var(--blue-dark); font-weight: 600; }
+    .wizard-hint[hidden] { display: none; }
+    .sport-choice {
+      max-width: 1080px; margin: 18px auto 0; padding: 0 20px;
+    }
+    .sport-choice-inner {
+      display: flex; align-items: center; flex-wrap: wrap;
+      padding: 12px 16px; background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: var(--shadow);
+    }
+    .sport-choice-inner > * + * { margin-left: 10px; }
+    .sport-choice label { font-size: 13px; font-weight: 700; color: var(--blue-dark); }
+    .sport-choice select {
+      min-width: 220px; min-height: 44px; border: 1px solid var(--border);
+      border-radius: 8px; background: #fff; color: var(--text); font: inherit; padding: 8px 34px 8px 10px;
+    }
+    .sport-choice-note { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .sport-choice-note[hidden] { display: none; }
     .card.wizard-highlight { animation: wizardPulse 1.6s ease; }
     @keyframes wizardPulse {
       0%, 100% { box-shadow: var(--shadow); }
@@ -699,6 +760,7 @@
     .stat .icon { display: inline-flex; align-items: center; }
     .stat .icon svg { display: block; width: 14px; height: 14px; }
     header .logo svg { display: inline-block; width: 40px; height: 40px; }
+    header .logo img { display: inline-block; width: 40px; height: 40px; border-radius: 8px; }
     .bl-ic--btn { width: 16px; height: 16px; flex: 0 0 auto; }
     .bl-ic--chev { width: 14px; height: 14px; vertical-align: -2px; }
     .feat::before{content:"";display:inline-block;flex:0 0 auto;width:1em;height:1em;margin:.15em 4px 0 0;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/contain}
@@ -861,14 +923,17 @@
        Muss als LETZTES Stylesheet stehen, damit die Fallback-Raender greifen. -->
   <script src="core/compat.js"></script>
   <!-- DE/EN (PRODUKTPLAN §6.1): gespeicherte Wahl, danach Gerätesprache. -->
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
   <script src="core/turnier-native.js"></script>
   <script src="core/turnier-share.js"></script>
+  <script src="core/turnier-qr-scan.js"></script>
   <script src="core/turnier-store.js"></script>
   <script src="core/turnier-backup.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <link rel="stylesheet" href="core/turnier-qr-scan.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
 </head>
 <body>
@@ -876,7 +941,7 @@
 <div class="appbar noprint">
   <a class="brand" href="index.html" aria-label="Startseite" data-i18n-attr="aria-label:home.brandAria">
     <img src="icon.svg" alt="">
-    <span class="brand-title"><span data-i18n="home.brandTitle">Beach-Volleyball</span><span class="brand-sub" data-i18n="home.brandSub">Turniervorlagen</span></span>
+    <span class="brand-title"><span data-i18n="home.brandTitle">CompetitionPilot</span><span class="brand-sub" data-i18n="home.brandSub">Turnierplanung</span></span>
   </a>
   <div class="appbar-spacer"></div>
   <div class="appbar-actions">
@@ -886,11 +951,21 @@
   </div>
 </div>
 
-<header>
-  <div class="logo"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M11.1 7.1a16.55 16.55 0 0 1 10.9 4"/><path d="M12 12a12.6 12.6 0 0 1-8.7 5"/><path d="M16.8 13.6a16.55 16.55 0 0 1-9 7.5"/><path d="M20.7 17a12.8 12.8 0 0 0-8.7-5 13.3 13.3 0 0 1 0-10"/><path d="M6.3 3.8a16.55 16.55 0 0 0 1.9 11.5"/></svg></div>
-  <h1 data-i18n="home.title">Beach-Volleyball Turniervorlagen</h1>
-  <p data-i18n="home.subtitle">Spielplan, Ergebnisse und Tabelle – am Bildschirm oder ausgedruckt.</p>
+<header class="home-hero">
+  <div class="home-hero-inner">
+    <p class="home-hero-kicker" data-i18n="home.hero.kicker">MULTISPORT · TURNIERPLANUNG</p>
+    <h1 data-i18n="home.hero.title">Turniere. Klar geplant.</h1>
+    <p data-i18n="home.subtitle">Vom ersten Spielplan bis zur Auswertung – übersichtlich planen, live verwalten und direkt drucken.</p>
+  </div>
 </header>
+
+<section class="sport-choice noprint" id="home-sport-choice" aria-labelledby="home-sport-label">
+  <div class="sport-choice-inner">
+    <label id="home-sport-label" for="home-sport-select" data-i18n="home.sport.label">Sportart</label>
+    <select id="home-sport-select"></select>
+    <span class="sport-choice-note" id="home-sport-note" role="status" hidden></span>
+  </div>
+</section>
 
 <div class="wizard-wrap noprint">
   <details class="wizard" id="wizard">
@@ -920,7 +995,7 @@
         </div>
       </div>
       <div class="wizard-row" data-q="count">
-        <span class="wizard-q" id="wizq-count" data-i18n="home.wizard.q.count">Wie viele Teams/Personen?</span>
+        <span class="wizard-q" id="wizq-count" data-i18n="home.wizard.q.count">Wie viele Teams, Paare oder Einzelspieler/innen?</span>
         <div class="wizard-opts" role="group" aria-labelledby="wizq-count">
           <button type="button" class="wizard-opt" aria-pressed="false" data-val="klein" data-i18n="home.wizard.a.klein">bis 8</button>
           <button type="button" class="wizard-opt" aria-pressed="false" data-val="mittel" data-i18n="home.wizard.a.mittel">8–16</button>
@@ -959,8 +1034,8 @@
         <div class="wizard-result-text" id="wizardResultText" role="status" aria-live="polite"></div>
         <button type="button" class="btn-open wizard-result-btn" id="wizardResultBtn" data-i18n="home.wizard.resultBtn">Bogen anzeigen</button>
       </div>
-      <p class="wizard-hint"><span data-i18n="home.wizard.hintFlex">Herren, Damen und Mixed in einer Wertung? →</span> <a href="#" onclick="wizardJumpToTag('flex');return false;" data-i18n="home.format.flex">Flex-Turnier</a></p>
-      <p class="wizard-hint"><span data-i18n="home.wizard.hintKoc">Auf- und Abstieg zwischen Feldern? →</span> <a href="#" onclick="wizardJumpToTag('koc');return false;" data-i18n="home.format.koc">King/Queen of the Court</a></p>
+      <p class="wizard-hint" data-wizard-tag="flex"><span data-i18n="home.wizard.hintFlex">Herren, Damen und Mixed in einer Wertung? →</span> <a href="#" onclick="wizardJumpToTag('flex');return false;" data-i18n="home.format.flex">Flex-Turnier</a></p>
+      <p class="wizard-hint" data-wizard-tag="koc"><span data-i18n="home.wizard.hintKoc">Auf- und Abstieg zwischen Feldern? →</span> <a href="#" onclick="wizardJumpToTag('koc');return false;" data-i18n="home.format.koc">King/Queen of the Court</a></p>
       <p class="wizard-hint" data-i18n="home.wizard.hintTime">Die Rundenzahl berechnet jeder Bogen aus Start- und Endzeit.</p>
     </div>
   </details>
@@ -1031,6 +1106,7 @@
                  autocapitalize="off" spellcheck="false" inputmode="text">
           <button type="submit" data-i18n="home.code.open">Öffnen</button>
         </form>
+        <button class="pill code-open-scan" id="code-open-scan" type="button" data-i18n="home.code.scan">QR-Code scannen</button>
       </div>
     </section>
     <section class="home-panel" id="backup-tools" aria-labelledby="backup-heading">
@@ -1094,23 +1170,28 @@
   </a>
   </div>
 
-  <div class="section-label" data-i18n="home.sheets.label">Turnierbögen</div>
+  <div class="section-label" data-i18n="home.sheets.label">Turnierformate</div>
+  <p class="home-format-priority" data-i18n-html="home.formats.priority">
+    Internationale Wettbewerbsabläufe zuerst, danach ergänzende und lokale Varianten. Das ist keine weltweite Rangliste; die Ausschreibung des jeweiligen Turniers hat Vorrang.
+    <a href="https://www.fivb.com/wp-content/uploads/2024/05/2025_FIVB_BVB_Sport-Operations-Manual-Clean-March-11-2025.pdf" target="_blank" rel="noopener noreferrer">FIVB</a> ·
+    <a href="https://www.ittf.com/2026/03/29/everything-you-need-to-know-draw-sets-the-stage-for-ittf-mens-womens-world-cup-macao-2026/" target="_blank" rel="noopener noreferrer">ITTF</a>
+  </p>
   <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em" data-i18n="home.sheets.features">
     Alle Bögen: Teamnamen · Feldnamen · Zeiten konfigurierbar · Freilos/Ausfall · Druckvorlage A4 quer · Ergebnisse im Browser gespeichert
   </p>
   <div class="grid">
 
     <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
-    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht.">
+    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht." data-sport-attr-variants="indoor tt">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
         <h2 data-i18n="home.card.gruppen.title">Gruppen + Finalrunde</h2>
         <div class="sub" data-i18n="home.card.gruppen.sub">Gruppen, Platzierungsrunde, KO oder Hauptrunde – frei kombinierbar</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24" data-sport-variants="pair player">4–24 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10" data-sport-variants="tt">1–10 Felder</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.gruppen.stat3">2–6 Gruppen o. automatisch</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
@@ -1118,7 +1199,7 @@
           <span class="feat" data-i18n="home.card.gruppen.feat1">5 Finalmodi wählbar</span>
           <span class="feat" data-i18n="home.card.gruppen.feat2">Über-Kreuz-Setzung</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
-          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1126,7 +1207,7 @@
           Öffnen
         </a>
         <a class="btn-open" href="Turnierbogen_Gruppen_Finalrunde.html?finalMode=blocks" target="_blank"
-           data-i18n="home.card.gruppen.blocks" data-i18n-attr="title:home.card.gruppen.blocksTitle"
+           data-i18n="home.card.gruppen.blocks" data-i18n-attr="title:home.card.gruppen.blocksTitle" data-sport-attr-variants="tt"
            title="Finalrunde für eine bereits gespielte Rangliste (z. B. nach „Jeder gegen Jeden“): Teams in Platzierungsblöcke einteilen, jeder Block spielt um seine eigenen Plätze.">
           Als Finalrunde aus Rangliste
         </a>
@@ -1134,24 +1215,24 @@
     </div>
 
     <!-- ── Card: Jeder gegen Jeden ── -->
-    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-i18n-attr="data-desc:home.card.rr.desc" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen.">
+    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-i18n-attr="data-desc:home.card.rr.desc" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen." data-sport-attr-variants="tt">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
         <h2 data-i18n="home.format.rr">Jeder gegen Jeden</h2>
-        <div class="sub" data-i18n="home.card.rr.sub">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
+        <div class="sub" data-i18n="home.card.rr.sub" data-sport-variants="pair player">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.rr.stat3">Teams − 1 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24" data-sport-variants="pair player">4–24 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10" data-sport-variants="tt">1–10 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.rr.stat3" data-sport-variants="pair player">Teams − 1 Spiele/Team</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-          <span class="feat" data-i18n="home.feat.oddBye">Ungerade Teamzahl (Freilos)</span>
+          <span class="feat" data-i18n="home.feat.oddBye" data-sport-variants="pair player">Ungerade Teamzahl (Freilos)</span>
           <span class="feat" data-i18n="home.card.rr.feat2">Laufende Tabelle je Runde</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
-          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1162,24 +1243,24 @@
     </div>
 
     <!-- ── Card: Schweizer System ── -->
-    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-i18n-attr="data-desc:home.card.swiss.desc" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden.">
+    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-i18n-attr="data-desc:home.card.swiss.desc" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden." data-sport-attr-variants="tt">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.tag.dynamic24">dynamisch · 4–24 Teams</span>
+        <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
         <h2 data-i18n="home.format.swiss">Schweizer System</h2>
-        <div class="sub" data-i18n="home.card.swiss.sub">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
+        <div class="sub" data-i18n="home.card.swiss.sub" data-sport-variants="tt">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24">4–24 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams24" data-sport-variants="pair player">4–24 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10" data-sport-variants="tt">1–10 Felder</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.swiss.stat3">Rundenzahl wählbar</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.card.swiss.feat1">Keine Paarung wiederholt sich</span>
-          <span class="feat" data-i18n="home.feat.oddBye">Ungerade Teamzahl (Freilos)</span>
+          <span class="feat" data-i18n="home.feat.oddBye" data-sport-variants="pair player">Ungerade Teamzahl (Freilos)</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
-          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1191,24 +1272,24 @@
 
 
     <!-- ── Card: KO-System (Ausscheidungsturnier, deshalb am Ende) ── -->
-    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-i18n-attr="data-desc:home.ko.desc" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag.">
+    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-i18n-attr="data-desc:home.ko.desc" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag." data-sport-attr-variants="tt">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.ko.tag">dynamisch · 4–32 Teams</span>
+        <span class="format-tag" data-i18n="home.ko.tag" data-sport-variants="pair player">dynamisch · 4–32 Teams</span>
         <h2 data-i18n="home.ko.title">KO-System</h2>
         <div class="sub" data-i18n="home.ko.sub">Turnierbaum mit Freilosen · ideal als Playoff</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.ko.statTeams">4–32 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.ko.statFields">1–10 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.ko.statTeams" data-sport-variants="pair player">4–32 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.ko.statFields" data-sport-variants="tt">1–10 Felder</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.ko.statRounds">2–5 Runden</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.ko.statLength">kurz · 1–5 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.ko.statLength" data-sport-variants="pair player">kurz · 1–5 Spiele/Team</span></span>
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.ko.feat1">Spiel um Platz 3 optional</span>
           <span class="feat" data-i18n="home.ko.feat2">Setzliste &amp; Freilose</span>
           <span class="feat" data-i18n="home.ko.feat3">Platzbereiche statt Rangliste</span>
-          <span class="feat" data-i18n="home.ko.feat4">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.ko.feat4" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1221,25 +1302,25 @@
     <!-- ── Card: Doppel-KO-System (eigener Filter-Tag "de", zusaetzlich
          "ko"/"bracket"/"turnierbaum", damit der Bogen auch beim generischen
          KO-Filter auftaucht – siehe applyCardFilters() weiter unten). ── -->
-    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-i18n-attr="data-desc:home.card.de.desc" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance. Fairer als das einfache KO-System, braucht dafür deutlich mehr Spiele und eignet sich besonders für größere Turniere mit ernsthafter Qualifikationslogik.">
+    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-i18n-attr="data-desc:home.card.de.desc" data-sport-attr-variants="beach indoor tt" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance.">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.card.de.tag">dynamisch · 4–16 Teams</span>
+        <span class="format-tag" data-i18n="home.card.de.tag" data-sport-variants="beach indoor pair player">dynamisch · 4–32 Teams</span>
         <h2 data-i18n="home.card.de.title">Doppel-K.-o.-System</h2>
         <div class="sub" data-i18n="home.card.de.sub">Turnierbaum mit Verlierer-Runde · erst die 2. Niederlage scheidet aus</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.de.stat1">4–16 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields8">1–8 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.de.stat1" data-sport-variants="beach indoor pair player">4–32 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields8" data-sport-variants="tt">1–8 Felder</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.de.stat3">bis zu 2× so viele Runden wie beim KO-System</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.de.stat4">länger · 2–7 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.de.stat4" data-sport-variants="pair player">länger · 2–7 Spiele/Team</span></span>
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.card.de.feat1">Gewinner- &amp; Verlierer-Runde</span>
           <span class="feat" data-i18n="home.card.de.feat2">Grand Final mit Entscheidungsspiel (Reset)</span>
           <span class="feat" data-i18n="home.feat.seedByes">Setzliste &amp; Freilose</span>
           <span class="feat" data-i18n="home.feat.placeRanges">Platzbereiche statt Rangliste</span>
-          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1252,25 +1333,25 @@
     <!-- ── Card: Modified Pool Play (eigener Filter-Tag "mpp", zusaetzlich
          "gruppen", damit der Bogen auch beim generischen Gruppen-Filter
          auftaucht – analog zur "de"/"ko"-Doppelverschlagwortung oben). ── -->
-    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-i18n-attr="data-desc:home.card.mpp.desc" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand.">
+    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-i18n-attr="data-desc:home.card.mpp.desc" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand." data-sport-attr-variants="tt">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.card.mpp.tag">dynamisch · 6–24 Teams</span>
+        <span class="format-tag" data-i18n="home.card.mpp.tag" data-sport-variants="pair player">dynamisch · 6–24 Teams</span>
         <h2 data-i18n="home.format.mpp">Modified Pool Play</h2>
         <div class="sub" data-i18n="home.card.mpp.sub">4er-Gruppen als Mini-Bracket · nur 4 statt 6 Gruppenspiele</div>
       </div>
       <div class="card-body">
         <div class="stats">
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams6to24">6–24 Teams</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams6to24" data-sport-variants="pair player">6–24 Teams</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10" data-sport-variants="tt">1–10 Felder</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.mpp.stat3">reine 3er-/4er-Gruppen</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.mpp.stat4">kürzer · mind. 2 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.mpp.stat4" data-sport-variants="pair player">kürzer · mind. 2 Spiele/Team</span></span>
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.card.mpp.feat1">Setzplatz 1 vs. 4, 2 vs. 3</span>
           <span class="feat" data-i18n="home.card.mpp.feat2">Gewinner-/Verliererspiel je Gruppe</span>
           <span class="feat" data-i18n="home.card.mpp.feat3">4 Finalmodi wählbar</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
-          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
+          <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1342,24 +1423,24 @@
          faire Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
          Team-Rangliste – NICHT zu verwechseln mit King & Queen, das
          Einzelpersonen und getrennte Geschlechter-Ranglisten hat). ── -->
-    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-i18n-attr="data-desc:home.card.flex.desc" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein.">
+    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-i18n-attr="data-desc:home.card.flex.desc" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein." data-sport-attr-variants="pair player">
       <div class="card-header">
-        <span class="format-tag" data-i18n="home.card.flex.tag">Custom Event · Team-Wertung</span>
+        <span class="format-tag" data-i18n="home.card.flex.tag" data-sport-variants="pair player">Custom Event · Team-Wertung</span>
         <h2 data-i18n="home.format.flex">Flex-Turnier</h2>
-        <div class="sub" data-i18n="home.card.flex.sub">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
+        <div class="sub" data-i18n="home.card.flex.sub" data-sport-variants="pair player">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
       </div>
       <div class="card-body">
         <div class="stats">
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.flex.stat1">4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields8">1–8 Felder</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.flex.stat1" data-sport-variants="pair player">4–24 Teams (beliebige Geschlechter-Zusammensetzung)</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields8" data-sport-variants="tt">1–8 Felder</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.flex.stat3">Schweizer System (Standard) oder Jeder-gegen-Jeden</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.flex.stat4">Satzmodus wählbar</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.flex.stat4" data-sport-variants="tt">Satzmodus wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat" data-i18n="home.card.flex.feat1">Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
-         <span class="feat" data-i18n="home.card.flex.feat2">faire Startrunden-Auslosung nach Team-Art</span>
+         <span class="feat" data-i18n="home.card.flex.feat1" data-sport-variants="pair player">Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
+         <span class="feat" data-i18n="home.card.flex.feat2" data-sport-variants="pair player">faire Startrunden-Auslosung nach Team-Art</span>
          <span class="feat" data-i18n="home.card.flex.feat3">Schweizer System bei breitem Niveau-Spektrum</span>
-         <span class="feat" data-i18n="home.card.flex.feat4">eine gemeinsame Team-Rangliste</span>
+         <span class="feat" data-i18n="home.card.flex.feat4" data-sport-variants="pair player">eine gemeinsame Team-Rangliste</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1497,7 +1578,7 @@
 </main>
 
 <footer>
-  <span data-i18n="home.footer">Beach-Volleyball Turniervorlagen · Ausfüllbare Druckvorlagen · Alle Bögen funktionieren auch online oder offline im Browser</span>
+  <span data-i18n="home.footer">CompetitionPilot · Turnierplanung und Ergebniserfassung</span>
   <div class="footer-legal">
     © <span id="cpYear"></span> ·
     <button type="button" id="btnShowContact" class="footer-contact-btn" data-i18n="chrome.contact">Copyright/Kontakt</button>
@@ -1632,7 +1713,9 @@
       const tags = (card.dataset.tags || '').split(' ');
       const teamOk = !teamTag || tags.includes(teamTag);
       const formatOk = !formatTag || tags.includes(formatTag);
-      card.hidden = !(teamOk && formatOk);
+      const sportOk = typeof window.homeCardSportAllowed !== 'function'
+        || window.homeCardSportAllowed(card, window.__BL_HOME_SPORT__ || 'volleyball.beach');
+      card.hidden = !(teamOk && formatOk && sportOk);
     });
   }
 
@@ -1649,6 +1732,9 @@
       btn.classList.add('active');
       syncFilterPressed();
     }
+    /* Mobile Auswahl mitführen, sonst stellt ein Sportwechsel einen alten Filter wieder her. */
+    const mobileFormat = document.getElementById('mobileFormatFilter');
+    if (mobileFormat) mobileFormat.value = tag === 'all' ? '' : tag;
     if (tag === 'all') {
       applyCardFilters('', '');
     } else {
@@ -2310,7 +2396,31 @@
       row.hidden = !timeQuestionRelevant(answers);
     }
 
+    /* Sportprofil der Startseite: bestimmt, welche Formate der Wizard
+       empfehlen darf (Quelle: TSport-Profil, wie bei den Karten). */
+    let wizardSport = 'volleyball.beach';
+    function sportProfile() {
+      return window.TSport ? window.TSport.get(wizardSport, 1) : null;
+    }
+    function tagAllowed(tag) {
+      return Array.prototype.some.call(
+        document.querySelectorAll('.card[data-tags~="' + tag + '"]'),
+        card => typeof window.homeCardSportAllowed !== 'function'
+          || window.homeCardSportAllowed(card, wizardSport));
+    }
+    /* King & Queen (Einzelne, rotierende Partner) gibt es nur, wenn das
+       Profil das Format anbietet; sonst entfällt die Teilnehmer-Frage und
+       der Wizard rechnet mit festen Teilnehmenden (Teams, Paare, Spieler/innen). */
+    function individualsAvailable() {
+      return tagAllowed('kingqueen');
+    }
+
     function computeRecommendation() {
+      const rec = computeRawRecommendation();
+      return rec && tagAllowed(rec.tag) ? rec : null;
+    }
+
+    function computeRawRecommendation() {
       const a = answers;
       if (!a.participants) return null;
 
@@ -2339,9 +2449,11 @@
       // a.goal === 'alle': jeder soll viel spielen, keiner scheidet aus
       if (a.repeats === 'nein') {
         if (a.count === 'klein') {
+          const profile = sportProfile();
+          const teams = !profile || profile.participantKey === 'sport.participant.team';
           return {
             tag: 'rr',
-            reason: T('home.wizard.reason.rrNoRepeat')
+            reason: T(teams ? 'home.wizard.reason.rrNoRepeat' : 'home.wizard.reason.rrSmall')
           };
         }
         return {
@@ -2383,7 +2495,7 @@
       const box = document.getElementById('wizardResult');
       const text = document.getElementById('wizardResultText');
       const btn = document.getElementById('wizardResultBtn');
-      if (!rec) { box.hidden = true; return; }
+      if (!rec) { box.hidden = true; btn.onclick = null; return; }
       box.hidden = false;
       const label = FORMAT_LABEL_KEYS[rec.tag] ? T(FORMAT_LABEL_KEYS[rec.tag]) : rec.tag;
       text.innerHTML = '<strong>' + T('home.wizard.recommendation', { label: label }) + '</strong><br>' + rec.reason;
@@ -2398,7 +2510,9 @@
       if (typeof syncFilterPressed === 'function') syncFilterPressed();
       const mobileSel = document.getElementById('mobileFormatFilter');
       if (mobileSel) mobileSel.value = tag;
-      const card = document.querySelector('.card[data-tags~="' + tag + '"]');
+      const cards = Array.from(document.querySelectorAll('.card[data-tags~="' + tag + '"]'))
+        .filter(c => !c.hidden);
+      const card = cards.find(c => (c.dataset.tags || '').split(' ')[0] === tag) || cards[0];
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         card.classList.remove('wizard-highlight');
@@ -2406,7 +2520,215 @@
         card.classList.add('wizard-highlight');
       }
     };
+
+    /* Wird von der Sportartwahl aufgerufen: Antworten zurücksetzen, nicht
+       angebotene Zweige/Hinweise ausblenden, Empfehlung neu berechnen. */
+    window.wizardApplySport = function (id) {
+      wizardSport = id || 'volleyball.beach';
+      Object.keys(answers).forEach(k => { delete answers[k]; });
+      wizard.querySelectorAll('.wizard-opt').forEach(b => {
+        b.classList.remove('selected');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      const partRow = wizard.querySelector('.wizard-row[data-q="participants"]');
+      const individuals = individualsAvailable();
+      if (partRow) partRow.hidden = !individuals;
+      if (!individuals) answers.participants = 'teams';
+      wizard.querySelectorAll('.wizard-hint[data-wizard-tag]').forEach(hint => {
+        hint.hidden = !tagAllowed(hint.dataset.wizardTag);
+      });
+      wizard.setAttribute('data-sport', wizardSport);
+      updateTimeRowVisibility();
+      updateWizardResult();
+    };
   })();
+</script>
+
+<script>
+/* Neue Turniere beginnen mit der Sportartwahl. Gespeicherte Stände und deren
+   Links behalten immer das im Datensatz gespeicherte Sportprofil. */
+(function () {
+  var sport = window.TSport;
+  var select = document.getElementById('home-sport-select');
+  if (!sport || !select) return;
+  var profiles = sport.availableProfiles();
+  var note = document.getElementById('home-sport-note');
+  function text(key, fallback) {
+    return window.TI18n && window.TI18n.active() ? window.TI18n.t(key) : fallback;
+  }
+  profiles.forEach(function (profile) {
+    var option = document.createElement('option');
+    option.value = profile.id;
+    option.textContent = text(profile.nameKey, profile.id);
+    select.appendChild(option);
+  });
+  if (!profiles.length) return;
+  document.getElementById('home-sport-choice').hidden = profiles.length < 2;
+
+  function cardFormat(card) {
+    var doc = card.getAttribute('data-doc') || '';
+    if (/format-tandem/.test(doc)) return 'tandem';
+    if (/format-eltern-kind/.test(doc)) return 'eltern-kind';
+    if (/format-meisterschaften/.test(doc)) return 'meisterschaften';
+    if (/format-davis-cup/.test(doc)) return 'daviscup';
+    if (/format-king-queen\.html/.test(doc)) return 'kingqueen';
+    if (/format-king-of-the-court/.test(doc)) return 'koc';
+    var link = card.querySelector('.card-footer a.btn-open');
+    if (!link) return '';
+    var url = new URL(link.href, location.href);
+    var file = url.pathname.split('/').pop();
+    if (file === 'Turnierbogen_Runden_System.html') return url.searchParams.get('mode') === 'swiss' ? 'runden_swiss' : 'runden_rr';
+    if (file === 'Turnierbogen_Flex_Turnier.html') return url.searchParams.get('mode') === 'swiss' ? 'flex_swiss' : 'flex_rr';
+    if (file === 'Turnierbogen_Gruppen_Finalrunde.html') return 'gruppen-final';
+    if (file === 'Turnierbogen_KO_System.html') return 'ko-flex';
+    if (file === 'Turnierbogen_Doppel_KO_System.html') return 'de-flex';
+    if (file === 'Turnierbogen_Modified_Pool_Play.html') return 'mpp';
+    if (file === 'Turnierbogen_King_Queen_of_the_Court.html') return 'koc';
+    if (file === 'Turnierbogen_King_Queen.html') return 'kingqueen';
+    return '';
+  }
+  function prioritizeCards(id) {
+    var grid = document.querySelector('.grid');
+    if (!grid) return;
+    var priorities = id === 'volleyball.beach'
+      ? ['gruppen-final', 'ko-flex', 'mpp', 'runden_rr', 'runden_swiss', 'de-flex']
+      : ['gruppen-final', 'ko-flex', 'runden_rr', 'mpp', 'runden_swiss', 'de-flex'];
+    var cards = Array.prototype.filter.call(grid.children, function (card) {
+      return card.classList.contains('card');
+    });
+    cards.map(function (card, index) {
+      var rank = priorities.indexOf(cardFormat(card));
+      return { card: card, index: index, rank: rank < 0 ? priorities.length : rank };
+    }).sort(function (a, b) {
+      return a.rank - b.rank || a.index - b.index;
+    }).forEach(function (entry) {
+      grid.appendChild(entry.card);
+    });
+  }
+  window.homeCardSportAllowed = function (card, id) {
+    var format = cardFormat(card);
+    return !format || sport.supportsFormat(id, format);
+  };
+  var launchSequence = 0;
+  function newLaunchId() {
+    var values = new Uint32Array(3);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      window.crypto.getRandomValues(values);
+      return Array.prototype.map.call(values, function (value) { return value.toString(36); }).join('');
+    }
+    launchSequence += 1;
+    return Date.now().toString(36) + '-' + launchSequence.toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+  function applyLaunchSport(link, id, forceNew) {
+    var url = new URL(link.href, location.href);
+    var launchId = link.getAttribute('data-bl-launch-id');
+    var launchSport = link.getAttribute('data-bl-launch-sport');
+    if (link.getAttribute('data-bl-launch-bound') !== '1') {
+      link.setAttribute('data-bl-launch-bound', '1');
+      link.addEventListener('click', function () {
+        if (select.value !== 'volleyball.beach') applyLaunchSport(link, select.value, true);
+      });
+    }
+    if (id === 'volleyball.beach') {
+      if (launchId && launchSport && url.searchParams.get('id') === launchId) url.searchParams.delete('id');
+      link.removeAttribute('data-bl-launch-id');
+      link.removeAttribute('data-bl-launch-sport');
+      url.searchParams.delete('sport');
+    } else {
+      if (!forceNew && launchId && launchSport === id && url.searchParams.get('id') === launchId) {
+        // Keep a stable launch target while this overview selection is active.
+      } else if (forceNew || !url.searchParams.get('id') || launchId) {
+        if (launchId && url.searchParams.get('id') === launchId) url.searchParams.delete('id');
+        launchId = newLaunchId();
+        link.setAttribute('data-bl-launch-id', launchId);
+        link.setAttribute('data-bl-launch-sport', id);
+        url.searchParams.set('id', launchId);
+      }
+      url.searchParams.set('sport', id);
+    }
+    link.href = url.pathname + url.search + url.hash;
+  }
+  function updateLinks(id) {
+    document.querySelectorAll('.card-footer a.btn-open').forEach(function (link) {
+      applyLaunchSport(link, id);
+    });
+    var timer = document.getElementById('home-timer-link');
+    if (timer) applyLaunchSport(timer, id);
+  }
+  function selectedFilter() {
+    var mobile = document.getElementById('mobileFormatFilter');
+    if (mobile && mobile.value) return mobile.value;
+    var active = document.querySelector('.filterbar-desktop .filter-btn.active');
+    var match = active && /filter\('([^']+)'/.exec(active.getAttribute('onclick') || '');
+    return match && match[1] !== 'all' ? match[1] : '';
+  }
+  /* Generische Formatkarten: Texte mit Sport-Varianten (Schlüssel + '.pair',
+     '.player', '.tt', '.indoor') folgen dem gewählten Profil; Beach behält den
+     Basisschlüssel. Nur Anzeige – Kartenfilter und Bögen bleiben unberührt. */
+  var VARIANT_ORDER = {
+    'volleyball.beach': ['beach'],
+    'volleyball.indoor': ['indoor'],
+    'table-tennis.doubles': ['pair', 'tt'],
+    'table-tennis.singles': ['player', 'tt']
+  };
+  function pickVariant(el, attr, id) {
+    var have = (el.getAttribute(attr) || '').split(' ');
+    var order = VARIANT_ORDER[id] || [];
+    for (var i = 0; i < order.length; i++) if (have.indexOf(order[i]) >= 0) return order[i];
+    return '';
+  }
+  function applyCardCopy(id) {
+    var i18n = window.TI18n && window.TI18n.active() ? window.TI18n : null;
+    if (!i18n) return;
+    var lang = i18n.lang();
+    document.querySelectorAll('.card [data-sport-variants]').forEach(function (el) {
+      var base = el.getAttribute('data-i18n-base') || el.getAttribute('data-i18n');
+      el.setAttribute('data-i18n-base', base);
+      var variant = pickVariant(el, 'data-sport-variants', id);
+      var key = variant ? base + '.' + variant : base;
+      el.setAttribute('data-i18n', key);
+      el.textContent = i18n.t(key);
+      el.__i18nText = lang;
+    });
+    document.querySelectorAll('[data-sport-attr-variants]').forEach(function (el) {
+      var base = el.getAttribute('data-i18n-attr-base') || el.getAttribute('data-i18n-attr');
+      el.setAttribute('data-i18n-attr-base', base);
+      var variant = pickVariant(el, 'data-sport-attr-variants', id);
+      var pairs = base.split(';').map(function (pair) {
+        var idx = pair.indexOf(':');
+        var attr = pair.slice(0, idx).trim();
+        var key = pair.slice(idx + 1).trim();
+        if (variant) key += '.' + variant;
+        el.setAttribute(attr, i18n.t(key));
+        return attr + ':' + key;
+      });
+      el.setAttribute('data-i18n-attr', pairs.join(';'));
+      el.__i18nAttr = lang;
+      var details = el.classList.contains('card') && el.querySelector('.card-details p');
+      if (details) details.textContent = el.getAttribute('data-desc');
+    });
+  }
+  function applySelection() {
+    var id = select.value;
+    window.__BL_HOME_SPORT__ = id;
+    applyCardCopy(id);
+    prioritizeCards(id);
+    updateLinks(id);
+    if (typeof window.wizardApplySport === 'function') window.wizardApplySport(id);
+    if (typeof applyCardFilters === 'function') applyCardFilters('', selectedFilter());
+  }
+  select.value = sport.homeSelection();
+  if (!select.value) select.value = profiles[0].id;
+  applySelection();
+  select.addEventListener('change', function () {
+    var ok = sport.rememberHomeSelection(select.value);
+    applySelection();
+    if (note) {
+      note.textContent = ok ? '' : text('home.sport.saveError', 'Die Auswahl gilt bis zum Schließen dieser Seite; sie konnte nicht dauerhaft gespeichert werden.');
+      note.hidden = ok;
+    }
+  });
+})();
 </script>
 
 <script>

@@ -161,7 +161,7 @@
         if (aAbs && bAbs) return;
         if (aAbs) { out.push({ bye: b }); return; }
         if (bAbs) { out.push({ bye: a }); return; }
-        const r = resultOf(m.id, modeId);
+        const r = resultOf(m.id, m.setMode || modeId);
         if (r) out.push({ a, b, result: r });
       });
       return out;
@@ -170,10 +170,10 @@
     function tableFor(teamList, matches, modeId) {
       const active = teamList.filter(t => !absent.has(t));
       const played = playedFrom(matches, modeId);
-      const st = TC.standings(active, played, { perGame: true });
+      const st = TC.standings(active, played, { perGame: true, rankingProfile: c.rankingProfile });
       const unequal = !TC.equalGames(active, st);
-      const criteria = TC.criteriaFor(modeId, { unequalGames: unequal });
-      const ranked = TC.rank(active, st, { criteria, matches: played });
+      const criteria = TC.criteriaFor(modeId, { unequalGames: unequal, rankingProfile: c.rankingProfile });
+      const ranked = TC.rank(active, st, { criteria, matches: played, rankingProfile: c.rankingProfile });
       const total = matches.filter(m => {
         const a = m.ta != null ? m.ta : m.a, b = m.tb != null ? m.tb : m.b;
         return a != null && b != null && !absent.has(a) && !absent.has(b);
@@ -273,7 +273,7 @@
       if (aBye && !bBye && tb != null) { m.bye = tb; winnerOf[m.id] = tb; loserOf[m.id] = null; return m; }
       if (bBye && !aBye && ta != null) { m.bye = ta; winnerOf[m.id] = ta; loserOf[m.id] = null; return m; }
       if (ta == null || tb == null) return m;
-      const r = resultOf(m.id, modeId);
+      const r = resultOf(m.id, m.setMode || modeId);
       m.result = r;
       if (r && r.winner === 'a') { winnerOf[m.id] = ta; loserOf[m.id] = tb; }
       else if (r && r.winner === 'b') { winnerOf[m.id] = tb; loserOf[m.id] = ta; }
@@ -381,7 +381,23 @@
          Setzliste (Teamnummer) speist Gewinner- UND Verlierer-Runde. */
       finalTitle = 'Doppel-K.-o.-System';
       const slots = seedSlots();
-      bracket = TC.genDoubleBracket(slots, { idPrefix: 'de' });
+      const volleyballPreset = c.sportId && c.sportId.indexOf('volleyball.') === 0
+        && (c.volleyballPreset === 'a' || c.volleyballPreset === 'a-plus');
+      bracket = TC.genDoubleBracket(slots, { idPrefix: 'de', refereeBeforeLb: volleyballPreset });
+      const isBeach = c.sportId === 'volleyball.beach';
+      const regularMode = isBeach ? '2x15tb' : 'indoor-a';
+      const advancedMode = isBeach ? '2x21tb' : 'indoor-a21';
+      if (volleyballPreset) {
+        bracket.wbRounds.forEach((rd, i) => rd.matches.forEach(m => {
+          m.setMode = c.volleyballPreset === 'a-plus' && i >= bracket.wbRounds.length - 2
+            ? advancedMode : regularMode;
+        }));
+        bracket.lbRounds.forEach((rd, i) => rd.matches.forEach(m => {
+          m.setMode = c.volleyballPreset === 'a-plus' && i >= bracket.lbRounds.length - 3
+            ? advancedMode : regularMode;
+        }));
+        [bracket.grandFinal.m1, bracket.grandFinal.m2].forEach(m => { m.setMode = advancedMode; });
+      }
       if (bracket.byes > 0) {
         warnings.push(bracket.byes + ' Freilos' + (bracket.byes === 1 ? '' : 'e')
           + ' in Runde 1 der Gewinner-Runde – ' + bracket.byes + ' Team'
@@ -390,6 +406,22 @@
       finalRounds = bracket.rounds.map(r => ({
         round: r.round, title: r.label, matches: r.matches, byes: [], phase: r.phase
       }));
+      if (volleyballPreset && slots.length >= 16 && bracket.lbRounds.length >= 3) {
+        const lbFinal = bracket.lbRounds[bracket.lbRounds.length - 1].matches[0];
+        const lbSemi = bracket.lbRounds[bracket.lbRounds.length - 2].matches[0];
+        const thirdPlace = {
+          id: 'de_bronze', a: { k: 'lose', match: lbFinal.id },
+          b: { k: 'lose', match: lbSemi.id }, phase: 'bronze',
+          label: 'Spiel um Platz 3', name: 'Spiel um Platz 3',
+          setMode: c.volleyballPreset === 'a-plus' ? advancedMode : regularMode
+        };
+        bracket.thirdPlace = thirdPlace;
+        const gfIndex = finalRounds.findIndex(rd => rd.matches.some(m => m.id === bracket.grandFinal.m1.id));
+        finalRounds.splice(gfIndex < 0 ? finalRounds.length : gfIndex, 0, {
+          round: gfIndex + 1, title: thirdPlace.label, matches: [thirdPlace], byes: [], phase: 'bronze'
+        });
+        finalRounds.forEach((rd, i) => { rd.round = i + 1; });
+      }
     } else if (finalMode === 'main') {
       finalTitle = 'Hauptrunde';
       const slots = seedSlots();
@@ -418,7 +450,46 @@
       }
     }
 
-    finalRounds.forEach(rd => rd.matches.forEach(m => resolveMatch(m, finMode)));
+    finalRounds.forEach(rd => {
+      rd.setMode = (rd.matches || []).map(m => m.setMode).find(Boolean) || finMode;
+      rd.matches.forEach(m => resolveMatch(m, finMode));
+    });
+
+    /* Schiedsrichterrotation ist eine optionale Volleyball-Veranstaltungsregel,
+       keine Verbandsvorgabe. WB-Verlierer pfeifen die naechste WB-Runde; aus
+       der LB ausgeschiedene Teams pfeifen die folgende LB-Runde. Fuer Bronze
+       und Endspiel werden dieselben zwei frueh ausgeschiedenen Teams eingesetzt. */
+    if (c.sportId && c.sportId.indexOf('volleyball.') === 0
+        && (c.volleyballPreset === 'a' || c.volleyballPreset === 'a-plus')) {
+      bracket.wbRounds.forEach((rd, i) => {
+        if (!i) return;
+        rd.matches.forEach(m => {
+          m.referees = [m.a, m.b].map(ref => ref && ref.k === 'win' ? loserOf[ref.match] : null)
+            .filter(team => team != null);
+        });
+      });
+      let available = [];
+      bracket.lbRounds.forEach((rd, i) => {
+        if (i) {
+          const assignments = rd.matches.map(() => []);
+          available.forEach((team, ti) => {
+            const target = assignments[ti % assignments.length];
+            if (target.length < 2) target.push(team);
+          });
+          rd.matches.forEach((m, mi) => { m.referees = assignments[mi]; });
+        }
+        available = rd.matches.map(m => loserOf[m.id]).filter(team => team != null);
+      });
+      if (bracket.thirdPlace) {
+        const refRound = bracket.lbRounds[Math.max(0, bracket.lbRounds.length - 3)];
+        const refs = refRound ? refRound.matches.map(m => loserOf[m.id]).filter(team => team != null).slice(0, 2) : [];
+        const resetRound = bracket.lbRounds[Math.max(0, bracket.lbRounds.length - 4)];
+        const resetRefs = resetRound ? resetRound.matches.map(m => loserOf[m.id]).filter(team => team != null).slice(0, 2) : refs;
+        bracket.thirdPlace.referees = refs;
+        bracket.grandFinal.m1.referees = refs.slice();
+        bracket.grandFinal.m2.referees = resetRefs.slice();
+      }
+    }
 
     /* Sprechende Spielnamen. Auf dem gedruckten Bogen darf nie eine interne ID
        stehen – „Sieger HF1“ bzw. „Sieger A-1 : B-2“ ist ohne Erklärung lesbar. */
@@ -490,8 +561,15 @@
       TC.assignSlots(grpRounds, c.fields, { teamOf }), startMin, c.setMode);
     const grpEnd = grpSlots.length ? grpSlots[grpSlots.length - 1].endMin : startMin;
     const finSlotsRaw = TC.assignSlots(finalRounds, c.fields, { teamOf });
-    const finSlots = TC.computeSchedule(finSlotsRaw, grpEnd, finMode)
-      .map(s => Object.assign(s, { title: titleOfRound(finalRounds, s.round) }));
+    let scheduleCursor = grpEnd;
+    const finSlots = finSlotsRaw.map(s => {
+      const mode = (s.matches || []).filter(Boolean).map(m => m.setMode).find(Boolean) || finMode;
+      const scheduled = TC.computeSchedule([s], scheduleCursor, mode)[0];
+      scheduleCursor = scheduled.endMin;
+      scheduled.setMode = mode;
+      scheduled.title = titleOfRound(finalRounds, s.round);
+      return scheduled;
+    });
     const endMin = finSlots.length ? finSlots[finSlots.length - 1].endMin : grpEnd;
 
     function titleOfRound(rounds, r) {
@@ -596,8 +674,13 @@
           }
         }
         let nextPlace = 3;
+        if (bracket.thirdPlace && winnerOf[bracket.thirdPlace.id] != null) {
+          out.push({ place: 3, team: winnerOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
+          out.push({ place: 4, team: loserOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
+        }
         for (let ri = bracket.lbRounds.length - 1; ri >= 0; ri--) {
           const rd = bracket.lbRounds[ri];
+          if (bracket.thirdPlace && ri >= bracket.lbRounds.length - 2) continue;
           const losers = rd.matches.map(m => loserOf[m.id]).filter(t => t != null);
           if (!losers.length) continue;
           const from = nextPlace, to = nextPlace + losers.length - 1;
@@ -799,10 +882,10 @@
     function tableUpto(upto) {
       if (tableCache.has(upto)) return tableCache.get(upto);
       const played = playedUpto(upto);
-      const st = TC.standings(active, played, { perGame: true });
+      const st = TC.standings(active, played, { perGame: true, rankingProfile: c.rankingProfile });
       const unequal = !TC.equalGames(active, st);
-      const criteria = TC.criteriaFor(c.setMode, { unequalGames: unequal });
-      const ranked = TC.rank(active, st, { criteria, matches: played });
+      const criteria = TC.criteriaFor(c.setMode, { unequalGames: unequal, rankingProfile: c.rankingProfile });
+      const ranked = TC.rank(active, st, { criteria, matches: played, rankingProfile: c.rankingProfile });
       const t = { ranked, stat: st, criteria, perGame: unequal, played };
       tableCache.set(upto, t);
       return t;
@@ -926,7 +1009,7 @@
     const slots = [];
     let cursor = startMin;
     rounds.forEach(rd => {
-      const per = TC.MODE_MIN[String(rd.setMode)] || 25;
+      const per = TC.modeMinutes(rd.setMode);
       TC.assignSlots([rd], c.fields).forEach(s => {
         slots.push(Object.assign({}, s, {
           slot: slots.length + 1, title: rd.title,
@@ -1585,7 +1668,7 @@
        je Runde ohnehin nur in genau einem Match steckt).                    */
     const startMin = TC.toMin(c.startTime) != null ? TC.toMin(c.startTime) : TC.toMin('10:00');
     const fields = Math.max(1, c.fields | 0 || 2);
-    const perGame = TC.MODE_MIN[String(c.setMode)] || 25;
+    const perGame = TC.modeMinutes(c.setMode);
     const slots = [];
     let cursor = startMin;
     rounds.forEach(rd => {

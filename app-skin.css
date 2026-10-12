@@ -239,6 +239,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .app-bar__brand,
+  .app-bar__context {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-bar__brand { font-size: 13px; line-height: 1.2; }
+  .app-bar__context { font-size: 10px; font-weight: 500; line-height: 1.2; opacity: .82; }
 
   .app-bar__actions {
     display: flex;
@@ -278,6 +286,7 @@
     .app-bar__btn .lbl { display: none; }
     .app-bar__btn { padding: 0; min-width: 40px; }
     .app-bar__title { font-size: 14px; }
+    .app-bar__brand { font-size: 12px; }
   }
   /* Auf kleinen Displays bleibt der gekürzte Titel als Orientierung sichtbar;
      die Sprachkennung wird unter 768px global ausgeblendet. */

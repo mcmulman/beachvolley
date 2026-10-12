@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Turnierbogen – Gruppen + Finalrunde (flexibel)</title>
+<title>CompetitionPilot – Gruppen + Finalrunde (flexibel)</title>
 <meta name="description" content="Beach-Volleyball mit Gruppen und Finalrunde: Teams und Felder konfigurieren, Gruppentabellen und Platzierungen führen, lokal speichern und A4 drucken.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Turnierbogen_Gruppen_Finalrunde.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
-<meta property="og:title" content="Turnierbogen – Gruppen + Finalrunde (flexibel)">
+<meta property="og:title" content="CompetitionPilot – Gruppen + Finalrunde (flexibel)">
 <meta property="og:description" content="Beach-Volleyball mit Gruppen und Finalrunde: Teams und Felder konfigurieren, Gruppentabellen und Platzierungen führen, lokal speichern und A4 drucken.">
 <meta property="og:url" content="https://mcmulman.github.io/beachvolley/Turnierbogen_Gruppen_Finalrunde.html">
 <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
-<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta property="og:image:alt" content="CompetitionPilot App-Symbol">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Turnierbogen – Gruppen + Finalrunde (flexibel)">
+<meta name="twitter:title" content="CompetitionPilot – Gruppen + Finalrunde (flexibel)">
 <meta name="twitter:description" content="Beach-Volleyball mit Gruppen und Finalrunde: Teams und Felder konfigurieren, Gruppentabellen und Platzierungen führen, lokal speichern und A4 drucken.">
 <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="core/turnier-base.css">
@@ -80,6 +80,7 @@
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
   <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
@@ -340,11 +341,17 @@
              keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams,
              fresh: title => Object.assign(TStore.emptyTournament(SHEET, DEFAULTS), { title:title }) };
   }
-  const DEFAULTS = { teams:8, fields:4, groups:'auto', setMode:'21',
+  const DEFAULTS = { teams:8, fields:4, groups:'auto',
     finalMode:'placement', startTime:'10:00', endTime:'14:30' };
   let S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(SHEET, DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
   const MSTD = TUI.initManualEditing(document, {
@@ -358,7 +365,7 @@
       teams:  TStore.urlInt(4, 24),
       fields: TStore.urlInt(1, 10),
       groups: v => (v === 'auto' ? 'auto' : TStore.urlInt(2, 6)(v)),
-      setMode: TStore.urlOneOf(TC.SET_MODES.map(m => m.id)),
+      setMode: TStore.urlOneOf(TC.modesForProfile(S.sport.id).map(m => m.id)),
       finalMode: TStore.urlOneOf(TFormat.FINAL_MODES.map(m => m.id))
   })) TStore.save(S);
   let B = null;                 // aktueller Aufbau (TFormat.build)
@@ -367,7 +374,7 @@
 
   /* ------------------------------------------------------------ Kontext */
   function labeler(){ return TUI.makeLabeler(S.teamNames); }
-  function fieldLabel(i){ return S.fieldNames[i] || T('ui.field.n', { n: i+1 }); }
+  function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
     return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
@@ -389,9 +396,9 @@
       for(let n=2;n<=6;n++) g.add(new Option(T('gf.groupsN', { n: n }), n));
 
       TFormat.FINAL_MODES.forEach(m => $('finalMode').add(new Option(term(m.label), m.id)));
-      TC.SET_MODES.forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
       $('finalSetMode').add(new Option(T('gf.cfg.finalSetModeSame'), ''));
-      TC.SET_MODES.forEach(m => $('finalSetMode').add(new Option(modeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('finalSetMode').add(new Option(modeLabel(m.id), m.id)));
     }
     t.value = S.config.teams;
     $('groupCount').value = String(S.config.groups);
@@ -768,7 +775,7 @@
         played.push({a:m.ta, b:m.tb, result:m.result});
       });
       if(started && rd.bye != null && !S.absent.includes(rd.bye)) played.push({bye:rd.bye});
-      const st = TC.standings(activeTeams(), played);
+      const st = TC.standings(activeTeams(), played, { rankingProfile: S.config.rankingProfile });
       activeTeams().forEach(t => {
         const s = st[t];
         if(s.games === 0) return;

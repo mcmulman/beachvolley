@@ -34,6 +34,7 @@
   'use strict';
 
   const SCHEMA = 2;
+  const Sport = root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null);
   const PREFIX = 'beachl.t.';          // + sheetId
   const BACKUP_PREFIX = 'beachl.b.';   // + sheetId, previous valid revision
   const REVISION_PREFIX = 'beachl.r.'; // revision high-water mark, also survives corrupt records
@@ -750,26 +751,109 @@
       return base + '.' + id.replace(/[^A-Za-z0-9_-]/g, '');
     } catch (e) { return base; }
   }
+  function sportFromSearch() {
+    if (!Sport || !root.location) {
+      return { ok: true, profile: { id: 'volleyball.beach', version: 1 }, explicit: false };
+    }
+    return Sport.fromSearch(root.location.search);
+  }
+  function sportForRecord(record) {
+    if (Sport) return Sport.recordSport(record);
+    if (!record || !Object.prototype.hasOwnProperty.call(record, 'sport')) {
+      return { ok: true, profile: { id: 'volleyball.beach', version: 1 }, migrated: true };
+    }
+    const s = record.sport;
+    return s && s.id === 'volleyball.beach' && s.version === 1 && Object.keys(s).length === 2
+      ? { ok: true, profile: s, migrated: false }
+      : { ok: false, code: 'unsupported-sport' };
+  }
+  function sportValue(profile) {
+    return Sport ? Sport.value(profile) : { id: 'volleyball.beach', version: 1 };
+  }
+  function supportsSportSheet(profile, sheetId) {
+    const base = sheetBaseOf(sheetId);
+    return !Sport || (base ? Sport.supportsFormat(profile.id, base) : profile.id === 'volleyball.beach');
+  }
+  function supportsSavedRules(record, profile) {
+    if (!Sport || !profile || !Array.isArray(profile.modeIds)) return true;
+    const modes = profile.modeIds;
+    const config = record.config || {};
+    if (config.setMode != null && modes.indexOf(config.setMode) < 0) return false;
+    if (config.finalSetMode && modes.indexOf(config.finalSetMode) < 0) return false;
+    const phaseModes = config.phaseModes;
+    if (phaseModes && typeof phaseModes === 'object' && !Array.isArray(phaseModes)
+        && Object.keys(phaseModes).some(key => phaseModes[key] && modes.indexOf(phaseModes[key]) < 0)) return false;
+    const frozen = record.frozenModes;
+    if (frozen && typeof frozen === 'object' && !Array.isArray(frozen)
+        && Object.keys(frozen).some(key => frozen[key] && modes.indexOf(frozen[key]) < 0)) return false;
+    if (config.customSetTarget != null
+        && (!Number.isInteger(config.customSetTarget) || config.customSetTarget < 11 || config.customSetTarget > 50)) return false;
+    const modeMinutes = config.modeMinutes;
+    if (modeMinutes != null && (!modeMinutes || typeof modeMinutes !== 'object' || Array.isArray(modeMinutes)
+        || Object.keys(modeMinutes).some(mode => modes.indexOf(mode) < 0
+          || !Number.isInteger(modeMinutes[mode]) || modeMinutes[mode] < 1 || modeMinutes[mode] > 360))) return false;
+    return true;
+  }
+  function showSportBlock(code) {
+    if (!root.document || !root.document.body) return;
+    const body = root.document.body;
+    body.innerHTML = '';
+    const main = root.document.createElement('main');
+    main.setAttribute('role', 'alert');
+    main.style.cssText = 'max-width:640px;margin:12vh auto;padding:24px;font:16px/1.5 sans-serif;color:#1a1a2e';
+    const title = root.document.createElement('h1');
+    title.textContent = 'Turnierstand nicht geöffnet / Tournament not opened';
+    const message = root.document.createElement('p');
+    message.textContent = code === 'sport-mismatch'
+      ? 'Die Sportart in diesem Link stimmt nicht mit dem gespeicherten Turnier überein. Die Daten wurden nicht geändert. / This link does not match the saved tournament sport. No data was changed.'
+      : code === 'unsupported-format'
+        ? 'Dieses Format ist für das gewählte Sportprofil nicht freigegeben. Die gespeicherten Daten bleiben unverändert. / This format is not available for the selected sport profile. Saved data remain unchanged.'
+        : code === 'unsupported-ranking'
+          ? 'Dieses Turnier verwendet ein unbekanntes Wertungsprofil. Die Daten bleiben unverändert. / This tournament uses an unknown ranking profile. The data remain unchanged.'
+          : code === 'unsupported-mode'
+            ? 'Dieses Turnier verwendet einen unbekannten Satz- oder Spielmodus. Die Daten bleiben unverändert. / This tournament uses an unknown set or game mode. The data remain unchanged.'
+        : 'Dieses Turnier verwendet ein unbekanntes oder nicht unterstütztes Sportprofil bzw. eine Profilversion. Die gespeicherten Daten bleiben unverändert. / This tournament uses an unknown or unsupported sport profile or version. The saved data remain unchanged.';
+    const link = root.document.createElement('a');
+    link.href = 'index.html';
+    link.textContent = 'Zur Übersicht / Tournament overview';
+    main.appendChild(title);
+    main.appendChild(message);
+    main.appendChild(link);
+    body.appendChild(main);
+  }
 
   /* -------------------------------------------------------------- Schema */
-  /* Ein Turnier ist EIN Objekt. Ergebnisse liegen immer als drei Satzpaare
+  /* Ein Turnier ist EIN Objekt. Beach-Ergebnisse liegen immer als drei Satzpaare
      vor – unabhängig vom aktuell gewählten Satzmodus. Dadurch löscht ein
      Moduswechsel niemals Eingaben (siehe AGENTS.md §8.1).                   */
-  function emptyTournament(sheetId, cfg) {
+  function emptyTournament(sheetId, cfg, profile) {
+    const selected = profile || sportFromSearch();
+    if (!selected.ok) throw new Error(selected.code);
+    const isIndoor = selected.profile.id === 'volleyball.indoor';
+    const isTableTennis = selected.profile.id.indexOf('table-tennis.') === 0;
+    const defaults = {
+      teams: 8, fields: 4, groups: 2,
+      setMode: Sport ? Sport.get(selected.profile.id, selected.profile.version).defaultMode : '2x21tb',
+      phaseModes: {},
+      rounds: null,
+      startTime: '10:00', endTime: '14:00',
+      finalMode: 'placement'
+    };
+    if (isIndoor) {
+      defaults.customSetTarget = 25;
+      defaults.rankingProfile = 'indoor-3-2-1-0';
+    } else if (isTableTennis) {
+      defaults.rankingProfile = 'table-tennis-hobby';
+    }
+    const suppliedDefaults = Object.assign({}, cfg || {});
     return {
       schema: SCHEMA,
       sheet: sheetId,
+      sport: sportValue(selected.profile),
       _revision: 0,
       title: '',
       updated: null,
-      config: Object.assign({
-        teams: 8, fields: 4, groups: 2,
-        setMode: '21',
-        phaseModes: {},
-        rounds: null,
-        startTime: '10:00', endTime: '14:00',
-        finalMode: 'placement'
-      }, cfg || {}),
+      config: Object.assign(defaults, suppliedDefaults),
       teamNames: {},
       fieldNames: {},
       absent: [],
@@ -815,27 +899,68 @@
     if (!data || data.schema !== SCHEMA || data.sheet !== sheetId) {
       return { ok: false, code: 'incompatible' };
     }
+    const sport = sportForRecord(data);
+    if (!sport.ok) return { ok: false, code: sport.code };
+    if (!supportsSportSheet(sport.profile, sheetId)) return { ok: false, code: 'unsupported-format' };
+    if (data.config && data.config.rankingProfile != null
+        && (!Array.isArray(sport.profile.rankingProfiles)
+          || sport.profile.rankingProfiles.indexOf(data.config.rankingProfile) < 0)) {
+      return { ok: false, code: 'unsupported-ranking' };
+    }
+    if (!supportsSavedRules(data, sport.profile)) return { ok: false, code: 'unsupported-mode' };
+    if (sport.migrated && !isCurrentSheet(sheetId)) return { ok: false, code: 'incompatible' };
+    data.sport = sportValue(sport.profile);
     return { ok: true, data: data };
   }
 
   /* --------------------------------------------- synchrone View-Operationen
      Laufen innerhalb EINER Transaktion (siehe transaction()).             */
   function loadInView(view, sheetId, cfgDefaults, writable) {
+    const requested = sportFromSearch();
+    if (!requested.ok) {
+      return {
+        t: emptyTournament(sheetId, cfgDefaults, { ok: true, profile: { id: 'volleyball.beach', version: 1 } }),
+        issue: requested.code,
+        sportBlocked: true
+      };
+    }
+    if (!supportsSportSheet(requested.profile, sheetId)) {
+      return {
+        t: emptyTournament(sheetId, cfgDefaults, requested),
+        issue: 'unsupported-format',
+        sportBlocked: true
+      };
+    }
     let stored = null;
     if (view) {
       try { stored = view.getItem(keyFor(sheetId)); } catch (e) { stored = null; }
     }
     if (stored != null) {
       const parsed = parseRecord(stored, sheetId);
-      if (!parsed.ok) return { t: emptyTournament(sheetId, cfgDefaults), issue: parsed.code };
+      if (!parsed.ok) {
+        return {
+          t: emptyTournament(sheetId, cfgDefaults, requested),
+          issue: parsed.code,
+          sportBlocked: parsed.code === 'unsupported-sport' || parsed.code === 'unsupported-format'
+            || parsed.code === 'unsupported-ranking' || parsed.code === 'unsupported-mode'
+        };
+      }
+      if (requested.explicit && parsed.data.sport.id !== requested.profile.id) {
+        return {
+          t: emptyTournament(sheetId, cfgDefaults, requested),
+          issue: 'sport-mismatch',
+          sportBlocked: true
+        };
+      }
       return { t: normalize(parsed.data, sheetId, cfgDefaults) };
     }
-    return { t: emptyTournament(sheetId, cfgDefaults), isNew: true };
+    return { t: emptyTournament(sheetId, cfgDefaults, requested), isNew: true };
   }
 
   /* Revisionsprüfung + Vorversion + Datensatz + Index – alles in derselben
      Transaktion. data = Momentaufnahme des Turniers. */
   function saveInView(view, data, sheetId, baseRevision, nowIso) {
+    if (data && data._sportBlocked) return { ok: false, code: 'unsupported-sport' };
     const binding = serverBindingInView(view, sheetId);
     if (binding && binding.readOnly) return { ok: false, code: 'server-readonly' };
     const key = keyFor(sheetId);
@@ -849,9 +974,12 @@
     } else if (baseRevision !== 0) {
       return { ok: false, code: 'conflict' };
     }
+    const resolvedSport = sportForRecord(data);
+    if (!resolvedSport.ok) return { ok: false, code: resolvedSport.code };
     const candidate = Object.assign({}, data, {
       schema: SCHEMA,
       sheet: sheetId,
+      sport: sportValue(resolvedSport.profile),
       updated: nowIso,
       _revision: Math.max(currentRevision, revisionInView(view, sheetId)) + 1
     });
@@ -873,6 +1001,7 @@
     return {
       title: t.title || '',
       teams: t.config ? t.config.teams : undefined,
+      sport: t.sport || { id: 'volleyball.beach', version: 1 },
       updated: t.updated,
       filled: Object.keys(t.results || {}).length
     };
@@ -915,6 +1044,7 @@
       const res = loadInView(view, sheetId, cfgDefaults, true);
       const binding = serverBindingInView(view, sheetId);
       res.readOnly = !!(binding && binding.readOnly);
+      res.sportBlocked = !!res.sportBlocked;
       res.fromFormat = view.getItem(ORIGIN_PREFIX + sheetId) === 'format';
       if (validExisting && !res.issue && !res.readOnly && view.getItem(NEW_UI_PREFIX + sheetId) === '1') {
         res.isNew = true;
@@ -922,25 +1052,49 @@
       }
       return res;
     }, { tracked: false }).then(function (res) {
-      initialUiState = { sheet: sheetId, isNew: !!res.isNew, readOnly: !!res.readOnly, fromFormat: !!res.fromFormat };
-      if (res.issue) storageIssue(res.issue, sheetId);
+      initialUiState = { sheet: sheetId, isNew: !!res.isNew, readOnly: !!res.readOnly, fromFormat: !!res.fromFormat, sportBlocked: !!res.sportBlocked };
+      if (res.sportBlocked) {
+        Object.defineProperty(res.t, '_sportBlocked', { value: true });
+        showSportBlock(res.issue);
+      }
+      if (res.issue && !res.sportBlocked) storageIssue(res.issue, sheetId);
       if (res.saved) notifyTabs(sheetId, res.saved);
       return res.t;
     }, function (err) {
       /* Kein Schreib-Rückfall: Altdaten nur lesen, Fehler melden. */
       storageIssue(errorCode(err, 'unavailable'), sheetId);
       const res = loadInView(localStorageView(), sheetId, cfgDefaults, false);
-      if (res.issue) storageIssue(res.issue, sheetId);
+      if (res.sportBlocked) {
+        Object.defineProperty(res.t, '_sportBlocked', { value: true });
+        showSportBlock(res.issue);
+      }
+      if (res.issue && !res.sportBlocked) storageIssue(res.issue, sheetId);
       Object.defineProperty(res.t, '_storageBlocked', { value: errorCode(err, 'unavailable') });
       return res.t;
     });
   }
 
   function normalize(t, sheetId, cfgDefaults) {
-    const base = emptyTournament(sheetId, cfgDefaults);
+    const sport = sportForRecord(t);
+    if (!sport.ok) throw new Error(sport.code);
+    /* Missing saved fields retain the historical defaults, not new-event rules. */
+    const legacyDefaults = Object.assign({}, cfgDefaults || {});
+    if (legacyDefaults.setMode == null ||
+        (sport.profile.id !== 'volleyball.beach' && legacyDefaults.setMode === '21')) {
+      legacyDefaults.setMode = sport.profile.id === 'volleyball.indoor' ? 'indoor-bo3'
+        : sport.profile.id.indexOf('table-tennis.') === 0 ? 'tt-best-of-5' : '21';
+    }
+    const base = emptyTournament(sheetId, legacyDefaults, { ok: true, profile: sport.profile });
     const out = Object.assign(base, t);
+    out.sport = sportValue(sport.profile);
     out._revision = Number.isFinite(Number(t._revision)) ? Number(t._revision) : 0;
-    out.config = Object.assign(base.config, t.config || {});
+    out.config = Object.assign({}, base.config, t.config || {});
+    if (!Object.prototype.hasOwnProperty.call(out.config, 'setMode')) {
+      out.config.setMode = legacyDefaults.setMode;
+    }
+    if (out.config.rankingProfile == null && base.config.rankingProfile != null) {
+      out.config.rankingProfile = base.config.rankingProfile;
+    }
     out.teamNames = t.teamNames || {};
     out.fieldNames = t.fieldNames || {};
     out.absent = Array.isArray(t.absent) ? t.absent : [];
@@ -1304,8 +1458,11 @@
   /* ---------------------------------------------------------- Ergebnisse */
   /* Setzt ein einzelnes Satzergebnis, ohne andere Sätze anzutasten. */
   function setScore(t, matchId, setNo, side, value) {
+    if (!Number.isInteger(setNo) || setNo < 1 || setNo > 7 || (side !== 'a' && side !== 'b')) {
+      throw new RangeError('Score field is outside the supported match range');
+    }
     const r = t.results[matchId] || [[null, null], [null, null], [null, null]];
-    while (r.length < 3) r.push([null, null]);
+    while (r.length < setNo) r.push([null, null]);
     const v = (value === '' || value == null) ? null : parseInt(value, 10);
     r[setNo - 1][side === 'a' ? 0 : 1] = Number.isFinite(v) ? v : null;
     const any = r.some(p => p[0] != null || p[1] != null);

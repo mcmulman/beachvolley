@@ -639,7 +639,9 @@
      bleiben; vor dem Drucken-Knopf eingereiht, nur am Bildschirm. */
   function timerHref() {
     var page = String(location.pathname || '').split('/').pop() || 'index.html';
-    return 'Spiel_Timer.html?from=' + encodeURIComponent(page + (location.search || ''));
+    var href = 'Spiel_Timer.html?from=' + encodeURIComponent(page + (location.search || ''));
+    var sport = document.body && document.body.getAttribute('data-sport');
+    return sport && sport !== 'volleyball.beach' ? href + '&sport=' + encodeURIComponent(sport) : href;
   }
   function timerEnabled() {
     return !window.TReleaseConfig || window.TReleaseConfig.timer !== false;

@@ -76,6 +76,18 @@
   var hapticPlugin = null;
   var pendingPrefill = null;
   var returnTarget = null;
+  function readTimerSport() {
+    if (!root.TSport || !root.location) return { ok: true, profile: null };
+    var params;
+    try { params = new URLSearchParams(root.location.search); }
+    catch (e) { return { ok: false, code: 'invalid-sport' }; }
+    if (params.has('sport')) return root.TSport.fromSearch(root.location.search);
+    var from = params.get('from') || '';
+    var queryAt = from.indexOf('?');
+    return queryAt < 0 ? root.TSport.fromSearch('')
+      : root.TSport.fromSearch('?' + from.slice(queryAt + 1));
+  }
+  var timerSport = readTimerSport();
   var RESULT_KEY = 'BEACHL.timerResult';
   var el = {};
 
@@ -653,6 +665,7 @@
   }
   function renderSets() {
     var hist = state.setHistory;
+    var gameMode = timerSport.profile && timerSport.profile.matchUnitKey === 'sport.unit.game';
     el.sets.textContent = '';
     if (!hist.length) {
       el.sets.hidden = true;
@@ -662,7 +675,9 @@
     /* Vorleser bekommen einen Satz, sichtbar sind kompakte Satz-Chips. */
     var sr = doc.createElement('span');
     sr.className = 'mt-vh';
-    sr.textContent = tx('timer.sets', 'Sätze {a} : {b}', { a: state.sets.a, b: state.sets.b }) +
+    sr.textContent = (gameMode
+      ? tx('timer.games', 'Spiele {a} : {b}', { a: state.sets.a, b: state.sets.b })
+      : tx('timer.sets', 'Sätze {a} : {b}', { a: state.sets.a, b: state.sets.b })) +
       ' (' + hist.map(function (p) { return p.a + ':' + p.b; }).join(', ') + ')';
     el.sets.appendChild(sr);
     hist.forEach(function (p, i) {
@@ -701,7 +716,7 @@
       { node: el.footerStatusTimer, active: state.clockEnabled, shortKey: 'timer.footerStatus.timerShownShort', shortFallback: 'Uhr sichtbar', longKey: 'timer.footerStatus.timerShown', longFallback: 'Spielzeituhr da' },
       { node: el.footerStatusCompact, active: isCompact(), shortKey: 'timer.footerStatus.compactOnShort', shortFallback: 'Weniger Anzeige', longKey: 'timer.footerStatus.compactOn', longFallback: 'Anzeige reduziert' }
     ];
-    var any = false;
+    var any = !el.wakeStatus.hidden;
     values.forEach(function (item) {
       item.node.hidden = !item.active;
       if (item.active) {
@@ -1384,6 +1399,34 @@
     state = loaded.state;
     storageOk = loaded.readable;
     el.warning.hidden = storageOk;
+    if (!timerSport.ok) {
+      el.error.hidden = false;
+      el.error.textContent = tx('timer.sportUnsupported', 'Unbekanntes Sportprofil. Timer-Regeln und Ergebnisübertragung sind gesperrt.');
+      Array.prototype.forEach.call(doc.querySelectorAll('#match-timer button, #match-timer input, #match-timer select'),
+        function (control) { control.disabled = true; });
+      root.console.error('Unsupported timer sport profile', timerSport.code);
+      el.root.setAttribute('data-ready', 'true');
+      return;
+    }
+    var profile = timerSport.profile;
+    if (profile) {
+      if (profile.id === 'volleyball.indoor' && !TM.hasProgress(state)) {
+        state = TM.setRules(state, { target: 25, wins: 3, decider: 15, twoPoint: true });
+      } else if (profile.id.indexOf('table-tennis.') === 0 && !TM.hasProgress(state)) {
+        state = TM.setRules(state, { target: 11, wins: 2, decider: 11, twoPoint: true });
+      }
+      var capabilities = profile.capabilities || {};
+      byId('mt-serve-set').hidden = !capabilities.serveCounter;
+      Array.prototype.forEach.call(doc.querySelectorAll('[data-switch-select]'), function (select) {
+        select.parentNode.hidden = !capabilities.sidesSwitch;
+      });
+      if (profile.matchUnitKey === 'sport.unit.game') {
+        var targetLabel = byId('mt-rule-target').parentNode.querySelector('.mt-setting-label');
+        if (targetLabel) targetLabel.textContent = tx('timer.rules.targetGame', 'Punkte je Spiel');
+        var endSetLabel = byId('mt-end-set').querySelector('.mt-tl');
+        if (endSetLabel) endSetLabel.textContent = tx('timer.endGame', 'Spiel beenden');
+      }
+    }
     COUNTDOWN_MINUTES.forEach(addModeOption);
     /* Bereits vor dem Öffnen abgelaufen: nicht erneut melden. */
     expiredSignaled = TM.isExpired(state, now());

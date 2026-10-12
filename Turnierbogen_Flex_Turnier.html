@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Turnierbogen – Flex-Turnier</title>
+<title>CompetitionPilot – Flex-Turnier</title>
 <meta name="description" content="Flexibles Beach-Volleyball-Turnier planen: Teams, Felder und Runden anpassen, Ergebnisse und Rangliste lokal führen und den Turnierbogen auf A4 drucken.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Turnierbogen_Flex_Turnier.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
-<meta property="og:title" content="Turnierbogen – Flex-Turnier">
+<meta property="og:title" content="CompetitionPilot – Flex-Turnier">
 <meta property="og:description" content="Flexibles Beach-Volleyball-Turnier planen: Teams, Felder und Runden anpassen, Ergebnisse und Rangliste lokal führen und den Turnierbogen auf A4 drucken.">
 <meta property="og:url" content="https://mcmulman.github.io/beachvolley/Turnierbogen_Flex_Turnier.html">
 <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
-<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta property="og:image:alt" content="CompetitionPilot App-Symbol">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Turnierbogen – Flex-Turnier">
+<meta name="twitter:title" content="CompetitionPilot – Flex-Turnier">
 <meta name="twitter:description" content="Flexibles Beach-Volleyball-Turnier planen: Teams, Felder und Runden anpassen, Ergebnisse und Rangliste lokal führen und den Turnierbogen auf A4 drucken.">
 <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="core/turnier-base.css">
@@ -97,6 +97,7 @@
   <link rel="stylesheet" href="core/compat-flexgap.css">
   <link rel="stylesheet" href="core/affiliate-teasers.css">
   <!-- DE/EN: gespeicherte Sprachwahl, danach Gerätesprache (PRODUKTPLAN §6.1). -->
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
@@ -312,7 +313,7 @@
      zufällig verteilter Kantersiege) und die Startrunden-Auslosung
      berücksichtigt zusätzlich die Team-Art. Jeder-gegen-Jeden bleibt wählbar,
      ist aber bei größeren/ungleichen Feldern die aufwändigere Variante. */
-  const DEFAULTS = { mode:'swiss', teams:8, fields:4, rounds:null, setMode:'21',
+  const DEFAULTS = { mode:'swiss', teams:8, fields:4, rounds:null,
     startTime:'10:00', endTime:'14:00' };
 
   /* Archiv: "Neues Turnier" sichert den bisherigen Stand, statt ihn zu loeschen.
@@ -379,8 +380,14 @@
   }
   const initialMode = MODE_HINT || 'swiss';
   S = await TStore.load(storageSheetId(initialMode), DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(storageSheetId(initialMode), DEFAULTS);
+  if (S._sportBlocked) return;
+  TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.sheet = storageSheetId(initialMode);
   S.config.mode = initialMode;
@@ -388,7 +395,7 @@
   if(TStore.applyUrlConfig(S, {
       teams:  TStore.urlInt(4, 24),
       fields: TStore.urlInt(1, 10),
-      setMode: TStore.urlOneOf(TC.SET_MODES.map(m => m.id))
+      setMode: TStore.urlOneOf(TC.modesForProfile(S.sport.id).map(m => m.id))
   })) needSave = true;
   if(needSave) TStore.save(S);
 
@@ -405,7 +412,7 @@
     const nm = (S.teamNames && S.teamNames[n]) ? String(S.teamNames[n]).trim() : '';
     return nm ? ('Team ' + n + ' (' + nm + ')') : ('Team ' + n);
   }
-  function fieldLabel(i){ return S.fieldNames[i] || T('ui.field.n', { n: i+1 }); }
+  function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
     return { setMode: mode, teamLabel: isSwiss() ? swissTeamLabel : labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
@@ -423,7 +430,7 @@
     if(!t.options.length){
       TFormat.ROUND_MODES.forEach(m => $('roundMode').add(new Option(term(m.label), m.id)));
       for(let n=MIN_TEAMS;n<=24;n++) t.add(new Option(T('common.teams', { count: n }), n));
-      TC.SET_MODES.forEach(m => $('setMode').add(new Option(setModeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(setModeLabel(m.id), m.id)));
     }
     fillRoundCount();
     $('roundMode').value = S.config.mode;
@@ -626,7 +633,7 @@
      Kein Kern-Bibliotheks-Code noetig, da dies spezifisch fuer das
      Flex-Turnier ist. */
   function genderBadge(t){
-    const g = S.teamGender[t];
+    const g = teamGender(t);
     if(g === 'm') return '<span class="gbadge gbadge-m" title="' + TUI.esc(T('flex.gender.m')) + '">♂</span>';
     if(g === 'w') return '<span class="gbadge gbadge-w" title="' + TUI.esc(T('flex.gender.w')) + '">♀</span>';
     if(g === 'x') return '<span class="gbadge gbadge-x" title="' + TUI.esc(T('flex.gender.x')) + '">⚥</span>';
@@ -634,17 +641,25 @@
   }
   function nameGenderPanelHtml(teams, teamNames, teamGender){
     const canRemove = teams.length > MIN_TEAMS;
+    const allowedGenders = S.sport.id === 'table-tennis.singles'
+      ? ['', 'm', 'w'] : ['', 'm', 'w', 'x'];
     return teams.map(t => {
-      const g = teamGender[t] || '';
+      const g = teamGenderFor(teamGender[t]);
       const opt = v => '<option value="' + v + '"' + (g === v ? ' selected' : '') + '>'
         + ({ '':'–', m:'♂', w:'♀', x:'⚥' }[v]) + '</option>';
       return '<div class="nrow2"><span class="nnum">' + t + '</span>'
         + '<input type="text" class="nname" data-name-input="' + t + '" value="' + TUI.esc(teamNames[t] || '')
         + '" placeholder="Team ' + t + '" autocomplete="off" spellcheck="false">'
         + '<select class="ngender" data-gender-input="' + t + '" title="' + TUI.esc(T('flex.gender.title')) + '">'
-        + opt('') + opt('m') + opt('w') + opt('x') + '</select>'
+        + allowedGenders.map(opt).join('') + '</select>'
         + TUI.teamDelBtnHtml(t, teamNames[t] || ('Team ' + t), canRemove) + '</div>';
     }).join('');
+  }
+  function teamGenderFor(value){
+    return S.sport.id === 'table-tennis.singles' && value === 'x' ? '' : (value || '');
+  }
+  function teamGender(t){
+    return teamGenderFor(S.teamGender[t]);
   }
 
   /* Faire Startrunden-Auslosung nach Team-Art: Teams werden nach ihrer
@@ -663,7 +678,7 @@
     }
     const buckets = {};
     shuffled.forEach(t => {
-      const g = S.teamGender[t] || '';
+      const g = teamGender(t);
       (buckets[g] = buckets[g] || []).push(t);
     });
     const pairs = [];
@@ -1388,7 +1403,7 @@
     $('btnShuffle').addEventListener('click', () => {
       const teams = allTeams();
       const names = teams.map(t => S.teamNames[t] || '');
-      const genders = teams.map(t => S.teamGender[t] || '');
+      const genders = teams.map(t => teamGender(t));
       for(let i=names.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
         [names[i],names[j]]=[names[j],names[i]];

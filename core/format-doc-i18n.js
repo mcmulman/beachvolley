@@ -2,15 +2,16 @@
   'use strict';
 
   var docs = {
-    'format-gruppen-platzierungsrunde.html': ['home.card.gruppen.title', 'home.card.gruppen.desc'],
-    'format-jeder-gegen-jeden.html': ['home.format.rr', 'home.card.rr.desc'],
-    'format-schweizer-system.html': ['home.format.swiss', 'home.card.swiss.desc'],
-    'format-ko-system.html': ['home.ko.title', 'home.ko.desc'],
-    'format-double-elimination.html': ['home.card.de.title', 'home.card.de.desc'],
-    'format-modified-pool-play.html': ['home.format.mpp', 'home.card.mpp.desc'],
+    // Third entry: sport-neutral format shared by all sport profiles.
+    'format-gruppen-platzierungsrunde.html': ['home.card.gruppen.title', 'doc.summary.gruppen', true],
+    'format-jeder-gegen-jeden.html': ['home.format.rr', 'doc.summary.rr', true],
+    'format-schweizer-system.html': ['home.format.swiss', 'doc.summary.swiss', true],
+    'format-ko-system.html': ['home.ko.title', 'doc.summary.ko', true],
+    'format-double-elimination.html': ['home.card.de.title', 'doc.summary.de', true],
+    'format-modified-pool-play.html': ['home.format.mpp', 'doc.summary.mpp', true],
     'format-king-of-the-court.html': ['home.format.koc', 'home.card.koc.desc'],
     'format-king-queen.html': ['home.format.kingqueen', 'home.card.kingqueen.desc'],
-    'format-flex-turnier.html': ['home.format.flex', 'home.card.flex.desc'],
+    'format-flex-turnier.html': ['home.format.flex', 'doc.summary.flex', true],
     'format-tandem.html': ['home.format.tandem', 'home.card.tandem.desc'],
     'format-eltern-kind.html': ['home.format.elternkind', 'home.card.elternkind.desc'],
     'format-meisterschaften.html': ['home.format.meisterschaften', 'home.card.meisterschaften.desc'],
@@ -45,13 +46,16 @@
 
     var summary = document.createElement('section');
     summary.className = 'doc-en-summary';
-    summary.innerHTML = '<h1></h1><h2></h2><p class="doc-en-description"></p><p class="doc-en-note"></p>';
+    summary.innerHTML = '<h1></h1><h2></h2><p class="doc-en-description"></p>' +
+      (keys[2] ? '<p class="doc-en-note doc-en-sport"><strong></strong> <span></span></p>' : '') +
+      '<p class="doc-en-note"></p>';
     page.appendChild(summary);
 
     var title = summary.querySelector('h1');
     var heading = summary.querySelector('h2');
     var description = summary.querySelector('.doc-en-description');
-    var note = summary.querySelector('.doc-en-note');
+    var note = summary.querySelector('.doc-en-note:not(.doc-en-sport)');
+    var sportNote = summary.querySelector('.doc-en-sport');
     var originalTitle = document.title;
     var titleKey = keys[0];
 
@@ -64,7 +68,11 @@
         heading.textContent = TI18n.t('doc.quick.heading');
         description.textContent = TI18n.t(keys[1]);
         note.textContent = TI18n.t('doc.quick.note');
-        document.title = title.textContent + ' – Format guide';
+        if (sportNote) {
+          sportNote.querySelector('strong').textContent = TI18n.t('doc.sportNote.title');
+          sportNote.querySelector('span').textContent = TI18n.t('doc.sportNote');
+        }
+        document.title = 'CompetitionPilot – ' + title.textContent + ' – Format guide';
       } else {
         document.title = originalTitle;
       }

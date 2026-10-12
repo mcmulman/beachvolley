@@ -1,0 +1,140 @@
+.code-open-scan {
+  display: block;
+  margin-top: 10px;
+  min-height: 44px;
+}
+
+body.qr-scan-open {
+  overflow: hidden;
+}
+
+.qr-scan-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 24, 42, .72);
+}
+
+.qr-scan-overlay[hidden] {
+  display: none;
+}
+
+.qr-scan-dialog {
+  box-sizing: border-box;
+  width: min(100%, 520px);
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+  color: #172b43;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .32);
+}
+
+.qr-scan-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.qr-scan-heading h2 {
+  margin: 0 12px 14px 0;
+  font-size: 1.15rem;
+}
+
+.qr-scan-close,
+.qr-scan-actions button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.qr-scan-close {
+  flex: 0 0 auto;
+  background: #e8eef5;
+  color: #172b43;
+}
+
+.qr-scan-view {
+  position: relative;
+  min-height: 180px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #101820;
+}
+
+.qr-scan-view video {
+  display: block;
+  width: 100%;
+  max-height: min(58vh, 440px);
+  object-fit: cover;
+}
+
+.qr-scan-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(58vw, 250px);
+  height: min(58vw, 250px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, .9);
+  border-radius: 14px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .18);
+  pointer-events: none;
+}
+
+.qr-scan-status {
+  min-height: 2.8em;
+  margin: 12px 0;
+  line-height: 1.4;
+}
+
+.qr-scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -4px;
+}
+
+.qr-scan-actions button {
+  flex: 1 1 180px;
+  margin: 4px;
+  background: #1769aa;
+  color: #fff;
+}
+
+.qr-scan-actions button:focus-visible,
+.qr-scan-close:focus-visible {
+  outline: 3px solid #f3a712;
+  outline-offset: 2px;
+}
+
+.qr-scan-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .qr-scan-overlay {
+    padding: 8px;
+  }
+
+  .qr-scan-dialog {
+    padding: 14px;
+  }
+}

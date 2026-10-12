@@ -3,30 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title data-i18n="timer.docTitle">Score Counter – Punkte, Sätze &amp; Spielzeit</title>
+<title data-i18n="timer.docTitle">CompetitionPilot – Score Counter – Punkte, Sätze &amp; Spielzeit</title>
 <meta name="description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
 <link rel="canonical" href="https://mcmulman.github.io/beachvolley/Spiel_Timer.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
-<meta property="og:title" content="Score Counter – Punkte, Sätze &amp; Spielzeit">
+<meta property="og:title" content="CompetitionPilot – Score Counter – Punkte, Sätze &amp; Spielzeit">
 <meta property="og:description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
 <meta property="og:url" content="https://mcmulman.github.io/beachvolley/Spiel_Timer.html">
 <meta property="og:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
-<meta property="og:image:alt" content="App-Symbol Beach-Volleyball Turniervorlagen">
+<meta property="og:image:alt" content="CompetitionPilot App-Symbol">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Score Counter – Punkte, Sätze &amp; Spielzeit">
+<meta name="twitter:title" content="CompetitionPilot – Score Counter – Punkte, Sätze &amp; Spielzeit">
 <meta name="twitter:description" content="Kostenloser Score Counter für einzelne Spiele: Punkte, Sätze und Spielzeit zählen, Regeln anpassen und offline nutzen. Ergebnisse selbst im Turnierbogen erfassen.">
 <meta name="twitter:image" content="https://mcmulman.github.io/beachvolley/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BeachL Turniere">
+  <meta name="apple-mobile-web-app-title" content="CompetitionPilot">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="core/match-timer.css">
   <script src="core/compat.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
+  <script src="core/turnier-sport.js"></script>
   <script src="core/turnier-i18n.js"></script>
   <script src="core/i18n/de.js"></script>
   <script src="core/i18n/en.js"></script>
@@ -140,7 +141,6 @@
       <button type="button" class="mt-toggle" id="mt-new"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span class="mt-tl" data-i18n="timer.new">Neu</span></button>
       <button type="button" class="mt-toggle mt-plain--danger" id="mt-reset" aria-expanded="false" aria-controls="mt-reset-confirm"><span class="mt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></span><span class="mt-tl" data-i18n="timer.reset">Zurücksetzen</span></button>
     </div>
-    <p class="mt-wake-status" id="mt-wake-status" role="status" aria-live="polite" hidden></p>
     <div class="mt-confirm" id="mt-reset-confirm" role="group" aria-labelledby="mt-reset-question" hidden>
       <p id="mt-reset-question" data-i18n="timer.resetQuestion">Zeit, Spielstand und Sätze auf 0 setzen? Die Namen bleiben erhalten.</p>
       <div class="mt-confirm-actions">
@@ -153,6 +153,7 @@
 </main>
 <div class="mt-docked-controls" id="mt-docked-controls">
   <div class="mt-footer-status" id="mt-wake-hint" role="status" aria-live="polite" aria-atomic="false" hidden>
+    <p class="mt-wake-status" id="mt-wake-status" role="status" aria-live="polite" hidden></p>
     <div class="mt-footer-status-inner">
       <span class="mt-footer-status-item" id="mt-status-sound" hidden><span class="mt-status-short" data-i18n="timer.footerStatus.soundOnShort">Punkt-Ton</span><span class="mt-status-long" data-i18n="timer.footerStatus.soundOn">Punkt- und Satzton</span></span>
       <span class="mt-footer-status-item" id="mt-status-keep-awake" hidden><span class="mt-status-short" data-i18n="timer.footerStatus.keepAwakeOnShort">Sperrt nicht</span><span class="mt-status-long" data-i18n="timer.footerStatus.keepAwakeOn">Auto-Sperre aus</span></span>

@@ -22,6 +22,7 @@
   const ARCHIVES_KEY = '__archives';
   const LIVE_PREFIX = 'beachl.t.';
   const SCHEMA = 2;
+  const Sport = root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null);
 
   /* DE/EN-Prototyp (core/turnier-i18n.js): übersetzt nur Anzeigetexte auf
      freigeschalteten Seiten. Gespeicherte Titel und Typen bleiben deutsch. */
@@ -365,7 +366,27 @@
     const object = v => !!v && typeof v === 'object' && !Array.isArray(v);
     const integer = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
     if (!object(t) || t.schema !== SCHEMA || t.sheet !== sheet || !object(t.config)) return false;
+    const sport = Sport ? Sport.recordSport(t) : null;
+    if (Sport && !sport.ok) return false;
+    if (!Sport && t.sport && (t.sport.id !== 'volleyball.beach' || t.sport.version !== 1)) return false;
     const c = t.config, base = sheet.split('.')[0];
+    if (Sport) {
+      const profile = sport.profile;
+      const modes = profile.modeIds;
+      if (c.setMode != null && modes.indexOf(c.setMode) < 0) return false;
+      if (c.finalSetMode && modes.indexOf(c.finalSetMode) < 0) return false;
+      if (c.rankingProfile != null && profile.rankingProfiles.indexOf(c.rankingProfile) < 0) return false;
+      if (c.customSetTarget != null && !integer(c.customSetTarget, 11, 50)) return false;
+      if (c.modeMinutes != null && (!object(c.modeMinutes) || Object.keys(c.modeMinutes).some(mode =>
+          modes.indexOf(mode) < 0 || !integer(c.modeMinutes[mode], 1, 360)))) return false;
+      for (const modesByRound of [c.phaseModes, t.frozenModes]) {
+        if (modesByRound != null && (!object(modesByRound) || Object.keys(modesByRound).some(key =>
+            modesByRound[key] && modes.indexOf(modesByRound[key]) < 0))) return false;
+      }
+    }
+    const knownFormats = Sport ? Sport.GENERIC_FORMATS.concat(['koc', 'kingqueen', 'tandem', 'eltern-kind',
+      'meisterschaften', 'daviscup']) : [];
+    if (Sport && knownFormats.indexOf(base) >= 0 && !Sport.supportsFormat(sport.profile.id, base)) return false;
     const mixed = base === 'kingqueen', court = base === 'koc';
     let count = c.teams;
     if (mixed) {
@@ -385,6 +406,25 @@
     const pairs = v => Array.isArray(v) && v.length <= 64 && v.every(pair);
     if (t.absent != null && !list(t.absent)) return false;
     if (t.round1 != null && !pairs(t.round1)) return false;
+    if (t.results != null) {
+      if (!object(t.results)) return false;
+      const sportId = sport ? sport.profile.id : (t.sport && t.sport.id) || 'volleyball.beach';
+      const maxSets = sportId.indexOf('table-tennis.') === 0 ? 7
+        : sportId === 'volleyball.indoor' ? 5 : 3;
+      const maxScore = Math.pow(2, 53) - 1;
+      for (const id of Object.keys(t.results)) {
+        const result = t.results[id];
+        if (id.length > 200 || !/^[A-Za-z0-9_.-]+$/.test(id)) return false;
+        if (court) {
+          if (!Array.isArray(result) || result.length !== 2
+              || !result.every(v => integer(v, 0, maxScore))) return false;
+          continue;
+        }
+        if (!Array.isArray(result) || result.length > maxSets
+            || !result.every(row => Array.isArray(row) && row.length === 2
+              && row.every(v => v == null || integer(v, 0, maxScore)))) return false;
+      }
+    }
     for (const key of ['teamNames', 'fieldNames', 'genders']) {
       if (t[key] == null) continue;
       if (!object(t[key]) || !Object.keys(t[key]).every(k => (key === 'fieldNames' && k === '0' || /^[1-9]\d{0,2}$/.test(k)) && +k <= 128

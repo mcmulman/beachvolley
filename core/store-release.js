@@ -2,7 +2,11 @@
   'use strict';
 
   // Injected only into staged store builds, never into the web/PWA sources.
-  window.TReleaseConfig = Object.freeze({ timer: false, cloudSharing: false });
+  window.TReleaseConfig = Object.freeze({
+    timer: false,
+    cloudSharing: false,
+    sports: Object.freeze(['volleyball.beach'])
+  });
 
   function apply() {
     function text(key, fallback) {

@@ -32,16 +32,107 @@
     { id: '2x21tb', target: 21, sets: 3, decidingSet: true, decidingTarget: 15, label: '2 Sätze bis 21 + Entscheidungssatz' }
   ];
 
-  /* Empfohlene Mindestdauer je Spiel in Minuten (inkl. Wechselzeit). */
-  const MODE_MIN = { '15': 17, '21': 25, '2x15': 30, '2x21': 36, '2x15tb': 40, '2x21tb': 45 };
+  const INDOOR_MODES = [
+    { id: 'indoor-1x25', target: 25, sets: 1, label: '1 Satz bis 25', minMinutes: 50 },
+    { id: 'indoor-2x25', target: 25, sets: 2, label: '2 Sätze bis 25 (Hausmodus)', drawAllowed: true, minMinutes: 80 },
+    { id: 'indoor-bo3', target: 25, sets: 3, matchWins: 2, finalTarget: 15, decidingSet: true, label: 'Best of 3 (25/15)', minMinutes: 100 },
+    { id: 'indoor-bo5', target: 25, sets: 5, matchWins: 3, finalTarget: 15, label: 'Best of 5 (25/15)', minMinutes: 150 },
+    { id: 'indoor-custom', target: 25, sets: 1, label: 'Freies Satzziel', customTarget: true, minMinutes: 50 }
+  ];
+  const VOLLEYBALL_EVENT_MODES = [
+    { id: 'indoor-a', target: 15, sets: 3, matchWins: 2, finalTarget: 15, decidingSet: true, label: 'Best of 3 (15)' },
+    { id: 'indoor-a21', target: 21, sets: 3, matchWins: 2, finalTarget: 15, decidingSet: true, label: 'Best of 3 (21/15)' }
+  ];
+  const TABLE_TENNIS_MODES = [
+    { id: 'tt-best-of-3', target: 11, sets: 3, matchWins: 2, unit: 'game', label: 'Best of 3 games', minMinutes: 45 },
+    { id: 'tt-best-of-5', target: 11, sets: 5, matchWins: 3, unit: 'game', label: 'Best of 5 games', minMinutes: 75 },
+    { id: 'tt-best-of-7', target: 11, sets: 7, matchWins: 4, unit: 'game', label: 'Best of 7 games', minMinutes: 105 }
+  ];
+  const MODES_BY_PROFILE = {
+    'volleyball.beach': SET_MODES,
+    'volleyball.indoor': INDOOR_MODES,
+    'table-tennis.singles': TABLE_TENNIS_MODES,
+    'table-tennis.doubles': TABLE_TENNIS_MODES
+  };
+  let activeProfileId = 'volleyball.beach';
+  let activeCustomTarget = 25;
+  let activeRankingProfile = 'beach-house';
+  let activeModeMinutes = {};
+  const RANKING_PROFILES = Object.freeze({
+    'beach-house': Object.freeze({ sport: 'volleyball.beach', criteria: ['pts', 'bd', 'ballsFor', 'h2h'] }),
+    'indoor-3-2-1-0': Object.freeze({ sport: 'volleyball.indoor', criteria: ['pts', 'sd', 'bd', 'h2h'] }),
+    'indoor-hobby': Object.freeze({ sport: 'volleyball.indoor', criteria: ['won', 'sd', 'bd', 'h2h'] }),
+    'table-tennis-hobby': Object.freeze({ sport: 'table-tennis.*', criteria: ['won', 'sd', 'bd', 'h2h'] })
+  });
 
-  function modeDef(modeId) {
-    return SET_MODES.find(m => m.id === String(modeId)) || SET_MODES[1];
+  /* Empfohlene Mindestdauer je Spiel in Minuten (inkl. Wechselzeit). */
+  const MODE_MIN = { '15': 17, '21': 25, '2x15': 30, '2x21': 36, '2x15tb': 40, '2x21tb': 45,
+    'indoor-a': 60, 'indoor-a21': 75 };
+  INDOOR_MODES.forEach(mode => { MODE_MIN[mode.id] = mode.minMinutes; });
+  TABLE_TENNIS_MODES.forEach(mode => { MODE_MIN[mode.id] = mode.minMinutes; });
+
+  function modesForProfile(profileId) {
+    return MODES_BY_PROFILE[profileId] || null;
+  }
+  function configureProfile(profileId, customTarget, rankingProfile, modeMinutes) {
+    if (!MODES_BY_PROFILE[profileId]) throw new Error('Unsupported sport profile: ' + profileId);
+    const defaultRanking = profileId === 'volleyball.indoor' ? 'indoor-3-2-1-0'
+      : profileId.indexOf('table-tennis.') === 0 ? 'table-tennis-hobby' : 'beach-house';
+    const selectedRanking = rankingProfile || defaultRanking;
+    const ranking = RANKING_PROFILES[selectedRanking];
+    if (!ranking || (ranking.sport !== profileId && ranking.sport !== 'table-tennis.*')) {
+      throw new Error('Unsupported ranking profile for ' + profileId + ': ' + selectedRanking);
+    }
+    const nextModeMinutes = {};
+    if (modeMinutes != null) {
+      if (!modeMinutes || typeof modeMinutes !== 'object' || Array.isArray(modeMinutes)) {
+        throw new Error('Invalid mode time estimates');
+      }
+      Object.keys(modeMinutes).forEach(modeId => {
+        if (!MODES_BY_PROFILE[profileId].some(mode => mode.id === modeId)
+            || !Number.isInteger(modeMinutes[modeId]) || modeMinutes[modeId] < 1 || modeMinutes[modeId] > 360) {
+          throw new Error('Invalid mode time estimate: ' + modeId);
+        }
+        nextModeMinutes[modeId] = modeMinutes[modeId];
+      });
+    }
+    activeProfileId = profileId;
+    activeRankingProfile = selectedRanking;
+    activeModeMinutes = nextModeMinutes;
+    if (customTarget != null) setCustomTarget(customTarget);
+    else activeCustomTarget = 25;
+    return true;
+  }
+  function activeProfile() { return activeProfileId; }
+  function activeRanking() { return activeRankingProfile; }
+  function modeMinutes(modeId) {
+    const id = String(modeId);
+    return Object.prototype.hasOwnProperty.call(activeModeMinutes, id)
+      ? activeModeMinutes[id] : MODE_MIN[id] || 25;
+  }
+  function setCustomTarget(value) {
+    const target = Number(value);
+    if (!Number.isInteger(target) || target < 11 || target > 50) return false;
+    activeCustomTarget = target;
+    return true;
+  }
+  function modeDef(modeId, profileId) {
+    const modes = modesForProfile(profileId || activeProfileId);
+    const found = modes && modes.find(m => m.id === String(modeId));
+    if (found) return found;
+    if ((profileId || activeProfileId) === 'volleyball.indoor') {
+      const eventMode = VOLLEYBALL_EVENT_MODES.find(m => m.id === String(modeId));
+      if (eventMode) return eventMode;
+    }
+    if ((profileId || activeProfileId) === 'volleyball.beach') return SET_MODES[1];
+    throw new Error('Unsupported match mode for ' + (profileId || activeProfileId) + ': ' + modeId);
   }
   function isMulti(modeId) { return modeDef(modeId).sets > 1; }
   function hasDecidingSet(modeId) { return !!modeDef(modeId).decidingSet; }
   function targetForSet(modeId, setNo) {
     const def = modeDef(modeId);
+    if (def.customTarget) return activeCustomTarget;
+    if (setNo === def.sets && def.finalTarget != null) return def.finalTarget;
     if (setNo === 3 && def.decidingSet) return def.decidingTarget || def.target;
     return def.target;
   }
@@ -55,7 +146,7 @@
      ======================================================================== */
   function setValid(a, b, target) {
     if (a == null || b == null) return false;
-    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) return false;
+    if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b) || a < 0 || b < 0) return false;
     const hi = Math.max(a, b), lo = Math.min(a, b);
     if (hi < target || hi === lo) return false;
     if (hi === target) return lo <= target - 2;
@@ -569,17 +660,25 @@
       reset: true, resetOf: gf1.id
     };
 
-    // Sequentielle Spielreihenfolge fuer Zeitplan/Druck: WB-Runde, dann die
-    // dazugehoerige(n) LB-Runde(n) (Mix + ggf. Minor-Reduktion), am Ende
-    // Grand Final (+ Reset).
+    // Bei 16/32 Teams pfeifen die Verlierer der ersten WB-Runde zuerst die
+    // zweite WB-Runde. Erst danach treffen sie in der ersten LB-Runde auf die
+    // Verlierer der zweiten WB-Runde (lokale Volleyball-Veranstaltungsvariante).
+    // Sonst: WB-Runde, danach die zugehoerigen LB-Runden.
     const rounds = [];
     let rn = 0;
     let lbCursor = 0;
+    const refereeBeforeLb = o.refereeBeforeLb === true
+      && (n === 16 || n === 32) && wbRounds.length > 2;
     for (let i = 0; i < wbRounds.length; i++) {
       rn++;
       rounds.push({ round: rn, label: wbRounds[i].label, matches: wbRounds[i].matches, phase: 'wb' });
       if (i === 0) {
-        // Nach WB-Runde 1: die erste LB-Runde (reine Verlierer-Paarung)
+        if (refereeBeforeLb) {
+          rn++;
+          rounds.push({ round: rn, label: wbRounds[i + 1].label, matches: wbRounds[i + 1].matches, phase: 'wb' });
+          i++;
+        }
+        // Die erste LB-Runde ist eine reine Paarung der WB-Verlierer.
         if (lbRounds[lbCursor]) { rn++; rounds.push({ round: rn, label: lbRounds[lbCursor].label, matches: lbRounds[lbCursor].matches, phase: 'lb' }); lbCursor++; }
       } else if (i < wbRounds.length - 1) {
         // Mix-Runde + Minor-Reduktionsrunde (falls vorhanden)
@@ -973,7 +1072,7 @@
   /* Zeitraster über die Slots legen. */
   function computeSchedule(slots, startMin, modeId, opts) {
     const o = opts || {};
-    const per = o.slotMinutes || MODE_MIN[String(modeId)] || 25;
+    const per = o.slotMinutes || modeMinutes(modeId);
     return slots.map((s, i) => Object.assign({}, s, {
       startMin: startMin + i * per,
       endMin: startMin + (i + 1) * per,
@@ -1003,6 +1102,40 @@
   function computeResult(sets, modeId) {
     const def = modeDef(modeId);
     const s = sets || [];
+    if (activeProfileId !== 'volleyball.beach') {
+      let aSets = 0, bSets = 0, aBalls = 0, bBalls = 0;
+      let winner = null;
+      for (let i = 0; i < def.sets; i++) {
+        const row = s[i] && s[i].length === 2 ? s[i] : [null, null];
+        const hasA = row[0] != null && row[0] !== '';
+        const hasB = row[1] != null && row[1] !== '';
+        if (winner) {
+          if (hasA || hasB) return null;
+          continue;
+        }
+        if (!hasA || !hasB) return null;
+        const a = Number(row[0]), b = Number(row[1]);
+        if (!setValid(a, b, targetForSet(def.id, i + 1))) return null;
+        aBalls += a; bBalls += b;
+        if (a > b) aSets++; else bSets++;
+        if (def.matchWins && aSets >= def.matchWins) winner = 'a';
+        else if (def.matchWins && bSets >= def.matchWins) winner = 'b';
+        else if (!def.matchWins && def.sets === 1) winner = a > b ? 'a' : 'b';
+      }
+      for (let i = def.sets; i < s.length; i++) {
+        const row = s[i];
+        if (row && row.some(value => value != null && value !== '')) return null;
+      }
+      if (winner) return { aBalls, bBalls, aSets, bSets, aGames: aSets, bGames: bSets, winner, draw: false };
+      if (def.drawAllowed) {
+        if (aSets !== bSets) {
+          winner = aSets > bSets ? 'a' : 'b';
+          return { aBalls, bBalls, aSets, bSets, aGames: aSets, bGames: bSets, winner, draw: false };
+        }
+        return { aBalls, bBalls, aSets, bSets, aGames: aSets, bGames: bSets, winner: null, draw: true };
+      }
+      return null;
+    }
     const g = i => (s[i] && s[i].length === 2) ? s[i] : [null, null];
     const [a1, b1] = g(0);
 
@@ -1073,18 +1206,32 @@
       ballsFor: 0, ballsAgainst: 0, bd: 0
     };
   }
+  function matchPoints(result, rankingProfile) {
+    if (rankingProfile !== 'indoor-3-2-1-0' || !result || result.winner == null) {
+      return { a: result && result.draw ? DRAW_PTS : result && result.winner === 'a' ? WIN_PTS : LOSS_PTS,
+        b: result && result.draw ? DRAW_PTS : result && result.winner === 'b' ? WIN_PTS : LOSS_PTS };
+    }
+    const close = Math.min(result.aSets, result.bSets) > 0;
+    const winnerPoints = close ? 2 : 3, loserPoints = close ? 1 : 0;
+    return result.winner === 'a'
+      ? { a: winnerPoints, b: loserPoints } : { a: loserPoints, b: winnerPoints };
+  }
 
   /* played: [{a, b, result|null, bye?:teamNo}] – a/b sind Teamnummern.
      Spiele ohne Ergebnis werden ignoriert.                                    */
   function standings(teams, played, opts) {
     const o = opts || {};
+    const rankingProfile = o.rankingProfile || activeRankingProfile;
     const st = {};
     normalizeTeamList(teams).forEach(t => st[t] = emptyStat());
 
     (played || []).forEach(m => {
       if (m.bye != null) {
         const s = st[m.bye];
-        if (s) { s.games++; s.byes++; s.won++; s.pts += WIN_PTS; }
+        if (s) {
+          s.games++; s.byes++; s.won++;
+          s.pts += rankingProfile === 'indoor-3-2-1-0' ? 3 : WIN_PTS;
+        }
         return;
       }
       const res = m.result;
@@ -1096,9 +1243,10 @@
       sb.setsFor += res.bSets; sb.setsAgainst += res.aSets;
       sa.ballsFor += res.aBalls; sa.ballsAgainst += res.bBalls;
       sb.ballsFor += res.bBalls; sb.ballsAgainst += res.aBalls;
-      if (res.winner === 'a') { sa.won++; sb.lost++; sa.pts += WIN_PTS; sb.pts += LOSS_PTS; }
-      else if (res.winner === 'b') { sb.won++; sa.lost++; sb.pts += WIN_PTS; sa.pts += LOSS_PTS; }
-      else { sa.drawn++; sb.drawn++; sa.pts += DRAW_PTS; sb.pts += DRAW_PTS; }
+      const points = matchPoints(res, rankingProfile);
+      if (res.winner === 'a') { sa.won++; sb.lost++; sa.pts += points.a; sb.pts += points.b; }
+      else if (res.winner === 'b') { sb.won++; sa.lost++; sb.pts += points.b; sa.pts += points.a; }
+      else { sa.drawn++; sb.drawn++; sa.pts += points.a; sb.pts += points.b; }
     });
 
     Object.keys(st).forEach(t => {
@@ -1213,7 +1361,7 @@
       const sub = (matches || []).filter(m =>
         m.bye == null && set.has(m.a) && set.has(m.b) && m.result);
       if (!sub.length) return [group];
-      const mst = standings(group, sub, { perGame: true });
+      const mst = standings(group, sub, { perGame: true, rankingProfile: o.rankingProfile });
       const subChain = chain.filter(c => c !== 'h2h');
       let parts = [group];
       subChain.forEach(crit => {
@@ -1277,6 +1425,17 @@
      bleibt die Wertung exakt die, die auf dem Papierbogen steht.             */
   function criteriaFor(modeId, opts) {
     const o = opts || {};
+    const rankingId = o.rankingProfile || activeRankingProfile;
+    const ranking = RANKING_PROFILES[rankingId];
+    if (!ranking) throw new Error('Unsupported ranking profile: ' + rankingId);
+    if (ranking.sport !== activeProfileId && ranking.sport !== 'table-tennis.*') {
+      throw new Error('Ranking profile does not match sport: ' + rankingId);
+    }
+    if (ranking && (ranking.sport === activeProfileId || ranking.sport === 'table-tennis.*')) {
+      if (!o.unequalGames) return ranking.criteria.slice();
+      if (rankingId === 'indoor-3-2-1-0') return ['ptsPer', 'sdPer', 'bdPer', 'h2h'];
+      if (rankingId !== 'beach-house') return ['wonPer', 'sdPer', 'bdPer', 'h2h'];
+    }
     return o.unequalGames
       ? ['ptsPer', 'bdPer', 'ballsForPer', 'h2h']
       : ['pts', 'bd', 'ballsFor', 'h2h'];
@@ -1309,7 +1468,8 @@
   }
 
   return {
-    SET_MODES, MODE_MIN, WIN_PTS, DRAW_PTS, LOSS_PTS,
+    SET_MODES, INDOOR_MODES, TABLE_TENNIS_MODES, MODE_MIN, WIN_PTS, DRAW_PTS, LOSS_PTS, RANKING_PROFILES,
+    modesForProfile, configureProfile, activeProfile, activeRanking, modeMinutes, setCustomTarget,
     modeDef, isMulti, hasDecidingSet, targetForSet,
     setValid, computeResult, decidingSetNeeded,
     genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genDoubleBracket, genPlacement,

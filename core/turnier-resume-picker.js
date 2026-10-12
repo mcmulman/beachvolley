@@ -69,13 +69,21 @@
     return (Array.isArray(base) ? base : [base])
       .map(b => (typeof b === 'string') ? { base: b, params: null } : b);
   }
-  function listFromIndex(idx, base, tokens) {
+  function listFromIndex(idx, base, tokens, selectedSport) {
     idx = idx || {};
     const specs = normalizeBases(base);
     const out = [];
     Object.keys(idx).forEach(k => {
       const spec = specs.filter(s => k === s.base || k.indexOf(s.base + '.') === 0)[0];
       if (!spec) return;
+      const sport = idx[k].sport || { id: 'volleyball.beach', version: 1 };
+      const profile = root.TSport && sport && typeof sport.id === 'string'
+        ? root.TSport.get(sport.id, sport.version) : null;
+      const sportName = profile ? tx(profile.nameKey, profile.id)
+        : tx('picker.unknownSport', 'Unbekannte Sportart');
+      if (selectedSport && selectedSport.explicit && sport.id !== selectedSport.profile.id) return;
+      const params = Object.assign({}, spec.params || {});
+      if (sport.id !== 'volleyball.beach') params.sport = sport.id;
       out.push({
         id: k === spec.base ? BASE_ID : k.slice(spec.base.length + 1),
         /* Vollständige Bogen-ID (Speicher-Schlüssel ohne TStore.PREFIX):
@@ -84,9 +92,10 @@
         /* Revision/Prüfsumme des angezeigten Stands (TStore.recordTokenInView);
            undefined = unbekannt, dann wird nicht gelöscht. */
         token: tokens && Object.prototype.hasOwnProperty.call(tokens, k) ? tokens[k] : undefined,
-        params: spec.params,
+        params: Object.keys(params).length ? params : null,
         title: idx[k].title || '',
         meta: [
+          tx('picker.sport', 'Sportart: {sport}', { sport: sportName }),
           idx[k].teams ? tx('picker.teams', '{count} Teams', { count: idx[k].teams }) : '',
           idx[k].filled ? tx('picker.results', { one: '{count} Ergebnis', other: '{count} Ergebnisse' },
             { count: idx[k].filled }) : '',
@@ -540,7 +549,9 @@
       } catch (e) { waiting = false; }
       return readIndex().then(res => {
         const idx = res.idx;
-        const existing = listFromIndex(idx, base, res.tokens);
+        const selectedSport = root.TSport && root.location
+          ? root.TSport.fromSearch(root.location.search) : null;
+        const existing = listFromIndex(idx, base, res.tokens, selectedSport);
         if (!existing.length) { release(); return false; }
         render(existing, typeLabel, Math.max(0, countAllSaved(idx) - existing.length), base);
         waiting = false;

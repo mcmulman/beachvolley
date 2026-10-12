@@ -53,6 +53,7 @@
   function cleanTitle(t) {
     if (!t) return 'Turnierbogen';
     var s = String(t).replace(/\s*\([^()]*\)\s*$/, '');
+    s = s.replace(/^\s*CompetitionPilot\s*[|–—-]\s*/i, '');
     s = s.replace(/\s*[–—-]\s*Turnierbogen\b/i, '');
     s = s.replace(/^\s*Turnierbogen\s*[–—-]?\s*/i, '');
     return s.trim() || String(t).trim();
@@ -370,7 +371,14 @@
 
     var title = document.createElement('div');
     title.className = 'app-bar__title';
-    title.textContent = barTitle();
+    var brandTitle = document.createElement('span');
+    brandTitle.className = 'app-bar__brand';
+    brandTitle.textContent = 'CompetitionPilot';
+    title.appendChild(brandTitle);
+    var contextTitle = document.createElement('span');
+    contextTitle.className = 'app-bar__context';
+    contextTitle.textContent = barTitle();
+    title.appendChild(contextTitle);
     bar.appendChild(title);
 
     var actions = document.createElement('div');

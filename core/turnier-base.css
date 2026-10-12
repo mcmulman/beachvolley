@@ -23,6 +23,16 @@
     padding:10mm;
   }
   h1 { font-size:19px; margin:0 0 3px; }
+  .sport-profile-label { margin:0 0 8px; color:#475569; font-size:12px; font-weight:700; }
+  .sport-profile-glossary { margin:-6px 0 10px; color:#39465a; font-size:11px; }
+  .sport-profile-glossary summary { display:inline-flex; align-items:center; min-height:44px; padding:8px 0; color:#1a3a5c; font-weight:700; cursor:pointer; }
+  .sport-profile-glossary dl { display:flex; flex-wrap:wrap; margin:0; }
+  .sport-profile-glossary dl > div { display:flex; margin:0 16px 4px 0; }
+  .sport-profile-glossary dt { margin-right:4px; font-weight:700; }
+  .sport-profile-glossary dd { margin:0; }
+  .sport-profile-glossary p { margin:2px 0 0; color:#5a6375; }
+  .sport-profile-controls { margin:8px 0; padding:8px; border:1px solid #d8e1ec; border-radius:6px; }
+  .sport-profile-note { margin:4px 0 0; color:#5a6375; font-size:11px; }
   .sub { color:#555; font-size:12px; margin:0 0 12px; }
   .row { display:flex; gap:8mm; align-items:flex-start; }
   .grow { flex:1; }
@@ -256,6 +266,11 @@
     td.is-manual, td.mstd-cell.is-manual { background:#f0f0f0 !important; }
     #session-title-display { display: block !important; }
     h1 { font-size:15pt; margin:0 0 1.5mm; }
+    .sport-profile-label { margin:0 0 1.5mm; font-size:9pt; }
+    .sport-profile-glossary { margin:0 0 2mm; font-size:8pt; }
+    .sport-profile-glossary summary { display:none; }
+    .sport-profile-glossary:not([open]) > *:not(summary) { display:block !important; }
+    .sport-profile-glossary dl > div { margin-bottom:0; }
     .sub { margin:0 0 2mm; font-size:8.5pt; }
     caption { margin:2mm 0 1mm; font-size:9pt; }
     table {

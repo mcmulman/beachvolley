@@ -578,10 +578,9 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
 .mt-toggle[aria-pressed="true"] { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
 .mt-toggle .mt-ic { margin-right: 6px; }
 .mt-wake-status {
-  flex: 1 0 100%;
-  margin: 0 0 8px;
+  margin: 0;
   color: #4a5468;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
 }
 .mt-plain--danger { color: #a61b1b; border-color: #a61b1b; }

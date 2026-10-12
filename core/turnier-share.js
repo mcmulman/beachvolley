@@ -1241,7 +1241,21 @@
     return s.trim();
   }
 
+  function offlineShareUrl(input) {
+    try {
+      const url = new URL(String(input || '').trim(), location.href);
+      if ((url.protocol !== 'https:' && url.protocol !== 'http:') || url.origin !== location.origin
+          || !url.hash.startsWith(OFFLINE_PREFIX) || !url.hash.slice(OFFLINE_PREFIX.length)
+          || !/(^|\/)Turnierbogen_[A-Za-z0-9_-]+\.html$/.test(url.pathname)) return '';
+      return url.href;
+    } catch (e) {
+      return '';
+    }
+  }
+
   function openByCode(input) {
+    const offlineUrl = offlineShareUrl(input);
+    if (offlineUrl) { location.href = offlineUrl; return; }
     /* App: eingefügter öffentlicher Offline-Link → dieselbe Seite im App-
        Bundle öffnen (Server-Links/Codes laufen unten über die Vorschau). */
     if (nativeApp() && typeof TNative !== 'undefined' && TNative && typeof TNative.localPageFromPublicUrl === 'function') {
