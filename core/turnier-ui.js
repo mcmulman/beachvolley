@@ -85,22 +85,33 @@
           const note = root.document.createElement('p');
           note.className = 'sport-profile-note';
           note.textContent = tx('sport.ranking.note', 'Wertungsvorgabe des Turniers; keine allgemeine Verbandsakkreditierung.');
+          const limitation = root.document.createElement('p');
+          limitation.id = 'ranking-profile-limitation';
+          limitation.className = 'sport-profile-note';
+          limitation.textContent = tx('sport.ranking.indoorFivbNote',
+            'Nur für gleichmäßig gespielte Pools mit normalen Ergebnissen. Erkannte Freilose blockieren die Rangfolge; Aufgabe/Default und Weltranglisten-Fallback sind nicht implementiert.');
+          limitation.hidden = true;
           controls.appendChild(field);
           controls.appendChild(note);
+          controls.appendChild(limitation);
           const setup = section.querySelector('.cfg-action-groups')
             || section.querySelector('.cfg-setup-content') || section;
           setup.appendChild(controls);
+          controls._rankingLimitation = limitation;
         }
         const select = controls.querySelector('#ranking-profile-select');
+        const limitation = controls._rankingLimitation;
         const record = opts.getTournament ? opts.getTournament() : null;
         if (select) {
           select.value = record && record.config && record.config.rankingProfile
             ? record.config.rankingProfile : profile.rankingProfiles[0];
+          if (limitation) limitation.hidden = select.value !== 'indoor-fivb-2026';
           const uiState = root.TStore && root.TStore.initialUiState();
           select.disabled = !!(uiState && uiState.readOnly) || !opts.getTournament || !opts.repaint;
           if (select.getAttribute('data-bound') !== '1') {
             select.setAttribute('data-bound', '1');
             select.addEventListener('change', function () {
+              if (limitation) limitation.hidden = select.value !== 'indoor-fivb-2026';
               const state = opts.getTournament && opts.getTournament();
               if (!state || !state.config || profile.rankingProfiles.indexOf(select.value) < 0) return;
               const previous = state.config.rankingProfile || profile.rankingProfiles[0];

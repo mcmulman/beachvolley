@@ -61,6 +61,10 @@
   const RANKING_PROFILES = Object.freeze({
     'beach-house': Object.freeze({ sport: 'volleyball.beach', criteria: ['pts', 'bd', 'ballsFor', 'h2h'] }),
     'indoor-3-2-1-0': Object.freeze({ sport: 'volleyball.indoor', criteria: ['pts', 'sd', 'bd', 'h2h'] }),
+    'indoor-fivb-2026': Object.freeze({
+      sport: 'volleyball.indoor',
+      criteria: ['won', 'pts', 'setRatio', 'pointRatio', 'h2h']
+    }),
     'indoor-hobby': Object.freeze({ sport: 'volleyball.indoor', criteria: ['won', 'sd', 'bd', 'h2h'] }),
     'table-tennis-hobby': Object.freeze({ sport: 'table-tennis.*', criteria: ['won', 'sd', 'bd', 'h2h'] })
   });
@@ -1199,6 +1203,11 @@
      ======================================================================== */
   const WIN_PTS = 2, DRAW_PTS = 1, LOSS_PTS = 0;
 
+  function quotient(forValue, againstValue) {
+    if (againstValue === 0) return forValue === 0 ? 0 : Infinity;
+    return forValue / againstValue;
+  }
+
   function emptyStat() {
     return {
       games: 0, won: 0, lost: 0, drawn: 0, byes: 0, pts: 0,
@@ -1207,7 +1216,8 @@
     };
   }
   function matchPoints(result, rankingProfile) {
-    if (rankingProfile !== 'indoor-3-2-1-0' || !result || result.winner == null) {
+    if ((rankingProfile !== 'indoor-3-2-1-0' && rankingProfile !== 'indoor-fivb-2026')
+        || !result || result.winner == null) {
       return { a: result && result.draw ? DRAW_PTS : result && result.winner === 'a' ? WIN_PTS : LOSS_PTS,
         b: result && result.draw ? DRAW_PTS : result && result.winner === 'b' ? WIN_PTS : LOSS_PTS };
     }
@@ -1311,6 +1321,8 @@
     ptsPer:      { label: 'Punkte/Spiel',      get: s => s.ptsPer,      dir: -1 },
     won:         { label: 'Siege',             get: s => s.won,         dir: -1 },
     wonPer:      { label: 'Siege/Spiel',       get: s => s.wonPer,      dir: -1 },
+    setRatio:    { label: 'Satzquotient',     get: s => quotient(s.setsFor, s.setsAgainst), dir: -1 },
+    pointRatio:  { label: 'Punktquotient',    get: s => quotient(s.ballsFor, s.ballsAgainst), dir: -1 },
     bd:          { label: 'Ball-Differenz',    get: s => s.bd,          dir: -1 },
     bdPer:       { label: 'Ball-Diff./Spiel',  get: s => s.bdPer,       dir: -1 },
     ballsFor:    { label: 'Ballpunkte',        get: s => s.ballsFor,    dir: -1 },
@@ -1333,6 +1345,13 @@
     const list = normalizeTeamList(teams).filter(t => st[t]);
     const chain = o.criteria || DEFAULT_CRITERIA;
     const matches = o.matches || [];
+    const unsupportedReason = o.unsupportedReason
+      || ((o.rankingProfile || activeRankingProfile) === 'indoor-fivb-2026'
+        && matches.some(m => m.bye != null) ? 'bye' : null);
+    if (unsupportedReason) {
+      return list.map(t => ({ team: t, place: 1, shared: true,
+        unsupported: unsupportedReason, stat: st[t] }));
+    }
 
     /* Ein Kriterium auf eine Gruppe anwenden → Liste von Untergruppen. */
     function splitBy(group, crit) {
@@ -1434,6 +1453,7 @@
     if (ranking && (ranking.sport === activeProfileId || ranking.sport === 'table-tennis.*')) {
       if (!o.unequalGames) return ranking.criteria.slice();
       if (rankingId === 'indoor-3-2-1-0') return ['ptsPer', 'sdPer', 'bdPer', 'h2h'];
+      if (rankingId === 'indoor-fivb-2026') return ranking.criteria.slice();
       if (rankingId !== 'beach-house') return ['wonPer', 'sdPer', 'bdPer', 'h2h'];
     }
     return o.unequalGames

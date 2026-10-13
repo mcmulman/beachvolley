@@ -522,17 +522,19 @@
         'padding-left:calc(16px + env(safe-area-inset-left,0px));padding-right:calc(16px + env(safe-area-inset-right,0px));' +
         '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
       '@media print{.tshare-backdrop{display:none !important;}}' +
-      '.tshare-panel{background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
+      '.tshare-panel{position:relative;background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
         'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;' +
         'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}' +
-      '.tshare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;' +
-        'padding:16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-head{display:flex;align-items:center;gap:12px;' +
+        'padding:16px 66px 16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
       '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:16px;font-weight:800;color:#1a3a5c;}' +
       /* 44x44-Trefferflaeche; negativer Rand haelt die Kopfzeile gleich hoch. */
-      '.tshare-x{border:none;background:none;font-size:22px;line-height:1;color:#5a6375;cursor:pointer;padding:2px 6px;border-radius:8px;' +
-        'min-width:44px;min-height:44px;margin:-10px -10px -10px 0;flex:0 0 auto;}' +
+      '.tshare-x{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;' +
+        'width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:none;border-radius:8px;' +
+        'background:transparent;font:inherit;font-size:28px;line-height:1;color:#5a6375;cursor:pointer;}' +
       '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
       '.tshare-x:hover{background:#eef2f7;}' +
+      '.tshare-x:focus-visible{outline:3px solid #f3a712;outline-offset:2px;}' +
       '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
       '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
       '.tshare-hint{font-size:12.5px;color:#5a6375;}' +
@@ -578,7 +580,8 @@
       '.tshare-btn-ghost{background:none;color:#1a3a5c;border:1.5px solid #ccd8e8;}' +
       '.tshare-btn-ghost:hover{border-color:#1f6fa8;}' +
       '@media screen and (max-width:640px){.tshare-field input,.tshare-linkrow input{font-size:16px;min-height:44px;}' +
-        '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-head,.tshare-body,.tshare-foot{padding:12px;}}';
+        '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-head{padding:12px 60px 12px 12px;}' +
+        '.tshare-body,.tshare-foot{padding:12px;}}';
     document.head.appendChild(style);
   }
 

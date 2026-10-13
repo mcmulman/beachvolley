@@ -1104,9 +1104,13 @@
         <form class="code-open-box" id="code-open-form" onsubmit="return handleOpenByCode(event)">
           <input type="text" id="code-open-input" placeholder="Code oder Link einfügen" aria-label="Code oder Link einfügen" data-i18n-attr="placeholder:home.code.placeholder;aria-label:home.code.placeholder" autocomplete="off"
                  autocapitalize="off" spellcheck="false" inputmode="text">
-          <button type="submit" data-i18n="home.code.open">Öffnen</button>
+          <div class="code-open-actions">
+            <button type="submit" data-i18n="home.code.open">Öffnen</button>
+          </div>
+          <div class="code-open-scan-row">
+            <button class="code-open-scan" id="code-open-scan" type="button" data-i18n="home.code.scan">QR-Code scannen</button>
+          </div>
         </form>
-        <button class="pill code-open-scan" id="code-open-scan" type="button" data-i18n="home.code.scan">QR-Code scannen</button>
       </div>
     </section>
     <section class="home-panel" id="backup-tools" aria-labelledby="backup-heading">

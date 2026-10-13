@@ -26,8 +26,12 @@
       participantKey: 'sport.participant.team', surfaceKey: 'sport.surface.court',
       matchUnitKey: 'sport.unit.set',
       modeIds: Object.freeze(['indoor-1x25', 'indoor-2x25', 'indoor-bo3', 'indoor-bo5', 'indoor-custom']),
-      rankingProfiles: Object.freeze(['indoor-3-2-1-0', 'indoor-hobby']),
-      rankingProfileLabels: Object.freeze({ 'indoor-3-2-1-0': 'sport.ranking.indoor321', 'indoor-hobby': 'sport.ranking.hobby' }),
+      rankingProfiles: Object.freeze(['indoor-3-2-1-0', 'indoor-fivb-2026', 'indoor-hobby']),
+      rankingProfileLabels: Object.freeze({
+        'indoor-3-2-1-0': 'sport.ranking.indoor321',
+        'indoor-fivb-2026': 'sport.ranking.indoorFivb2026',
+        'indoor-hobby': 'sport.ranking.hobby'
+      }),
       capabilities: Object.freeze({ serveCounter: false, sidesSwitch: false }),
       formats: GENERIC_FORMATS
     }),

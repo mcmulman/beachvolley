@@ -173,14 +173,20 @@
       const st = TC.standings(active, played, { perGame: true, rankingProfile: c.rankingProfile });
       const unequal = !TC.equalGames(active, st);
       const criteria = TC.criteriaFor(modeId, { unequalGames: unequal, rankingProfile: c.rankingProfile });
-      const ranked = TC.rank(active, st, { criteria, matches: played, rankingProfile: c.rankingProfile });
       const total = matches.filter(m => {
         const a = m.ta != null ? m.ta : m.a, b = m.tb != null ? m.tb : m.b;
         return a != null && b != null && !absent.has(a) && !absent.has(b);
       }).length;
+      const complete = total > 0 && played.filter(p => p.result).length === total;
+      const ranked = TC.rank(active, st, {
+        criteria, matches: played, rankingProfile: c.rankingProfile,
+        unsupportedReason: c.rankingProfile === 'indoor-fivb-2026' && complete && unequal
+          ? 'unequal-games' : null
+      });
       return {
         teams: active, ranked, stat: st, criteria, perGame: unequal,
-        complete: total > 0 && played.filter(p => p.result).length === total,
+        rankingUnsupported: ranked.some(e => e.unsupported),
+        complete,
         matchCount: total
       };
     }
@@ -457,8 +463,8 @@
 
     /* Schiedsrichterrotation ist eine optionale Volleyball-Veranstaltungsregel,
        keine Verbandsvorgabe. WB-Verlierer pfeifen die naechste WB-Runde; aus
-       der LB ausgeschiedene Teams pfeifen die folgende LB-Runde. Fuer Bronze
-       und Endspiel werden dieselben zwei frueh ausgeschiedenen Teams eingesetzt. */
+       der LB ausgeschiedene Teams pfeifen die folgende LB-Runde. Die Teams im
+       Platzbereich 5/6 pfeifen Bronze und das erste Grand Final jeweils beide. */
     if (c.sportId && c.sportId.indexOf('volleyball.') === 0
         && (c.volleyballPreset === 'a' || c.volleyballPreset === 'a-plus')) {
       bracket.wbRounds.forEach((rd, i) => {
@@ -674,9 +680,12 @@
           }
         }
         let nextPlace = 3;
-        if (bracket.thirdPlace && winnerOf[bracket.thirdPlace.id] != null) {
-          out.push({ place: 3, team: winnerOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
-          out.push({ place: 4, team: loserOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
+        if (bracket.thirdPlace) {
+          if (winnerOf[bracket.thirdPlace.id] != null) {
+            out.push({ place: 3, team: winnerOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
+            out.push({ place: 4, team: loserOf[bracket.thirdPlace.id], source: bracket.thirdPlace.label });
+          }
+          nextPlace = 5;
         }
         for (let ri = bracket.lbRounds.length - 1; ri >= 0; ri--) {
           const rd = bracket.lbRounds[ri];
@@ -728,7 +737,12 @@
     }
     names.forEach(n => {
       const t = groupTables[n];
-      if (t.complete && t.ranked.some(e => e.shared)) {
+      if (t.rankingUnsupported) {
+        const reason = t.ranked.find(e => e.unsupported).unsupported;
+        warnings.push('Gruppe ' + n + ': FIVB-Wertung wegen '
+          + (reason === 'unequal-games' ? 'ungleicher Spielanzahl' : 'Freilos/Walkover')
+          + ' nicht berechenbar; Gruppenplatzierungen bleiben offen.');
+      } else if (t.complete && t.ranked.some(e => e.shared)) {
         warnings.push('Gruppe ' + n + ': Gleichstand nach allen Kriterien – hier entscheidet das Los.');
       }
     });
@@ -885,7 +899,15 @@
       const st = TC.standings(active, played, { perGame: true, rankingProfile: c.rankingProfile });
       const unequal = !TC.equalGames(active, st);
       const criteria = TC.criteriaFor(c.setMode, { unequalGames: unequal, rankingProfile: c.rankingProfile });
-      const ranked = TC.rank(active, st, { criteria, matches: played, rankingProfile: c.rankingProfile });
+      const reachedRounds = rounds.filter(rd => rd.round <= upto);
+      const complete = reachedRounds.length > 0 && reachedRounds.every(rd =>
+        rd.matches.every(m => m.dead || m.bye != null || m.result)
+        && (rd.bye == null || absent.has(rd.bye) || roundStarted(rd)));
+      const ranked = TC.rank(active, st, {
+        criteria, matches: played, rankingProfile: c.rankingProfile,
+        unsupportedReason: c.rankingProfile === 'indoor-fivb-2026' && complete && unequal
+          ? 'unequal-games' : null
+      });
       const t = { ranked, stat: st, criteria, perGame: unequal, played };
       tableCache.set(upto, t);
       return t;
@@ -1029,7 +1051,12 @@
     const totalMatches = rounds.reduce((a, rd) => a + rd.matches.length, 0);
     const openMatches = rounds.reduce((a, rd) =>
       a + rd.matches.filter(m => !m.result && m.bye == null && !m.dead).length, 0);
-    if (openMatches === 0 && totalMatches > 0 && table.ranked.some(e => e.shared)) {
+    if (table.ranked.some(e => e.unsupported)) {
+      const reason = table.ranked.find(e => e.unsupported).unsupported;
+      warnings.push('FIVB-Wertung wegen '
+        + (reason === 'unequal-games' ? 'ungleicher Spielanzahl' : 'Freilos/Walkover')
+        + ' nicht berechenbar; Gruppenplatzierungen bleiben offen.');
+    } else if (openMatches === 0 && totalMatches > 0 && table.ranked.some(e => e.shared)) {
       warnings.push('Gleichstand nach allen Kriterien – hier entscheidet das Los.');
     }
     if (absent.size) {
