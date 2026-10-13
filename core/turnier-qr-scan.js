@@ -75,11 +75,10 @@
 
     overlay.querySelector('#qr-scan-title').textContent = text('home.qr.title', 'Geteiltes Turnier per QR-Code öffnen');
     overlay.querySelector('[data-qr-close]').setAttribute('aria-label', text('home.qr.close', 'Schließen'));
-    overlay.querySelector('[data-qr-close]').textContent = '×';
     cameraButton.textContent = text('home.qr.start', 'Kamera starten');
     overlay.querySelector('.qr-scan-image').textContent = text('home.qr.chooseImage', 'QR-Bild auswählen');
 
-    overlay.querySelector('[data-qr-close]').addEventListener('click', close);
+    root.TNative.mountClose(overlay.querySelector('.qr-scan-dialog'), text('home.qr.close', 'Schließen'), close, overlay.querySelector('[data-qr-close]'), true);
     overlay.querySelector('.qr-scan-image').addEventListener('click', function () { imageInput.click(); });
     cameraButton.addEventListener('click', function () {
       if (stream || starting) stopCamera();

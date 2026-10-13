@@ -228,7 +228,8 @@
       /* Trefferflaeche >= 44 px Hoehe (vorher nur die Textzeile). */
       '.trp-home{display:block;margin-top:4px;padding:13px 0;text-align:center;font-size:12.5px;' +
         'line-height:18px;color:#667;text-decoration:none}' +
-      '.trp-home:hover{text-decoration:underline}';
+      '.trp-home:hover{text-decoration:underline}' +
+      '@media print{.trp-overlay{display:none !important;}}';
     const style = document.createElement('style');
     style.textContent = css;
     document.head.appendChild(style);
@@ -352,10 +353,14 @@
         closeConfirm();
         del.focus();
       });
+      root.TNative.mountClose(panel, tx('share.close', 'Schließen'), function () {
+        if (!busy) panel.querySelector('.trp-no').click();
+      });
       panel.querySelector('.trp-yes').addEventListener('click', function () { remove(e); });
       panel.addEventListener('keydown', function (ev) {
         if ((ev.key === 'Escape' || ev.key === 'Esc' || ev.keyCode === 27) && !busy) {
           ev.preventDefault();
+          ev.stopPropagation();
           closeConfirm();
           del.focus();
         }
@@ -498,6 +503,27 @@
     overlay.querySelector('.trp-home').addEventListener('click', function (ev) {
       if (busy) { ev.preventDefault(); return; }
       allowLeave();
+    });
+    root.TNative.mountClose(box, tx('share.close', 'Schließen'), function () {
+      if (!busy) box.querySelector('.trp-home').click();
+    });
+    overlay.addEventListener('keydown', function (ev) {
+      if ((ev.key === 'Escape' || ev.key === 'Esc') && !busy) {
+        ev.preventDefault();
+        if (list.querySelector('.trp-confirm')) list.querySelector('.trp-no').click();
+        else box.querySelector('.trp-home').click();
+      }
+      if (ev.key !== 'Tab') return;
+      const items = Array.prototype.filter.call(box.querySelectorAll('button:not([disabled]), a[href]'), function (node) {
+        return node.getClientRects().length && node.getAttribute('aria-disabled') !== 'true';
+      });
+      if (!items.length) { ev.preventDefault(); box.focus(); return; }
+      const first = items[0], last = items[items.length - 1];
+      if (ev.shiftKey && (document.activeElement === first || items.indexOf(document.activeElement) < 0)) {
+        ev.preventDefault(); last.focus();
+      } else if (!ev.shiftKey && (document.activeElement === last || items.indexOf(document.activeElement) < 0)) {
+        ev.preventDefault(); first.focus();
+      }
     });
 
     document.body.appendChild(overlay);

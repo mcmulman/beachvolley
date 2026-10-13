@@ -528,13 +528,7 @@
       '.tshare-head{display:flex;align-items:center;gap:12px;' +
         'padding:16px 66px 16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
       '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:16px;font-weight:800;color:#1a3a5c;}' +
-      /* 44x44-Trefferflaeche; negativer Rand haelt die Kopfzeile gleich hoch. */
-      '.tshare-x{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;' +
-        'width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:none;border-radius:8px;' +
-        'background:transparent;font:inherit;font-size:28px;line-height:1;color:#5a6375;cursor:pointer;}' +
       '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
-      '.tshare-x:hover{background:#eef2f7;}' +
-      '.tshare-x:focus-visible{outline:3px solid #f3a712;outline-offset:2px;}' +
       '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
       '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
       '.tshare-hint{font-size:12.5px;color:#5a6375;}' +
@@ -646,7 +640,7 @@
     root.innerHTML =
       '<div class="tshare-panel" role="dialog" aria-modal="true" tabindex="-1" aria-label="' + escapeHtml(title) + '">' +
       '<div class="tshare-head"><h3>' + escapeHtml(title) + '</h3>' +
-      '<button type="button" class="tshare-x" aria-label="' + escapeHtml(tx('share.close', 'Schließen')) + '">&times;</button></div>' +
+      '<button type="button" class="tshare-x" aria-label="' + escapeHtml(tx('share.close', 'Schließen')) + '"></button></div>' +
       '<div class="tshare-body">' + bodyHtml + '</div>' +
       (footerHtml ? '<div class="tshare-foot">' + footerHtml + '</div>' : '') +
       '</div>';
@@ -678,7 +672,7 @@
       shareHiddenSiblings.push(n);
     });
     root.addEventListener('mousedown', function (e) { if (e.target === root) closeShareModal(); });
-    root.querySelector('.tshare-x').addEventListener('click', closeShareModal);
+    TNative.mountClose(root.querySelector('.tshare-panel'), tx('share.close', 'Schließen'), closeShareModal, root.querySelector('.tshare-x'), true);
     document.addEventListener('keydown', onShareEscKey);
     /* Panel selbst fokussieren (nicht das erste Eingabefeld): Screenreader
        lesen den Dialogtitel, mobil klappt keine Tastatur ungefragt auf. */

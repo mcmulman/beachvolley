@@ -111,9 +111,6 @@
     @media (max-width: 560px) {
       .appbar .brand-title { display: none; }
       .sport-choice { margin-top: 12px; }
-      .sport-choice-inner { align-items: stretch; flex-direction: column; }
-      .sport-choice-inner > * + * { margin-left: 0; margin-top: 6px; }
-      .sport-choice select { width: 100%; min-width: 0; }
       .pill .lbl { display: none; }
       .pill { padding: 8px; }
       /* Status-Text (z. B. „Offline-Modus nicht verfügbar“) darf auf sehr
@@ -312,16 +309,32 @@
       max-width: 1080px; margin: 18px auto 0; padding: 0 20px;
     }
     .sport-choice-inner {
-      display: flex; align-items: center; flex-wrap: wrap;
-      padding: 12px 16px; background: #fff; border: 1px solid var(--border);
-      border-radius: 10px; box-shadow: var(--shadow);
+      position: relative; padding: 14px 16px 16px; background: #fff;
+      border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
     }
-    .sport-choice-inner > * + * { margin-left: 10px; }
-    .sport-choice label { font-size: 13px; font-weight: 700; color: var(--blue-dark); }
-    .sport-choice select {
-      min-width: 220px; min-height: 44px; border: 1px solid var(--border);
-      border-radius: 8px; background: #fff; color: var(--text); font: inherit; padding: 8px 34px 8px 10px;
+    .sport-choice-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--blue-dark); }
+    .sport-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .sport-tile {
+      display: flex; flex-direction: column; align-items: flex-start; min-height: 96px;
+      padding: 12px; text-align: left; font: inherit; color: var(--text); cursor: pointer;
+      background: var(--sand); border: 2px solid var(--border); border-radius: 12px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
     }
+    .sport-tile:hover { border-color: var(--blue); }
+    .sport-tile:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+    .sport-tile[aria-pressed="true"] {
+      background: var(--blue-light); border-color: var(--blue-dark);
+      box-shadow: 0 2px 10px rgba(31,111,168,.2);
+    }
+    .sport-tile-icon { display: block; flex: 0 0 auto; width: 32px; height: 32px; margin-bottom: 6px; color: var(--blue-dark); }
+    .sport-tile-name { font-size: 14px; font-weight: 800; color: var(--blue-dark); line-height: 1.2; }
+    .sport-tile-desc { margin-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+    .sport-select-sync {
+      position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0;
+      overflow: hidden; clip: rect(0, 0, 0, 0); opacity: 0; pointer-events: none;
+    }
+    @media (max-width: 760px) { .sport-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 340px) { .sport-tiles { grid-template-columns: minmax(0, 1fr); } }
     .sport-choice-note { color: var(--muted); font-size: 12px; line-height: 1.4; }
     .sport-choice-note[hidden] { display: none; }
     .card.wizard-highlight { animation: wizardPulse 1.6s ease; }
@@ -954,15 +967,16 @@
 <header class="home-hero">
   <div class="home-hero-inner">
     <p class="home-hero-kicker" data-i18n="home.hero.kicker">MULTISPORT · TURNIERPLANUNG</p>
-    <h1 data-i18n="home.hero.title">Turniere. Klar geplant.</h1>
+    <h1 data-i18n="home.hero.title">Turniere. Einfach geplant. Souverän durchgeführt.</h1>
     <p data-i18n="home.subtitle">Vom ersten Spielplan bis zur Auswertung – übersichtlich planen, live verwalten und direkt drucken.</p>
   </div>
 </header>
 
 <section class="sport-choice noprint" id="home-sport-choice" aria-labelledby="home-sport-label">
   <div class="sport-choice-inner">
-    <label id="home-sport-label" for="home-sport-select" data-i18n="home.sport.label">Sportart</label>
-    <select id="home-sport-select"></select>
+    <h2 class="sport-choice-title" id="home-sport-label" data-i18n="home.sport.label">Sportart wählen</h2>
+    <div class="sport-tiles" id="home-sport-tiles" role="group" aria-labelledby="home-sport-label"></div>
+    <select id="home-sport-select" class="sport-select-sync" tabindex="-1" aria-hidden="true"></select>
     <span class="sport-choice-note" id="home-sport-note" role="status" hidden></span>
   </div>
 </section>
@@ -2569,6 +2583,44 @@
   if (!profiles.length) return;
   document.getElementById('home-sport-choice').hidden = profiles.length < 2;
 
+  var TILE_ICONS = {
+    'volleyball.beach': '<circle cx="16" cy="13.4" r="10.4" fill="currentColor" fill-opacity=".1"/><path d="M16 13.4A10.4 10.4 0 0 1 16 3M16 13.4A10.4 10.4 0 0 1 25.01 18.6M16 13.4A10.4 10.4 0 0 1 6.99 18.6M13.09 16.57A14.56 14.56 0 0 1 10.97 4.31M14.68 9.3A14.56 14.56 0 0 1 26.39 13.6M20.21 14.32A14.56 14.56 0 0 1 10.66 22.29"/><circle cx="16" cy="13.4" r="10.4"/><path d="M3 28.2c2.6-1.7 4.6-1.7 7.2 0s4.6 1.7 7.2 0 4.6-1.7 7.2 0c1.6 1 2.9 1.3 4.4.6"/>',
+    'volleyball.indoor': '<circle cx="16" cy="16" r="12.2" fill="currentColor" fill-opacity=".1"/><path d="M16 16A12.2 12.2 0 0 1 16 3.8M16 16A12.2 12.2 0 0 1 26.57 22.1M16 16A12.2 12.2 0 0 1 5.43 22.1M12.59 19.72A17.08 17.08 0 0 1 10.11 5.34M14.45 11.19A17.08 17.08 0 0 1 28.19 16.24M20.93 17.08A17.08 17.08 0 0 1 9.73 26.43"/><circle cx="16" cy="16" r="12.2"/>',
+    'table-tennis.singles': '<g transform="translate(13.4 12.4) rotate(40)"><ellipse cx="0" cy="0" rx="7.6" ry="8.2" fill="currentColor" fill-opacity=".4"/><path d="M-3.6 7 3.6 7Q3.6 8.6 2.5 9.8V15.2Q2.5 16.6 1.1 16.6H-1.1Q-2.5 16.6-2.5 15.2V9.8Q-3.6 8.6-3.6 7Z" fill="currentColor" stroke="none"/></g><circle cx="25.6" cy="7" r="2.8" fill="currentColor"/>',
+    'table-tennis.doubles': '<g transform="translate(8.2 13.4) rotate(-22) scale(.7)"><ellipse cx="0" cy="0" rx="7.6" ry="8.2" fill="currentColor" fill-opacity=".4" stroke-width="2.57"/><path d="M-3.6 7 3.6 7Q3.6 8.6 2.5 9.8V15.2Q2.5 16.6 1.1 16.6H-1.1Q-2.5 16.6-2.5 15.2V9.8Q-3.6 8.6-3.6 7Z" fill="currentColor" stroke="none"/></g><g transform="translate(23.8 13.4) rotate(22) scale(.7)"><ellipse cx="0" cy="0" rx="7.6" ry="8.2" fill="currentColor" fill-opacity=".4" stroke-width="2.57"/><path d="M-3.6 7 3.6 7Q3.6 8.6 2.5 9.8V15.2Q2.5 16.6 1.1 16.6H-1.1Q-2.5 16.6-2.5 15.2V9.8Q-3.6 8.6-3.6 7Z" fill="currentColor" stroke="none"/></g><circle cx="16" cy="4.4" r="2.4" fill="currentColor"/>'
+  };
+  var tiles = document.getElementById('home-sport-tiles');
+  var DESC_FALLBACK = {
+    'volleyball.beach': '2 gegen 2 auf Sand',
+    'volleyball.indoor': '6 gegen 6 in der Halle',
+    'table-tennis.singles': 'Einzel, Best of 5',
+    'table-tennis.doubles': 'Doppel, Best of 5'
+  };
+  profiles.forEach(function (profile) {
+    var tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'sport-tile';
+    tile.setAttribute('data-sport', profile.id);
+    tile.setAttribute('aria-pressed', 'false');
+    tile.innerHTML = '<svg class="sport-tile-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+      + (TILE_ICONS[profile.id] || '<circle cx="12" cy="12" r="9"/>') + '</svg>'
+      + '<span class="sport-tile-name"></span><span class="sport-tile-desc"></span>';
+    tile.querySelector('.sport-tile-name').textContent = text(profile.nameKey, profile.id);
+    tile.querySelector('.sport-tile-desc').textContent = text('home.sport.desc.' + profile.id, DESC_FALLBACK[profile.id] || '');
+    tile.addEventListener('click', function () {
+      if (select.value === profile.id) return;
+      select.value = profile.id;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    tiles.appendChild(tile);
+  });
+  function syncTiles() {
+    Array.prototype.forEach.call(tiles.children, function (tile) {
+      tile.setAttribute('aria-pressed', tile.getAttribute('data-sport') === select.value ? 'true' : 'false');
+    });
+  }
+  select.addEventListener('change', syncTiles);
+
   function cardFormat(card) {
     var doc = card.getAttribute('data-doc') || '';
     if (/format-tandem/.test(doc)) return 'tandem';
@@ -2723,6 +2775,7 @@
   }
   select.value = sport.homeSelection();
   if (!select.value) select.value = profiles[0].id;
+  syncTiles();
   applySelection();
   select.addEventListener('change', function () {
     var ok = sport.rememberHomeSelection(select.value);

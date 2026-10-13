@@ -425,6 +425,11 @@
     if (modal && modal.box !== box) closeModal(false);
     if (!modal) modal = { box: box, back: doc.activeElement };
     modal.onClose = onClose;
+    if (!box.querySelector('.app-close')) {
+      root.TNative.mountClose(box.querySelector('.mt-modal-box'), tx('share.close', 'Schließen'), function () {
+        if (modal && modal.box === box) modal.onClose();
+      });
+    }
     box.hidden = false;
     doc.documentElement.classList.add('mt-modal-open');
     setBackgroundHidden(true);
@@ -1102,6 +1107,9 @@
 
   function showResetConfirm() {
     if (el.reset.disabled) return;
+    if (!el.resetConfirm.querySelector('.app-close')) {
+      root.TNative.mountClose(el.resetConfirm, tx('share.close', 'Schließen'), function () { hideResetConfirm(true); });
+    }
     el.resetConfirm.hidden = false;
     el.reset.setAttribute('aria-expanded', 'true');
     el.resetNo.focus();
@@ -1217,7 +1225,7 @@
     setupDraft = null;
     closeModal(state.clockEnabled ? el.primary : el.plus.a);
     var next = draft.isNewMatch && apply ? TM.reset(TM.clearServe(state)) : state;
-    if (draft.isNewMatch && !returnTarget && next.match) next = TM.setMatch(next, null, null);
+    if (draft.isNewMatch && apply && !returnTarget && next.match) next = TM.setMatch(next, null, null);
     next = TM.setSetupDone(next, true);
     if (apply) {
       next = TM.setNames(next, el.setupName.a.value, el.setupName.b.value);

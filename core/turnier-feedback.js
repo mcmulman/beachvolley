@@ -68,6 +68,7 @@
     dialog.setAttribute('aria-labelledby', 'feedback-title');
     var panel = element('form', '', dialog);
     panel.className = 'tf-panel';
+    window.TNative.mountClose(panel, text('close'), close);
     var title = element('h2', text('title'), panel);
     title.id = 'feedback-title';
     var editor = element('div', '', panel);

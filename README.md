@@ -27,6 +27,7 @@
 
 ### Kompakte Feature-Übersicht
 
+- **Einheitlich schließen:** Schließbare App-Popups und Dialoge haben oben rechts das Kreis-mit-Kreuz-Symbol der Konfiguration (44-px-Touch-Ziel, lokalisierter Name). Feedback, Teilen/Info, QR-Scanner, Druckauswahl, Turnierauswahl und Timer-Dialoge schließen ohne Bestätigung destruktiver Aktionen; die Turnierauswahl führt zur Startseite zurück. Native System-/Browserdialoge, Inline-Statusmeldungen und automatisch verschwindende Hinweise bleiben unverändert.
 - **Intelligente Turnierplanung & -regie:** Vom Setup bis zur Siegerehrung – Spielpläne im Handumdrehen erstellen und flexibel steuern.
 - **Multisport-Startseite:** professionelles Intro und Turnierformate nach belegten internationalen Wettbewerbsabläufen priorisiert; Quellen und Grenzen der Einordnung sind in [`MULTI_SPORT_RULES.md`](../docu/MULTI_SPORT_RULES.md) dokumentiert.
 - **Sportbegriffe in Turnierbögen:** Teilnehmende, Spielfläche und Wertungseinheit werden je Sportprofil erklärt; die Hinweise erscheinen auch im Druck. Gespeicherte Turniere zeigen ihr Sportprofil in der Wiederherstellungsauswahl.
@@ -63,6 +64,7 @@
 
 ### Compact Feature Highlights
 
+- **Consistent dismissal:** Dismissible app popups and dialogs use the configuration section's circled-cross control at the top right (44-px touch target, localized name). Feedback, share/info, QR scanning, print selection, tournament selection and timer dialogs dismiss without confirming destructive actions; tournament selection returns home. Native system/browser dialogs, inline status regions and automatic transient notices remain unchanged.
 - **Intelligent Tournament Planning & Management:** From initial setup to the award ceremony – create and flexibly steer match schedules in seconds.
 - **Multi-sport home page:** a professional introduction and formats prioritized by documented international competition structures; sources and limits of this ordering are in [`MULTI_SPORT_RULES.md`](../docu/MULTI_SPORT_RULES.md).
 - **Sport terminology in tournament sheets:** participants, playing surface and scoring unit are identified per sport profile; the glossary also appears in print. Saved tournaments show their sport in the restore picker.

@@ -70,6 +70,42 @@
   const NATIVE_BUNDLE = 'native-store.bundle.js';
   const MODAL_ID = 'tnative-print-root';
 
+  function closeIcon() {
+    return '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>';
+  }
+  /* All app-owned popups use the configuration-section motif. Keep the
+     existing dismissal callback: closing must never imply confirmation. */
+  function mountClose(panel, label, onClose, existing, header) {
+    const doc = panel.ownerDocument;
+    if (!doc.getElementById('app-close-style')) {
+      const style = doc.createElement('style');
+      style.id = 'app-close-style';
+      style.textContent =
+        '.app-close-panel{position:relative;}' +
+        '.app-close-panel:not(.app-close-header){padding-top:56px !important;}' +
+        'html body button.app-close{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;' +
+          'box-sizing:border-box;flex:0 0 44px;width:44px;min-width:44px;max-width:44px;height:44px;min-height:44px;max-height:44px;' +
+          'margin:0;padding:0;border:0;border-radius:50%;background:transparent;color:#4a5468;cursor:pointer;pointer-events:auto;z-index:1;}' +
+        'html body button.app-close>svg{display:block;flex:0 0 32px;width:32px;height:32px;pointer-events:none;}' +
+        'html body button.app-close:hover{background:#eef2f7;color:#1a3a5c;}' +
+        'html body button.app-close:focus{outline:2px solid #1f6fa8;outline-offset:2px;}' +
+        'html body button.app-close:disabled{opacity:.55;cursor:default;}' +
+        '@media print{html body button.app-close{display:none !important;}}';
+      doc.head.appendChild(style);
+    }
+    panel.classList.add('app-close-panel');
+    if (header) panel.classList.add('app-close-header');
+    const button = existing || doc.createElement('button');
+    button.type = 'button';
+    button.classList.add('app-close', 'noprint');
+    button.setAttribute('aria-label', label);
+    button.setAttribute('data-i18n-attr', 'aria-label:share.close');
+    button.innerHTML = closeIcon();
+    if (onClose) button.addEventListener('click', onClose);
+    if (!existing) panel.insertBefore(button, panel.firstChild);
+    return button;
+  }
+
   function i18n() {
     return typeof TI18n !== 'undefined' && TI18n && TI18n.active() ? TI18n : null;
   }
@@ -347,6 +383,7 @@
         if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
         else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
       }
+      mountClose(el.querySelector('.tnative-panel'), tx('share.close', 'Schließen'), function () { finish(null); });
       el.addEventListener('click', function (e) {
         if (e.target === el) { finish(null); return; }
         const btn = e.target.closest ? e.target.closest('[data-act]') : null;
@@ -590,6 +627,7 @@
   }
 
   return {
+    closeIcon: closeIcon, mountClose: mountClose,
     PUBLIC_WEB_BASE: PUBLIC_WEB_BASE,
     isNative: isNative, platform: platform,
     publicPageUrl: publicPageUrl, localPageFromPublicUrl: localPageFromPublicUrl,
