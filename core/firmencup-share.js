@@ -44,7 +44,7 @@
   }
   function encode(event) {
     const snapshot = F.publicSnapshot(event), e = snapshot.event;
-    if ((e.transfers && e.transfers.length) || e.replans.length || Object.keys(e.outcomes).length) {
+    if (F.refereeMode(e) === 'teams' || (e.transfers && e.transfers.length) || e.replans.length || Object.keys(e.outcomes).length) {
       return pack(JSON.stringify([3, snapshot]));
     }
     const ids = e.teams.map(t => t.id);

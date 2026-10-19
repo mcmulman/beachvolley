@@ -20,7 +20,7 @@
     'home.firmencup.open': 'Open company cup',
     'home.firmencup.category': 'Event format',
     'home.firmencup.card-sub': 'Timed four-a-side · provisional company scoring',
-    'home.firmencup.teams': 'From 2 teams · technical cap 128',
+    'home.firmencup.teams': 'From 2 teams',
     'home.firmencup.timed': 'Matches with a time limit',
     'home.firmencup.feature1': 'Pool play and placement rounds',
     'home.firmencup.feature2': 'Check attendance and record results',

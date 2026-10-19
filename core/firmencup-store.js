@@ -9,7 +9,14 @@
     if (!validId(id)) throw new Error('Invalid event ID / Veranstaltungs-ID');
     return prefix + id;
   }
-  function parse(raw) { return root.Firmencup.validate(JSON.parse(raw)); }
+  function validationOptions(event) {
+    return { publicSnapshot: !Object.prototype.hasOwnProperty.call(event, 'checkIns') &&
+      event.teams.every(team => Array.isArray(team.roster) && team.roster.length === 0) };
+  }
+  function parse(raw) {
+    const event = JSON.parse(raw);
+    return root.Firmencup.validate(event, validationOptions(event));
+  }
   function savedAt(raw) {
     try {
       const value = JSON.parse(raw);
@@ -72,8 +79,8 @@
         return true;
       });
     },
-    save: function (event) {
-      root.Firmencup.validate(event);
+    save: function (event, options) {
+      root.Firmencup.validate(event, options);
       return root.TStore.transaction(function (view) {
         const k = key(event.id), raw = view.getItem(k), old = raw ? parse(raw) : null;
         if (!old && event.revision !== 0) throw new Error('New event must have revision zero / Neue Veranstaltung muss Revision null haben');
@@ -91,8 +98,26 @@
         return next;
       });
     },
-    replace: function (event) {
+    fork: function (source, event) {
+      root.Firmencup.validate(source);
       root.Firmencup.validate(event);
+      if (source.id === event.id || event.revision !== 0) throw new Error('New local copy required / Neue lokale Kopie erforderlich');
+      return root.TStore.transaction(function (view) {
+        const raw = view.getItem(key(source.id)), target = key(event.id);
+        if (!raw || JSON.stringify(parse(raw)) !== JSON.stringify(source)) {
+          throw new Error('Changed in another tab. Reload / In anderem Tab geändert. Neu laden.');
+        }
+        if (view.getItem(target) !== null) throw new Error('Event already exists / Veranstaltung bereits vorhanden');
+        const next = root.Firmencup.clone(event);
+        next.revision = 1;
+        view.setItem(backup + event.id, raw);
+        view.setItem(target, JSON.stringify(next));
+        markSaved(view, event.id);
+        return next;
+      });
+    },
+    replace: function (event, options) {
+      root.Firmencup.validate(event, options);
       return root.TStore.transaction(function (view) {
         const k = key(event.id), raw = view.getItem(k), next = root.Firmencup.clone(event);
         const old = raw ? parse(raw) : null;

@@ -21,7 +21,7 @@
     'home.firmencup.open': 'Firmencup öffnen',
     'home.firmencup.category': 'Eventformat',
     'home.firmencup.card-sub': 'Vier gegen vier auf Zeit · Firmenwertung vorläufig',
-    'home.firmencup.teams': 'Ab 2 Teams · technisch bis 128',
+    'home.firmencup.teams': 'Ab 2 Teams',
     'home.firmencup.timed': 'Spiele mit Zeitlimit',
     'home.firmencup.feature1': 'Gruppen- und Platzierungsrunden',
     'home.firmencup.feature2': 'Anwesenheit prüfen und Ergebnisse eintragen',

@@ -1,16 +1,86 @@
 (function () {
   'use strict';
   const F = window.Firmencup, Store = window.FirmencupStore, Share = window.FirmencupShare, Server = window.FirmencupServer;
-  const params = new URLSearchParams(location.search), en = window.TI18n.lang() === 'en';
-  const capability = Server.capabilityFromHash(location.hash);
-  const legacySnapshot = location.hash.indexOf('#snapshot=') === 0;
-  const readOnly = legacySnapshot || (params.has('eventId') && !capability);
+  const params = new URLSearchParams(location.search);
+  const en = window.TI18n ? window.TI18n.lang() === 'en' : params.get('lang') === 'en';
   const app = document.getElementById('fc-app'), message = document.getElementById('fc-message');
-  const statusBar = document.getElementById('fc-status-bar'), statusNext = document.getElementById('fc-status-next');
+  const statusBar = document.getElementById('fc-status-bar');
+  const missing = [
+    ['Firmencup', F], ['FirmencupStore', Store], ['FirmencupShare', Share],
+    ['FirmencupServer', Server], ['TI18n', window.TI18n]
+  ].filter(entry => !entry[1]).map(entry => entry[0]);
+  if (Server) ['capabilityFromHash', 'rememberAccess'].forEach(function (name) {
+    if (typeof Server[name] !== 'function') missing.push('FirmencupServer.' + name);
+  });
+  if (missing.length) {
+    const error = new Error((en
+      ? 'Company cup could not start. Reload the page. Missing module: '
+      : 'Firmencup konnte nicht gestartet werden. Bitte Seite neu laden. Fehlendes Modul: ') + missing.join(', '));
+    console.error('Firmencup:', error);
+    message.textContent = error.message;
+    message.setAttribute('role', 'alert');
+    message.setAttribute('aria-live', 'assertive');
+    statusBar.className = 'fc-error';
+    statusBar.hidden = false;
+    app.setAttribute('aria-busy', 'false');
+    return;
+  }
+  const capability = Server.capabilityFromHash(location.hash);
+  const linkAccess = Server.accessFromHash(location.hash);
+  const legacySnapshot = location.hash.indexOf('#snapshot=') === 0;
+  let participant = !!(linkAccess && linkAccess.role === 'participant');
+  let readOnly = participant || legacySnapshot || (params.has('eventId') && !capability);
+  const statusNext = document.getElementById('fc-status-next');
   const statusNextLabel = document.getElementById('fc-status-next-label'), statusActionLink = document.getElementById('fc-status-action');
   let event = null, capturedAt = null, busy = false, setupStep = 1, setupSettingsDraft = null, phase = null, routedHash = null, toolsReturn = null, lastScored = null;
   let binding = null, livePublic = false, liveRevision = null, liveEtag = null;
-  let currentStatusAction = null;
+  let currentStatusAction = null, orgOpen = false;
+  let saving = false;
+  let editorBaseline = '{}';
+  let previewCache = null;
+  function editorFields() {
+    const fields = {};
+    app.querySelectorAll('#fc-edit input, #fc-edit select, #fc-edit textarea, #fc-teams-edit input, #fc-teams-edit select, #fc-teams-edit textarea').forEach(input => {
+      if (input.name === 'org-count' || input.id === 'fc-new-team-org') return;
+      const attribute = ['data-org-name', 'data-team-name', 'data-team-org', 'data-member', 'data-nominee'].find(name => input.hasAttribute(name));
+      const key = attribute ? '[' + attribute + '="' + input.getAttribute(attribute) + '"]' +
+        (attribute === 'data-member' ? '[data-index="' + input.dataset.index + '"]' : '') : '#fc-edit [name="' + input.name + '"]';
+      fields[key] = input.value;
+    });
+    return fields;
+  }
+  function hasUnsavedSetup() {
+    return !readOnly && !!event && (!!setupSettingsDraft || JSON.stringify(editorFields()) !== editorBaseline);
+  }
+  window.addEventListener('beforeunload', function (ev) {
+    if (!hasUnsavedSetup() && !saving) return;
+    ev.preventDefault();
+    ev.returnValue = '';
+    return '';
+  });
+  function editorFocus() {
+    const input = document.activeElement;
+    if (!input || !input.closest('#fc-edit, #fc-teams-edit')) return null;
+    if (!input.getClientRects().length) return null;
+    const key = Object.keys(editorFields()).find(selector => app.querySelector(selector) === input);
+    return key ? { key: key, start: input.selectionStart, end: input.selectionEnd } : null;
+  }
+  function restoreEditor(fields, focus) {
+    Object.keys(fields).forEach(selector => {
+      const input = app.querySelector(selector);
+      if (input) input.value = fields[selector];
+    });
+    if (focus) {
+      const input = app.querySelector(focus.key);
+      if (input) {
+        revealTarget(input);
+        input.focus();
+        if (typeof focus.start === 'number') input.setSelectionRange(focus.start, focus.end);
+      }
+    }
+    updateSetupPreview();
+  }
+  const waveOpenOverride = new Map();
   function tr(de, english) { return en ? english : de; }
   statusBar.setAttribute('aria-label', tr('Status und nächste Aktion', 'Status and next action'));
   function entityDefaultName(index) { return tr('Firma ', 'Company ') + index; }
@@ -29,6 +99,11 @@
     const reserved = statusBar.hidden ? '' : statusBar.offsetHeight + 12 + 'px';
     document.body.style.paddingBottom = reserved;
     document.documentElement.style.scrollPaddingBottom = reserved;
+    const appBar = document.querySelector('.app-bar');
+    const top = appBar && /sticky|fixed/.test(getComputedStyle(appBar).position) ? Math.ceil(appBar.getBoundingClientRect().height) + 8 : 0;
+    document.documentElement.style.scrollPaddingTop = top ? top + 'px' : '';
+    if (top) document.documentElement.style.setProperty('--fc-appbar-clearance', top + 'px');
+    else document.documentElement.style.removeProperty('--fc-appbar-clearance');
     if (reserved) document.documentElement.style.setProperty('--fc-status-clearance', reserved);
     else document.documentElement.style.removeProperty('--fc-status-clearance');
   }
@@ -66,7 +141,7 @@
       if (!event.organizations.length) return {
         label: tr('Firma hinzufügen', 'Add a company'),
         href: '#fc-editor',
-        phase: 'configuration',
+        phase: 'teams',
         step: 1,
         target: function () { return app.querySelector('[data-action="add-org"]'); }
       };
@@ -76,7 +151,7 @@
         return {
           label: tr('Team hinzufügen', 'Add a team'),
           href: '#fc-editor',
-          phase: 'configuration',
+          phase: 'teams',
           step: 1,
           target: function () {
             return Array.from(app.querySelectorAll('[data-action="add-team"]'))
@@ -84,12 +159,12 @@
           }
         };
       }
-      const missingNominee = event.organizations.find(o =>
+      const missingNominee = F.rankingMode(event) === 'nominee' && event.organizations.find(o =>
         !event.teams.some(t => t.id === o.nominee && t.orgId === o.id));
       if (missingNominee) return {
         label: tr('Team für den Firmenpokal wählen', 'Choose the company trophy team'),
         href: '#fc-editor',
-        phase: 'configuration',
+        phase: 'teams',
         step: 1,
         target: function () {
           return Array.from(app.querySelectorAll('[data-nominee]'))
@@ -100,7 +175,7 @@
       if (oldRosterTeam) return {
         label: tr('Spieler:innen-Namen ergänzen', 'Add player names'),
         href: '#fc-editor',
-        phase: 'configuration',
+        phase: 'teams',
         step: 1,
         target: function () {
           return Array.from(app.querySelectorAll('.fc-roster-details'))
@@ -109,7 +184,7 @@
       };
       return {
         label: tr('Regeln prüfen und Gruppenplan erstellen', 'Review rules and build the group schedule'),
-        href: '#fc-editor',
+        href: '#fc-setup',
         phase: 'configuration',
         step: 3,
         target: function () { return app.querySelector('[data-action="build"]'); }
@@ -163,29 +238,12 @@
         focusStatusTarget(next.target());
         return;
       }
-      if (next.phase === 'configuration') {
-        if (phase !== 'configuration') {
-          phase = 'configuration';
-          setupStep = next.step;
-          render();
-        } else if (next.step !== setupStep && !event.startedAt) {
-          await goStep(next.step, false);
-        } else if (next.step !== setupStep) {
-          setupStep = next.step;
-          render();
-        }
-      } else if (next.phase) {
-        if (phase === 'configuration' && !event.startedAt) {
-          const updated = editedProgress();
-          if (!updated) return;
-          await save(updated);
-        }
-        showPhase(next.phase, false);
-      }
+      if (next.phase && next.phase !== phase && !(await switchPhase(next.phase, false))) return;
       focusStatusTarget(next.target());
     });
   };
-  function button(action, label) { return '<button type="button" data-action="' + action + '">' + label + '</button>'; }
+  function button(action, label, describedBy) { return '<button type="' + (action === 'save-setup' ? 'submit' : 'button') + '" data-action="' + action + '"' +
+    (describedBy ? ' aria-describedby="' + describedBy + '"' : '') + '>' + label + '</button>'; }
   function label(name, title, value, type, min, max) {
     return '<label>' + title + '<input name="' + name + '" type="' + (type || 'text') + '" value="' + esc(value) + '" required' +
       (min == null ? '' : ' min="' + min + '" max="' + max + '"') + '></label>';
@@ -213,83 +271,208 @@
     return t ? t.name : tr('Noch offen', 'Pending');
   }
   function orgName(id) { const o = event.organizations.find(o => o.id === id); return o ? o.name : ''; }
+  function teamIdentity(id) {
+    const team = event.teams.find(t => t.id === id);
+    const name = teamName(id), company = team ? orgName(team.orgId) : '';
+    return company && company !== name ? company + ' · ' + name : name;
+  }
   function options(items, current) {
     return items.map(t => '<option value="' + esc(t.id) + '"' + (t.id === current ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('');
   }
   function captureSetupSettings() {
     const form = document.getElementById('fc-edit');
     if (!form) return null;
-    const names = ['title', 'start', 'window', 'minutes', 'change', 'rest', 'fields', 'referees', 'mixed'];
+    const names = ['title', 'start', 'end', 'minutes', 'change', 'rest', 'fields', 'referees', 'mixed', 'refereeMode', 'rankingMode', 'scoringProfile', 'tiePolicy'];
     return names.reduce((draft, name) => {
       const field = form.elements.namedItem(name);
       if (field) draft[name] = field.value;
       return draft;
     }, {});
   }
+  function endTime(start, window) {
+    const startMinute = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
+    const endMinute = (startMinute + window) % 1440;
+    return String(Math.floor(endMinute / 60)).padStart(2, '0') + ':' +
+      String(endMinute % 60).padStart(2, '0');
+  }
+  function timeMinutes(time) {
+    return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+  }
+  function timeWindow(start, end) {
+    if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return null;
+    const startMinute = timeMinutes(start);
+    let endMinute = timeMinutes(end);
+    if (startMinute >= 1440 || endMinute >= 1440) return null;
+    if (endMinute <= startMinute) endMinute += 1440;
+    return endMinute - startMinute;
+  }
+  function updateTimeWindowValidity(form) {
+    const start = form.elements.namedItem('start');
+    const end = form.elements.namedItem('end');
+    if (!start || !end) return;
+    const minutes = timeWindow(start.value, end.value);
+    const message = minutes === null ? '' : minutes < 30 ?
+      tr('Zeitfenster muss mindestens 30 Minuten betragen.', 'Available time must be at least 30 minutes.') :
+      minutes > 1440 ? tr('Zeitfenster darf höchstens 24 Stunden betragen.', 'Available time cannot exceed 24 hours.') : '';
+    end.setCustomValidity(message);
+  }
   function invalidSetupSettings() {
     const form = document.getElementById('fc-edit');
-    return form && Array.from(form.querySelectorAll('[name="title"], [name="start"], [name="window"], [name="minutes"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="mixed"]'))
+    if (!form) return false;
+    updateTimeWindowValidity(form);
+    return Array.from(form.querySelectorAll('[name="title"], [name="start"], [name="end"], [name="minutes"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="mixed"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'))
       .some(field => !field.validity.valid);
   }
   function settings(c) {
     const draft = setupSettingsDraft || {};
     const value = name => Object.prototype.hasOwnProperty.call(draft, name) ? draft[name] : c[name];
-    return '<div class="fc-settings"><fieldset><legend>' + tr('Titel & Zeitrahmen', 'Title & timing') + '</legend><div class="fc-grid">' +
+    const start = value('start');
+    const end = Object.prototype.hasOwnProperty.call(draft, 'end') ? draft.end : endTime(c.start, c.window);
+    return '<div class="fc-settings"><fieldset><legend>' + tr('Veranstaltung', 'Event') + '</legend>' +
       label('title', tr('Titel', 'Title'), value('title') == null ? (event ? event.title : tr('Mein Turnier', 'My tournament')) : value('title')) +
-      label('start', tr('Planstart', 'Scheduled start'), value('start'), 'time') +
-      label('window', tr('Verfügbare Zeit (Min.)', 'Available event minutes'), value('window'), 'number', 30, 1440) +
-      '</div></fieldset><fieldset><legend>' + tr('Spielzeit & Pausen', 'Match length & breaks') + '</legend><div class="fc-grid">' +
-      label('minutes', tr('Spielzeit (Min.)', 'Match minutes'), value('minutes'), 'number', 1, 60) +
-      label('change', tr('Wechselintervall (Min.)', 'Changeover minutes'), value('change'), 'number', 1, 30) +
-      label('rest', tr('Freie Spielrunden zwischen Einsätzen', 'Rest time slots between matches'), value('rest'), 'number', 1, 5) +
+      '</fieldset><fieldset id="fc-time-settings"><legend>' + tr('Zeitrahmen, Spielzeit & Pausen', 'Timing, match length & breaks') + '</legend>' +
+      '<div class="fc-time-range">' +
+      label('start', tr('Anfangszeit', 'Start time'), start, 'time') +
+      label('end', tr('Verfügbar bis', 'Available until'), end, 'time') +
+      '</div>' +
+      '<p class="fc-note fc-time-window-note">' + tr('Verfügbares Zeitfenster, nicht das berechnete Turnierende. Ende vor Anfang bedeutet Folgetag; gleiche Uhrzeiten 24 Stunden. Dauer: 30 Minuten bis 24 Stunden.', 'Available time window, not the calculated tournament finish. An earlier end means the next day; equal times mean 24 hours. Duration: 30 minutes to 24 hours.') + '</p>' +
+      '<div class="fc-grid">' +
+      label('minutes', tr('Spielzeit je Spielrunde (Min.)', 'Playing time per slot (min)'), value('minutes'), 'number', 1, 60) +
+      label('change', tr('Wechselzeit nach der Spielrunde (Min.)', 'Changeover after each slot (min)'), value('change'), 'number', 1, 30) +
+      label('rest', tr('Mindestzahl spielfreier Runden zwischen eigenen Spielen (1–5)', 'Minimum non-playing slots between own matches (1–5)'), value('rest'), 'number', 1, 5) +
+      '<p class="fc-note fc-rest-help" id="fc-rest-help">' + tr('Spielruhe ist nicht dienstfrei: Team-Schiris dürfen in spielfreien Runden pfeifen.', 'Match rest is not duty-free: team referees may officiate during non-playing slots.') + '</p>' +
+      '<label>' + tr('Bei Gleichstand am Zeitende', 'When tied at the time limit') + '<select name="tiePolicy">' +
+      [['lead', tr('Weiterspielen bis zur ersten Führung', 'Continue until the first lead')],
+        ['draw', tr('Remis zulassen · im K.-o. Losentscheid', 'Allow draws · knockout uses a lottery')]].map(row =>
+        '<option value="' + row[0] + '"' + (row[0] === (value('tiePolicy') || 'draw') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
       '</div></fieldset><fieldset><legend>' + tr('Felder & Spielregeln', 'Courts & playing rules') + '</legend><div class="fc-grid">' +
       label('fields', tr('Verfügbare Felder', 'Available courts'), value('fields'), 'number', 1, 16) +
+      '<label>' + tr('Schiri-Modus', 'Referee mode') + '<select name="refereeMode">' +
+      [['teams', tr('Team-Schiris · ein anderes Team je Spiel', 'Team referees · another team per match')],
+        ['external', tr('Externe, dedizierte Schiris', 'Dedicated external referees')],
+        ['none', tr('Ohne Schiris · selbst geleitete Spiele', 'No referees · self-officiated matches')]].map(row =>
+        '<option value="' + row[0] + '"' + (row[0] === (value('refereeMode') || 'external') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
       label('referees', tr('Externe Schiedsrichter:innen gleichzeitig', 'Dedicated external referees'), value('referees'), 'number', 1, 16) +
-      '<label>' + tr('Mixed-Regel der Turnierleitung', 'Organizer mixed policy') + '<select name="mixed">' +
+      '<p class="fc-note" id="fc-referee-help"></p>' +
+      '<label>' + tr('Endwertung: Teams / Firmenpokal', 'Final standings: teams / company trophy') + '<select name="rankingMode">' +
+      [['teams', tr('Teamwertung · kein Firmenpokal', 'Team standings · no company trophy')],
+        ['mean', tr('Zusätzlich Firmenwertung · mittlerer Team-Endrang', 'Also company standings · mean team final rank')],
+        ['nominee', tr('Legacy: ausgewähltes Team je Firma', 'Legacy: selected team per company')]].map(row =>
+        '<option value="' + row[0] + '"' + (row[0] === (value('rankingMode') || 'nominee') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
+      '<label>' + tr('Tabellenpunkte pro Spiel (Hausregel)', 'Standings points per match result (house rule)') + '<select name="scoringProfile">' +
+      [['wins', tr('1 Punkt je Sieg · 0 sonst · keine Ballkriterien', '1 point per win · otherwise 0 · no ball criteria')],
+        ['legacy', tr('Alternative: 2/1/0 · Ballkriterien je Spiel', 'Alternative: 2/1/0 · ball criteria per game')]].map(row =>
+        '<option value="' + row[0] + '"' + (row[0] === (value('scoringProfile') || 'legacy') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
+      '<label>' + tr('Auf dem Feld: 4 gegen 4 · Mixed-Vorgabe', 'On court: 4 vs 4 · mixed requirement') + '<select name="mixed">' +
       '<option value="optional"' + (value('mixed') === 'optional' ? ' selected' : '') + '>' + tr('Vier Spieler:innen auf dem Feld, keine Mixed-Vorgabe', 'Four on court, no mixed requirement') + '</option>' +
-      '<option value="one-woman"' + (value('mixed') === 'one-woman' ? ' selected' : '') + '>' + tr('Vier auf dem Feld, mindestens eine Frau', 'Four on court, at least one woman') + '</option></select></label></div></fieldset></div>';
+      '<option value="one-woman"' + (value('mixed') === 'one-woman' ? ' selected' : '') + '>' + tr('Vier auf dem Feld, mindestens eine Frau', 'Four on court, at least one woman') + '</option></select></label>' +
+      '<details class="fc-config-rule-help"><summary>' + tr('Zeitgleichstand & Seitenwechsel erklärt', 'Time ties & side changes explained') + '</summary><p>' +
+      timingExplanation(value('tiePolicy')) + '</p></details></div></fieldset></div>';
   }
-  function setupPreview() {
+  function setupPreview(saved) {
     return '<section id="fc-setup-preview" class="fc-setup-preview" aria-labelledby="fc-setup-preview-title">' +
       '<h3 id="fc-setup-preview-title">' + tr('Planung auf einen Blick', 'Schedule at a glance') + '</h3>' +
-      '<p class="fc-note">' + tr('Die Vorrunde wird aus den aktuellen Teams und Einstellungen berechnet. Die Endrunde ist noch nicht ausgelost; Gesamtzeit und Mindestspiele sind eine Projektion.', 'The group stage is calculated from the current teams and settings. Finals have not been drawn; total time and minimum matches are projections.') + '</p>' +
+      '<p class="fc-note">' + tr('* Mindestspiele einschließlich Endrunde; vor der Finalauslosung wie die Gesamtzeit nur Richtwerte. Mögliche Verlängerungen nicht enthalten.', '* Minimum matches include finals; like total time, provisional until the final draw. Possible overtime excluded.') + '</p>' +
       '<div class="fc-setup-preview-grid">' +
       [
         ['teams', tr('Teams', 'Teams')],
-        ['groups', tr('Vorrundengruppen', 'Pools')],
-        ['group-games', tr('Spiele Vorrunde', 'Group matches')],
-        ['minimum-games', tr('Mind. Spiele je Team', 'Minimum matches per team')],
-        ['courts', tr('Felder gleichzeitig', 'Concurrent courts')],
-        ['waves', tr('Spielrunden Vorrunde', 'Group time slots')],
-        ['group-end', tr('Planende Vorrunde', 'Group schedule end')],
-        ['event-end', tr('Turnierende geschätzt', 'Estimated event end')]
+        ['groups', tr('Vorrunde', 'Group stage')],
+        ['minimum-games', tr('Mind. Spiele je Team*', 'Minimum matches per team*')],
+        ['courts', tr('Felder: Spitzenbelegung', 'Peak courts used')],
+        ['group-end', tr('Vorrunde · Zeitraum', 'Group stage · time')],
+        ['event-end', tr('Turnier · Zeitraum geschätzt', 'Event · estimated time')]
       ].map(([key, caption]) => '<div class="fc-setup-kpi" data-preview="' + key + '">' +
         '<span class="fc-setup-kpi-label">' + caption + '</span><strong data-preview-value="' + key + '">–</strong>' +
-        '<small data-preview-note="' + key + '" hidden></small></div>').join('') +
-      '</div><p id="fc-setup-preview-mode" class="fc-setup-preview-mode" aria-live="polite"></p>' +
-      '<p id="fc-setup-preview-status" class="fc-setup-preview-status" role="status" aria-live="polite"></p></section>';
+        (key === 'groups' ?
+          '<small><span data-preview-value="group-games">–</span> ' + tr('Spiele', 'matches') + ' · <span data-preview-value="waves">–</span> ' + tr('Spielrunden', 'time slots') + '</small>' :
+          '<small data-preview-note="' + key + '" hidden></small>') + '</div>').join('') +
+      '</div>' + capacity(!saved) + '</section>';
   }
-  function previewMode(teamCount) {
-    if (event.formatVersion < 3) return tr('Bestandsformat: vorhandene Vorrunden- und Platzierungslogik bleibt erhalten.', 'Existing format: its current group and placement logic is retained.');
-    if (teamCount <= 8) return tr('Vorrunde plus zweite Jeder-gegen-jeden-Runde um alle Plätze.', 'Group stage plus a second round robin for all places.');
-    if (teamCount === 9) return tr('Vorrunde, Cup um Plätze 1–4 und Platzierungsgruppe um 5–9.', 'Group stage, cup for places 1–4 and placement pool for 5–9.');
-    return tr('Vorrunde, Achter-Cup um Plätze 1–8 und Platzierungsgruppen für die übrigen Teams.', 'Group stage, eight-team cup for places 1–8 and placement pools for the remaining teams.');
+  function setupFeedback() {
+    return (
+      '<p id="fc-setup-preview-status" class="fc-setup-preview-status" role="status" aria-live="polite"></p>' +
+      '<ul id="fc-setup-advice" class="fc-setup-advice" aria-label="' + tr('Planungshinweise', 'Planning advice') + '" aria-live="polite" hidden></ul>' +
+      '<p id="fc-setup-prereq" class="fc-setup-prereq noprint" hidden><button type="button" data-phase="teams">' +
+      tr('Zu Firmen & Teams', 'Go to companies & teams') + '</button></p>');
+  }
+  function updatePreviewBadges(host, plan, estimate, saved) {
+    const set = (key, value, note) => {
+      host.querySelector('[data-preview-value="' + key + '"]').textContent = value;
+      const small = host.querySelector('[data-preview-note="' + key + '"]');
+      if (small) { small.textContent = note || ''; small.hidden = !note; }
+    };
+    const group = estimate.phases.find(p => p.phase === 'group');
+    set('teams', String(plan.teams.length));
+    set('groups', plan.pools.length + ' ' + (plan.pools.length === 1 ? tr('Gruppe', 'pool') : tr('Gruppen', 'pools')));
+    set('group-games', String(group.matches));
+    set('minimum-games', String(estimate.minimumGames));
+    set('courts', String(estimate.courts), estimate.courts < plan.config.fields ?
+      tr('von ' + plan.config.fields + ' · Team-/Schiri-/Pausenlimit', 'of ' + plan.config.fields + ' · team/referee/rest limit') : '');
+    set('waves', String(Math.max.apply(null, plan.matches.filter(m => m.phase === 'group').map(m => m.wave)) + 1));
+    set('group-end', F.clock(group.startMin) + '–' + F.clock(group.endMin), saved ? tr('geplant', 'scheduled') : tr('Entwurf', 'draft'));
+    set('event-end', plan.config.start + '–' + F.clock(estimate.projectedEndMin),
+      (plan.status === 'finals' && saved ? '' : tr('ca. ', 'approx. ')) + estimate.projectedMinutes + tr(' Min.', ' min'));
+    host.querySelector('[data-preview="event-end"] .fc-setup-kpi-label').textContent = plan.status === 'finals' && saved ?
+      tr('Turnier · geplanter Zeitraum', 'Event · scheduled time') : tr('Turnier · Zeitraum geschätzt', 'Event · estimated time');
   }
   function updateSetupPreview() {
     const host = document.getElementById('fc-setup-preview');
     const form = document.getElementById('fc-edit');
-    if (!host || !form) return;
+    if (!host) return;
+    if (!form) {
+      updatePreviewBadges(host, event, F.estimate(event), true);
+      return;
+    }
     const values = key => host.querySelector('[data-preview-value="' + key + '"]');
     const notes = key => host.querySelector('[data-preview-note="' + key + '"]');
     const setValue = (key, value, note) => {
       values(key).textContent = value;
-      notes(key).textContent = note || '';
-      notes(key).hidden = !note;
+      if (notes(key)) {
+        notes(key).textContent = note || '';
+        notes(key).hidden = !note;
+      }
     };
+    const refereeCount = form.elements.namedItem('referees');
+    form.elements.namedItem('rest').setAttribute('aria-describedby', 'fc-rest-help');
+    form.elements.namedItem('end').setAttribute('aria-describedby', 'fc-time-window-help');
+    form.querySelector('.fc-time-window-note').id = 'fc-time-window-help';
+    const selectedRefereeMode = form.elements.namedItem('refereeMode').value;
+    const external = selectedRefereeMode === 'external';
+    refereeCount.closest('label').hidden = !external && refereeCount.validity.valid;
+    refereeCount.setAttribute('aria-describedby', 'fc-referee-help');
+    form.querySelector('.fc-config-rule-help p').textContent = timingExplanation(form.elements.namedItem('tiePolicy').value);
+    document.getElementById('fc-referee-help').textContent = external ?
+      tr('Ein dedizierter externer Schiri je gleichzeitig genutztem Feld.', 'One dedicated external referee per court used at the same time.') :
+      selectedRefereeMode === 'teams' ?
+        tr('Ein anderes Team pfeift je Spiel; keine gleichzeitige Spiel-/Doppelbelegung. Externe Anzahl wird nicht verwendet und bleibt gespeichert.',
+          'Another team referees each match; no simultaneous playing/double duty. External count is unused and retained.') :
+        tr('Teams leiten ihre Spiele selbst. Externe Anzahl wird nicht verwendet und bleibt gespeichert.',
+          'Teams officiate their own matches. External count is unused and retained.');
     const status = document.getElementById('fc-setup-preview-status');
-    const mode = document.getElementById('fc-setup-preview-mode');
+    const overview = host.querySelector('[data-capacity-overview]');
+    const detail = host.querySelector('[data-capacity-details]');
+    const advice = document.getElementById('fc-setup-advice');
+    advice.textContent = ''; advice.hidden = true;
+    const advise = function (code, text, field, actionLabel) {
+      const item = document.createElement('li'); item.dataset.advice = code;
+      const content = document.createElement('span'); content.textContent = text + ' ';
+      item.appendChild(content);
+      if (field) {
+        const control = document.createElement('button'); control.type = 'button';
+        control.dataset.configField = field;
+        control.textContent = actionLabel;
+        control.onclick = () => {
+          const input = form.elements.namedItem(field);
+          if (input) { revealTarget(input); input.focus(); input.scrollIntoView({ block: 'center' }); }
+        };
+        item.appendChild(control);
+      }
+      advice.appendChild(item); advice.hidden = false;
+    };
     const count = event.teams.length;
-    setValue('teams', count + ' / ' + teamRange(event));
+    const prereq = document.getElementById('fc-setup-prereq');
+    if (prereq) prereq.hidden = true;
+    setValue('teams', String(count));
     setValue('groups', '–');
     setValue('group-games', '–');
     setValue('minimum-games', '–');
@@ -297,60 +480,116 @@
     setValue('waves', '–');
     setValue('group-end', '–');
     setValue('event-end', '–');
-    mode.textContent = count >= F.teamLimits(event).min ? previewMode(count) : '';
+    overview.textContent = '';
+    detail.textContent = '';
+    host.querySelector('.fc-capacity-details').hidden = true;
     status.className = 'fc-setup-preview-status';
 
+    updateTimeWindowValidity(form);
     const invalid = Array.from(form.querySelectorAll('input, select')).find(input => !input.validity.valid);
     if (invalid) {
+      host.dataset.validation = 'blocked';
       const labelText = invalid.closest('label') && invalid.closest('label').textContent.trim();
       status.textContent = tr('Vorschau pausiert: Eingabe prüfen', 'Preview paused: check the input') +
-        (labelText ? ' · ' + labelText : '');
+        (labelText ? ' · ' + labelText : '') +
+        (invalid.validationMessage ? ': ' + invalid.validationMessage : '');
       status.classList.add('is-warning');
+      advise('invalid', tr('Planung blockiert: ungültige Eingabe korrigieren.', 'Planning blocked: correct the invalid input.'),
+        invalid.name, tr('Eingabe prüfen', 'Review input'));
       return;
     }
     if (count < F.teamLimits(event).min || count > teamLimit(event)) {
-      status.textContent = tr('Für eine Zeit- und Spielplanvorschau sind mindestens ', 'A schedule and timing preview needs at least ') +
-        teamRange(event) + tr(' Teams erforderlich.', ' teams.');
+      host.dataset.validation = 'blocked';
+      status.textContent = (count > teamLimit(event) ?
+        tr('Technische Grenze überschritten: höchstens ', 'Technical limit exceeded: at most ') + teamLimit(event) :
+        tr('Für eine Zeit- und Spielplanvorschau sind mindestens ', 'A schedule and timing preview needs at least ') + F.teamLimits(event).min) +
+        tr(' Teams erforderlich. Aktuell: ', ' teams required. Currently: ') + count + tr(' unter „Firmen & Teams“; Regeln kannst du schon jetzt festlegen.', ' under “Companies & teams”; you can already set the rules.');
       status.classList.add('is-warning');
+      if (prereq) prereq.hidden = false;
       return;
     }
     const empty = event.organizations.find(o => !event.teams.some(t => t.orgId === o.id));
     if (empty) {
+      host.dataset.validation = 'blocked';
       status.textContent = tr('Vorschau nicht möglich: Team zuordnen oder Firma entfernen – ', 'Preview unavailable: assign a team or remove the company – ') + empty.name;
       status.classList.add('is-warning');
+      if (prereq) prereq.hidden = false;
       return;
     }
     try {
       const draft = copyDraftFromForm();
+      const savedPlan = event.status !== 'draft' &&
+        Object.keys(draft.config).length === Object.keys(event.config).length &&
+        Object.keys(draft.config).every(key => draft.config[key] === event.config[key]) &&
+        JSON.stringify([draft.teams, draft.organizations]) === JSON.stringify([event.teams, event.organizations]);
+      const refereeMode = F.refereeMode(draft);
+      const teamCapacity = Math.floor(count / (refereeMode === 'teams' ? 3 : 2));
+      const resourceCapacity = Math.min(F.courtCapacity(draft), teamCapacity);
+      if (refereeMode === 'teams' && count === 2) {
+        host.dataset.validation = 'blocked';
+        status.textContent = tr('Planung blockiert: Zwei Teams können nicht zugleich spielen und ein anderes Schiri-Team stellen.',
+          'Planning blocked: two teams cannot play and provide another referee team at the same time.');
+        status.classList.add('is-warning');
+        advise('team-referees-impossible', tr('Bewusst „ohne Schiris“ oder „extern“ mit mindestens einem dedizierten Schiri wählen.',
+          'Explicitly choose “no referees” or “external” with at least one dedicated referee.'), 'refereeMode',
+        tr('Schiri-Modus wählen', 'Choose referee mode'));
+        return;
+      }
       draft.status = 'draft';
       draft.matches = []; draft.pools = []; draft.finalPools = []; draft.drawOrder = [];
       draft.results = {}; draft.outcomes = {}; draft.startedAt = null;
       delete draft.liveWave;
-      draft.fieldLimit = Math.min(draft.config.fields, draft.config.referees);
+      draft.fieldLimit = F.courtCapacity(draft);
       draft.organizations.forEach(org => {
         if (!draft.teams.some(team => team.id === org.nominee && team.orgId === org.id)) {
           org.nominee = draft.teams.find(team => team.orgId === org.id).id;
         }
       });
-      const plan = F.build(draft);
-      const estimate = F.estimate(plan);
-      const fieldLimit = Math.min(plan.config.fields, plan.config.referees);
-      setValue('groups', String(plan.pools.length));
-      setValue('group-games', String(plan.matches.length));
-      setValue('minimum-games', String(estimate.minimumGames), tr('Vorrunde + Endrunde', 'Group stage + finals'));
-      setValue('courts', String(estimate.courts), estimate.courts < plan.config.fields ?
-        tr('von ' + plan.config.fields + ' möglich · Schiri-Limit ' + plan.config.referees, 'of ' + plan.config.fields + ' available · referee limit ' + plan.config.referees) :
-        tr('von ' + fieldLimit + ' verfügbaren Feldern', 'of ' + fieldLimit + ' available courts'));
-      setValue('waves', String(estimate.waves));
-      setValue('group-end', F.clock(estimate.endMin), tr('rechnerisch ab ' + plan.config.start, 'calculated from ' + plan.config.start));
-      setValue('event-end', F.clock(estimate.projectedEndMin), tr('ca. ' + estimate.projectedMinutes + ' Min. ab ' + plan.config.start, 'approx. ' + estimate.projectedMinutes + ' min from ' + plan.config.start));
+      const signature = JSON.stringify([draft.formatVersion, draft.config, draft.teams, draft.organizations, savedPlan ? event.revision : null]);
+      if (!previewCache || previewCache.signature !== signature) {
+        const plan = savedPlan ? event : F.build(draft);
+        previewCache = { signature: signature, plan: plan, estimate: F.estimate(plan) };
+      }
+      const plan = previewCache.plan, estimate = previewCache.estimate;
+      updatePreviewBadges(host, plan, estimate, savedPlan);
       const over = estimate.projectedMinutes - plan.config.window;
+      host.dataset.validation = 'ready';
+      if (resourceCapacity < draft.config.fields) advise('court-capacity',
+        tr('Mit ' + count + ' Teams und diesem Schiri-Modus sind höchstens ' + resourceCapacity + ' der ' + draft.config.fields +
+          ' Felder gleichzeitig nutzbar; Paarungen und Pausen können die Belegung weiter senken. Feldzahl auf ' + resourceCapacity + ' begrenzen, wenn du nur nutzbare Felder vorhalten möchtest.',
+        'With ' + count + ' teams and this referee mode, at most ' + resourceCapacity + ' of ' + draft.config.fields +
+          ' courts can be used at once; pairings and rest may reduce usage further. Limit courts to ' + resourceCapacity + ' if you only want to provide usable courts.'),
+        'fields', tr('Feldzahl prüfen', 'Review courts'));
+      if (refereeMode === 'external' && draft.config.referees < Math.min(draft.config.fields, Math.floor(count / 2))) advise('external-referees',
+        tr('Externe Schiris begrenzen die Belegung auf ' + draft.config.referees + '. Für mehr parallele Spiele zusätzliche dedizierte Schiris bereitstellen oder weniger Felder einplanen.',
+          'External referees limit usage to ' + draft.config.referees + '. For more simultaneous matches provide additional dedicated referees or plan fewer courts.'),
+        'referees', tr('Schiri-Anzahl prüfen', 'Review referee count'));
+      if (estimate.courts < resourceCapacity) advise('schedule-capacity',
+        tr('Der konkrete Plan nutzt höchstens ' + estimate.courts + ' Felder trotz Ressourcen für ' + resourceCapacity + '; Gruppenpaarungen und ' + draft.config.rest +
+          ' freie Spielrunde(n) begrenzen die Belegung. Pausen nur bewusst anpassen; weniger Pause ist keine garantierte Optimierung.',
+          'The actual schedule uses at most ' + estimate.courts + ' courts despite resources for ' + resourceCapacity + '; pool pairings and ' + draft.config.rest +
+          ' rest slot(s) limit usage. Adjust rest deliberately; less rest is not a guaranteed optimization.'),
+        'rest', tr('Spielruhe prüfen', 'Review rest'));
+      if (over > 0) advise('time-window',
+        tr('Für diese Projektion mindestens ' + estimate.projectedMinutes + ' Minuten vorsehen (derzeit ' + draft.config.window +
+          '). Zeitfenster erweitern oder Spielzeit/Wechsel bewusst verkürzen; danach Vorschau prüfen. Keine Endzeitgarantie oder eingerechnete Verlängerung.',
+          'Allow at least ' + estimate.projectedMinutes + ' minutes for this projection (currently ' + draft.config.window +
+          '). Extend the window or deliberately shorten match/changeover time, then review the preview. No finish-time guarantee or included overtime.'),
+        'end', tr('Endzeit prüfen', 'Review end time'));
+      if (advice.children.length) host.dataset.validation = 'warning';
       status.textContent = over > 0 ?
-        tr('Gesamtprojektion überschreitet das Zeitfenster um etwa ', 'Projected event time exceeds the available window by about ') + over + tr(' Min.', ' min.') :
-        tr('Gesamtprojektion liegt innerhalb des Zeitfensters von ', 'Projected event time is within the ') + plan.config.window + tr(' Min. Zeitfensters.', ' min window.');
+        tr('Projektion überschreitet die verfügbare Zeit von ' + plan.config.start + ' bis ' +
+          F.clock(timeMinutes(plan.config.start) + plan.config.window) + ' um etwa ', 'Projection exceeds the available time from ' +
+          plan.config.start + ' to ' + F.clock(timeMinutes(plan.config.start) + plan.config.window) + ' by about ') + over + tr(' Min.', ' min.') :
+        tr('Planung liegt innerhalb der verfügbaren Zeit von ' + plan.config.start + ' bis ' +
+          F.clock(timeMinutes(plan.config.start) + plan.config.window) + ' (', 'Projection fits the available time from ' +
+          plan.config.start + ' to ' + F.clock(timeMinutes(plan.config.start) + plan.config.window) + ' (') + plan.config.window + tr(' Min.).', ' min.).');
       status.classList.add(over > 0 ? 'is-warning' : 'is-ok');
-      mode.textContent = previewMode(count);
+      overview.innerHTML = capacityOverview(plan, estimate, !savedPlan);
+      detail.innerHTML = capacityDetails(plan, estimate);
+      host.querySelector('.fc-capacity-details').hidden = false;
     } catch (error) {
+      host.dataset.validation = 'blocked';
       const emptyRoster = !(event.formatVersion >= 3) && event.teams.find(team => team.roster.length < 2);
       status.textContent = emptyRoster ?
         tr('Vorschau nicht möglich: Für dieses ältere Planformat mindestens zwei Spieler:innen-Namen je Team ergänzen.', 'Preview unavailable: add at least two player names per team for this older format.') :
@@ -360,13 +599,27 @@
   }
   function config(form) {
     const data = new FormData(form), c = {};
-    ['minutes', 'change', 'fields', 'referees', 'rest', 'window'].forEach(k => { c[k] = Number(data.get(k)); });
-    c.start = data.get('start'); c.mixed = data.get('mixed');
+    ['minutes', 'change', 'fields', 'referees', 'rest'].forEach(k => { c[k] = Number(data.get(k)); });
+    c.start = String(data.get('start') || '');
+    const duration = timeWindow(c.start, String(data.get('end') || ''));
+    c.window = duration == null ? 0 : duration;
+    c.mixed = data.get('mixed');
+    c.refereeMode = data.get('refereeMode') || F.refereeMode(event);
+    c.rankingMode = data.get('rankingMode') || F.rankingMode(event);
+    c.scoringProfile = data.get('scoringProfile') || F.scoringProfile(event);
+    c.tiePolicy = data.get('tiePolicy') || F.tiePolicy(event);
+    if (event && event.config.refereeMode === undefined && c.refereeMode === 'external') delete c.refereeMode;
+    if (event && event.config.rankingMode === undefined && c.rankingMode === 'nominee') delete c.rankingMode;
+    if (event && event.config.scoringProfile === undefined && c.scoringProfile === 'legacy') delete c.scoringProfile;
+    if (event && event.config.tiePolicy === undefined && c.tiePolicy === 'draw') delete c.tiePolicy;
     return { title: String(data.get('title')).trim(), config: c };
   }
   async function save(next, text) {
-    if (readOnly) throw new Error('Read-only / Nur Lesen');
-    event = await Store.save(next);
+    if (readOnly && !participant) throw new Error('Read-only / Nur Lesen');
+    const submitted = editorFields();
+    saving = true;
+    try { event = await Store.save(next); }
+    finally { saving = false; }
     binding = await Server.load(event.id);
     if (binding) {
       try {
@@ -379,7 +632,13 @@
           tr(' Änderungen bleiben auf diesem Gerät erhalten und werden später erneut übertragen.', ' Changes remain on this device and will be retried later.')), true);
       }
     } else notify(text || tr('Auf diesem Gerät gespeichert.', 'Saved on this device.'), false, true);
-    render();
+    const current = editorFields(), focus = editorFocus(), changed = {};
+    Object.keys(current).forEach(key => {
+      if (current[key] !== submitted[key]) changed[key] = current[key];
+    });
+    render(false);
+    restoreEditor(changed, focus);
+    if (Object.keys(changed).length) notify(tr('Übermittelten Stand gespeichert. Neuere Eingaben sind noch nicht gespeichert.', 'Submitted version saved. Newer edits are not saved yet.'), true);
   }
   async function action(fn) {
     if (busy) return;
@@ -387,7 +646,7 @@
     try { await fn(); } catch (error) { console.error('Firmencup:', error); notify(error.message, true); }
     finally { busy = false; app.setAttribute('aria-busy', 'false'); }
   }
-  const defaults = { start: '13:00', minutes: 14, change: 3, fields: 8, referees: 8, rest: 1, window: 360, mixed: 'optional' };
+  const defaults = { start: '13:00', minutes: 14, change: 3, fields: 8, referees: 8, rest: 1, window: 360, mixed: 'optional', refereeMode: 'teams', rankingMode: 'teams', scoringProfile: 'wins', tiePolicy: 'lead' };
   async function landing(expandMore) {
     const rows = await Store.list({ removal: true });
     const landingTitle = tr('Firmencup erstellen/konfigurieren', 'Create / configure company cup');
@@ -441,7 +700,7 @@
           orgs.push({ id: 'o' + i, name: entityDefaultName(i), nominee: null });
         }
         event = await Store.save(F.create(uid(), String(data.get('title')).trim(), defaults, teams, orgs));
-        setupStep = 1; phase = 'configuration';
+        setupStep = 1; phase = 'teams';
         history.replaceState(null, '', '?local=' + event.id + '&lang=' + (en ? 'en' : 'de'));
         render(); notify(tr('Firmen anlegen.', 'Set up companies.'));
       });
@@ -495,13 +754,10 @@
       ((direction < 0 ? index === 0 : index === length - 1) ? ' disabled' : '') + '>' +
       '<span aria-hidden="true">' + (direction < 0 ? '↑' : '↓') + '</span></button>').join('') + '</div>';
   }
-  function setupNavigation() {
-    return '<nav class="fc-steps fc-substeps noprint" aria-label="' + tr('Konfiguration', 'Configuration') + '">' +
-      [tr('1 · Firmen & Teams', '1 · Companies & teams'), tr('2 · Regeln & Spielplan', '2 · Rules & schedule')].map((name, index) =>
-        '<button type="button" data-step="' + (index === 0 ? 1 : 3) + '"' + (setupStep === (index === 0 ? 1 : 3) ? ' aria-current="step"' : '') +
-        (event.startedAt ? ' disabled' : '') + '>' + name + '</button>').join('') + '</nav>';
-  }
   function trophyChoice(o) {
+    if (F.rankingMode(event) !== 'nominee') return '<p class="fc-note">' + (F.rankingMode(event) === 'mean' ?
+      tr('Alle Teams zählen mit gleichem Gewicht für den mittleren Firmen-Endrang.', 'All teams carry equal weight in the company’s mean final rank.') :
+      tr('Jedes Team wird eigenständig gewertet. Kein Firmenpokal ausgewählt.', 'Each team is ranked independently. No company trophy selected.')) + '</p>';
     const teams = event.teams.filter(t => t.orgId === o.id);
     const helpId = 'fc-trophy-help-' + o.id;
     const explanation = '<p id="' + esc(helpId) + '" class="fc-note">' +
@@ -525,10 +781,13 @@
       event.organizations.map(o => '<fieldset class="fc-entity-card"><legend>' + esc(o.name) + '</legend><details><summary>' +
         tr('Teams', 'Teams') + ' (' + event.teams.filter(t => t.orgId === o.id).length + ')</summary>' +
         event.teams.filter(t => t.orgId === o.id).map(t => '<div class="fc-team-card"><h3>' + esc(t.name) + '</h3>' +
-          transferControls(t) + '</div>').join('') + '</details></fieldset>').join('') + '</section>';
-    return '<section id="fc-editor" class="noprint">' + setupNavigation() +
+          (t.roster.length ? '<p class="fc-note">' + tr('Spieler:innen (privat): ', 'Players (private): ') +
+            t.roster.map(esc).join(', ') + '</p>' : '') +
+          transferControls(t) + '</div>').join('') + '</details></fieldset>').join('') + '</section>' +
+      '<div id="fc-locked-planning">' + setupPreview(true) + '</div>';
+    return '<section id="fc-editor" class="noprint">' +
       '<p class="fc-note">' + tr('Bis zum Spielbeginn kannst du alle Angaben ändern.', 'You can edit all details until play starts.') + '</p>' +
-      '<form id="fc-edit" novalidate><fieldset data-panel="1"' + (setupStep !== 1 ? ' hidden' : '') + '><legend>' + tr('Firma/Organisation/Gruppe anlegen', 'Create Company/Organization/Group') + '</legend>' +
+      '<form id="fc-teams-edit" novalidate><fieldset data-panel="1"><legend>' + tr('Firma/Organisation/Gruppe anlegen', 'Create Company/Organization/Group') + '</legend>' +
       '<p class="fc-guide">' + tr('1. Firmen und Teams zuerst: Ihre Anzahl und Zuordnung bestimmen Gruppen, Spiele und die anschließende Zeit-/Feldvorschau. Öffne „Teams“ bei einer Firma. ', '1. Companies and teams first: their count and assignments determine pools, matches and the timing/court preview that follows. Open “Teams” inside a company. ') + rosterGuidance() + '</p>' +
       (!event.organizations.length ? '<p class="fc-empty">' + tr('Noch keine Firma angelegt. Füge zuerst eine Firma hinzu.', 'No companies yet. Add a company first.') + '</p>' : '') +
       event.organizations.map((o, index) => '<fieldset class="fc-entity-card" data-company="' + esc(o.id) + '"><legend>' + esc(o.name) + '</legend><div class="fc-row"><label>' + tr('Name', 'Name') +
@@ -536,19 +795,19 @@
         trophyChoice(o) +
         '<div class="fc-company-actions">' + ordering('organizations', o.id, index, event.organizations.length, o.name) +
         '<button type="button" class="fc-delete-company" data-remove-org="' + esc(o.id) + '" aria-label="' + esc(tr('Firma entfernen: ', 'Remove company: ') + o.name) + '" title="' + esc(tr('Firma entfernen: ', 'Remove company: ') + o.name) + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div></div></fieldset>').join('') +
-      '<p class="fc-note" id="fc-company-progress">' + event.organizations.length + ' / ' + F.MAX_ORGANIZATIONS +
-        tr(' Firmen · technische Kapazitätsgrenze.', ' companies · technical capacity limit.') + '</p>' +
+      '<p class="fc-note" id="fc-company-progress">' + event.organizations.length +
+        tr(' Firmen angelegt.', ' companies added.') + '</p>' +
       label('org-count', tr('Wie viele Firmen hinzufügen?', 'How many companies to add?'), 1, 'number', 1, Math.max(1, F.MAX_ORGANIZATIONS - event.organizations.length)) +
       '<button type="button" data-action="add-org"' + (event.organizations.length >= F.MAX_ORGANIZATIONS ? ' disabled' : '') + '>' + tr('+ Firma hinzufügen', '+ Add company') + '</button>' +
       '<p class="fc-note">' + tr('Eingaben werden nicht automatisch gespeichert. „Speichern“ bleibt hier; „Weiter“ prüft die Angaben und sichert den Entwurf.', 'Changes are not saved automatically. “Save” stays here; “Continue” validates and saves the draft.') + '</p>' +
       '<div class="fc-step-actions">' + button('save-setup', tr('Speichern', 'Save')) +
-      '<button type="button" data-next="3" aria-label="' + esc(tr('Weiter zu Regeln & Spielplan', 'Continue to rules & schedule')) + '"' +
-      (!event.organizations.length ? ' disabled' : '') + '>' + tr('Weiter', 'Continue') + '</button></div></fieldset>' +
-      '<fieldset data-panel="2"' + (setupStep !== 2 ? ' hidden' : '') + '><legend>2. ' + tr('Teams & Spieler:innen anlegen', 'Create teams & players') + '</legend>' +
+      '<button type="button" data-next="3" aria-label="' + esc(tr('Weiter zur Konfiguration', 'Continue to configuration')) + '">' +
+      tr('Weiter', 'Continue') + '</button></div></fieldset>' +
+      '<fieldset data-panel="2"><legend>2. ' + tr('Teams & Spieler:innen anlegen', 'Create teams & players') + '</legend>' +
       '<p class="fc-guide">' + tr('Füge Teams zu den Firmen hinzu. Teamnamen genügen für die Planung; Spieler:innen-Namen sind optional.', 'Add teams to companies. Team names are enough for planning; player names are optional.') + '</p>' +
       '<label>' + tr('Firma für neues Team', 'Company for new team') +
         '<select id="fc-new-team-org">' + options(event.organizations, event.organizations[0] && event.organizations[0].id) + '</select></label>' +
-        '<p class="fc-note" id="fc-team-progress">' + event.teams.length + tr(' Teams angelegt · für den Spielplan: ', ' teams added · schedule needs ') + teamRange(event) + ' ' + tr('Teams.', 'teams.') + '</p>' +
+        '<p class="fc-note" id="fc-team-progress">' + event.teams.length + tr(' Teams angelegt · für den Spielplan mindestens ', ' teams added · schedule needs at least ') + F.teamLimits(event).min + ' ' + tr('Teams.', 'teams.') + '</p>' +
         (!event.teams.length ? '<p class="fc-empty">' + tr('Noch keine Teams. Wähle oben eine Firma und klicke auf „+ Team“.', 'No teams yet. Choose a company above, then select “+ Team”.') + '</p>' : '') +
         event.teams.map((t, index) => '<fieldset class="fc-team-card" id="fc-team-card-' + esc(t.id) + '"><legend>' + esc(t.name) + ' · ' + esc(orgName(t.orgId)) + '</legend><div class="fc-row"><label>' + tr('Teamname', 'Team name') +
           '<input data-team-name="' + esc(t.id) + '" value="' + esc(t.name) + '" maxlength="100" required></label>' +
@@ -565,22 +824,24 @@
           '<button type="button" class="fc-delete-company" data-action="remove-team" data-team="' + esc(t.id) + '" aria-label="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '" title="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div></div></fieldset>').join('') +
       '<button type="button" data-action="add-team"' + (!event.organizations.length || event.teams.length >= teamLimit(event) ? ' disabled' : '') + '>+ Team</button>' +
       (event.teams.length ? button('remove-team', tr('Letztes Team entfernen', 'Remove last team')) : '') +
-      (event.organizations.some(o => event.teams.filter(t => t.orgId === o.id).length > 1 && o.nominee === null) ?
+      (F.rankingMode(event) === 'nominee' && event.organizations.some(o => event.teams.filter(t => t.orgId === o.id).length > 1 && o.nominee === null) ?
         '<p class="fc-note">' + tr('Noch offen: Wähle unter „Firmen“ je Firma ein Team für die vorläufige Firmenwertung.', 'Still to do: under “Companies”, choose a team for each company’s provisional ranking.') + '</p>' : '') +
       '<div class="fc-step-actions"><button type="button" data-step="1">' + tr('Zurück zu Firmen', 'Back to companies') + '</button>' +
       button('save-setup', tr('Speichern', 'Save')) +
-      '<button type="button" data-next="3" aria-describedby="fc-team-progress" aria-label="' + esc(tr('Weiter zu Regeln & Spielplan', 'Continue to rules & schedule')) + '">' +
-      tr('Weiter', 'Continue') + '</button></div></fieldset>' +
-      '<fieldset data-panel="3"' + (setupStep !== 3 ? ' hidden' : '') + '><legend>' + tr('Regeln & Spielplan', 'Rules & schedule') + '</legend>' +
+      '<button type="button" data-next="3" aria-describedby="fc-team-progress" aria-label="' + esc(tr('Weiter zur Konfiguration', 'Continue to configuration')) + '">' +
+      tr('Weiter', 'Continue') + '</button></div></fieldset></form></section>' +
+      '<section id="fc-setup" class="' + (event.matches.length ? 'fc-setup-print-summary' : 'noprint') + '"><form id="fc-edit" novalidate>' +
+      '<fieldset data-panel="3"><legend class="fc-sr-only">' + tr('Konfiguration', 'Configuration') + '</legend>' +
+      setupPreview() +
       '<p class="fc-guide">' + tr('Lege Spielzeit, Pausen und Felder fest. Erstelle dann den Spielplan. Dabei startet noch kein Spiel.', 'Set match length, breaks and courts. Then create the schedule. This does not start any matches.') + '</p>' +
       settings(event.config) +
-      setupPreview() +
-      '<p class="fc-note">' + tr('Eine Spielrunde umfasst alle gleichzeitig angesetzten Spiele mit gemeinsamem Start und Stopp – nicht eine komplette Jeder-gegen-jeden-Runde.', 'A time slot contains all matches scheduled at the same time, with a shared start and stop – not a full round-robin round.') + '</p>' +
+      '<p class="fc-note">' + tr('Eine Spielrunde umfasst gleichzeitig angesetzte Spiele, nicht die gesamte Jeder-gegen-jeden-Runde. Gemeinsamer Start und reguläres Zeitende; bei Führungsverlängerung erst nach Ende aller Spiele wechseln und die nächste Runde starten.',
+        'A time slot contains simultaneous matches, not a whole round robin. Shared start and regular time limit; with first-lead overtime, change over and start the next slot only after all matches finish.') + '</p>' +
       '<p class="fc-note">' + tr('Eingaben werden nicht automatisch gespeichert. „Speichern“ bleibt hier; „Gruppenplan erstellen“ prüft die Planung und speichert sie.', 'Changes are not saved automatically. “Save” stays here; “Build group schedule” validates and saves the schedule.') + '</p>' +
       '<div class="fc-step-actions"><button type="button" data-step="1">' + tr('Zurück zu Firmen & Teams', 'Back to companies & teams') + '</button>' +
       button('save-setup', tr('Speichern', 'Save')) +
       button('build', tr('Gruppenplan erstellen', 'Build group schedule')) +
-      (event.status !== 'draft' ? button('reopen', tr('Vorläufigen Plan verwerfen', 'Discard preliminary schedule')) : '') + '</div>' +
+      (event.status !== 'draft' ?       button('reopen', tr('Spielplan entfernen · Teams behalten', 'Remove schedule · keep teams')) : '') + '</div>' +
       '</fieldset></form></section>';
   }
   function transferControls(team) {
@@ -595,11 +856,67 @@
       tr('Freizeitformat mit eigenen Regeln der Turnierleitung, kein offizielles BeachL-/FIVB-Regelwerk. Vier Spieler:innen auf dem Feld. ', 'Recreational format with organizer-defined rules, not official BeachL/FIVB rules. Four players on court. ') +
       (event.config.mixed === 'one-woman' ? tr('Mindestens eine Frau auf dem Feld (Prüfung durch Veranstalter:innen). ', 'At least one woman on court (organizer checks). ') : tr('Keine Mixed-Vorgabe. ', 'No mixed requirement. ')) +
       rosterGuidance() + ' ' + tr('Eine maximale sportliche Teamgröße ist fachlich nicht festgelegt. Die App prüft weder Zusammensetzung noch Kontakte/Rotation.', 'No sporting team-size maximum is defined. The app does not check composition, contacts or rotation.') + '</p><p>' +
-      tr('Gemeinsamer Start/Stopp je Spielrunde (gleichzeitige Spiele), ', 'Central start/stop per time slot (simultaneous matches), ') + event.config.minutes + tr(' Minuten Spielzeit + ', ' match minutes + ') + event.config.change +
-      tr(' Minuten Wechselintervall. Beim Abpfiff zählt nur der aktuelle abgeschlossene Punktestand; laufender Ballwechsel zählt nicht. Gruppen/Platzierung: Remis erlaubt (2/1/0 Wertungspunkte); K.-o.-Remis: dokumentierter Losentscheid ohne Verlängerung.', ' changeover minutes. At the whistle only completed points count; an unfinished rally does not count. Pools/placement: draws allowed (2/1/0 standings points); knockout draw: recorded lottery, no overtime.') + '</p><p>' +
-      tr('Neue Pläne: 2–128 Teams; 128 ist eine technische Kapazitätsgrenze, keine Sportregel. Vorrunde: ausgeglichene Gruppen mit höchstens acht Teams, Jeder-gegen-jeden. Bei 2–8 Teams folgt eine weitere Jeder-gegen-jeden-Runde um alle Plätze; nur deren Ergebnisse bestimmen die Endwertung. Bei neun Teams spielen die vier Bestgesetzten einen Cup um Plätze 1–4, die übrigen fünf um Plätze 5–9. Ab zehn Teams spielen die acht Bestgesetzten Plätze 1–8 aus, die übrigen in lückenlosen Platzierungsgruppen mit 2–5 Teams. Keine Freilose oder Ein-Team-Gruppen. Die Mindestspielzahl steht in der Kapazitätsrechnung; ab 16 Teams sind es mindestens sieben. Bei weniger als acht Vorrundengruppen kommen auch niedrigere Gruppenplätze in den Achter-Cup, bei mehr als acht nicht alle Gruppensieger. Version 2 behält 16–80 Teams und ihre bisherigen Runden; ältere/versionlose Pläne behalten 40–64 Teams und acht Gruppen. Vor Finale: Gruppenrang, Wertungspunkte/Spiel, Balldifferenz/Spiel, erzielte Punkte/Spiel; Restgleichstand per protokolliertem Los. Platzierungsgleichstände bleiben geteilt.', 'New plans: 2–128 teams; 128 is a technical capacity limit, not a sports rule. Group stage: balanced round-robin pools of at most eight teams. With 2–8 teams, a second round robin decides all places; only its results determine final standings. With nine teams, the top four seeds play a cup for places 1–4, and the other five play for places 5–9. From ten teams, the top eight seeds play for places 1–8; everyone else enters contiguous placement pools of 2–5 teams. No byes or single-team pools. The capacity projection shows the minimum games; from 16 teams, at least seven. With fewer than eight initial pools, lower pool placings also enter the eight-team cup; with more than eight, not all pool winners qualify. Version 2 retains 16–80 teams and its existing rounds; older/versionless plans retain 40–64 teams and eight pools. Final seeding: pool place, standings points/game, point difference/game, points scored/game; remaining ties use a recorded lottery. Final placement ties remain shared.') + '</p><p>' +
-      tr('Vorläufige, noch nicht bestätigte Wertungslogik: Beim Firmenpokal zählt nur die Endplatzierung des ausgewählten Teams, keine Summe der Siege. Alle Teams zählen weiterhin für den Teampokal. Die Auswahl ist ab dem ersten Spielrundenstart oder Ergebnis gesperrt. Endrang und Pokal erst nach allen Spielen; geteilte Teamplätze ergeben geteilte Plätze. Auslosung ist Entscheidung der Turnierleitung, keine Verbandsfreigabe.', 'Provisional, not yet approved ranking: only the selected team’s final placing counts for the company trophy, not a sum of wins. All teams still compete for the team trophy. The choice is locked at the first time-slot start or result. Final standings and trophy only after all matches; shared team places remain shared. Draw procedure is an organizer decision, not federation approval.') +
-      '</p><p class="fc-note">' + tr('Nichtantreten und Rückzug werden pro Begegnung ausdrücklich als Turnierleitungsentscheidung erfasst, niemals als normaler Spielstand. Hauswertung: gegnerischer Sieg = 2:0 Wertungspunkte ohne Ballpunkte; aufgehobene Begegnung = 0:0. Jede Begegnung wird separat entschieden; es gibt keine automatische Neu-Paarung oder Kaskade. Bereits gespielte Resultate bleiben erhalten. Diese feste Hausregel ist keine BeachL-/FIVB-Regel. Teamdienste als Schiedsrichter:innen und physischer Feldtest bleiben offen.', 'Nonappearance and withdrawal are explicit organizer decisions per fixture, never normal scores. Organizer rule: declared opposing win = 2:0 standings points with no ball points; void match = 0:0. Decide every fixture separately; there is no automatic re-pairing or cascade. Played results remain. This fixed house rule is not a BeachL/FIVB rule. Team referee duties and physical field testing remain open.') + '</p></details>';
+      tr('Gemeinsamer Start und reguläres Zeitende je Spielrunde (gleichzeitige Spiele), ', 'Shared start and regular time limit per slot (simultaneous matches), ') + event.config.minutes + tr(' Minuten Spielzeit + ', ' match minutes + ') + event.config.change +
+      tr(' Minuten Wechselintervall. ', ' changeover minutes. ') + timingExplanation() + ' ' + scoringExplanation() + '</p><p>' +
+      tr('Ausgeglichene Gruppen mit höchstens acht Teams, Jeder-gegen-jeden. Bei 2–8 Teams entscheidet eine zweite komplette Jeder-gegen-jeden-Runde alle Endränge. Bei neun Teams spielen die besten vier den Cup um Plätze 1–4; fünf Teams spielen um 5–9. Ab zehn Teams spielen die besten acht Plätze 1–8 aus; die übrigen lückenlose Platzierungsgruppen mit 2–5 Teams. Keine Freilose/Ein-Team-Gruppen. Mindestspiele siehe Kapazität. Bei mehr als acht Gruppen qualifizieren sich nicht alle Gruppensieger. Version 2 behält 16–80 Teams, ältere/versionlose Pläne 40–64 Teams und acht Gruppen. Setzung zuerst nach Gruppenplatz, danach nur nach den Kriterien des ausgewählten Wertungsprofils; Restgleichstand ausdrücklich per protokolliertem Los. Tabellen-/Platzierungsgleichstände bleiben geteilt, nur die eindeutige Finalsetzung nutzt das Los.',
+        'Balanced round-robin pools of at most eight teams. With 2–8 teams, a second complete round robin determines all final ranks. Nine teams use a top-four cup for 1–4 and five teams play for 5–9. From ten teams, the best eight play for 1–8; everyone else enters contiguous placement pools of 2–5 teams. No byes/single-team pools. See capacity for minimum games. With more than eight pools not all pool winners qualify. Version 2 keeps 16–80 teams; older/versionless plans keep 40–64 teams and eight pools. Seeding first uses pool place, then only the selected scoring profile’s criteria; remaining ties require an explicitly recorded lottery. Table/placement ties stay shared; only unique final seeds use the draw.') + '</p><p>' +
+      rankingExplanation() +
+      '</p><p class="fc-note">' + decisionExplanation() + '</p></details>';
+  }
+  function scoringExplanation() {
+    return F.scoringProfile(event) === 'wins' ?
+      tr('Hausregel: 1 Tabellenpunkt je Sieg, 0 bei Niederlage, zugelassenem Remis oder aufgehobenem Spiel. Nur die Summe der Siege zählt, keine Quote, Balldifferenz, erzielten Ballpunkte oder anderen Rangkriterien. Gleiche Siegzahl = geteilter Rang; für eindeutige Finalsetzung dokumentiertes Los. Unterschiedliche Gruppengrößen bedeuten unterschiedliche Siegchancen; keine verdeckte Normalisierung.',
+        'House rule: 1 standings point per win, 0 for a loss, permitted draw or void match. Only total wins count, not a rate, ball difference, scored ball points or other ranking criteria. Equal wins share rank; unique final seeds require a recorded draw. Unequal pool sizes offer unequal win opportunities; no hidden normalization.') :
+      tr('Alternative Hausregel: Sieg/Remis/Niederlage = 2/1/0 Tabellenpunkte. Rangfolge nach Wertungspunkten je Spiel, dann Balldifferenz je Spiel, dann erzielten Ballpunkten je Spiel. Restgleichstände geteilt; eindeutige Finalsetzung per protokolliertem Los.',
+        'Alternative house rule: win/draw/loss = 2/1/0 standings points. Rank by standings points/game, then ball difference/game, then scored ball points/game. Remaining ties share rank; unique final seeds use a recorded draw.');
+  }
+  function timingExplanation(tiePolicy) {
+    return ((tiePolicy || F.tiePolicy(event)) === 'lead' ?
+      tr('Bei Zeitende zählt der abgeschlossene Ballpunktestand; ein laufender Ballwechsel zählt nicht. Bei Gleichstand wird bis zur ersten Führung weitergespielt: ein weiterer gewonnener Ballpunkt reicht, kein Zwei-Punkte-Vorsprung. Erst den tatsächlichen ungleichen Endstand speichern; Remis und ein per Los bestimmtes Team sind kein Ersatz. Das gilt auch im K.-o. Verlängerungen können den zentralen Zeitplan verzögern: erst nach Spielende wechseln/starten, nötigenfalls verbleibende Wellen umplanen.',
+        'At the time limit use completed ball points; an unfinished rally does not count. If tied, continue until the first lead: one further won ball point suffices, no two-point margin. Save only the actual unequal final score; a draw or lottery winner is no substitute. This also applies to knockouts. Overtime can delay central starts: change/start only after matches finish and replan remaining waves if needed.') :
+      tr('Beim Abpfiff zählen nur abgeschlossene Ballpunkte, kein laufender Ballwechsel. Gruppen-/Platzierungsremis ist erlaubt; im K.-o. wird das per Los bestimmte Team ausdrücklich erfasst, ohne Verlängerung.',
+        'At the whistle only completed ball points count, not an unfinished rally. Pool/placement draws are allowed; knockout ties need an explicitly recorded lottery winner, without overtime.')) +
+      ' ' + tr('Hausregel: Seitenwechsel nach jeweils 7 gespielten Ballpunkten insgesamt (Summe beider Teams: 7, 14, 21, …), manuell durch Teams/Schiris; kein automatischer Live-Zähler.',
+        'House rule: switch sides every 7 total played ball points (sum of both teams: 7, 14, 21, …), managed manually by teams/referees; no automatic live counter.');
+  }
+  function matchModeSummary() {
+    return event.config.minutes + tr(' Min. Zeitspiel', ' min timed play') + ' · ' +
+      (F.scoringProfile(event) === 'wins' ? tr('1 Tabellenpunkt je Sieg', '1 standings point per win') :
+        tr('2/1/0 Tabellenpunkte', '2/1/0 standings points'));
+  }
+  function tieShort() {
+    return F.tiePolicy(event) === 'lead' ? tr('Gleichstand: erste Führung', 'Tie: first lead') : tr('Remis; im K.-o. Los', 'Draws; knockout lottery');
+  }
+  function refereeModeShort() {
+    return F.refereeMode(event) === 'teams' ? tr('Team-Schiris', 'Team referees') :
+      F.refereeMode(event) === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externe Schiris', 'External referees');
+  }
+  // One compact, round-wide mode line; per-court cards show only what differs (teams, referee team).
+  function roundModeSummary() {
+    return tr('Quadro 4 gegen 4', 'Quadro 4 vs 4') + ' · ' + matchModeSummary() + ' · ' + tieShort() + ' · ' +
+      tr('Seitenwechsel alle 7 Ballpunkte (gesamt)', 'Switch sides every 7 ball points (total)') + ' · ' + refereeModeShort();
+  }
+  function scoreEntryExplanation(match) {
+    return tr('Ballpunkte beider Teams: ganze Zahlen 0–999, keine Tabellenpunkte. ', 'Ball points for both teams: whole numbers 0–999, not standings points. ') +
+      (F.tiePolicy(event) === 'lead' ?
+        tr('Bei Gleichstand bis zur ersten Führung weiterspielen; ungleichen Endstand erfassen.', 'If tied, play until the first lead; record the unequal final score.') :
+        match && match.phase === 'cup' ?
+          tr('Bei Remis das per Los bestimmte Team wählen.', 'If tied, choose the lottery winner.') :
+          tr('Remis erlaubt.', 'Draws allowed.'));
+  }
+  function feedsLaterMatch(m) {
+    return event.matches.some(item => [item.a, item.b].some(ref => ref && typeof ref !== 'string' && ref.match === m.id));
+  }
+  function decisionExplanation() {
+    return tr('Hausregel Nichtantreten/Rückzug: ausdrücklich zugesprochener Sieg = ', 'House rule for nonappearance/withdrawal: explicitly declared win = ') +
+      F.winPoints(event) + tr(' Tabellenpunkt(e) ohne Ballpunkte; aufgehoben = 0. Kein fingierter Spielstand, keine automatische Neu-Paarung/Kaskade. Jede weitere Begegnung separat entscheiden; gespielte Resultate bleiben erhalten. Reale Geräte- und Feldabnahme bleibt erforderlich.',
+        ' standings point(s) without ball points; void = 0. No invented score or automatic re-pairing/cascade. Decide each other fixture separately; played results remain. Real-device and field acceptance is still required.');
+  }
+  function rankingExplanation() {
+    if (F.rankingMode(event) === 'teams') return tr('Primär zählt jedes Team einzeln. Kein Firmenpokal aktiviert. Die Turnierleitung verantwortet die gewählten Hausregeln.', 'Each team is ranked individually. No company trophy enabled. The organizer is responsible for the chosen house rules.');
+    if (F.rankingMode(event) === 'mean') return tr('Zusätzliche Firmenwertung: Mittelwert aller Team-Endränge einer Firma, kleiner ist besser; Teamanzahl und Mittelwert werden ausgewiesen. Keine Siegessumme: mehr Teams bringen keinen automatischen Mengenvorteil. Keine Korrektur unterschiedlicher Spielstärke, Paarungen oder Teilnahmeauswahl; kleine Firmen schwanken stärker. Erst bei vollständigen Endrängen werden Firmenränge vergeben, Gleichstände bleiben geteilt. Hausregel, keine Verbandsregel. Firmenwechsel ordnen auch bereits erspielte Teamränge der neuen Firma zu.',
+      'Additional company ranking: mean of all final team ranks within each company, lower is better; team count and mean are shown. Not a sum of wins: more teams give no automatic volume advantage. This does not correct unequal strength, pairings or selection; smaller companies vary more. Company ranks are awarded only once all final team ranks exist; ties stay shared. Organizer house rule, not a federation rule. Transfers attribute even previously earned team ranks to the new company.');
+    return tr('Legacy-Hausregel: Nur das ausgewählte Team bestimmt den Firmenrang, keine Siegessumme. Auswahl ab dem ersten Start/Ergebnis gesperrt. Alle Teams zählen unabhängig für die Teamwertung. Vorläufige, sportfachlich nicht bestätigte Firmenregel.', 'Legacy house rule: only the selected team determines the company rank, not a sum of wins. Selection locks at first start/result. All teams independently compete in team standings. Provisional company rule, not sport-approved.');
   }
   function decided(m) { return !!(event.results[m.id] || (event.outcomes && event.outcomes[m.id])); }
   function resultsState() {
@@ -687,14 +1004,20 @@
         '</td><td colspan="2"><strong>' + tr('Platzierung nicht vergeben', 'Places not awarded') + '</strong></td></tr>';
     }).join('');
     const missingPlacement = !state.placementsComplete && state.matchesComplete;
-    return '<section id="fc-standings"><h2>' + (finals ? tr('Titel & Endplatzierungen', 'Titles & final places') : tr('Firmenwertung', 'Company ranking')) + ' ' + badge(complete) + '</h2>' +
+    const company = F.rankingMode(event) !== 'teams';
+    return '<section id="fc-standings"><h2>' + (finals ? tr('Titel & Endplatzierungen', 'Titles & final places') : company ? tr('Firmenwertung', 'Company ranking') : tr('Teamwertung', 'Team standings')) + ' ' + badge(complete) + '</h2>' +
       (finals ? '<p><strong>' + tr('Siegreiches Team: ', 'Team champion: ') + (champions.length ? champions.map(r => esc(teamName(r.id))).join(' / ') : tr('noch offen', 'pending')) + '</strong></p>' +
-        '<p><strong>' + tr('Firmenwertung: ', 'Company ranking: ') + (orgWinners.length ? orgWinners.map(r => esc(orgName(r.id))).join(' / ') : tr('noch offen', 'pending')) + '</strong></p>' +
+        (company ? '<p><strong>' + tr('Firmenwertung: ', 'Company ranking: ') + (orgWinners.length ? orgWinners.map(r => esc(orgName(r.id))).join(' / ') : tr('noch offen', 'pending')) + '</strong></p>' : '') +
         '<p class="fc-note">' + (complete ? tr('Endstand · geteilte Ränge bleiben geteilt.', 'Final standings · tied ranks stay shared.') : tr('Vorläufig: noch nicht alle Platzierungen entschieden.', 'Provisional: not all places decided.')) + '</p>' +
         '<h3>' + tr('Endplatzierungen aller Teams', 'Final places of all teams') + '</h3><table class="fc-table fc-place-table"><thead><tr><th>' + tr('Platz', 'Place') + '</th><th>Team</th><th>' + tr('Firma', 'Company') +
         '</th></tr></thead><tbody>' + placements + '</tbody></table>' :
         '<p class="fc-note">' + tr('Endplatzierungen und Firmenwertung stehen erst nach der Endrunde fest. Bis dahin zählt der Zwischenstand der Gruppentabellen oben.',
           'Final places and the company ranking are decided only after the finals. Until then, the pool tables above show the current standings.') + '</p>') +
+      (!company ? '<p class="fc-note">' + rankingExplanation() + '</p></section>' :
+      F.rankingMode(event) === 'mean' ? '<h3>' + tr('Zusätzliche Firmenwertung · Mittelwert', 'Additional company ranking · mean') + '</h3><p class="fc-note">' + rankingExplanation() +
+        '</p><table class="fc-table"><thead><tr><th>' + tr('Rang', 'Rank') + '</th><th>' + tr('Firma', 'Company') + '</th><th>Teams</th><th>Ø ' + tr('Endrang', 'final rank') +
+        '</th></tr></thead><tbody>' + orgs.map(r => '<tr><td>' + (r.rank || '—') + '</td><td>' + esc(orgName(r.id)) + '</td><td>' + r.placed + '/' + r.count +
+          '</td><td>' + (r.meanRank == null ? '—' : r.meanRank.toFixed(2)) + '</td></tr>').join('') + '</tbody></table></section>' :
       (finals ? '<h3>' + (complete ? tr('Firmenwertung · Endstand', 'Company ranking · final standings') :
         tr('Firmenwertung · aktueller vorläufiger Stand', 'Company ranking · current provisional rule')) + '</h3>' : '') + '<p class="fc-note">' +
       tr('Die Endplatzierung des ausgewählten Teams entscheidet über den Firmenpokal. Alle Teams zählen unabhängig davon für den Teampokal.', 'The selected team’s final placing determines the company trophy ranking. All teams independently compete for the team trophy.') +
@@ -703,23 +1026,23 @@
       orgs.map(r => '<tr>' + (finals ? '<td>' + (r.rank || (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) + '</td>' : '') +
         '<td>' + esc(orgName(r.id)) + '</td><td>' + esc(teamName(r.nominee)) +
         (finals ? ' / ' + (r.teamRank || (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) : '') +
-        '</td></tr>').join('') + '</tbody></table></section>';
+        '</td></tr>').join('') + '</tbody></table></section>');
   }
   function poolTable(rows, firstRank) {
     return '<table class="fc-table fc-pool-table"><thead><tr><th>' + tr('Platz', 'Place') + '</th><th>Team</th>' +
       '<th><abbr title="' + tr('Spiele', 'Played') + '">' + tr('Sp.', 'P') + '</abbr></th>' +
       '<th><abbr title="' + tr('Wertungspunkte', 'Standings points') + '">' + tr('Pkt.', 'Pts') + '</abbr></th>' +
-      '<th><abbr title="' + tr('Balldifferenz', 'Point difference') + '">' + tr('Diff.', 'Diff') + '</abbr></th></tr></thead><tbody>' +
+      (F.scoringProfile(event) === 'wins' ? '' : '<th><abbr title="' + tr('Balldifferenz', 'Point difference') + '">' + tr('Diff.', 'Diff') + '</abbr></th>') + '</tr></thead><tbody>' +
       rows.map(r => '<tr data-team="' + esc(r.id) + '"><td>' + (firstRank + r.rank - 1) + '</td><td>' + esc(teamName(r.id)) + '<br><small>' +
-        esc(orgName(event.teams.find(t => t.id === r.id).orgId)) + '</small></td><td>' + r.played + '</td><td>' + r.points + '</td><td>' +
-        (r.diff > 0 ? '+' : '') + r.diff + '</td></tr>').join('') + '</tbody></table>';
+        esc(orgName(event.teams.find(t => t.id === r.id).orgId)) + '</small></td><td>' + r.played + '</td><td>' + r.points + '</td>' +
+        (F.scoringProfile(event) === 'wins' ? '' : '<td>' + (r.diff > 0 ? '+' : '') + r.diff + '</td>') + '</tr>').join('') + '</tbody></table>';
   }
   function poolsHtml() {
     if (!event.matches.length || !resultsState().played) return '';
     const frozen = event.status === 'finals';
     return '<section id="fc-pools"><h2>' + tr('Gruppentabellen · Vorrunde', 'Pool tables · group stage') + ' ' + badge(frozen) + '</h2><p class="fc-note">' +
-      (frozen ? tr('Abgeschlossen: Mit der Finalauslosung eingefroren. Restgleichstände wurden laut Losprotokoll aufgelöst.',
-        'Complete: frozen by the final draw. Remaining ties were resolved by the draw record.') :
+      scoringExplanation() + ' ' + (frozen ? tr('Abgeschlossen: Mit der Finalauslosung eingefroren. Geteilte Tabellenränge bleiben; nur die Setzung wurde laut Losprotokoll aufgelöst.',
+        'Complete: frozen by the final draw. Shared table ranks remain; only seeding ties were resolved by the draw record.') :
         tr('Vorläufig: aktualisiert sich mit jedem Ergebnis. Restgleichstände entscheidet erst die Finalauslosung per Los.',
           'Provisional: updates with every result. Remaining ties are only resolved by lottery at the final draw.')) + '</p><div class="fc-pool-grid">' +
       event.pools.map((p, i) => {
@@ -739,23 +1062,62 @@
           poolTable(F.table(event, p.teams, p.id), p.firstRank) + '</div>';
       }).join('') + '</div></section>';
   }
-  function capacity() {
-    if (event.status === 'draft') return '';
-    const c = F.estimate(event);
-    const warnings = {
-      referees: tr('Zu wenige externe Schiedsrichter:innen: gleichzeitig werden nur ', 'Not enough external referees: only ') + c.courts + tr(' Felder genutzt.', ' courts used concurrently.'),
-      window: tr('Gesamtprojektion/Plan überschreitet das Zeitfenster. Vor Durchführung Ressourcen/Zeiten prüfen.', 'Whole-event projection/schedule exceeds the time window. Review resources/timing before running the event.'),
-      'finals-pending': tr('Nur Vorrunde exakt geplant. Endphase wird nach Gruppenergebnissen und Auslosung ergänzt; diese Endzeit ist NICHT das Turnierende.', 'Only the group stage is scheduled exactly. Finals follow group results and draw; this end time is NOT the event finish.')
+  function capacityOverview(plan, c, draft) {
+    const cup = plan.formatVersion >= 3 && plan.teams.length === 9 ? 4 : 8;
+    const labels = {
+      group: tr('Vorrunde', 'Group stage'),
+      cup: tr('Cup · Plätze 1–', 'Cup · places 1–') + cup,
+      placement: plan.formatVersion >= 3 && plan.teams.length <= 8 ?
+        tr('Zweite Jeder-gegen-jeden-Runde · alle Plätze', 'Second round robin · all places') :
+        (plan.formatVersion >= 3 && plan.teams.length === 9 ?
+          tr('Platzierungsgruppe · Plätze ', 'Placement pool · places ') : tr('Platzierungsgruppen · Plätze ', 'Placement pools · places ')) +
+        (cup + 1) + '–' + plan.teams.length
     };
-    return '<section id="fc-capacity"><h2>' + tr('Zeitplan & Kapazität', 'Schedule & capacity') + '</h2><p>' +
-      event.matches.length + tr(' Spiele · ', ' matches · ') + c.waves + tr(' Spielrunden inkl. Pausen · ', ' time slots including rest · ') + c.minutes +
-      tr(' Minuten · Planende ', ' minutes · scheduled end ') + F.clock(c.endMin) + ' · ' + c.courts + tr(' gleichzeitige Felder', ' concurrent courts') + '</p>' +
-      (event.status === 'groups' ? '<p>' + tr('Gesamtprojektion mit Endphase: ca. ', 'Whole-event projection including finals: approx. ') + c.projectedMinutes +
-        tr(' Minuten, Ende ca. ', ' minutes, estimated finish ') + F.clock(c.projectedEndMin) + tr(' (unverbindlich, Auslosung noch offen).', ' (estimate only, draw pending).') + '</p>' : '') +
-      '<p>' + tr('Mindestens ', 'At least ') + c.minimumGames + tr(' geplante Spiele je Team nach Ergänzung der Endphase. ', ' scheduled games per team after adding finals. ') +
-      event.config.rest + tr(' volle Spielrunden spielfrei zwischen Einsätzen. Externe Schiedsrichter:innen je genutztem Feld erforderlich; keine Teamdienste geplant.', ' full idle time slots between appearances. Dedicated external referees required per used court; no team duties scheduled.') +
-      '</p>' + c.warnings.map(w => '<p class="fc-warning">' + warnings[w] + '</p>').join('') +
-      '<p class="fc-note">' + tr('Rechnerischer Plan ohne Verzögerungsreserve; keine Zusage für Durchführung, tatsächliche Feldverfügbarkeit oder Einhaltung der Endzeit. Die Gruppe wird erst mit der Finalauslosung sportlich eingefroren.', 'Computed schedule without delay buffer; no guarantee of execution, actual court availability or finish time. Group scores become frozen when finals are drawn.') + '</p></section>';
+    return '<dl class="fc-phase-times">' + c.phases.map(p => {
+      const estimated = draft || p.estimated;
+      return '<div data-capacity-phase="' + p.phase + '" data-time-source="' + (estimated ? 'estimate' : 'schedule') + '">' +
+        '<dt>' + labels[p.phase] + '</dt><dd><strong>' + (estimated ? tr('ca. ', 'approx. ') : '') +
+        F.clock(p.startMin) + '–' + F.clock(p.endMin) + '</strong><span>' +
+        (p.estimated ? tr('Beispielschätzung · Finalauslosung offen', 'Illustrative estimate · final draw pending') :
+          draft ? tr('Entwurfsschätzung · noch kein gespeicherter Plan', 'Draft estimate · no saved schedule yet') :
+            tr('Geplanter Zeitraum', 'Scheduled span')) + ' · ' + p.matches + tr(' Spiele', ' matches') + '</span></dd></div>';
+    }).join('') + '</dl>' +
+      '<p class="fc-capacity-total"><strong>' + (plan.status === 'finals' && !draft ?
+        tr('Gesamter Spielplan: ', 'Whole schedule: ') : tr('Gesamtes Turnier geschätzt: ', 'Whole event estimated: ')) +
+      plan.config.start + '–' + F.clock(c.projectedEndMin) + '</strong> · ' + c.projectedMinutes + tr(' Min.', ' min.') +
+      '<br>' + tr('Verfügbares Zeitfenster: ', 'Available time window: ') + plan.config.start + '–' +
+      F.clock(timeMinutes(plan.config.start) + plan.config.window) + ' · ' + plan.config.window + tr(' Min.', ' min.') + '</p>' +
+      '<p class="fc-note">' + (c.phases.some(p => p.phase === 'cup') ?
+        tr('Cup und Platzierung können sich zeitlich überlappen; die Zeiträume werden nicht addiert. ', 'Cup and placement may overlap; their spans are not added together. ') : '') +
+      tr('Zeitspannen einschließlich Wechselzeiten, ohne Verzögerungen oder Führungsverlängerung.', 'Spans include changeovers, not delays or first-lead overtime.') + '</p>';
+  }
+  function capacityDetails(plan, c) {
+    return '<p>' + c.courts + tr(' Felder Spitzenbelegung im Plan · ', ' courts at peak in the schedule · ') +
+      c.waves + tr(' Spielrunden inkl. Pausen. ', ' time slots including rest. ') +
+      tr('Mindestens ', 'At least ') + c.minimumGames + tr(' Spiele je Team einschließlich Endphase; bis zur Auslosung vorläufig. ', ' matches per team including finals; provisional until the draw. ') +
+      plan.config.rest + tr(' volle Spielrunden spielfrei zwischen eigenen Spielen. ', ' full non-playing slots between own matches. ') +
+      (F.refereeMode(plan) === 'teams' ? tr('Spielruhe erlaubt Schiridienst, keine garantierte Erholungspause. Schiri-Einsätze je Team im vorhandenen Plan, kleinste/größte Anzahl: ', 'Match rest allows referee duty, not guaranteed recovery time. Referee assignments per team in the current schedule, lowest/highest count: ') +
+        F.refereeStats(plan).min + '/' + F.refereeStats(plan).max :
+        F.refereeMode(plan) === 'none' ? tr('Ohne Schiris: selbst geleitete Spiele, keine externen oder Team-Dienste.', 'No referees: self-officiated matches, no external or team duties.') :
+          tr('Dedizierte externe Schiris je genutztem Feld; keine Teamdienste.', 'Dedicated external referee per used court; no team duties.')) +
+      '</p><p class="fc-note">' + tr('Rechnerischer Plan ohne Verzögerungsreserve; keine Zusage für Durchführung, tatsächliche Feldverfügbarkeit oder Einhaltung der Endzeit. Die Gruppe wird erst mit der Finalauslosung sportlich eingefroren.', 'Computed schedule without delay buffer; no guarantee of execution, actual court availability or finish time. Group scores become frozen when finals are drawn.') +
+      (F.tiePolicy(plan) === 'lead' ? tr(' Verlängerung bis Führung: Zusatzzeit nicht enthalten und nicht nach oben begrenzt; gemeinsame Folgestarts erst nach Spielende, nötigenfalls Restplan ausdrücklich verschieben.',
+        ' First-lead overtime: extra time is not included or bounded; subsequent central starts must wait for matches to finish, explicitly delaying remaining waves if needed.') : '') + '</p>';
+  }
+  function capacity(preview) {
+    if (!preview && !readOnly && !event.startedAt) return '';
+    if (!preview && event.status === 'draft') return '';
+    const c = preview ? null : F.estimate(event);
+    const warnings = {
+      referees: tr('Zu wenige externe Schiedsrichter:innen: gleichzeitig werden nur ', 'Not enough external referees: only ') + (c ? c.courts : '') + tr(' Felder genutzt.', ' courts used concurrently.'),
+      window: tr('Gesamtprojektion/Plan überschreitet das Zeitfenster. Vor Durchführung Ressourcen/Zeiten prüfen.', 'Whole-event projection/schedule exceeds the time window. Review resources/timing before running the event.')
+    };
+    return '<section id="fc-capacity" tabindex="-1"><h3>' + tr('Zeitplan & Kapazität', 'Schedule & capacity') + '</h3>' +
+      '<div data-capacity-overview>' + (preview ? '' : capacityOverview(event, c, false)) + '</div>' +
+      (preview ? setupFeedback() : c.warnings.filter(w => w !== 'finals-pending').map(w => '<p class="fc-warning">' + warnings[w] + '</p>').join('')) +
+      '<details class="fc-capacity-details"' + (preview ? ' hidden' : '') + '><summary>' +
+      tr('Details zu Planung, Schiris & Grenzen', 'Planning, referees & limitations') + '</summary><div data-capacity-details>' +
+      (preview ? '' : capacityDetails(event, c)) + '</div></details></section>';
   }
   function teamCount(n) { return n + ' ' + (n === 1 ? tr('Team', 'team') : tr('Teams', 'teams')); }
   function isAbsent(id) { return F.checkInStatus(event, id) === 'absent'; }
@@ -814,6 +1176,10 @@
     return nextPlannedWave(event.liveWave ? event.liveWave.wave : null);
   }
   function blockedResolution(item) {
+    if (item.role === 'referee') return '<p class="fc-warning">' + tr('Schiri-Team fehlt: ', 'Referee team unavailable: ') +
+      esc(teamName(item.team)) + ' · ' + esc(item.match) + '. ' +
+      tr('Wieder anwesend melden oder ab dieser ungestarteten Welle umplanen (auch ohne Feldänderung/Verzögerung). Keine Spielverlustwertung gegen das Schiri-Team.',
+        'Mark present again or replan from this unstarted time slot (even without a court change/delay). No playing forfeit against the referee team.') + '</p>';
     return '<p class="fc-warning fc-resolve">' + (item.withdrawn ? tr('Zurückgezogen: ', 'Withdrawn: ') : tr('Abwesend gemeldet: ', 'Reported absent: ')) +
       '<strong>' + esc(teamName(item.team)) + '</strong> · ' + tr('Spiel ', 'Match ') + esc(item.match) + '<br>' +
       (item.withdrawn ? '' : '<a class="fc-link" href="#fc-absent-team-' + esc(item.team) + '" data-focus-target="fc-absent-team-' + esc(item.team) + '">' +
@@ -821,25 +1187,28 @@
       '<a class="fc-link" href="#fc-outcome-' + esc(item.match) + '" data-focus-target="fc-outcome-' + esc(item.match) + '">' +
       tr('Nichtantreten entscheiden', 'Decide nonappearance') + '</a></p>';
   }
-  function wavePanel(wave, actual) {
+  function actualClock(iso) {
+    return new Date(iso).toLocaleTimeString(en ? 'en-GB' : 'de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+  // Wave that can be started from its schedule header: the next pending, not yet started time slot.
+  function startableWave() {
+    const wave = nextWave();
+    return wave != null && !(event.liveWave && event.liveWave.wave === wave) ? wave : null;
+  }
+  function currentWaveSummary() {
+    const wave = nextWave();
     if (wave == null) return '';
-    const readiness = F.waveReadiness(event, wave);
+    const running = event.liveWave && event.liveWave.wave === wave;
     const matches = event.matches.filter(m => m.wave === wave).sort((a, b) => a.field - b.field);
-    const title = actual ? (readiness.missingResults.length
-      ? tr('Zuletzt tatsächlich gestartete Spielrunde', 'Last actually started time slot')
-      : tr('Tatsächlich gestartete Spielrunde', 'Actually started time slot')) : tr('Nächste geplante Spielrunde', 'Next planned time slot');
-    return '<section class="fc-wave-panel"><h3>' + title + ' ' + (wave + 1) + '</h3><p>' +
-      (actual ? tr('Tatsächlicher Start: ', 'Actual start: ') + esc(new Date(event.liveWave.startedAt).toLocaleTimeString(en ? 'en-GB' : 'de-DE', { hour: '2-digit', minute: '2-digit' })) :
-        tr('Planstart: ', 'Planned start: ') + F.clock(matches[0].startMin)) +
-      ' · ' + readiness.matches.length + ' ' + tr('Spiele · ', 'matches · ') +
-      (actual ? (readiness.missingResults.length ? tr('Ergebnisse ausstehend', 'results pending') : tr('vollständig erfasst', 'fully recorded')) :
-        (readiness.ready ? tr('startbereit', 'ready to start') : tr('noch nicht startbereit', 'not ready to start'))) + '</p>' +
-      matches.map(m => '<p class="fc-wave-match"><strong>' + tr('Feld ', 'Court ') + m.field + '</strong> · <a href="#fc-match-' + esc(m.id) +
-        '" data-focus-target="fc-match-' + esc(m.id) + '">' + matchLabel(m) + '</a> · ' +
-        (event.results[m.id] ? tr('Ergebnis ', 'Result ') + event.results[m.id].a + ':' + event.results[m.id].b :
-          tr('Ergebnis offen', 'Result pending')) + '</p>').join('') +
-      readiness.blocked.map(blockedResolution).join('') +
-      (readiness.unresolved.length ? '<p class="fc-warning">' + tr('Vorgängerergebnisse offen; Gegner noch nicht festgelegt.', 'Previous results are missing; opponents are not yet determined.') + '</p>' : '') +
+    return '<section id="fc-current-wave" aria-labelledby="fc-current-wave-title"><h3 id="fc-current-wave-title">' +
+      (running ? tr('Aktuelle Spielrunde ', 'Current time slot ') : tr('Nächste Spielrunde ', 'Next time slot ')) + (wave + 1) + '</h3>' +
+      '<details class="fc-current-mode"><summary>' + tr('Spielmodus: ', 'Match mode: ') + roundModeSummary() +
+      '</summary><p>' + scoringExplanation() + ' ' + timingExplanation() + '</p></details>' +
+      '<p class="fc-note fc-current-score-guide">' + scoreEntryExplanation() +
+      (F.tiePolicy(event) === 'draw' ? tr(' Im K.-o. ist bei Remis eine ausdrückliche Losentscheidung erforderlich.', ' Knockout ties require an explicit lottery decision.') : '') + '</p>' +
+      matches.map(m => '<p data-current-match="' + esc(m.id) + '">' +
+        '<a href="#fc-match-' + esc(m.id) + '" data-focus-target="fc-match-' + esc(m.id) + '">' +
+        tr('Feld ', 'Court ') + m.field + ' · ' + matchLabel(m) + '</a><br>' + refereeLabel(m) + '</p>').join('') +
       '</section>';
   }
   function cockpit() {
@@ -869,7 +1238,8 @@
         actionLink = '<a href="#fc-match-' + esc(pending.id) + '" data-focus-target="fc-match-' + esc(pending.id) + '">' +
           tr('Offenes Ergebnis dieser Spielrunde eintragen', 'Enter a missing result for this time slot') + '</a>';
       } else if (ready.ready) {
-        actionLink = '<a href="#fc-live" data-focus-target="fc-wave">' + tr('Bereite Spielrunde zentral starten', 'Start the ready time slot centrally') + '</a>';
+        actionLink = '<a href="#fc-wave-start-' + actionWave + '" data-focus-target="fc-wave-start-' + actionWave + '">' +
+          tr('Spielrunde ' + (actionWave + 1) + ' zentral starten', 'Start time slot ' + (actionWave + 1) + ' centrally') + '</a>';
       } else {
         const pending = event.matches.find(m => m.wave === actionWave && !event.results[m.id]);
         actionLink = pending ? '<a href="#fc-match-' + esc(pending.id) + '" data-focus-target="fc-match-' + esc(pending.id) + '">' +
@@ -882,49 +1252,87 @@
       actionLink = '<a href="#fc-match-' + esc(first.id) + '" data-focus-target="fc-match-' + esc(first.id) + '">' +
         tr('Nächstes offenes Ergebnis eintragen', 'Enter the next pending result') + '</a>';
     }
-    return '<section id="fc-cockpit" class="noprint"><h2>' + tr('Turniertag-Cockpit', 'Event-day cockpit') + '</h2><p><strong>' +
-      missing.length + tr(' von ', ' of ') + event.matches.length + ' ' + tr('Ergebnisse offen', 'results pending') + '</strong> · ' +
-      (active == null ? tr('Noch keine Spielrunde tatsächlich gestartet.', 'No time slot actually started yet.') :
-        tr('Letzter tatsächlicher Start: Spielrunde ', 'Last actual start: time slot ') + (active + 1) + ' · ' +
-        (incompleteWave ? tr('Ergebnisse dieser Spielrunde ausstehend.', 'Results from this time slot are pending.') : tr('Diese Spielrunde ist vollständig erfasst.', 'This time slot is fully recorded.'))) +
-      '</p>' + (actionLink ? '<p class="fc-next"><strong>' + tr('Nächste Aktion: ', 'Next action: ') + '</strong>' + actionLink + '</p>' : '') +
-      (missing.length < event.matches.length ? '<p class="fc-results-links"><a class="fc-link fc-link-secondary" id="fc-cockpit-results" href="#fc-results-status" data-focus-target="fc-results-status">' +
-        (resultsState().final ? tr('Endergebnis ansehen', 'View final results') : tr('Zwischenstand ansehen', 'View current standings')) + '</a></p>' : '') +
-      (active == null ? '' : wavePanel(active, true)) +
-      (upcoming === active ? '' : wavePanel(upcoming, false)) +
-      '<p class="fc-note">' + tr('Geplante Zeiten und tatsächliche Starts werden getrennt angezeigt. Die lokale Anzeige synchronisiert keine anderen Geräte und plant bei Verzögerungen nicht automatisch um.', 'Planned times and actual starts are shown separately. This local view does not synchronize other devices or automatically reschedule delays.') + '</p></section>';
+    const warnings = Array.from(new Set([active, upcoming].filter(w => w != null))).map(w => {
+      const readiness = F.waveReadiness(event, w);
+      return readiness.blocked.map(blockedResolution).join('') +
+        (w === upcoming && readiness.unresolved.length ? '<p class="fc-warning">' + tr('Vorgängerergebnisse offen; Gegner noch nicht festgelegt.', 'Previous results are missing; opponents are not yet determined.') + '</p>' : '');
+    }).join('');
+    const absentCount = event.teams.filter(t => isAbsent(t.id) || (event.withdrawals && event.withdrawals[t.id])).length;
+    return '<section id="fc-cockpit" class="fc-cockpit noprint" aria-labelledby="fc-cockpit-title"><p class="fc-cockpit-state"><strong id="fc-cockpit-title">' +
+      tr('Turniertag', 'Event day') + ':</strong> <strong>' +
+      missing.length + tr(' von ', ' of ') + event.matches.length + ' ' + tr('Ergebnissen offen', 'results pending') + '</strong> · ' +
+      (active == null ? tr('noch keine Spielrunde gestartet', 'no time slot started yet') :
+        tr('Spielrunde ', 'Time slot ') + (active + 1) + ' ' + tr('gestartet ', 'started ') + actualClock(event.liveWave.startedAt) + ' · ' +
+        (incompleteWave ? tr('Ergebnisse ausstehend', 'results pending') : tr('vollständig erfasst', 'fully recorded'))) +
+      ' <span id="fc-countdown" role="timer"></span></p>' +
+      warnings + '<div class="fc-cockpit-actions">' +
+      (actionLink ? '<p class="fc-next"><strong>' + tr('Nächste Aktion: ', 'Next action: ') + '</strong>' + actionLink + '</p>' : '') +
+      '<p class="fc-cockpit-links">' +
+      (missing.length < event.matches.length ? '<a class="fc-link fc-link-secondary" id="fc-cockpit-results" href="#fc-results-status" data-focus-target="fc-results-status">' +
+        (resultsState().final ? tr('Endergebnis ansehen', 'View final results') : tr('Zwischenstand ansehen', 'View current standings')) + '</a>' : '') +
+      '<a class="fc-link fc-link-secondary" id="fc-cockpit-org" href="#fc-org" data-focus-target="fc-org-summary">' +
+      tr('Anwesenheit & Umplanung', 'Attendance & replanning') + (absentCount ? ' (' + absentCount + tr(' fehlt', ' missing') + ')' : '') + '</a></p></div></section>';
+  }
+  function organization() {
+    if (readOnly || !event.matches.length) return '';
+    const absentCount = event.teams.filter(t => isAbsent(t.id) || (event.withdrawals && event.withdrawals[t.id])).length;
+    return '<details id="fc-org" class="fc-org noprint"' + (orgOpen ? ' open' : '') + '><summary id="fc-org-summary">' +
+      tr('Organisation', 'Organization') + ' <span class="fc-org-hint">' +
+      tr('Anwesenheit', 'Attendance') + (absentCount ? ' (' + absentCount + tr(' fehlt', ' missing') + ')' : '') + ' · ' +
+      tr('Spielrunde im Überblick', 'time slot overview') + ' · ' +
+      tr('Spielrunde manuell wählen', 'choose time slot manually') + ' · ' + tr('Umplanung', 'replanning') + '</span></summary>' +
+      currentWaveSummary() + checkin() + live() + '</details>';
   }
   function matchLabel(m) {
     const a = F.resolve(event, m.a), b = F.resolve(event, m.b);
-    function refName(ref) { return typeof ref === 'string' ? teamName(ref) : (ref.outcome === 'winner' ? tr('Siegreiches Team aus ', 'Winner ') : tr('Unterlegenes Team aus ', 'Loser ')) + ref.match; }
-    return esc(a ? teamName(a) : refName(m.a)) + ' — ' + esc(b ? teamName(b) : refName(m.b));
+    function refName(ref) { return typeof ref === 'string' ? teamIdentity(ref) : (ref.outcome === 'winner' ? tr('Siegreiches Team aus ', 'Winner ') : tr('Unterlegenes Team aus ', 'Loser ')) + ref.match; }
+    return esc(a ? teamIdentity(a) : refName(m.a)) + ' — ' + esc(b ? teamIdentity(b) : refName(m.b));
   }
-  function scoreNext() {
+  function scoreNext(afterScore) {
     const next = event.matches.filter(m => !decided(m)).sort((a, b) => a.wave - b.wave || a.field - b.field)[0];
+    const start = afterScore && event.liveWave ? startableWave() : null;
+    if (next && start != null && next.wave === start && F.waveReadiness(event, start).ready) {
+      return '<a class="fc-link fc-link-secondary" href="#fc-wave-start-' + start + '" data-focus-target="fc-wave-start-' + start + '">' +
+        tr('Spielrunde ' + (start + 1) + ' zentral starten', 'Start time slot ' + (start + 1) + ' centrally') + '</a>';
+    }
     const target = next ? 'fc-match-' + next.id : event.status === 'groups' ? 'fc-finals' : 'fc-results-status';
     return '<a class="fc-link fc-link-secondary" href="#' + esc(target) + '" data-focus-target="' + esc(target) + '">' +
       (next ? tr('Nächstes offenes Spiel', 'Next pending match') + ' · ' + esc(next.id) + ' · ' + F.clock(next.startMin) :
         event.status === 'groups' ? tr('Weiter: Endphase auslosen', 'Next: draw finals') :
           (resultsState().final ? tr('Endergebnis ansehen', 'View final results') : tr('Zwischenstand ansehen', 'View current standings'))) + '</a>';
   }
+  function resultText(m) {
+    const r = event.results[m.id], outcome = event.outcomes && event.outcomes[m.id];
+    if (r) return '<strong>' + r.a + ':' + r.b + '</strong>' + (r.drawWinner ? ' · ' + tr('Per Los bestimmtes Team: ', 'Draw winner: ') + esc(teamName(r.drawWinner)) : '');
+    if (outcome) return '<strong>' + tr(outcome.type === 'withdrawal' ? 'Rückzug' : 'Nichtantreten', outcome.type === 'withdrawal' ? 'Withdrawal' : 'Nonappearance') +
+      '</strong> · ' + (outcome.winnerTeam ? tr('Ausdrücklich zugesprochener Sieg: ', 'Organizer-declared win: ') + esc(teamName(outcome.winnerTeam)) +
+        ' · ' + F.winPoints(event) + tr(':0 Tabellenpunkte, keine Ballpunkte/kein fingierter Spielstand.', ':0 standings points, no ball points or invented score.') :
+        tr('Begegnung aufgehoben · keine Wertungspunkte und kein Spielstand.', 'Match void · no standings points and no score.'));
+    return tr('Ergebnis offen', 'Result pending');
+  }
   function fixture(m) {
     const r = event.results[m.id], a = F.resolve(event, m.a), b = F.resolve(event, m.b);
     const outcome = event.outcomes && event.outcomes[m.id];
-    const editable = !readOnly && !outcome && a && b && !(event.status === 'finals' && m.phase === 'group') && !F.hasPlayedDescendant(event, m.id);
+    const editable = (!readOnly || participant) && !outcome && a && b && !(event.status === 'finals' && m.phase === 'group') && !F.hasPlayedDescendant(event, m.id);
     const absentHere = editable ? [a, b].find(id => isAbsent(id)) || null : null;
-    return '<article class="fc-fixture" id="fc-match-' + esc(m.id) + '" tabindex="-1" data-match="' + m.id + '"><p><strong>' + F.clock(m.startMin) + ' · ' + tr('Spielrunde ', 'Time slot ') + (m.wave + 1) +
-      ' · ' + tr('Feld ', 'Court ') + m.field + '</strong> · ' + m.id + (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</p>' +
-      '<p>' + matchLabel(m) + '</p><p>' + (r ? '<strong>' + r.a + ':' + r.b + '</strong>' + (r.drawWinner ? ' · ' + tr('Per Los bestimmtes Team: ', 'Draw winner: ') + esc(teamName(r.drawWinner)) : '') :
-        (outcome ? '<strong>' + tr(outcome.type === 'withdrawal' ? 'Rückzug' : 'Nichtantreten', outcome.type === 'withdrawal' ? 'Withdrawal' : 'Nonappearance') +
-          '</strong> · ' + (outcome.winnerTeam ? tr('Ausdrücklich zugesprochener Sieg: ', 'Organizer-declared win: ') + esc(teamName(outcome.winnerTeam)) +
-            tr(' · 2:0 Wertungspunkte, keine Ballpunkte/kein fingierter Spielstand.', ' · 2:0 standings points, no ball points or invented score.') :
-            tr('Begegnung aufgehoben · keine Wertungspunkte und kein Spielstand.', 'Match void · no standings points and no score.')) : tr('Ergebnis offen', 'Result pending'))) + '</p>' +
-      (editable ? '<form class="fc-result noprint" data-score="' + m.id + '" aria-describedby="fc-score-guide"><label>' + tr('Punkte A', 'Points A') + '<input name="a" type="number" inputmode="numeric" enterkeyhint="next" autocomplete="off" aria-label="' + esc(teamName(a)) + ' · ' + tr('Punkte A', 'Points A') + '" min="0" max="999" required value="' + (r ? r.a : '') + '"></label>' +
-        '<label>' + tr('Punkte B', 'Points B') + '<input name="b" type="number" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="' + esc(teamName(b)) + ' · ' + tr('Punkte B', 'Points B') + '" min="0" max="999" required value="' + (r ? r.b : '') + '"></label>' +
-        (m.phase === 'cup' ? '<label class="fc-draw"' + (r && r.a === r.b ? '' : ' hidden') + '>' + tr('Remis im K.-o.: per Los bestimmtes Team wählen', 'Knockout tie: choose the lottery winner') + '<select name="drawWinner"><option value="">' + tr('Team wählen', 'Choose team') + '</option>' +
+    const scoreLabel = (team, side) => esc(teamIdentity(team)) + ' · ' + tr('Ballpunkte ', 'Ball points ') + side;
+    return '<article class="fc-fixture' + (r || outcome ? ' fc-fixture-done' : '') + (editable ? ' fc-fixture-edit' : '') + '" id="fc-match-' + esc(m.id) +
+      '" tabindex="-1" data-match="' + m.id + '"><p class="fc-fx-head"><strong>' + tr('Feld ', 'Court ') + m.field + '</strong> · ' +
+      F.clock(m.startMin) + ' · <span class="fc-fx-wave">' + tr('Spielrunde ', 'Time slot ') + (m.wave + 1) + ' · </span>' + esc(m.id) +
+      (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</p>' +
+      '<p class="fc-referee' + (F.refereeMode(event) === 'teams' ? '' : ' fc-print-only') + '">' + refereeLabel(m) + '</p>' +
+      '<p class="fc-fx-teams' + (editable ? ' fc-print-only' : '') + '">' + matchLabel(m) + '</p>' +
+      '<p class="fc-fx-result' + (editable && !r ? ' fc-print-only' : '') + '">' + resultText(m) + '</p>' +
+      (editable ? '<form class="fc-result noprint" novalidate data-score="' + m.id + '" aria-describedby="fc-score-guide-' + m.id + '">' +
+        '<label class="fc-score-row"><span class="fc-score-team">' + esc(teamIdentity(a)) + '</span><input name="a" type="number" inputmode="numeric" enterkeyhint="next" autocomplete="off" aria-describedby="fc-score-guide-' + m.id + ' fc-score-error-' + m.id + '" aria-label="' + scoreLabel(a, 'A') + '" min="0" max="999" step="1" required value="' + (r ? r.a : '') + '"></label>' +
+        '<label class="fc-score-row"><span class="fc-score-team">' + esc(teamIdentity(b)) + '</span><input name="b" type="number" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-describedby="fc-score-guide-' + m.id + ' fc-score-error-' + m.id + '" aria-label="' + scoreLabel(b, 'B') + '" min="0" max="999" step="1" required value="' + (r ? r.b : '') + '"></label>' +
+        (m.phase === 'cup' && F.tiePolicy(event) === 'draw' ? '<label class="fc-draw"' + (r && r.a === r.b ? '' : ' hidden') + '>' + tr('Remis im K.-o.: per Los bestimmtes Team wählen', 'Knockout tie: choose the lottery winner') + '<select name="drawWinner" aria-describedby="fc-score-guide-' + m.id + ' fc-score-error-' + m.id + '"><option value="">' + tr('Team wählen', 'Choose team') + '</option>' +
           options(event.teams.filter(t => t.id === a || t.id === b), r && r.drawWinner) + '</select></label>' : '') +
-        '<button type="submit">' + tr('Gespieltes Ergebnis speichern', 'Save played score') + '</button></form>' +
-        (!r && !outcome && absentHere ? '<p class="fc-warning">' + esc(teamName(absentHere)) +
+        '<p class="fc-score-error fc-error" id="fc-score-error-' + m.id + '" role="alert" hidden></p>' +
+        '<button type="submit" class="fc-score-save">' + (r ? tr('Korrektur speichern', 'Save correction') : tr('Ergebnis speichern', 'Save score')) + '</button></form>' : '') +
+      '<p class="fc-match-mode fc-print-only">' + matchModeSummary() + '</p>' +
+      '<p class="fc-match-score-guide" id="fc-score-guide-' + m.id + '">' + scoreEntryExplanation(m) + '</p>' +
+      (editable && !participant ? (!r && !outcome && absentHere ? '<p class="fc-warning">' + esc(teamName(absentHere)) +
           tr(' ist abwesend gemeldet: unter „Anwesenheit“ wieder da melden oder hier Nichtantreten entscheiden.', ' is reported absent: mark it back under “Attendance” or decide a nonappearance here.') + '</p>' : '') +
         (!r && !outcome ? '<details class="fc-outcome noprint"><summary id="fc-outcome-' + esc(m.id) + '">' + tr('Nichtantreten oder Rückzug entscheiden', 'Record nonappearance or withdrawal') +
           '</summary><form data-outcome="' + esc(m.id) + '"><label>' + tr('Entscheidungsgrund', 'Decision reason') +
@@ -933,39 +1341,79 @@
           '<label>' + tr('Nicht angetretenes/zurückziehendes Team', 'Nonappearing/withdrawing team') +
           '<select name="absent" required><option value="">' + tr('Team wählen', 'Choose team') + '</option>' +
           options(event.teams.filter(t => t.id === a || t.id === b), absentHere) + '</select></label>' +
-          '<label>' + tr('Ausdrückliche Wertung', 'Explicit decision') + '<select name="winner"><option value="">' +
-          tr('Begegnung aufheben · 0:0 Wertungspunkte', 'Void match · 0:0 standings points') + '</option>' +
+          '<label>' + tr('Ausdrückliche Wertung', 'Explicit decision') + (feedsLaterMatch(m) ?
+            '<select name="winner" required data-feeds-later="1" aria-describedby="fc-outcome-feeds-' + esc(m.id) + '"><option value="">' +
+            tr('Sieger wählen (Pflicht)', 'Choose winner (required)') + '</option>' :
+            '<select name="winner"><option value="">' + tr('Begegnung aufheben · 0:0 Wertungspunkte', 'Void match · 0:0 standings points') + '</option>') +
           options(event.teams.filter(t => t.id === a || t.id === b), null) + '</select></label>' +
+          (feedsLaterMatch(m) ? '<p class="fc-note" id="fc-outcome-feeds-' + esc(m.id) + '">' +
+            tr('K.-o.-Spiel mit Folgespiel: Aufheben ohne Sieger ist nicht möglich; das gegnerische Team rückt weiter.', 'Knockout match with a follow-up fixture: voiding without a winner is not possible; the opposing team advances.') + '</p>' : '') +
           '<label>' + tr('Notiz für die Veranstaltungsleitung (optional)', 'Organizer note (optional)') +
           '<input name="note" maxlength="300"></label><button type="submit">' +
           tr('Entscheidung ohne erfundenen Spielstand speichern', 'Save decision without inventing a score') +
-          '</button></form><p class="fc-note">' + tr('Hausregel: Bei ausdrücklich zugesprochenem Sieg erhält das andere Team 2 Wertungspunkte, aber keine Ballpunkte; eine aufgehobene Begegnung gibt beiden 0. Bereits gespielte Resultate bleiben erhalten. Jede weitere Begegnung des zurückgezogenen Teams wird separat entschieden; keine automatische Neu-Paarung.', 'Organizer rule: a declared opposing win awards 2 standings points and no ball points; a void match gives both teams 0. Played results remain unchanged. Decide each other fixture separately; no automatic re-pairing.') + '</p></details>' : '') :
+          '</button></form><p class="fc-note">' + decisionExplanation() + '</p></details>' : '') :
         (!readOnly && r ? '<p class="fc-note">' + tr('Ergebnis eingefroren (Finalauslosung / gespielte Folgerunde).', 'Result frozen (final draw / played downstream round).') + '</p>' : '')) +
-      (!readOnly && r && lastScored === m.id ? '<p class="fc-score-next noprint">' + scoreNext() + '</p>' : '') + '</article>';
+      (!readOnly && r && lastScored === m.id ? '<p class="fc-score-next noprint">' + scoreNext(true) + '</p>' : '') + '</article>';
+  }
+  function waveGroup(wave) {
+    const matches = event.matches.filter(m => m.wave === wave).sort((x, y) => x.field - y.field);
+    const pending = matches.filter(m => !decided(m)).length;
+    const live = event.liveWave && event.liveWave.wave === wave;
+    const start = !readOnly && startableWave() === wave;
+    const readiness = start ? F.waveReadiness(event, wave) : null;
+    const state = live && pending ? tr('läuft seit ', 'running since ') + actualClock(event.liveWave.startedAt) :
+      !pending ? tr('erfasst', 'recorded') :
+        start && readiness.ready ? tr('startbereit', 'ready') :
+          (matches.length - pending ? (matches.length - pending) + '/' + matches.length + ' ' + tr('erfasst', 'recorded') : tr('geplant', 'planned'));
+    const stateClass = live && pending ? 'fc-wave-live' : !pending ? 'fc-wave-done' : start && readiness.ready ? 'fc-wave-ready' : 'fc-wave-planned';
+    const defaultOpen = pending > 0 || matches.some(m => m.id === lastScored);
+    const open = waveOpenOverride.has(wave) ? waveOpenOverride.get(wave) : defaultOpen;
+    return '<details class="fc-wave-group ' + stateClass + '" id="fc-wave-group-' + wave + '" data-wave="' + wave + '" data-default-open="' + (defaultOpen ? '1' : '0') + '"' + (open ? ' open' : '') + '>' +
+      '<summary class="fc-wave-head"><span class="fc-wave-title">' + tr('Spielrunde ', 'Time slot ') + (wave + 1) + ' · ' + F.clock(matches[0].startMin) + '</span> ' +
+      '<span class="fc-wave-state">' + state + '</span></summary>' +
+      '<p class="fc-wave-context">' +
+      (start ? '<span class="fc-wave-actions noprint"><button type="button" id="fc-wave-start-' + wave + '" data-action="start-wave" data-wave="' + wave + '"' +
+        (readiness.ready ? '' : ' disabled') + '>' + tr('Spielrunde ' + (wave + 1) + ' zentral starten', 'Start time slot ' + (wave + 1) + ' centrally') + '</button>' +
+        (readiness.ready ? '' : '<span class="fc-note"> ' + tr('Noch nicht startbereit – siehe Turniertag oben.', 'Not ready yet – see event day above.') + '</span>') + '</span>' : '') +
+      '<span class="fc-wave-mode">' + roundModeSummary() + '</span></p>' +
+      '<div class="fc-wave-matches">' + matches.map(fixture).join('') + '</div></details>';
   }
   function fixtures() {
     if (!event.matches.length) return '';
-    return '<section id="fc-schedule" tabindex="-1"><h2>' + tr('Spielplan · gemeinsame Spielrunden', 'Fixtures · shared time slots') + '</h2>' +
-      '<p id="fc-score-guide" class="fc-note">' + tr('Zeitspiel: tatsächliche Ballpunkte eintragen, kein Zielstand und kein Zwei-Punkte-Vorsprung nötig. Remis zählt in Gruppen 1:1 Wertungspunkte; im K.-o. entscheidet ein Los.',
-        'Timed play: enter the actual points, with no target score or two-point lead required. A pool tie awards 1:1 standings points; a knockout tie needs a lottery winner.') + '</p>' +
-      (!readOnly ? '<div class="fc-score-nav noprint"><span>' + resultsState().played + '/' + event.matches.length + ' ' +
-        tr('Spiele gewertet', 'matches recorded') + '</span> ' + scoreNext() + '</div>' : '') +
+    const waves = Array.from(new Set(event.matches.map(m => m.wave))).sort((x, y) => x - y);
+    return '<section id="fc-schedule" tabindex="-1"><div class="fc-schedule-head"><h2>' + tr('Spielplan & Ergebnisse', 'Fixtures & results') + '</h2>' +
+      '<details class="fc-score-help"><summary>' + tr('Zählweise & Zeitregel', 'Scoring & time rule') + '</summary>' +
+      '<p id="fc-score-guide" class="fc-note">' + tr('Tatsächliche Ballpunkte erfassen, keine Tabellenpunkte. ', 'Enter actual ball points, not standings points. ') +
+      scoringExplanation() + ' ' + timingExplanation() + '</p></details></div>' +
       '<p id="fc-search-summary" class="noprint" role="status"></p>' +
-      event.matches.map(fixture).join('') + '</section>';
+      waves.map(waveGroup).join('') +
+      '<p class="fc-print-row noprint">' + button('print', tr('Drucken (gesamter Plan)', 'Print (full schedule)')) + '</p></section>';
+  }
+  function searchPanel() {
+    return '<section id="fc-search-panel" class="fc-toolbar noprint" aria-label="' + tr('Suche und nächstes offenes Spiel', 'Search and next pending match') + '">' +
+      '<label class="fc-search-label"><span>' + tr('Suche', 'Search') + '</span><input id="fc-search" type="search" autocomplete="off" placeholder="' +
+      tr('Team oder Firma', 'Team or company') + '" aria-label="' + tr('Team oder Firma suchen', 'Search team or company') + '"></label>' +
+      (!readOnly ? '<p class="fc-score-nav noprint">' + scoreNext() + '</p>' : '') +
+      '<div id="fc-next" role="status"></div></section>';
+  }
+  function refereeLabel(m) {
+    return F.refereeMode(event) === 'teams' ? tr('Schiri-Team: ', 'Referee team: ') + '<strong>' + esc(teamIdentity(m.refereeTeam)) + '</strong>' :
+      F.refereeMode(event) === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externer Schiri', 'External referee');
   }
   function live() {
     if (!event.matches.length) return '';
     const waves = Array.from(new Set(event.matches.map(m => m.wave)));
     const selectedWave = nextWave();
     const completedWaves = event.matches.filter(m => event.results[m.id] || event.outcomes[m.id]).map(m => m.wave);
-    const minimumReplan = event.liveWave ? event.liveWave.wave + 1 :
-      (completedWaves.length ? Math.max.apply(null, completedWaves) + 1 : 0);
+    const minimumReplan = Math.max(event.liveWave ? event.liveWave.wave + 1 :
+      (completedWaves.length ? Math.max.apply(null, completedWaves) + 1 : 0),
+      event.replans.length ? event.replans[event.replans.length - 1].fromWave : 0);
     const replanWaves = waves.filter(w => w >= minimumReplan &&
       event.matches.some(m => m.wave === w && !event.results[m.id] && !event.outcomes[m.id]));
     const canReplan = replanWaves.length > 0;
-    return '<section id="fc-live" class="noprint"><h2>' + tr('Spielrunde starten', 'Start a time slot') + '</h2>' +
-      (!readOnly ? '<p class="fc-guide">' + tr('2. Alle Teams gelten als anwesend; nur fehlende Teams unter „Anwesenheit“ melden. Starte dann die gleichzeitigen Spiele gemeinsam und trage anschließend die Ergebnisse im Spielplan ein.', '2. All teams count as present; only report missing teams under “Attendance”. Then start their simultaneous matches together and record the results in the fixtures below.') + '</p>' : '') +
-      '<p class="fc-note">' + tr('Eine Spielrunde umfasst die gleichzeitigen Spiele auf allen Feldern. Die Leitung pfeift gemeinsam an und ab. Ein optionaler Live-Link überträgt Start und Ergebnisse.', 'A time slot contains the simultaneous matches on all courts. The organizer signals the shared start and stop. An optional live link synchronizes starts and results.') + '</p>' +
+    return '<section id="fc-live" class="noprint"><h2>' + (readOnly ? tr('Aktuelle Spielrunde', 'Current time slot') : tr('Spielrunde manuell wählen & umplanen', 'Choose time slot manually & replan')) + '</h2>' +
+      (!readOnly ? '<p class="fc-guide">' + tr('2. Alle Teams gelten als anwesend; nur fehlende Teams unter „Anwesenheit“ melden. Die nächste Spielrunde startest du normalerweise direkt im Spielplan; hier kannst du eine Spielrunde gezielt wählen oder den Restplan umplanen.', '2. All teams count as present; only report missing teams under “Attendance”. Usually start the next time slot directly in the fixtures; here you can pick a specific time slot or replan the remaining schedule.') + '</p>' : '') +
+      '<p class="fc-note">' + tr('Eine Spielrunde umfasst die gleichzeitigen Spiele auf allen Feldern. Gemeinsamer Start und reguläres Zeitende; erforderliche Führungsverlängerungen zuerst beenden, dann die nächste Runde starten. Ein optionaler Live-Link überträgt Start und Ergebnisse.', 'A time slot contains the simultaneous matches on all courts. Shared start and regular time limit; complete required first-lead overtime before starting the next slot. An optional live link synchronizes starts and results.') + '</p>' +
       (!readOnly ? '<label>' + tr('Spielrunde', 'Time slot') + '<select id="fc-wave">' + waves.map(w => '<option value="' + w + '"' + (w === selectedWave ? ' selected' : '') + '>' + (w + 1) + ' · ' + F.clock(event.matches.find(m => m.wave === w).startMin) + '</option>').join('') +
         '</select></label><button type="button" id="fc-start-wave" data-action="start-wave"' +
         (selectedWave == null || !F.waveReadiness(event, selectedWave).ready ? ' disabled' : '') + '>' +
@@ -975,7 +1423,7 @@
           '<label>' + tr('Ab Spielrunde', 'From time slot') + '<select id="fc-replan-wave">' + replanWaves.map(w =>
             '<option value="' + w + '">' + (w + 1) + ' · ' + F.clock(event.matches.find(m => m.wave === w).startMin) + '</option>').join('') + '</select></label>' +
           '<label>' + tr('Verzögerung (Minuten)', 'Delay (minutes)') + '<input id="fc-replan-delay" type="number" min="0" max="1440" value="0"></label>' +
-          '<label>' + tr('Ab jetzt verfügbare Felder', 'Fields available from then on') + '<input id="fc-replan-fields" type="number" min="1" max="' + Math.min(event.config.fields, event.config.referees) + '" value="' + Math.min(event.fieldLimit, event.config.referees) + '"></label>' +
+          '<label>' + tr('Ab jetzt verfügbare Felder', 'Fields available from then on') + '<input id="fc-replan-fields" type="number" min="1" max="' + F.courtCapacity(event) + '" value="' + event.fieldLimit + '"></label>' +
           '<label>' + tr('Grund (wird protokolliert)', 'Reason (recorded in audit)') + '<input id="fc-replan-reason" maxlength="200" required value="' + tr('Verzögerung/Feldschließung', 'Delay/court closure') + '"></label>' +
           button('replan', tr('Umplanung prüfen & bestätigen', 'Review and confirm replan')) +
           (event.replans.length ? '<details><summary>' + tr('Bisherige Umplanungen (' + event.replans.length + ')', 'Previous replans (' + event.replans.length + ')') +
@@ -983,7 +1431,53 @@
               tr('Min. · ', 'min · ') + r.fields + ' ' + tr('Felder · ', 'fields · ') + esc(r.reason) + ' · ' +
               esc(new Date(r.at).toLocaleString(en ? 'en-GB' : 'de-DE')) + '</p>').join('') + '</details>' : '') +
           '</details>' : '') : '') +
-      '<p id="fc-countdown" role="timer"></p></section>';
+      (readOnly ? currentWaveSummary() + '<p id="fc-countdown" role="timer"></p>' : '') + '</section>';
+  }
+  function configurationActions() {
+    return '<section id="fc-config-actions" class="noprint" tabindex="-1" aria-labelledby="fc-config-actions-title">' +
+      (event.startedAt ? '<div>' + button('restart-edit', tr('Gesperrte Regeln in neuer Kopie bearbeiten', 'Edit locked rules in a new copy')) + '</div>' : '') +
+      '<details id="fc-reset-options"><summary id="fc-config-actions-title">' + tr('Zurücksetzen', 'Reset options') + '</summary>' +
+      '<p class="fc-note">' + tr('Beide Aktionen erstellen eine neue lokale Kopie ohne Livefreigabe. Original, Live-Stand und bisherige Sicherungen bleiben unverändert. Firmen, Teams, Namen und Anwesenheit bleiben erhalten.',
+        'Both actions create a new local copy without live sharing. The original, live event and existing backups stay unchanged. Companies, teams, names and attendance are retained.') + '</p>' +
+      '<div class="fc-reset-choice">' + button('reset-points', tr('Turnierstand zurücksetzen', 'Reset tournament progress'), 'fc-reset-progress-help') +
+      '<p id="fc-reset-progress-help" class="fc-note">' + tr('Regeln behalten; Ergebnisse und Turnierfortschritt samt Protokollen entfernen. Vorhandene Vorrunde neu planen, sonst ohne Plan beginnen.',
+        'Keep rules; clear results, tournament progress and audit logs. Rebuild an existing group schedule, otherwise start without a schedule.') + '</p></div>' +
+      '<div class="fc-reset-choice">' + button('reset-config', tr('Regeln auf Standardwerte', 'Restore default rules'), 'fc-reset-rules-help') +
+      '<p id="fc-reset-rules-help" class="fc-note">' + tr('Regeln auf Startwerte setzen; neuer Konfigurationsentwurf ohne Spielplan, Ergebnisse oder Ablaufprotokolle.',
+        'Restore starting rules; new configuration draft without schedule, results or operational logs.') + '</p></div></details></section>';
+  }
+  async function restartConfiguration(kind) {
+    if (readOnly || participant) throw new Error('Read-only / Nur Lesen');
+    if (hasUnsavedSetup()) {
+      notify(tr('Ungespeicherte Eingaben zuerst speichern oder korrigieren. Es wurde nichts zurückgesetzt.', 'Save or correct unsaved inputs first. Nothing was reset.'), true);
+      return;
+    }
+    const resetConfig = kind === 'reset-config', pointsOnly = kind === 'reset-points';
+    const origin = event;
+    const text = resetConfig ?
+      tr('Regeln auf Standardwerte setzen? 13:00–19:00, 14 Minuten Spielzeit, 3 Minuten Wechsel, 8 Felder, Team-Schiris, mindestens 1 spielfreie Runde, Team-/Siegwertung, erste Führung, keine Mixed-Vorgabe.',
+        'Restore default rules? 13:00–19:00, 14 match minutes, 3 changeover minutes, 8 courts, team referees, minimum 1 non-playing slot, team/win standings, first lead, no mixed requirement.') :
+      pointsOnly ? tr('Turnierstand einschließlich Ergebnissen, Entscheidungen und Ablaufprotokollen zurücksetzen; gewählte Regeln behalten?', 'Reset tournament progress including results, decisions and operational logs; keep selected rules?') :
+        tr('Gesperrte Konfiguration in einer neuen lokalen Kopie bearbeiten?', 'Edit locked configuration in a new local copy?');
+    if (!confirm(text + '\n' + tr('Neue lokale Kopie ohne Serverbindung. Original, bisherige Sicherungen und andere Turniere bleiben unverändert. Firmen, Teams, Namen, Titel und Anwesenheit bleiben erhalten. Ergebnisse, Entscheidungen, Rückzüge, Endrunde, Los-/Umplanungs-/Wechselprotokolle und Startzeiten werden in der Kopie entfernt. ',
+      'New local copy without a server binding. Original, previous backups and other events remain unchanged. Companies, teams, names, title and attendance are retained. Results, decisions, withdrawals, finals, draw/replanning/transfer logs and start times are removed in the copy. ') +
+      (pointsOnly && origin.matches.length ? tr('Die Vorrunde wird mit den bisherigen Regeln neu geplant.', 'The group stage is rebuilt using the existing rules.') :
+        tr('Die Kopie startet ohne Spielplan.', 'The copy starts without a schedule.')))) return;
+    let next = F.create(uid(), origin.title, resetConfig ? defaults : origin.config,
+      origin.teams, origin.organizations, origin.formatVersion == null ? 1 : origin.formatVersion);
+    next.checkIns = F.clone(origin.checkIns || {});
+    if (pointsOnly && origin.matches.length) next = F.build(next);
+    const saved = await Store.fork(origin, next);
+    event = saved;
+    binding = null; capturedAt = null; setupSettingsDraft = null;
+    lastScored = null; toolsReturn = null; phase = pointsOnly && event.matches.length ? 'play' : 'configuration';
+    waveOpenOverride.clear();
+    history.replaceState(null, '', 'Firmencup.html?local=' + encodeURIComponent(event.id) + '&lang=' + (en ? 'en' : 'de'));
+    render(false);
+    const target = phase === 'configuration' ? app.querySelector('#fc-edit [name="title"]') :
+      document.getElementById('fc-phase-' + phase + '-heading');
+    if (target) target.focus();
+    notify(tr('Neue lokale Kopie erstellt; Original unverändert. Nicht live freigegeben.', 'New local copy created; original unchanged. Not shared live.'), false, true);
   }
   function tools() {
     const published = !!(binding && binding.id);
@@ -994,20 +1488,35 @@
     const publicLink = published ? Server.publicUrl(binding.id, location.href, en ? 'en' : 'de') : '';
     return '<section id="fc-tools" class="noprint">' +
       '<p class="fc-note">' + tr('Sicherung und Live-Link sind jederzeit verfügbar – vor, während und nach dem Turnier. Schließen führt zurück zur vorherigen Ansicht.', 'Backup and live link are available at any time – before, during and after the event. Closing returns to the previous view.') + '</p>' +
+      button('edit-config', tr('Konfiguration bearbeiten / zurücksetzen', 'Edit / reset configuration')) +
       '<h3>' + tr('Sicherung', 'Backup') + '</h3>' +
       button('backup', tr('Eigene JSON-Sicherung herunterladen', 'Download own JSON backup')) +
+      (binding && binding.role === 'admin' ? button('admin-logout', tr('Adminzugriff sperren', 'Lock admin access')) : '') +
       '<p class="fc-note">' + tr('Firmencup-Daten gehören nicht zur allgemeinen Bogen-Sicherung. Eigene Datei enthält die Namen der Spieler:innen; privat aufbewahren. Vorheriger gespeicherter Stand liegt zusätzlich auf diesem Gerät vor.', 'Firmencup records are not included in general sheet backups. Your own file includes player names; keep it private. The previous saved revision is also held on this device.') + '</p>' +
       button('previous', tr('Vorherigen Stand als neue Veranstaltung kopieren', 'Copy previous snapshot as new event')) +
       '<h3>' + tr('Mehrgeräte-Live-Link (Web)', 'Multi-device live link (web)') + '</h3><p id="fc-server-status" role="status">' + esc(status) + '</p>' +
       '<label><input id="fc-share-consent" type="checkbox" style="width:auto;vertical-align:middle"> ' +
-      tr('Veröffentlichen macht Team-/Organisationsnamen, Nominierungen, Spielplan, Wertungen, Ergebnisse und Veranstaltungsentscheidungen öffentlich lesbar. Spieler:innen-Kader und Anwesenheit werden nicht veröffentlicht. Jede Aktualisierung wird auf dem Server gespeichert.', 'Publishing makes team/organization names, nominations, schedule, standings, results and event decisions publicly readable. Player rosters and attendance are not published. Each update is stored on the server.') + '</label>' +
+      tr('Livefreigabe auf dem Server speichern. Zunächst privat; Zugriff nur über freigegebene Links. Spieler:innen-Kader und Anwesenheit bleiben privat. Jede Aktualisierung wird auf dem Server gespeichert.', 'Save live sharing on the server. Initially private; access only through shared links. Player rosters and attendance remain private. Each update is stored on the server.') + '</label>' +
       button('share', published ? tr('Live-Link aktualisieren', 'Update live link') : tr('Live-Teilnehmer:innen-Link veröffentlichen', 'Publish live participant link')) +
       (published ? '<div id="fc-share-output"><label>' + tr('Öffentlicher Nur-Lesen-Link (ohne Bearbeitungsrecht)', 'Public read-only link (no edit permission)') +
         '<textarea id="fc-share-url" readonly>' + esc(publicLink) + '</textarea></label><div id="fc-qr"></div><p id="fc-qr-note" role="status">' +
         tr('Live-Ansicht · aktualisiert sich bei Verbindung automatisch.', 'Live view · refreshes automatically when connected.') + '</p>' +
-        button('editor-link', tr('Geheimen Bearbeitungs-Link anzeigen', 'Reveal secret editor link')) +
-        '<div id="fc-editor-link-output" hidden><p class="fc-warning">' + tr('Geheimnis: Wer diesen Link besitzt, kann private Kaderdaten lesen und das Ereignis bearbeiten. Separat und nur an vertrauenswürdige Mitveranstalter:innen übermitteln.', 'Secret: anyone with this link can read private roster data and edit the event. Share separately, only with trusted co-organizers.') + '</p>' +
-        '<label>' + tr('Geheimer Link zur Bearbeitungsberechtigung', 'Secret editor capability link') + '<textarea id="fc-editor-url" readonly></textarea></label></div></div>' : '') +
+        '<p>' + tr('Der Nur-Lesen-Link funktioniert nur bei ausdrücklich öffentlicher Freigabe.', 'The read-only link works only when public access is explicitly enabled.') + '</p>' +
+        '<form id="fc-participant-share-form"><h3>' + tr('Teilnehmer:innen: nur Ergebnisse und Punkte', 'Participants: results and scores only') +
+        '</h3><button type="submit">' + tr('Teilnehmer:innen-Link erzeugen/erneuern', 'Create/rotate participant link') + '</button></form>' +
+        (binding.participantShareToken ? '<textarea id="fc-participant-url" readonly>' +
+          esc(Server.participantUrl(binding.id, binding.participantShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
+        button('revoke-participant', tr('Teilnehmer:innen-Link widerrufen', 'Revoke participant link')) +
+        '<form id="fc-admin-share-form"><h3>' + tr('Admin: voller Zugriff mit Passwort', 'Admin: full access with password') +
+        '</h3><label>' + tr('Neues Adminpasswort (mindestens 10 Zeichen)', 'New admin password (at least 10 characters)') +
+        '<input name="password" type="password" minlength="10" required autocomplete="new-password"></label><button type="submit">' +
+        tr('Adminlink und Passwort setzen', 'Set admin link and password') + '</button></form>' +
+        (binding.adminShareToken ? '<textarea id="fc-admin-url" readonly>' +
+          esc(Server.adminUrl(binding.id, binding.adminShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
+        button('revoke-admin', tr('Adminzugriff widerrufen', 'Revoke admin access')) + '</div>' : '') +
+      (published ? button('toggle-public', binding.access && binding.access.publicRead ?
+        tr('Öffentlichen Nur-Lesen-Zugriff deaktivieren', 'Disable public read-only access') :
+        tr('Öffentlichen Nur-Lesen-Zugriff aktivieren', 'Enable public read-only access')) : '') +
       (binding && binding.conflict ? '<p class="fc-warning">' + tr('Serverladen sichert den lokalen Entwurf zuerst als unabhängige Veranstaltung.', 'Loading the server first saves the local draft as an independent event.') + '</p>' +
         button('server-reload', tr('Serverstand laden (lokalen Entwurf kopieren)', 'Load server (fork local draft)')) : '') +
       '</section>';
@@ -1061,11 +1570,22 @@
     }
   }
   async function pollEditor() {
-    if (!event || readOnly || document.visibilityState === 'hidden' || busy) return;
+    if (!event || (readOnly && !participant) || document.visibilityState === 'hidden' || busy || hasUnsavedSetup()) return;
+    const polledEvent = event;
     try {
       binding = await Server.load(event.id);
       if (!binding || !binding.id || binding.conflict) return;
-      try { binding = await Server.sync(event); }
+      if (binding.role === 'admin' && !binding.token) {
+        event = null;
+        adminUnlock(binding.id, binding.adminShareToken, binding);
+        notify(tr('Adminsitzung abgelaufen. Erneut entsperren.', 'Admin session expired. Unlock again.'), true);
+        return;
+      }
+      const retrying = !!binding.pending;
+      try {
+        binding = await Server.sync(event);
+        if (retrying) notify(tr('Mit dem Server synchronisiert.', 'Synchronized with the server.'), false, true);
+      }
       catch (error) {
         binding = await Server.load(event.id);
         if (error.status === 412 || binding && binding.conflict) {
@@ -1077,6 +1597,7 @@
         throw error;
       }
       const remote = await Server.get(binding.id, binding.token, '"' + binding.revision + '"');
+      if (event !== polledEvent || busy || hasUnsavedSetup()) return;
       if (remote.notModified || remote.revision <= binding.revision) return;
       if (Server.fingerprint(event) === binding.syncedFingerprint) {
         const replacement = F.clone(remote.event);
@@ -1092,70 +1613,155 @@
       }
     } catch (error) {
       console.error('Firmencup editor refresh:', error);
+      if (error.status === 403 && binding && binding.role === 'admin') {
+        event = null;
+        adminUnlock(binding.id, binding.adminShareToken, binding);
+      } else if (error.status === 403 && participant) {
+        participant = false;
+        render();
+      }
       notify(error.message, true);
     }
   }
-  function render() {
+  function adminUnlock(serverId, shareToken, localBinding) {
+    app.innerHTML = '<form id="fc-admin-unlock"><h2>' + tr('Adminzugriff entsperren', 'Unlock admin access') +
+      '</h2><label>' + tr('Passwort', 'Password') + '<input id="fc-admin-password" type="password" autocomplete="current-password" required></label>' +
+      '<button type="submit">' + tr('Entsperren', 'Unlock') + '</button></form>';
+    app.querySelector('form').onsubmit = ev => {
+      ev.preventDefault();
+      action(async function () {
+        const password = document.getElementById('fc-admin-password');
+        const session = await Server.unlock(serverId, shareToken, password.value);
+        password.value = '';
+        if (localBinding) {
+          await Server.reauthorize(localBinding, session.sessionToken, session.expiresAt);
+          if (localBinding.pending) await Server.sync(await Store.load(localBinding.localId));
+        }
+        await openAccess(serverId, session.sessionToken, 'admin', session.expiresAt, shareToken);
+      });
+    };
+  }
+  async function openAccess(serverId, token, role, expiresAt, shareToken) {
+    const remote = await Server.get(serverId, token);
+    if (role === 'participant' ? !remote.canScore || remote.canEdit : !remote.canEdit) {
+      throw new Error(tr('Berechtigung fehlt oder wurde widerrufen.', 'Permission missing or revoked.'));
+    }
+    const incoming = F.validate(remote.event, { publicSnapshot: role === 'participant' });
+    const existing = await Store.load(incoming.id);
+    if (existing && Server.fingerprint(existing) !== Server.fingerprint(incoming)) {
+      const previous = await Server.load(incoming.id);
+      if (previous && previous.pending) throw new Error(tr('Lokaler Entwurf wartet auf Synchronisation. Zuerst den lokalen Stand öffnen.', 'Local draft awaits synchronization. Open the local event first.'));
+      if (!previous || previous.id !== serverId || previous.role !== role) {
+        const copy = F.clone(existing); copy.id = uid(); copy.revision = 0;
+        await Store.save(F.validate(copy));
+      }
+    }
+    incoming.revision = 0;
+    event = existing ? await Store.replace(incoming) : await Store.save(incoming);
+    binding = await Server.adopt(event.id, serverId, token, remote.revision, event, role, expiresAt, shareToken);
+    binding = await Server.rememberAccess(binding, remote.access);
+    participant = role === 'participant'; readOnly = participant;
+    history.replaceState(null, '', '?local=' + encodeURIComponent(event.id) + '&lang=' + (en ? 'en' : 'de'));
+    render();
+    notify(tr('Zugriff geladen.', 'Access loaded.'), false, true);
+  }
+  function render(preserveEdits) {
+    const pending = preserveEdits !== false && hasUnsavedSetup() ? editorFields() : null;
+    const focus = pending && editorFocus();
     const expandedCompanies = Array.from(app.querySelectorAll('.fc-company-teams[open]')).map(node => node.parentElement.dataset.company);
     const expandedRosters = Array.from(app.querySelectorAll('.fc-roster-details[open]')).map(node => node.dataset.rosterTeam);
+    orgOpen = !!app.querySelector('#fc-org[open]');
     identity(event.title);
-    if (!phase) phase = (event.matches.length || readOnly) ? 'play' : 'configuration';
-    const accessState = readOnly ? tr('Teilnehmer:innen-Ansicht · Nur Lesen', 'Participant view · read-only') :
+    if (!phase) phase = (event.matches.length || readOnly) ? 'play' : 'teams';
+    const accessState = participant ? tr('Teilnehmer:innen · Ergebnisse ansehen und Punkte eintragen', 'Participants · view results and enter scores') : readOnly ? tr('Teilnehmer:innen-Ansicht · Nur Lesen', 'Participant view · read-only') :
       (binding && binding.id ? tr('Mehrgeräte-Turnierleitung · Serverrevision ' + binding.revision, 'Multi-device organizer · server revision ' + binding.revision) : '');
     app.innerHTML = (accessState ? '<p class="fc-access-state"><strong>' + accessState +
       (livePublic ? ' · ' + tr('Live · Serverrevision ' + liveRevision, 'Live · server revision ' + liveRevision) :
         (capturedAt ? ' · ' + tr('Snapshot vom ', 'Snapshot captured ') + esc(new Date(capturedAt).toLocaleString(en ? 'en-GB' : 'de-DE')) : '')) + '</strong></p>' : '') +
-      (readOnly ? '<p class="fc-warning">' + (livePublic ?
+      (readOnly ? '<p class="fc-warning">' + (participant ?
+        tr('Teilnehmer:innen-Zugriff: nur Ergebnisse und Punkteeingabe. Keine Konfiguration, Namen, Kader oder Anwesenheit.', 'Participant access: results and score entry only. No configuration, names, rosters or attendance.') : livePublic ?
         tr('Öffentliche Live-Ansicht: aktualisiert sich bei Verbindung automatisch. Team-/Organisationsnamen und Ergebnisse sind sichtbar; Spieler:innen-Namen, Kader, Anwesenheit und Bearbeitungsrecht bleiben privat.', 'Public live view: refreshes automatically when connected. Team/organization names and results are visible; player names, rosters, attendance and editor rights remain private.') :
         tr('Statischer Snapshot aus einem älteren Link. Enthält Team- und Firmennamen, keine Spieler:innen-Namen. Dieser Link lädt niemals private lokale Daten.', 'Static snapshot from an older link. Includes team and company names, no player names. This link never loads private local records.')) + '</p>' :
-        '<p class="noprint"><a href="Firmencup.html?lang=' + (en ? 'en' : 'de') + '">' + tr('Alle lokalen Firmencups / Wiederherstellung', 'All local company cups / restore') + '</a></p>' + editor()) +
-      rules() + capacity() + checkin() + cockpit() + live() +
-      '<section id="fc-search-panel" class="noprint"><label>' + tr('Team oder Firma suchen', 'Search team or company') + '<input id="fc-search" type="search"></label><div id="fc-next" role="status"></div>' +
-      button('print', tr('Drucken (gesamter Plan)', 'Print (full schedule)')) + '</section>' +
+        editor()) +
+      rules() + (readOnly ? capacity() : '') + cockpit() + (readOnly ? live() : organization()) + searchPanel() +
       resultsStatus() + poolsHtml() + standingsHtml() + finalPoolsHtml() + fixtures() +
       (!readOnly && event.status === 'groups' ? '<section id="fc-finals" class="noprint" tabindex="-1">' +
         '<p>' + tr('Alle Gruppenergebnisse fertig? Finale ausdrücklich auslosen: Restgleichstände werden mit einem kryptografisch zufälligen, gespeicherten Losprotokoll aufgelöst. Danach sind Gruppenergebnisse eingefroren.', 'All group results complete? Explicitly draw finals: unresolved ties use a cryptographically randomized, saved draw record. Group scores are then frozen.') + '</p>' +
         button('finals', tr('Endphase auslosen & planen', 'Draw & schedule finals')) + '</section>' : '') +
       (event.drawOrder.length ? '<details id="fc-draw-record"><summary>' + tr('Losprotokoll der Finalsetzung', 'Final seeding draw record') + '</summary><p>' +
         event.drawOrder.map(id => esc(teamName(id)) + ' (' + esc(id) + ')').join(' → ') + '</p></details>' : '') +
-      (!readOnly ? tools() : '');
+      (!readOnly ? tools() + configurationActions() : '');
     groupTeamEditors(expandedCompanies, expandedRosters);
     arrangePhases();
     updateStatusAction();
     bind(); updateCountdown(); renderServerLinks();
+    editorBaseline = JSON.stringify(editorFields());
+    if (pending) restoreEditor(pending, focus);
     followAnchor();
   }
   function toolsReturnPhase() {
     if (toolsReturn && toolsReturn !== 'tools') return toolsReturn;
-    return event.matches.length ? 'play' : 'configuration';
+    return event.matches.length ? 'play' : 'teams';
+  }
+  function eventActions() {
+    return readOnly ? '' : '<p class="fc-event-actions noprint"><a class="fc-local-list" href="Firmencup.html?lang=' + (en ? 'en' : 'de') + '">' +
+      tr('Alle lokalen Firmencups / Wiederherstellung', 'All local company cups / restore') + '</a></p>';
+  }
+  // "Teilen & Sichern" is a secondary page action in the shared header (next to Print), not a fifth tab.
+  function createToolsOpener() {
+    const actions = document.querySelector('.app-bar .app-bar__actions');
+    if (!actions) return;
+    const label = tr('Teilen & Sichern', 'Sharing & backup');
+    const opener = document.createElement('button');
+    opener.type = 'button';
+    opener.id = 'fc-tools-open';
+    opener.className = 'app-bar__btn fc-tools-open';
+    opener.setAttribute('aria-controls', 'fc-phase-tools');
+    opener.setAttribute('aria-expanded', 'false');
+    opener.setAttribute('aria-label', label);
+    opener.title = label;
+    opener.innerHTML = '<span class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+      '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></span><span class="lbl">' + esc(label) + '</span>';
+    opener.onclick = () => action(() => switchPhase(phase === 'tools' ? toolsReturnPhase() : 'tools', true, false));
+    actions.insertBefore(opener, actions.firstChild);
+  }
+  function syncToolsOpener() {
+    // Public, participant and unlock views never get the button in the DOM.
+    let opener = document.getElementById('fc-tools-open');
+    if (readOnly || !event) { if (opener) opener.remove(); return; }
+    if (!opener) { createToolsOpener(); opener = document.getElementById('fc-tools-open'); }
+    if (opener) opener.setAttribute('aria-expanded', phase === 'tools' ? 'true' : 'false');
   }
   function phaseNavigation() {
-    const toolsButton = readOnly ? '' : '<button type="button" id="fc-tools-open" class="fc-tools-open" data-phase="tools" aria-controls="fc-phase-tools" aria-expanded="' +
-      (phase === 'tools' ? 'true' : 'false') + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
-      '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg> ' +
-      tr('Teilen & Sichern', 'Sharing & backup') + '</button>';
     return '<div class="fc-phasebar noprint"><nav class="fc-phases noprint" aria-label="' + tr('Turnierphasen', 'Tournament phases') + '">' +
-      ['configuration', 'play', 'results'].map((id, index) => {
-        const names = [tr('Konfiguration', 'Configuration'), tr('Turnierablauf', 'Tournament play'), tr('Turnierergebnis', 'Tournament results')];
-        if (readOnly && id === 'configuration') return '';
+      PHASES.filter(id => !readOnly || EDITOR_PHASES.indexOf(id) < 0).map((id, index) => {
+        const names = { teams: tr('Firmen & Teams', 'Companies & teams'), configuration: tr('Konfiguration', 'Configuration'),
+          play: tr('Turnierablauf', 'Tournament play'), results: tr('Turnierergebnis', 'Tournament results') };
         return '<button type="button" data-phase="' + id + '" aria-controls="fc-phase-' + id + '"' +
-          (id === phase ? ' aria-current="step"' : '') + (id === 'play' && !readOnly && !event.matches.length ? ' disabled' : '') +
-          '><span class="fc-phase-number" aria-hidden="true">' + (index + 1) + '</span> ' + names[index] + '</button>';
-      }).join('') + '</nav>' + toolsButton + '</div>';
+          (id === phase ? ' aria-current="step"' : '') + (id === 'play' && !readOnly && !event.matches.length ? ' disabled title="' +
+            esc(tr('Verfügbar, sobald unter „Konfiguration“ der Gruppenplan erstellt ist', 'Available once the group schedule is built under “Configuration”')) + '"' : '') +
+          '><span class="fc-phase-number" aria-hidden="true">' + (index + 1) + '</span> ' + names[id] + '</button>';
+      }).join('') + '</nav></div>';
+  }
+  const PHASES = ['teams', 'configuration', 'play', 'results'], EDITOR_PHASES = ['teams', 'configuration'];
+  function groupStageDecided() {
+    return event.status === 'groups' && event.matches.filter(m => m.phase === 'group').every(decided);
   }
   function arrangePhases() {
-    app.insertAdjacentHTML('afterbegin', phaseNavigation());
+    app.insertAdjacentHTML('afterbegin', eventActions() + phaseNavigation());
+    syncToolsOpener();
     const groups = [
-      ['configuration', tr('Konfiguration', 'Configuration'), ['fc-editor', 'fc-registration', 'fc-rules', 'fc-capacity']],
-      ['play', tr('Turnierablauf', 'Tournament play'), ['fc-cockpit', 'fc-checkin', 'fc-live', 'fc-search-panel', 'fc-schedule', 'fc-finals', 'fc-draw-record']
-        .concat(readOnly ? ['fc-capacity', 'fc-rules'] : [])],
+      ['teams', tr('Firmen & Teams', 'Companies & teams'), ['fc-editor', 'fc-registration']],
+      ['configuration', tr('Konfiguration', 'Configuration'), ['fc-setup', 'fc-locked-planning', 'fc-capacity', 'fc-config-actions', 'fc-rules']],
+      ['play', tr('Turnierablauf', 'Tournament play'), (readOnly ? ['fc-live', 'fc-search-panel', 'fc-schedule', 'fc-draw-record', 'fc-capacity', 'fc-rules'] :
+        ['fc-cockpit'].concat(groupStageDecided() ? ['fc-finals'] : []).concat(['fc-search-panel', 'fc-schedule', 'fc-finals', 'fc-org', 'fc-draw-record']))],
       ['results', tr('Turnierergebnis', 'Tournament results'), resultsState().final ?
         ['fc-results-status', 'fc-standings', 'fc-final-pools', 'fc-pools'] :
         ['fc-results-status', 'fc-pools', 'fc-final-pools', 'fc-standings']],
       ['tools', tr('Teilen & Sichern', 'Sharing & backup'), ['fc-tools']]
     ];
     groups.forEach(([id, name, ids]) => {
-      if (readOnly && (id === 'configuration' || id === 'tools')) return;
+      if (readOnly && (EDITOR_PHASES.indexOf(id) >= 0 || id === 'tools')) return;
       const panel = document.createElement('div');
       panel.id = 'fc-phase-' + id; panel.className = 'fc-phase'; panel.hidden = id !== phase;
       panel.setAttribute('role', 'region'); panel.setAttribute('aria-labelledby', panel.id + '-heading');
@@ -1169,9 +1775,10 @@
       if (id === 'play' && !event.matches.length) panel.insertAdjacentHTML('beforeend',
         '<p class="fc-empty">' + (readOnly ?
           tr('Die Turnierleitung hat noch keinen Spielplan veröffentlicht.', 'The organizer has not published a schedule yet.') :
-          tr('Noch kein Spielplan. Zuerst unter Konfiguration den Gruppenplan erstellen.', 'No schedule yet. First build the group schedule under Configuration.')) + '</p>');
+          tr('Noch kein Spielplan. Zuerst Firmen & Teams anlegen, dann unter Konfiguration den Gruppenplan erstellen.', 'No schedule yet. First add companies & teams, then build the group schedule under Configuration.')) + '</p>');
       ids.forEach(nodeId => {
         const node = document.getElementById(nodeId);
+        if (nodeId === 'fc-capacity' && node && node.closest('#fc-setup-preview')) return;
         if (node) {
           node.querySelectorAll('h2, h3').forEach(heading => {
             const subordinate = document.createElement(heading.tagName === 'H2' ? 'h3' : 'h4');
@@ -1182,7 +1789,7 @@
           panel.appendChild(node);
         }
       });
-      if (id === 'configuration' && event.matches.length) panel.insertAdjacentHTML('beforeend',
+      if ((id === 'configuration' || id === 'teams' && event.startedAt) && event.matches.length) panel.insertAdjacentHTML('beforeend',
         '<div class="fc-step-actions noprint"><button type="button" data-phase="play">' +
         tr('Weiter zum Turnierablauf', 'Continue to tournament play') + '</button></div>');
       if (id === 'play') panel.insertAdjacentHTML('beforeend',
@@ -1197,6 +1804,8 @@
   function showPhase(id, focus) {
     if (id === 'tools' && phase !== 'tools') toolsReturn = phase;
     phase = id;
+    if (id === 'teams') setupStep = 1;
+    else if (id === 'configuration') setupStep = 3;
     const close = app.querySelector('.fc-tools-close');
     if (close) close.dataset.phase = toolsReturnPhase();
     const opener = document.getElementById('fc-tools-open');
@@ -1212,7 +1821,8 @@
     const panel = target.closest('.fc-phase');
     if (panel) showPhase(panel.id.slice('fc-phase-'.length), false);
     const fixture = target.closest('.fc-fixture');
-    if (fixture && fixture.hidden) {
+    const group = target.closest('.fc-wave-group');
+    if ((fixture && fixture.hidden) || (group && group.hidden)) {
       document.getElementById('fc-search').value = '';
       search();
     }
@@ -1271,15 +1881,15 @@
     const form = document.getElementById('fc-edit'), next = F.clone(event);
     if (!form) return next;
     const c = config(form); next.title = c.title; next.config = c.config;
-    if (!next.replans.length) next.fieldLimit = Math.min(c.config.fields, c.config.referees);
-    form.querySelectorAll('[data-team-name]').forEach(input => { next.teams.find(t => t.id === input.dataset.teamName).name = input.value.trim(); });
-    form.querySelectorAll('[data-team-org]').forEach(input => { next.teams.find(t => t.id === input.dataset.teamOrg).orgId = input.value; });
+    if (!next.replans.length) next.fieldLimit = F.courtCapacity(next);
+    app.querySelectorAll('[data-team-name]').forEach(input => { next.teams.find(t => t.id === input.dataset.teamName).name = input.value.trim(); });
+    app.querySelectorAll('[data-team-org]').forEach(input => { next.teams.find(t => t.id === input.dataset.teamOrg).orgId = input.value; });
     next.teams.forEach(t => {
-      t.roster = Array.from(form.querySelectorAll('[data-member]')).filter(input => input.dataset.member === t.id)
+      t.roster = Array.from(app.querySelectorAll('[data-member]')).filter(input => input.dataset.member === t.id)
         .map(input => input.value.trim()).filter(Boolean);
     });
-    form.querySelectorAll('[data-org-name]').forEach(input => { next.organizations.find(o => o.id === input.dataset.orgName).name = input.value.trim(); });
-    form.querySelectorAll('[data-nominee]').forEach(input => {
+    app.querySelectorAll('[data-org-name]').forEach(input => { next.organizations.find(o => o.id === input.dataset.orgName).name = input.value.trim(); });
+    app.querySelectorAll('[data-nominee]').forEach(input => {
       const o = next.organizations.find(o => o.id === input.dataset.nominee);
       if (o) o.nominee = input.value || null;
     });
@@ -1305,80 +1915,78 @@
     }
     const empty = next.organizations.find(o => !next.teams.some(t => t.orgId === o.id));
     if (empty) throw new Error(tr('Team zuordnen oder unbenutzte Firma entfernen: ', 'Assign a team or remove the unused company: ') + empty.name);
-    const unassigned = next.organizations.find(o => !next.teams.some(t => t.id === o.nominee && t.orgId === o.id));
-    if (unassigned) throw new Error(tr('In Schritt 1 das Team für den Firmenpokal wählen für: ', 'Choose the company trophy team in step 1 for: ') + unassigned.name);
+    const unassigned = F.rankingMode(next) === 'nominee' && next.organizations.find(o => !next.teams.some(t => t.id === o.nominee && t.orgId === o.id));
+    if (unassigned) throw new Error(tr('Unter „Firmen & Teams“ das Team für den Firmenpokal wählen für: ', 'Under “Companies & teams”, choose the company trophy team for: ') + unassigned.name);
     if (!(next.formatVersion >= 3) && next.teams.some(t => t.roster.length < 2)) {
       throw new Error(tr('Mindestens zwei Spieler:innen-Namen je Team für dieses ältere Planformat erforderlich.', 'At least two player names per team required for this older plan format.'));
     }
   }
   function reopenDraft(next) {
     if (event.startedAt || Object.keys(event.results).length) throw new Error('Started event frozen / Gestartete Veranstaltung eingefroren');
-    if (event.status !== 'draft' && !confirm(tr('Vorläufigen Gruppenplan verwerfen? Teams, Spieler:innen und Teamauswahl für den Firmenpokal bleiben erhalten.', 'Discard preliminary pool schedule? Teams, players and company trophy team choices are retained.'))) return null;
+    if (event.status !== 'draft' && !confirm(tr('Noch nicht gestarteten Spielplan mit Paarungen, Feldern und Startzeiten entfernen? Firmen, Teams, Spieler:innen und Teamauswahl für den Firmenpokal bleiben erhalten. Danach den Gruppenplan neu erstellen.',
+      'Remove the unstarted schedule, including pairings, courts and start times? Companies, teams, players and company trophy team choices are retained. Rebuild the group schedule afterwards.'))) return null;
     next.status = 'draft'; next.matches = []; next.pools = []; next.finalPools = []; next.drawOrder = [];
     return next;
   }
   function editedProgress() {
     const next = copyDraftFromForm();
     if (event.status !== 'draft' && (JSON.stringify(next.config) !== JSON.stringify(event.config) ||
-        next.organizations.some(o => o.nominee === null))) return reopenDraft(next);
+        F.rankingMode(next) === 'nominee' && next.organizations.some(o => o.nominee === null))) return reopenDraft(next);
     return next;
   }
-  function showSetupStep(step) {
-    setupStep = step;
-    app.querySelectorAll('[data-panel]').forEach(panel => { panel.hidden = Number(panel.dataset.panel) !== step; });
-    app.querySelectorAll('.fc-substeps [data-step]').forEach(button => {
-      if (Number(button.dataset.step) === step) button.setAttribute('aria-current', 'step');
-      else button.removeAttribute('aria-current');
-    });
-    const panel = app.querySelector('[data-panel="' + step + '"]');
-    if (panel) { panel.setAttribute('tabindex', '-1'); panel.focus(); }
+  function draftForPhaseChange() {
+    // Leaving the editor saves the draft; invalid rule values stay in the form and do not block team edits.
+    if (!invalidSetupSettings()) { setupSettingsDraft = null; return editedProgress(); }
+    setupSettingsDraft = captureSetupSettings();
+    const next = copyDraftFromForm();
+    next.config = event.config;
+    next.title = event.title;
+    if (!next.replans.length) next.fieldLimit = F.courtCapacity(next);
+    return next;
+  }
+  async function switchPhase(target, focus, saveDraft) {
+    const leavingTools = phase === 'tools' && target !== 'tools';
+    const editing = !readOnly && !event.startedAt && EDITOR_PHASES.indexOf(phase) >= 0;
+    if (editing && (saveDraft || EDITOR_PHASES.indexOf(target) < 0)) {
+      const invalid = invalidSetupSettings();
+      const next = draftForPhaseChange();
+      if (!next) return false;
+      if (target === 'tools') toolsReturn = phase;
+      phase = target;
+      showPhase(target, false);
+      await save(next);
+      if (invalid) notify(tr('Firmen und Teams gespeichert. Ungültige Regeleingaben sind noch nicht gespeichert.', 'Companies and teams saved. Invalid rule settings are still unsaved.'), true);
+    } else if (editing) {
+      // Valid unsaved rules travel with the next draft save; only invalid ones need a render-proof copy.
+      if (phase === 'configuration' && invalidSetupSettings()) setupSettingsDraft = captureSetupSettings();
+      showPhase(target, false);
+    } else showPhase(target, false);
+    if (leavingTools) document.getElementById('fc-tools-open').focus();
+    else if (focus) document.getElementById('fc-phase-' + target + '-heading').focus();
+    return true;
   }
   async function goStep(step, forward) {
-    if (step === 2) step = 1;
-    if (step === 1 && setupStep === 3) {
-      setupSettingsDraft = captureSetupSettings();
-      showSetupStep(1);
-      return;
-    }
-    let next = copyDraftFromForm();
-    if (step === 3 && setupStep !== 3) {
-      readyTeams(next);
-      if (invalidSetupSettings()) {
-        setupSettingsDraft = captureSetupSettings();
-        if (event.status !== 'draft') {
-          showSetupStep(3);
-          notify(tr('Ungültige Regeleingaben wurden nicht gespeichert. Der bisherige Plan bleibt unverändert.', 'Invalid rule settings were not saved. The existing schedule remains unchanged.'), true);
-          return;
-        }
-        next.config = event.config;
-        next.title = event.title;
-        if (!next.replans.length) next.fieldLimit = Math.min(event.config.fields, event.config.referees);
-        await save(next, tr('Firmen und Teams gespeichert. Ungültige Regeleingaben sind noch nicht gespeichert.', 'Companies and teams saved. Invalid rule settings are still unsaved.'));
-        showSetupStep(3);
-        notify(tr('Firmen und Teams gespeichert. Ungültige Regeleingaben sind noch nicht gespeichert.', 'Companies and teams saved. Invalid rule settings are still unsaved.'), true);
-        return;
-      }
-      setupSettingsDraft = null;
-    } else next = editedProgress();
-    if (!next) return;
-    if (forward && step === 2 && !next.organizations.length) throw new Error(tr('Zuerst eine Firma anlegen.', 'Create a company first.'));
-    setupStep = step;
-    await save(next);
-    const panel = app.querySelector('[data-panel="' + step + '"]');
-    if (panel) { panel.setAttribute('tabindex', '-1'); panel.focus(); }
+    await switchPhase(step === 3 ? 'configuration' : 'teams', true, forward);
   }
   function bind() {
-    app.querySelectorAll('[data-phase]').forEach(node => {
-      node.onclick = () => action(async function () {
-        if (!readOnly && !event.startedAt && phase === 'configuration') {
-          const next = editedProgress();
-          if (!next) return;
-          await save(next);
-        }
-        const target = node.dataset.phase, leavingTools = phase === 'tools' && target !== 'tools';
-        showPhase(target, !leavingTools);
-        if (leavingTools) document.getElementById('fc-tools-open').focus();
+    const participantShare = document.getElementById('fc-participant-share-form');
+    if (participantShare) participantShare.onsubmit = ev => {
+      ev.preventDefault();
+      action(async function () {
+        await Server.sharing(binding, { participantToken: Server.token() });
+        render(); notify(tr('Teilnehmer:innen-Link erneuert.', 'Participant link rotated.'));
       });
+    };
+    const adminShare = document.getElementById('fc-admin-share-form');
+    if (adminShare) adminShare.onsubmit = ev => {
+      ev.preventDefault();
+      action(async function () {
+        await Server.sharing(binding, { adminShareToken: Server.token(), password: new FormData(adminShare).get('password') });
+        render(); notify(tr('Adminlink und Passwort gesetzt.', 'Admin link and password set.'));
+      });
+    };
+    app.querySelectorAll('[data-phase]').forEach(node => {
+      node.onclick = () => action(() => switchPhase(node.dataset.phase, true, false));
     });
     const toolsPanel = document.getElementById('fc-phase-tools');
     if (toolsPanel) toolsPanel.onkeydown = function (keyEvent) {
@@ -1420,14 +2028,16 @@
       };
     });
     const form = document.getElementById('fc-edit');
+    [form, document.getElementById('fc-teams-edit')].forEach(node => {
+      if (node) node.onsubmit = ev => {
+        ev.preventDefault();
+        action(() => runAction('save-setup'));
+      };
+    });
     if (form) {
       ['input', 'change'].forEach(type => form.addEventListener(type, updateSetupPreview));
-      form.onsubmit = ev => {
-        ev.preventDefault();
-        action(async () => { const next = editedProgress(); if (next) await save(next); });
-      };
-      updateSetupPreview();
     }
+    updateSetupPreview();
     app.querySelectorAll('[data-step], [data-next]').forEach(node => {
       node.onclick = () => action(() => goStep(Number(node.dataset.step || node.dataset.next), !!node.dataset.next));
     });
@@ -1469,8 +2079,33 @@
     });
     app.querySelectorAll('[data-score]').forEach(form => {
       const a = form.elements.namedItem('a'), b = form.elements.namedItem('b'), draw = form.elements.namedItem('drawWinner');
+      const error = form.querySelector('.fc-score-error');
+      const showScoreError = function (field, text) {
+        const match = event.matches.find(m => m.id === form.dataset.score);
+        error.textContent = tr('Spielrunde ', 'Time slot ') + (match.wave + 1) + ' · ' + tr('Feld ', 'Court ') + match.field + ': ' + text;
+        error.hidden = false;
+        if (field) {
+          revealTarget(field);
+          field.setAttribute('aria-invalid', 'true');
+          field.focus();
+        }
+        notify(error.textContent, true);
+      };
       const updateDraw = function () {
+        error.hidden = true; error.textContent = '';
+        [a, b].forEach(input => {
+          input.removeAttribute('aria-invalid');
+          input.setCustomValidity('');
+          input.setCustomValidity(input.validity.badInput ? tr('Ganze Ballpunkte von 0 bis 999 eingeben.', 'Enter whole ball points from 0 to 999.') :
+            input.value === '' ? tr('Ballpunkte für beide Teams eingeben; 0 ist gültig.', 'Enter ball points for both teams; 0 is valid.') :
+              !Number.isInteger(input.valueAsNumber) || input.valueAsNumber < 0 || input.valueAsNumber > 999 ?
+                tr('Ganze Ballpunkte von 0 bis 999 eingeben.', 'Enter whole ball points from 0 to 999.') : '');
+        });
+        const equal = a.value !== '' && b.value !== '' && a.validity.valid && b.validity.valid && Number(a.value) === Number(b.value);
+        if (equal && F.tiePolicy(event) === 'lead') b.setCustomValidity(
+          tr('Bei Zeitgleichstand bis zur ersten Führung weiterspielen und den ungleichen Endstand erfassen.', 'When tied at time, continue until the first lead and enter the unequal final score.'));
         if (!draw) return;
+        draw.removeAttribute('aria-invalid');
         const tied = a.value !== '' && b.value !== '' && a.validity.valid && b.validity.valid && Number(a.value) === Number(b.value);
         draw.parentElement.hidden = !tied;
         draw.required = tied;
@@ -1491,13 +2126,15 @@
         ev.preventDefault();
         action(async function () {
           updateDraw();
-          if (!form.reportValidity()) {
+          if (!form.checkValidity()) {
             const invalid = form.querySelector(':invalid');
-            if (invalid) notify(invalid.validationMessage, true);
+            if (invalid) showScoreError(invalid, invalid.validationMessage);
             return;
           }
           const data = new FormData(form), id = form.dataset.score;
-          const next = F.score(event, id, Number(data.get('a')), Number(data.get('b')), data.get('drawWinner'));
+          let next;
+          try { next = F.score(event, id, a.valueAsNumber, b.valueAsNumber, data.get('drawWinner')); }
+          catch (failure) { showScoreError(null, failure.message); return; }
           lastScored = id;
           await save(next);
           const item = app.querySelector('[data-match="' + id + '"]');
@@ -1506,6 +2143,15 @@
       };
     });
     app.querySelectorAll('[data-outcome]').forEach(form => {
+      const forcedWinner = form.querySelector('select[name=winner][data-feeds-later]');
+      if (forcedWinner) {
+        const syncWinner = () => {
+          const other = Array.from(form.elements.absent.options).find(o => o.value && o.value !== form.elements.absent.value);
+          forcedWinner.value = form.elements.absent.value && other ? other.value : '';
+        };
+        form.elements.absent.addEventListener('change', syncWinner);
+        syncWinner();
+      }
       form.onsubmit = ev => {
         ev.preventDefault();
         action(async function () {
@@ -1514,7 +2160,7 @@
           const typeText = type === 'withdrawal' ? tr('Rückzug aus dem Wettbewerb', 'withdrawal from the competition') :
             tr('Nichtantreten nur in dieser Begegnung', 'nonappearance in this match only');
           const rankingText = winner ?
-            tr('Das gegnerische Team erhält 2 Wertungspunkte; es wird kein Ball-Spielstand erfunden.', 'The opposing team gets 2 standings points; no ball score will be invented.') :
+            tr('Das gegnerische Team erhält ', 'The opposing team gets ') + F.winPoints(event) + tr(' Tabellenpunkt(e); es wird kein Ball-Spielstand erfunden.', ' standings point(s); no ball score will be invented.') :
             tr('Die Begegnung wird ohne Wertungspunkte aufgehoben.', 'The match is voided with no standings points.');
           if (!confirm(typeText + '. ' + rankingText + ' ' +
               tr('Diese Entscheidung bleibt getrennt von gespielten Ergebnissen gespeichert.', 'This organizer decision is stored separately from played scores.'))) return;
@@ -1555,6 +2201,12 @@
         } else target.focus();
       };
     });
+    app.querySelectorAll('.fc-wave-head').forEach(summary => {
+      summary.onclick = function () {
+        const group = summary.parentElement;
+        if (!document.getElementById('fc-search').value.trim()) waveOpenOverride.set(Number(group.dataset.wave), !group.open);
+      };
+    });
     const waveSelect = document.getElementById('fc-wave');
     if (waveSelect) {
       const updateWaveReadiness = function () {
@@ -1567,9 +2219,14 @@
     document.getElementById('fc-search').oninput = search;
     app.querySelectorAll('[data-action]').forEach(node => {
       node.onclick = function () {
+        if (node.dataset.action === 'save-setup') return;
         if (node.dataset.action === 'print') {
-          app.querySelectorAll('.fc-fixture').forEach(el => { el.hidden = false; });
+          app.querySelectorAll('.fc-fixture, .fc-wave-group').forEach(el => { el.hidden = false; });
           window.print(); search(); return;
+        }
+        if (node.dataset.action === 'start-wave' && node.dataset.wave != null) {
+          const select = document.getElementById('fc-wave');
+          if (select) select.value = node.dataset.wave;
         }
         if (!readOnly) action(() => runAction(node.dataset.action, node.dataset.company, node.dataset.team));
       };
@@ -1581,12 +2238,17 @@
     const ids = event.teams.filter(t => (t.name + ' ' + orgName(t.orgId)).toLocaleLowerCase().indexOf(q) >= 0).map(t => t.id);
     const matches = event.matches.filter(m => {
       const a = F.resolve(event, m.a), b = F.resolve(event, m.b);
-      return !q || ids.indexOf(a) >= 0 || ids.indexOf(b) >= 0;
+      return !q || ids.indexOf(a) >= 0 || ids.indexOf(b) >= 0 || ids.indexOf(m.refereeTeam) >= 0;
     });
     app.querySelectorAll('.fc-fixture').forEach(el => { el.hidden = !matches.some(m => m.id === el.dataset.match); });
+    app.querySelectorAll('.fc-wave-group').forEach(group => {
+      const wave = Number(group.dataset.wave);
+      group.hidden = !!q && !group.querySelector('.fc-fixture:not([hidden])');
+      group.open = q ? !group.hidden : (waveOpenOverride.has(wave) ? waveOpenOverride.get(wave) : group.dataset.defaultOpen === '1');
+    });
     const next = matches.find(m => !event.results[m.id] && !event.outcomes[m.id] && F.resolve(event, m.a) && F.resolve(event, m.b));
     document.getElementById('fc-next').innerHTML = q ?
-      '<p class="fc-next">' + (next ? tr('Nächstes offenes Spiel: ', 'Next pending match: ') + F.clock(next.startMin) + ' · ' + tr('Feld ', 'Court ') + next.field + ' · ' + matchLabel(next) :
+      '<p class="fc-next">' + (next ? tr('Nächstes offenes Spiel: ', 'Next pending match: ') + F.clock(next.startMin) + ' · ' + tr('Feld ', 'Court ') + next.field + ' · ' + matchLabel(next) + ' · ' + refereeLabel(next) :
         tr('Kein offenes, bereits zugeordnetes Spiel. Finalgegner können noch offen sein.', 'No pending, assigned match. Final opponents may still be unresolved.')) + '</p>' : '';
     const summary = document.getElementById('fc-search-summary');
     if (summary) summary.textContent = q ? matches.length + tr(' Spiele gefunden; gedruckt wird immer der Gesamtplan.', ' matches found; print always includes the full schedule.') : '';
@@ -1617,7 +2279,7 @@
       o.nominee = candidates.length === 1 ? candidates[0].id : null;
     });
     try { readyTeams(next); } catch (error) {
-      throw new Error(error.message + ' ' + tr('Nichts wurde geändert; bitte zuerst unter „Konfiguration“ anpassen.', 'Nothing was changed; adjust under “Configuration” first.'));
+      throw new Error(error.message + ' ' + tr('Nichts wurde geändert; bitte zuerst unter „Firmen & Teams“ anpassen.', 'Nothing was changed; adjust under “Companies & teams” first.'));
     }
     const built = F.build(next);
     if (!confirm(tr('Abwesende Teams aus der Anmeldung entfernen und Gruppenplan neu erstellen?', 'Remove absent teams from registration and rebuild the pool schedule?') + '\n' +
@@ -1627,14 +2289,21 @@
     await save(built, tr('Teams entfernt und Gruppenplan neu erstellt: ', 'Teams removed and pool schedule rebuilt: ') + built.matches.length + tr(' Spiele.', ' matches.'));
   }
   async function runAction(name, companyId, teamId) {
-    if (name === 'save-setup') {
+    if (name === 'edit-config') {
+      await switchPhase('configuration', true, false);
+      const title = app.querySelector('#fc-edit [name="title"]');
+      if (title) title.focus();
+      else document.getElementById('fc-config-actions').focus();
+    } else if (['reset-points', 'reset-config', 'restart-edit'].indexOf(name) >= 0) {
+      await restartConfiguration(name);
+    } else if (name === 'save-setup') {
       let next;
       if (invalidSetupSettings()) {
         setupSettingsDraft = captureSetupSettings();
         next = copyDraftFromForm();
         next.config = event.config;
         next.title = event.title;
-        if (!next.replans.length) next.fieldLimit = Math.min(event.config.fields, event.config.referees);
+        if (!next.replans.length) next.fieldLimit = F.courtCapacity(next);
         await save(next, tr('Entwurf gespeichert. Ungültige Regeleingaben sind noch nicht gespeichert.', 'Draft saved. Invalid rule settings are still unsaved.'));
         notify(tr('Entwurf gespeichert. Ungültige Regeleingaben sind noch nicht gespeichert.', 'Draft saved. Invalid rule settings are still unsaved.'), true);
       } else {
@@ -1645,6 +2314,25 @@
         }
       }
     } else if (name === 'build') {
+      if (invalidSetupSettings()) {
+        const form = document.getElementById('fc-edit');
+        const invalidFields = form && Array.from(form.querySelectorAll(
+          '[name="title"], [name="start"], [name="end"], [name="minutes"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="mixed"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'
+        )).filter(field => !field.validity.valid);
+        const invalid = invalidFields && (invalidFields.find(field => field.validationMessage) || invalidFields[0]);
+        if (invalid) {
+          invalid.focus();
+          notify(invalid.validationMessage || tr('Bitte prüfe die ungültigen Regeleingaben.', 'Please review the invalid rule settings.'), true);
+        }
+        return;
+      }
+      if (event.teams.length === 2 && config(document.getElementById('fc-edit')).config.refereeMode === 'teams') {
+        updateSetupPreview();
+        const control = document.getElementById('fc-setup-advice').querySelector('button');
+        if (control) control.click();
+        notify(document.getElementById('fc-setup-preview-status').textContent, true);
+        return;
+      }
       const next = copyDraftFromForm(); readyTeams(next);
       const draft = reopenDraft(next);
       if (draft) {
@@ -1709,6 +2397,7 @@
         const details = input.closest('.fc-company-teams');
         if (details) details.open = true;
         input.focus();
+        input.select();
       }
     } else if (name === 'remove-absent') {
       await removeAbsentTeams();
@@ -1719,8 +2408,14 @@
       const wave = Number(document.getElementById('fc-wave').value);
       const matches = event.matches.filter(m => m.wave === wave && !event.results[m.id] && !event.outcomes[m.id]);
       if (matches.some(m => !F.resolve(event, m.a) || !F.resolve(event, m.b))) throw new Error(tr('Spielrunde enthält noch nicht zugeordnete Spiele.', 'Time slot contains unassigned matches.'));
-      if (!confirm(tr('Zentral jetzt starten? Einstellungen und Teamauswahl für den Firmenpokal werden gesperrt. Timer ist nur eine lokale Uhrhilfe.', 'Start centrally now? Settings and the team choice for the company trophy will be locked. Timer is only a local clock aid.'))) return;
-      await save(F.beginWave(event, wave, new Date().toISOString()));
+      F.beginWave(event, wave, new Date().toISOString());
+      if (!confirm(tr('Spielrunde ' + (wave + 1) + ' jetzt zentral starten? Einstellungen und Teamauswahl für den Firmenpokal werden gesperrt. Timer ist nur eine lokale Uhrhilfe.', 'Start time slot ' + (wave + 1) + ' centrally now? Settings and the team choice for the company trophy will be locked. Timer is only a local clock aid.'))) return;
+      const started = F.beginWave(event, wave, new Date().toISOString());
+      // A new running slot supersedes the "just scored" focus, so completed slots fold back to one line.
+      lastScored = null;
+      await save(started);
+      const firstInput = app.querySelector('#fc-wave-group-' + wave + ' .fc-result input');
+      if (firstInput) { firstInput.scrollIntoView({ block: 'center' }); firstInput.focus(); }
     } else if (name === 'replan') {
       const fromWave = Number(document.getElementById('fc-replan-wave').value);
       const delay = Number(document.getElementById('fc-replan-delay').value);
@@ -1744,15 +2439,20 @@
       await restore(await Store.previous(event.id));
     } else if (name === 'share') {
       if (!document.getElementById('fc-share-consent').checked) throw new Error(tr('Öffentliches Teilen zuerst bestätigen.', 'Confirm public sharing first.'));
-      binding = await Server.publish(event);
+      binding = await Server.publish(event, { publicRead: false });
       render();
       notify(tr('Dauerhafter Live-Link veröffentlicht. Änderungen werden lokal gesichert und mit Serverrevision synchronisiert.', 'Persistent live link published. Changes are saved locally and synchronized with server revisions.'));
-    } else if (name === 'editor-link') {
-      if (!binding || !binding.id) throw new Error(tr('Zuerst einen Live-Link veröffentlichen.', 'Publish a live link first.'));
-      if (!confirm(tr('Dieser geheime Link gewährt Bearbeitungszugriff einschließlich privater Kaderdaten. Nur vertrauenswürdigen Mitveranstalter:innen separat übermitteln; es gibt keine Konten oder individuellen Rollen.', 'This secret link grants editing access, including private roster data. Share it separately only with trusted co-organizers; there are no accounts or individual roles.'))) return;
-      const output = document.getElementById('fc-editor-link-output');
-      output.hidden = false;
-      document.getElementById('fc-editor-url').value = Server.editorUrl(binding.id, binding.token, location.href, en ? 'en' : 'de');
+    } else if (name === 'revoke-participant' || name === 'revoke-admin') {
+      await Server.sharing(binding, name === 'revoke-participant' ? { revokeParticipant: true } : { revokeAdmin: true });
+      render(); notify(tr('Zugriff widerrufen.', 'Access revoked.'));
+    } else if (name === 'toggle-public') {
+      await Server.sharing(binding, { publicRead: !(binding.access && binding.access.publicRead) });
+      render(); notify(tr('Öffentlicher Zugriff aktualisiert.', 'Public access updated.'));
+    } else if (name === 'admin-logout') {
+      await Server.logout(binding);
+      event = null;
+      adminUnlock(binding.id, binding.adminShareToken, binding);
+      notify(tr('Adminzugriff gesperrt.', 'Admin access locked.'));
     } else if (name === 'server-reload') {
       await reloadServerConflict();
     }
@@ -1782,7 +2482,7 @@
   function updateCountdown() {
     const node = document.getElementById('fc-countdown');
     if (!node || !event) return;
-    if (!event.liveWave) { node.textContent = tr('Noch kein tatsächlicher Start.', 'No actual start yet.'); return; }
+    if (!event.liveWave) { node.textContent = readOnly ? tr('Noch kein tatsächlicher Start.', 'No actual start yet.') : ''; return; }
     const elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(event.liveWave.startedAt)) / 1000));
     const play = event.config.minutes * 60, slot = (event.config.minutes + event.config.change) * 60;
     const remain = Math.max(0, (elapsed < play ? play : slot) - elapsed);
@@ -1799,7 +2499,7 @@
   document.body.insertBefore(header, document.body.firstChild);
   window.addEventListener('beforeprint', function () {
     app.querySelectorAll('details').forEach(node => { node.dataset.printOpen = node.open ? '1' : '0'; node.open = true; });
-    app.querySelectorAll('.fc-fixture').forEach(node => { node.hidden = false; });
+    app.querySelectorAll('.fc-fixture, .fc-wave-group').forEach(node => { node.hidden = false; });
   });
   window.addEventListener('hashchange', followAnchor);
   window.addEventListener('afterprint', function () {
@@ -1811,21 +2511,35 @@
       if (disk && disk.revision !== event.revision) notify(tr('Anderer Tab hat diese Veranstaltung gespeichert. Neu laden; ungespeicherte Eingaben zuerst sichern.', 'Another tab saved this event. Reload; preserve unsaved entries first.'));
     }, function (error) { console.error('Firmencup:', error); notify(error.message, true); });
     if (livePublic) pollPublic();
-    else if (!readOnly && event) pollEditor();
+    else if ((!readOnly || participant) && event) pollEditor();
   });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
       if (livePublic) pollPublic();
-      else if (!readOnly && event) pollEditor();
+      else if ((!readOnly || participant) && event) pollEditor();
     }
   });
   setInterval(updateCountdown, 1000);
   setInterval(function () {
     if (livePublic) pollPublic();
-    else if (!readOnly && event) pollEditor();
+    else if ((!readOnly || participant) && event) pollEditor();
   }, 15000);
   action(async function () {
-    if (readOnly) {
+    if (linkAccess && params.has('server')) {
+      if (linkAccess.role === 'admin') adminUnlock(params.get('server'), linkAccess.token);
+      else await openAccess(params.get('server'), linkAccess.token, 'participant');
+    } else if (params.has('local') && !readOnly) {
+      // Public/snapshot routes must never open a private local record, even when ?local= is appended.
+      binding = await Server.load(params.get('local'));
+      if (binding && binding.role === 'admin' && !binding.token) {
+        adminUnlock(binding.id, binding.adminShareToken, binding);
+        return;
+      }
+      event = await Store.load(params.get('local'));
+      if (!event) throw new Error('Local event not found / Lokale Veranstaltung nicht gefunden');
+      participant = !!(binding && binding.role === 'participant'); readOnly = participant;
+      render();
+    } else if (readOnly) {
       if (legacySnapshot) {
         const snapshot = Share.decode(location.hash.slice(10));
         if (params.get('eventId') !== snapshot.event.id) throw new Error('Event ID mismatch / Veranstaltungs-ID stimmt nicht');
@@ -1836,11 +2550,6 @@
         event = F.validate(remote.event, { publicSnapshot: true });
         livePublic = true; liveRevision = remote.revision; liveEtag = remote.etag;
       }
-      render();
-    } else if (params.has('local')) {
-      event = await Store.load(params.get('local'));
-      if (!event) throw new Error('Local event not found / Lokale Veranstaltung nicht gefunden');
-      binding = await Server.load(event.id);
       render();
     } else if (capability && params.has('server')) {
       const serverId = params.get('server');
@@ -1859,7 +2568,8 @@
         event = await Store.replace(incoming);
       } else if (existing) event = existing;
       else { incoming.revision = 0; event = await Store.save(incoming); }
-      binding = await Server.adopt(event.id, serverId, capability, remote.revision, event);
+      binding = await Server.adopt(event.id, serverId, capability, remote.revision, event, 'owner');
+      binding = await Server.rememberAccess(binding, remote.access);
       history.replaceState(null, '', '?local=' + encodeURIComponent(event.id) + '&lang=' + (en ? 'en' : 'de'));
       render();
       notify(tr('Bearbeitungsrecht geladen. Dieses Browsergerät kann nun synchronisieren.', 'Editor capability loaded. This browser can now synchronize.'));
