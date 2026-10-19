@@ -31,6 +31,11 @@
     if (formatVersion(e) < CURRENT_FORMAT) return 8;
     return e.teams.length <= 8 ? 0 : e.teams.length === 9 ? 4 : 8;
   }
+  function finalPoolSizes(e) {
+    const rest = e.teams.length - cupSize(e);
+    const count = !cupSize(e) ? 1 : formatVersion(e) === LEGACY_FORMAT ? Math.round(rest / 4) : Math.ceil(rest / 5);
+    return Array.from({ length: count }, (_, i) => Math.floor(rest / count) + (i < rest % count ? 1 : 0));
+  }
   function time(s) {
     check(typeof s === 'string' && /^\d{2}:\d{2}$/.test(s) && +s.slice(0, 2) < 24 && +s.slice(3) < 60, 'Invalid start time / Startzeit');
     return +s.slice(0, 2) * 60 + +s.slice(3);
@@ -339,25 +344,6 @@
     next.status = 'groups';
     return next;
   }
-  function decideOutcome(e, matchId, type, absentTeam, winnerTeam, note, now) {
-    const m = e.matches.find(item => item.id === matchId);
-    check(m && ['nonappearance', 'withdrawal'].indexOf(type) >= 0, 'Invalid match decision / Ungültige Spielentscheidung');
-    check(!(e.status === 'finals' && m.phase === 'group'), 'Group decisions frozen by final draw / Gruppenentscheidungen nach Auslosung eingefroren');
-    const a = resolve(e, m.a), b = resolve(e, m.b);
-    check(a && b && (absentTeam === a || absentTeam === b), 'Both teams must be resolved and the absent team must be selected / Beide Teams müssen feststehen und das abwesende Team gewählt sein');
-    check(!e.results[matchId] && !e.outcomes[matchId], 'A played result or decision already exists / Spielergebnis oder Entscheidung bereits erfasst');
-    check(!hasPlayedDescendant(e, matchId), 'Played downstream match: decision frozen / Gespielte Folgerunde: Entscheidung eingefroren');
-    check(winnerTeam === null || winnerTeam === (absentTeam === a ? b : a), 'Only the opposing team may receive the organizer-declared win / Nur das gegnerische Team darf den ausdrücklich zugesprochenen Sieg erhalten');
-    check(typeof note === 'string' && note.length <= 300, 'Decision note too long / Entscheidungsnotiz zu lang');
-    now = now || new Date().toISOString();
-    check(typeof now === 'string' && Number.isFinite(Date.parse(now)), 'Invalid decision timestamp / Ungültiger Entscheidungszeitpunkt');
-    const next = clone(e);
-    next.outcomes[matchId] = { type: type, absentTeam: absentTeam, winnerTeam: winnerTeam,
-      note: note.trim(), at: now, confirmed: true };
-    if (type === 'withdrawal') next.withdrawals[absentTeam] = { note: note.trim(), at: now };
-    if (!next.startedAt) next.startedAt = now;
-    return next;
-  }
   function resolve(e, ref) {
     if (typeof ref === 'string') return ref;
     const m = e.matches.find(m => m.id === ref.match), r = e.results[ref.match];
@@ -430,12 +416,12 @@
     });
     // Small events replay one complete pool; larger events use contiguous seed bands without byes.
     const rest = seeds.slice(size).map(r => r.id);
-    const count = !size ? 1 : formatVersion(next) === LEGACY_FORMAT ? Math.round(rest.length / 4) : Math.ceil(rest.length / 5);
+    const sizes = finalPoolSizes(next);
     next.finalPools = [];
     let offset = 0;
     const placementLists = [];
-    for (let i = 0; i < count; i++) {
-      const size = Math.floor(rest.length / count) + (i < rest.length % count ? 1 : 0);
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
       const ids = rest.slice(offset, offset + size), name = 'P' + (i + 1);
       next.finalPools.push({ id: name, teams: ids, firstRank: top.length + 1 + offset });
       placementLists.push(rr(ids, name, 'placement'));
@@ -683,17 +669,53 @@
     });
     return rows;
   }
+  function gameCounts(e) {
+    const rows = e.teams.map(t => ({ id: t.id, scheduled: 0, played: 0 }));
+    const byId = {}, cupLevels = {}, depth = {};
+    rows.forEach(row => { byId[row.id] = row; cupLevels[row.id] = new Set(); });
+    function level(m) {
+      if (depth[m.id] != null) return depth[m.id];
+      depth[m.id] = 1 + Math.max.apply(null, [m.a, m.b].map(ref =>
+        typeof ref === 'string' ? 0 : level(e.matches.find(item => item.id === ref.match))));
+      return depth[m.id];
+    }
+    e.matches.forEach(m => {
+      const ids = Array.from(new Set(possible(m.a, e.matches).concat(possible(m.b, e.matches))));
+      ids.forEach(id => {
+        // The cup plays out every place: each entrant has one fixture per bracket level,
+        // not every potential winner/loser fixture on that level.
+        if (m.phase === 'cup') cupLevels[id].add(level(m));
+        else byId[id].scheduled++;
+      });
+      if (e.results[m.id]) [resolve(e, m.a), resolve(e, m.b)].forEach(id => {
+        if (byId[id]) byId[id].played++;
+      });
+    });
+    rows.forEach(row => { row.scheduled += cupLevels[row.id].size; });
+    function range(key) {
+      const values = rows.map(row => row[key]);
+      return { min: values.length ? Math.min.apply(null, values) : 0,
+        max: values.length ? Math.max.apply(null, values) : 0 };
+    }
+    const scheduled = range('scheduled'), played = range('played');
+    let final = null;
+    if (e.status === 'finals') final = { min: scheduled.min, max: scheduled.max, exact: true };
+    else if (e.status === 'groups') {
+      const additions = finalPoolSizes(e).map(size => size - 1);
+      if (cupSize(e)) additions.push(Math.log(cupSize(e)) / Math.log(2));
+      // Before seeding, group size and final route are correlated. These are safe
+      // outer bounds, not a claim that either extreme is attained by the draw.
+      final = { min: scheduled.min + Math.min.apply(null, additions),
+        max: scheduled.max + Math.max.apply(null, additions), exact: false };
+    }
+    return { teams: rows, scheduled: scheduled, played: played, final: final };
+  }
   function estimate(e) {
     const slot = e.config.minutes + e.config.change;
     const waves = e.matches.length ? Math.max.apply(null, e.matches.map(m => m.wave)) + 1 : 0;
-    const groupGames = e.pools.length ? Math.min.apply(null, e.pools.map(p => p.length - 1)) : 0;
+    const games = gameCounts(e);
     function duration(plan) {
       return plan.matches.length ? Math.max.apply(null, plan.matches.map(m => m.startMin - time(plan.config.start) + slot)) : 0;
-    }
-    function finalMinimum(plan) {
-      const games = plan.finalPools.map(p => p.teams.length - 1);
-      if (cupSize(plan)) games.push(Math.log(cupSize(plan)) / Math.log(2));
-      return games.length ? Math.min.apply(null, games) : 0;
     }
     function phaseSpans(plan, projected) {
       return ['group', 'cup', 'placement'].map(phase => {
@@ -714,20 +736,19 @@
       projection.matches.forEach(m => { projection.results[m.id] = { a: tiePolicy(e) === 'lead' ? 1 : 0, b: 0, drawWinner: null }; });
       const projected = finals(projection, e.teams.map(t => t.id));
       projectedMinutes = duration(projected);
-      const finalGames = finalMinimum(projected);
       warnings.push('finals-pending');
       if (projectedMinutes > e.config.window) warnings.push('window');
       return { waves: waves, minutes: minutes, endMin: time(e.config.start) + minutes,
         projectedMinutes: projectedMinutes, projectedEndMin: time(e.config.start) + projectedMinutes,
-        minimumGames: groupGames + finalGames, warnings: warnings,
+        minimumGames: games.final.min, maximumGames: games.final.max, games: games, warnings: warnings,
         courts: Math.max.apply(null, e.matches.map(m => m.field).concat([0])),
         phases: phaseSpans(projected, true) };
     }
     if (projectedMinutes > e.config.window) warnings.push('window');
-    const finalGames = e.status === 'finals' ? finalMinimum(e) : 0;
     return { waves: waves, minutes: minutes, endMin: time(e.config.start) + minutes,
       projectedMinutes: projectedMinutes, projectedEndMin: time(e.config.start) + projectedMinutes,
-      minimumGames: groupGames + finalGames, warnings: warnings,
+      minimumGames: games.final ? games.final.min : 0, maximumGames: games.final ? games.final.max : 0,
+      games: games, warnings: warnings,
       courts: Math.max.apply(null, e.matches.map(m => m.field).concat([0])),
       phases: phaseSpans(e, false) };
   }
@@ -915,6 +936,7 @@
     validateReferees: validateReferees, refereeStats: refereeStats,
     create: create, build: build, finals: finals, score: score, resolve: resolve,
     table: table, standings: standings, placementSlots: placementSlots, organizationStandings: organizationStandings, estimate: estimate,
+    gameCounts: gameCounts,
     validate: validate, publicSnapshot: publicSnapshot, beginWave: beginWave, checkIn: checkIn,
     decideOutcome: decideOutcome, replan: replan, transferTeam: transferTeam, validateTransition: validateTransition,
     checkInStatus: checkInStatus, waveReadiness: waveReadiness, hasPlayedDescendant: hasPlayedDescendant,
