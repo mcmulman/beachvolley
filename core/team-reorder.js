@@ -19,6 +19,7 @@
   }
   function swap(state, a, b) {
     swapKeys(state.teamNames, a, b);
+    swapKeys(state.pairMembers, a, b);
     swapKeys(state.teamGender, a, b);
     swapKeys(state.config.levels, a, b);
     state.absent = (state.absent || []).map(function (id) { return id === a ? b : id === b ? a : id; });
@@ -66,6 +67,8 @@
   function refresh(container, controller) {
     var state = controller.options.get();
     var isLocked = locked(state);
+    var shuffle = root.document && root.document.getElementById('btnShuffle');
+    if (shuffle && shuffle.disabled !== (isLocked || controller.busy)) shuffle.disabled = isLocked || controller.busy;
     var inputs = Array.from(container.querySelectorAll('[data-name-input]'));
     inputs.forEach(function (input, index) {
       var row = input.closest('.nrow-del, .nrow2, td.rname') || input.parentElement;

@@ -180,7 +180,7 @@
         title: tournament.title || '',
         teams: tournament.config && tournament.config.teams,
         updated: tournament.updated || null,
-        filled: Object.keys(tournament.results || {}).length
+        filled: Object.keys(Object.assign({}, tournament.results, tournament.outcomes)).length + (tournament.stageDecisions || []).length
       };
     });
     return merged;

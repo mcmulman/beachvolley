@@ -174,15 +174,6 @@
       letter-spacing: -.025em;
     }
     .home-hero p:last-child { max-width: 680px; margin: 0; font-size: 16px; line-height: 1.55; }
-    .home-format-priority {
-      max-width: 1080px;
-      margin: -8px auto 16px;
-      padding: 0 20px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-    .home-format-priority a { color: var(--blue-dark); font-weight: 700; }
     @media (max-width: 560px) {
       .home-hero { padding: 36px 20px 34px; }
       .home-hero h1 { font-size: 34px; }
@@ -943,6 +934,9 @@
   <script src="core/turnier-native.js"></script>
   <script src="core/turnier-share.js"></script>
   <script src="core/turnier-qr-scan.js"></script>
+  <script src="core/turnier-core.js"></script>
+  <script src="core/turnier-outcome.js"></script>
+  <script src="core/turnier-stage.js"></script>
   <script src="core/turnier-store.js"></script>
   <script src="core/turnier-backup.js"></script>
   <link rel="stylesheet" href="core/compat-flexgap.css">
@@ -967,8 +961,8 @@
 <header class="home-hero">
   <div class="home-hero-inner">
     <p class="home-hero-kicker" data-i18n="home.hero.kicker">MULTISPORT · TURNIERPLANUNG</p>
-    <h1 data-i18n="home.hero.title">Turniere. Einfach geplant. Souverän durchgeführt.</h1>
-    <p data-i18n="home.subtitle">Vom ersten Spielplan bis zur Auswertung – übersichtlich planen, live verwalten und direkt drucken.</p>
+    <h1 data-i18n="home.hero.title">Turniere. Planen. Durchführen. Teilen.</h1>
+    <p data-i18n="home.subtitle">Vom ersten Spielplan bis zur Auswertung – übersichtlich planen, live verwalten oder eine Vorlage drucken.</p>
   </div>
 </header>
 
@@ -1071,8 +1065,8 @@
         <option value="flex" data-i18n="home.format.flex">Flex-Turnier</option>
         <option value="tandem" data-i18n="home.format.tandem">Tandem</option>
         <option value="elternkind" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</option>
-        <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften</option>
-        <option value="daviscup" data-i18n="home.format.daviscup">Davis Cup</option>
+        <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</option>
+        <option value="daviscup" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</option>
       </select>
     </label>
     <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
@@ -1091,13 +1085,12 @@
     <button class="filter-btn" aria-pressed="false" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
     <button class="filter-btn" aria-pressed="false" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
     <button class="filter-btn" aria-pressed="false" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</button>
+    <button class="filter-btn" aria-pressed="false" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</button>
   </div>
 </div>
 
 <main>
-
   <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
     <span id="sessions-undo-message"></span>
     <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer" data-i18n="home.sessions.undo">Rückgängig</button>
@@ -1189,22 +1182,14 @@
   </div>
 
   <div class="section-label" data-i18n="home.sheets.label">Turnierformate</div>
-  <p class="home-format-priority" data-i18n-html="home.formats.priority">
-    Internationale Wettbewerbsabläufe zuerst, danach ergänzende und lokale Varianten. Das ist keine weltweite Rangliste; die Ausschreibung des jeweiligen Turniers hat Vorrang.
-    <a href="https://www.fivb.com/wp-content/uploads/2024/05/2025_FIVB_BVB_Sport-Operations-Manual-Clean-March-11-2025.pdf" target="_blank" rel="noopener noreferrer">FIVB</a> ·
-    <a href="https://www.ittf.com/2026/03/29/everything-you-need-to-know-draw-sets-the-stage-for-ittf-mens-womens-world-cup-macao-2026/" target="_blank" rel="noopener noreferrer">ITTF</a>
-  </p>
-  <p style="font-size:12px;color:#666;margin:0 0 18px;letter-spacing:0.01em" data-i18n="home.sheets.features">
-    Alle Bögen: Teamnamen · Feldnamen · Zeiten konfigurierbar · Freilos/Ausfall · Druckvorlage A4 quer · Ergebnisse im Browser gespeichert
-  </p>
   <div class="grid">
 
     <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
-    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Die klassische Beach-Variante für größere Turniere: Teams werden in Gruppen eingeteilt, danach folgt eine Platzierungsrunde oder ein dynamischer Finalbaum. Ideal, wenn alle Teams möglichst viele Spiele bekommen und am Ende trotzdem eine klare Reihenfolge entsteht." data-sport-attr-variants="indoor tt">
+    <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Innerhalb jeder Gruppe spielt jedes Team einmal gegen jedes andere. Danach ist eine Überkreuz-Platzierungsrunde, eine K.-o.-Runde oder eine zweite Gruppenphase wählbar; auch Platzierungsblöcke oder nur die Gruppenphase sind möglich. Der gewählte Modus bestimmt, wer weiterspielt und wie die Plätze ermittelt werden." data-sport-attr-variants="indoor tt">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
-        <h2 data-i18n="home.card.gruppen.title">Gruppen + Finalrunde</h2>
-        <div class="sub" data-i18n="home.card.gruppen.sub">Gruppen, Platzierungsrunde, KO oder Hauptrunde – frei kombinierbar</div>
+        <h2 data-i18n="home.card.gruppen.title">Gruppenphase + Finalrunde</h2>
+        <div class="sub" data-i18n="home.card.gruppen.sub">Alle spielen in ihrer Gruppe gegeneinander · Finalmodus wählbar</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1215,7 +1200,7 @@
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.card.gruppen.feat1">5 Finalmodi wählbar</span>
-          <span class="feat" data-i18n="home.card.gruppen.feat2">Über-Kreuz-Setzung</span>
+          <span class="feat" data-i18n="home.card.gruppen.feat2">Überkreuz-Platzierung wählbar</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
           <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
@@ -1233,11 +1218,11 @@
     </div>
 
     <!-- ── Card: Jeder gegen Jeden ── -->
-    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-i18n-attr="data-desc:home.card.rr.desc" data-desc="Alle Teams spielen in festem Rundenplan gegeneinander. Einfach zu verwalten, ideal für 4–8 Teams. Niemand scheidet aus, und am Ende entsteht eine vollständige Rangliste mit allen Begegnungen." data-sport-attr-variants="tt">
+    <div class="card" data-tags="rr" data-doc="docs/format-jeder-gegen-jeden.html" data-i18n-attr="data-desc:home.card.rr.desc" data-desc="Jedes Team spielt nach einem vorab festgelegten Plan einmal gegen jedes andere; niemand scheidet aus. Bei ungerader Teamzahl gibt es pro Runde ein Freilos. Die Ergebnisse bestimmen die Gesamttabelle nach dem gewählten Wertungsprofil; Gleichstände können bestehen bleiben." data-sport-attr-variants="tt">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
-        <h2 data-i18n="home.format.rr">Jeder gegen Jeden</h2>
-        <div class="sub" data-i18n="home.card.rr.sub" data-sport-variants="pair player">Jedes Team spielt einmal gegen jedes andere · Plan wird live erzeugt</div>
+        <h2 data-i18n="home.card.rr.title">Jeder gegen jeden</h2>
+        <div class="sub" data-i18n="home.card.rr.sub" data-sport-variants="pair player">Jedes Team spielt einmal gegen jedes andere · fester Spielplan</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1261,11 +1246,11 @@
     </div>
 
     <!-- ── Card: Schweizer System ── -->
-    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-i18n-attr="data-desc:home.card.swiss.desc" data-desc="Dynamisch ohne festen Spielplan: Nach jeder Runde spielen Gleichrangige gegeneinander. Das macht das Format besonders effizient für viele Teams auf wenigen Feldern, weil es keine festen Paarungen voraussetzt und die Paarungen nach Laufstand und Niveau aufgeteilt werden." data-sport-attr-variants="tt">
+    <div class="card" data-tags="swiss" data-doc="docs/format-schweizer-system.html" data-i18n-attr="data-desc:home.card.swiss.desc" data-desc="Nach der Startrunde entstehen neue Paarungen nach dem aktuellen Tabellenstand; möglichst rangnahe Teams treffen aufeinander. Niemand scheidet aufgrund einer Niederlage aus, die Rundenzahl ist wählbar. Frühere Begegnungen werden nach Möglichkeit vermieden; Wiederholungen und bei ungerader Teamzahl Freilose sind möglich." data-sport-attr-variants="tt">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.tag.dynamic24" data-sport-variants="pair player">dynamisch · 4–24 Teams</span>
         <h2 data-i18n="home.format.swiss">Schweizer System</h2>
-        <div class="sub" data-i18n="home.card.swiss.sub" data-sport-variants="tt">Ab Runde 2 spielen Gleichrangige gegeneinander · Paarungen entstehen live</div>
+        <div class="sub" data-i18n="home.card.swiss.sub" data-sport-variants="tt">Ab Runde 2 Paarungen nach Zwischenstand · Wiederholungen möglich</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1275,7 +1260,7 @@
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-          <span class="feat" data-i18n="home.card.swiss.feat1">Keine Paarung wiederholt sich</span>
+          <span class="feat" data-i18n="home.card.swiss.feat1">Wiederholungen möglichst vermeiden</span>
           <span class="feat" data-i18n="home.feat.oddBye" data-sport-variants="pair player">Ungerade Teamzahl (Freilos)</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
           <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
@@ -1290,11 +1275,11 @@
 
 
     <!-- ── Card: KO-System (Ausscheidungsturnier, deshalb am Ende) ── -->
-    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-i18n-attr="data-desc:home.ko.desc" data-desc="Direktes Ausscheidungsturnier: Wer verliert, scheidet aus. Platz 3 wird im kleinen Finale ausgespielt, alle übrigen Teams teilen sich den Platzbereich ihrer letzten Runde. Ideal als Playoff-Phase nach einer Gruppenphase oder als kurzer, klarer Finaltag." data-sport-attr-variants="tt">
+    <div class="card" data-tags="ko bracket turnierbaum" data-doc="docs/format-ko-system.html" data-i18n-attr="data-desc:home.ko.desc" data-desc="Im K.-o.-Baum kommen die siegreichen Teams weiter; eine Niederlage beendet den Titelweg. Freie Startplätze werden mit Freilosen aufgefüllt. Die Halbfinalverlierenden können optional um Platz 3 spielen; andere Ausgeschiedene teilen sich einen Platzbereich nach der Runde ihrer Niederlage." data-sport-attr-variants="tt">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.ko.tag" data-sport-variants="pair player">dynamisch · 4–32 Teams</span>
-        <h2 data-i18n="home.ko.title">KO-System</h2>
-        <div class="sub" data-i18n="home.ko.sub">Turnierbaum mit Freilosen · ideal als Playoff</div>
+        <h2 data-i18n="home.ko.title">K.-o.-System</h2>
+        <div class="sub" data-i18n="home.ko.sub">Turnierbaum mit Freilosen · optionales Spiel um Platz 3</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1320,22 +1305,22 @@
     <!-- ── Card: Doppel-KO-System (eigener Filter-Tag "de", zusaetzlich
          "ko"/"bracket"/"turnierbaum", damit der Bogen auch beim generischen
          KO-Filter auftaucht – siehe applyCardFilters() weiter unten). ── -->
-    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-i18n-attr="data-desc:home.card.de.desc" data-sport-attr-variants="beach indoor tt" data-desc="Erst die zweite Niederlage bedeutet das Aus: Wer in der Gewinner-Runde verliert, bekommt in der Verlierer-Runde eine zweite Chance.">
+    <div class="card" data-tags="de ko bracket turnierbaum" data-doc="docs/format-double-elimination.html" data-i18n-attr="data-desc:home.card.de.desc" data-sport-attr-variants="beach indoor tt" data-desc="Nach der ersten Niederlage geht es in der Verliererrunde weiter; erst die zweite beendet den Titelweg. Im Grand Final treffen die siegreichen Teams beider Turnierbäume aufeinander. Gewinnt das Team aus der Verliererrunde, entscheidet ein weiteres Spiel zwischen denselben Teams (Reset).">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.de.tag" data-sport-variants="beach indoor pair player">dynamisch · 4–32 Teams</span>
-        <h2 data-i18n="home.card.de.title">Doppel-K.-o.-System</h2>
+        <h2 data-i18n="home.card.de.title" data-sport-variants="tt">Doppel-K.-o.-System</h2>
         <div class="sub" data-i18n="home.card.de.sub">Turnierbaum mit Verlierer-Runde · erst die 2. Niederlage scheidet aus</div>
       </div>
       <div class="card-body">
         <div class="stats">
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.de.stat1" data-sport-variants="beach indoor pair player">4–32 Teams</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields8" data-sport-variants="tt">1–8 Felder</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.de.stat3">bis zu 2× so viele Runden wie beim KO-System</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.de.stat4" data-sport-variants="pair player">länger · 2–7 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.de.stat3">Mehr Runden als beim einfachen K.-o.</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.de.stat4" data-sport-variants="pair player">Spielzahl abhängig vom Turnierweg</span></span>
         </div>
         <div class="features">
           <span class="feat" data-i18n="home.card.de.feat1">Gewinner- &amp; Verlierer-Runde</span>
-          <span class="feat" data-i18n="home.card.de.feat2">Grand Final mit Entscheidungsspiel (Reset)</span>
+          <span class="feat" data-i18n="home.card.de.feat2">Grand Final · Reset nur bei Bedarf</span>
           <span class="feat" data-i18n="home.feat.seedByes">Setzliste &amp; Freilose</span>
           <span class="feat" data-i18n="home.feat.placeRanges">Platzbereiche statt Rangliste</span>
           <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
@@ -1351,23 +1336,23 @@
     <!-- ── Card: Modified Pool Play (eigener Filter-Tag "mpp", zusaetzlich
          "gruppen", damit der Bogen auch beim generischen Gruppen-Filter
          auftaucht – analog zur "de"/"ko"-Doppelverschlagwortung oben). ── -->
-    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-i18n-attr="data-desc:home.card.mpp.desc" data-desc="Verkürzte Gruppenphase ohne volles Round-Robin: In 4er-Gruppen entscheidet ein kleiner Bracket (Setzplatz 1 vs. 4, 2 vs. 3, dann Gewinner-/Verliererspiel) über den Gruppenplatz – nur 4 statt 6 Spiele, jedes Team spielt trotzdem mindestens zweimal und bekommt dadurch sehr viel Spielzeit bei wenig Durchführungsaufwand." data-sport-attr-variants="tt">
+    <div class="card" data-tags="mpp gruppen" data-doc="docs/format-modified-pool-play.html" data-i18n-attr="data-desc:home.card.mpp.desc" data-desc="In Vierergruppen spielen Setzplatz 1 gegen 4 und 2 gegen 3; danach folgen Spiele um Gruppenplatz 1/2 und 3/4. Dreiergruppen spielen alle einmal gegeneinander. Anschließend ist eine Platzierungs-, K.-o.- oder Hauptrunde wählbar; auch Platzierungsblöcke oder nur die Gruppenphase sind möglich." data-sport-attr-variants="tt">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.mpp.tag" data-sport-variants="pair player">dynamisch · 6–24 Teams</span>
-        <h2 data-i18n="home.format.mpp">Modified Pool Play</h2>
-        <div class="sub" data-i18n="home.card.mpp.sub">4er-Gruppen als Mini-Bracket · nur 4 statt 6 Gruppenspiele</div>
+        <h2 data-i18n="home.card.mpp.title">Modifiziertes Pool Play</h2>
+        <div class="sub" data-i18n="home.card.mpp.sub">4er-Gruppen: 4 statt 6 Spiele · 3er-Gruppen: alle gegeneinander</div>
       </div>
       <div class="card-body">
         <div class="stats">
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.stat.teams6to24" data-sport-variants="pair player">6–24 Teams</span></span>
           <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10" data-sport-variants="tt">1–10 Felder</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.mpp.stat3">reine 3er-/4er-Gruppen</span></span>
-          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.mpp.stat4" data-sport-variants="pair player">kürzer · mind. 2 Spiele/Team</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.mpp.stat3">Automatisch 3er-/4er-Gruppen</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.mpp.stat4" data-sport-variants="pair player">3er-/4er-Gruppe ohne Ausfälle: 2 Spiele/Team</span></span>
         </div>
         <div class="features">
-          <span class="feat" data-i18n="home.card.mpp.feat1">Setzplatz 1 vs. 4, 2 vs. 3</span>
-          <span class="feat" data-i18n="home.card.mpp.feat2">Gewinner-/Verliererspiel je Gruppe</span>
-          <span class="feat" data-i18n="home.card.mpp.feat3">4 Finalmodi wählbar</span>
+          <span class="feat" data-i18n="home.card.mpp.feat1">4er-Gruppe: Setzplatz 1 vs. 4, 2 vs. 3</span>
+          <span class="feat" data-i18n="home.card.mpp.feat2">4er-Gruppe: Gewinner-/Verliererspiel</span>
+          <span class="feat" data-i18n="home.card.mpp.feat3">5 Finalmodi wählbar</span>
           <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
           <span class="feat" data-i18n="home.feat.setModes" data-sport-variants="indoor tt">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
         </div>
@@ -1383,11 +1368,11 @@
          KEINE Doppelverschlagwortung mit rr/gruppen/swiss/ko/de/mpp, da diese
          Sonderform strukturell zu keinem der anderen Formate passt – siehe
          AGENTS.md §1 "Eigene Spielregeln – nicht mit Gruppen/KO vermischen"). ── -->
-    <div class="card" data-tags="koc" data-doc="docs/format-king-of-the-court.html" data-i18n-attr="data-desc:home.card.koc.desc" data-desc="Klassische Feld-Leiter mit zeitlimitierten Runden, Auf-/Abstiegen und einer klaren Leistungsabfolge. Das ist kein custom mixed Event, sondern ein eigener Court-Ladder-Modus mit offenem Feld-Aufstieg und klarer Reihenfolge über mehrere Runden.">
+    <div class="card" data-tags="koc" data-doc="docs/format-king-of-the-court.html" data-i18n-attr="data-desc:home.card.koc.desc" data-desc="Feste Teams spielen zeitbegrenzte Runden auf einer Feldleiter. Bei mehreren Feldern steigen sie je nach Ergebnis auf oder ab; am obersten Feld bleiben die siegreichen Teams. Für die Rangliste zählen erzielte Punkte, bei unterschiedlicher Spielanzahl die Punkte pro Spiel – nicht allein das zuletzt erreichte Feld.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.koc.tag">Sonderform · 6–24 Teams</span>
         <h2 data-i18n="home.format.koc">King/Queen of the Court</h2>
-        <div class="sub" data-i18n="home.card.koc.sub">Feld-Leiter · Auf-/Abstieg je Runde · keine feste Partnerrotation</div>
+        <div class="sub" data-i18n="home.card.koc.sub">Feste Teams · Zeitrunden · Feldaufstieg und -abstieg</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1399,7 +1384,7 @@
         <div class="features">
          <span class="feat" data-i18n="home.card.koc.feat1">Königs-/Königinnenfeld</span>
          <span class="feat" data-i18n="home.card.koc.feat2">Feld-Leiter mit Auf-/Abstieg</span>
-         <span class="feat" data-i18n="home.card.koc.feat3">Kumulierte Punktwertung</span>
+         <span class="feat" data-i18n="home.card.koc.feat3">Punktewertung, bei Bedarf pro Spiel</span>
          <span class="feat" data-i18n="home.card.koc.feat4">eigenes Format, nicht King &amp; Queen</span>
         </div>
       </div>
@@ -1410,24 +1395,24 @@
       </div>
     </div>
 
-    <div class="card" data-tags="kingqueen" data-doc="docs/format-king-queen.html" data-i18n-attr="data-desc:home.card.kingqueen.desc" data-desc="Eigenes Mixed-Event für Einzelpersonen: Pro Runde werden faire 2er-Teams (stärkste/r + schwächste/r der aktuellen Rangliste) neu gebildet und treten 2 gegen 2 an. Es zählt die reine Einzelleistung – am Ende stehen getrennte King- (Herren) und Queen- (Damen) Ranglisten, keine gemeinsame Mixed-Wertung.">
+    <div class="card" data-tags="kingqueen" data-doc="docs/format-king-queen.html" data-i18n-attr="data-desc:home.card.kingqueen.desc" data-desc="Ihr meldet euch einzeln an und spielt 2 gegen 2 mit wechselnden Partnerpersonen. Die App bildet Teams anhand von Tabellenstand, Spielniveau und bisherigen Partnerschaften; gemischte Teams sind möglich, aber nicht vorgeschrieben. Beide Teammitglieder erhalten das gemeinsame Spielergebnis, am Ende gibt es getrennte King- und Queen-Ranglisten.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.kingqueen.tag">Custom Event · Einzelwertung</span>
         <h2 data-i18n="home.format.kingqueen">King &amp; Queen</h2>
-        <div class="sub" data-i18n="home.card.kingqueen.sub">Mixed Event · 2 gegen 2 · rotierende Team-Partner:innen · getrennte Herren-/Damen-Rangliste</div>
+        <div class="sub" data-i18n="home.card.kingqueen.sub">Wechselnde Zweierteams · getrennte King-/Queen-Wertung</div>
       </div>
       <div class="card-body">
         <div class="stats">
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.kingqueen.stat1">ab 4 Personen, Herren/Damen frei wählbar</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields5">1–5 Felder</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.kingqueen.stat3">Faire 2er-Team-Rotation</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.kingqueen.stat3">Wechselnde Partnerschaften</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.kingqueen.stat4">Anpassbar</span></span>
         </div>
         <div class="features">
          <span class="feat" data-i18n="home.card.kingqueen.feat1">2 gegen 2 pro Match</span>
          <span class="feat" data-i18n="home.card.kingqueen.feat2">Team-Score zählt für beide Mitglieder</span>
          <span class="feat" data-i18n="home.card.kingqueen.feat3">King-/Queen-Einzelwertung getrennt (kein Mixed-Ranking)</span>
-         <span class="feat" data-i18n="home.card.kingqueen.feat4">custom Event, nicht K.-o.-C.</span>
+         <span class="feat" data-i18n="home.card.kingqueen.feat4">eigenes Event, keine Feldleiter</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1438,14 +1423,14 @@
     </div>
 
     <!-- ── Card: Flex-Turnier (feste Teams, Herren/Damen/Mixed getaggt,
-         faire Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
+         Schweizer-System-/Jeder-gegen-jeden-Paarung, EINE gemeinsame
          Team-Rangliste – NICHT zu verwechseln mit King & Queen, das
          Einzelpersonen und getrennte Geschlechter-Ranglisten hat). ── -->
-    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-i18n-attr="data-desc:home.card.flex.desc" data-desc="Für feste Teams (Herren, Damen, Mixed) in einer gemeinsamen Rangliste. Paarung per Schweizer System (Standard, ideal bei breitem Niveau-/Team-Art-Spektrum) oder Jeder-gegen-Jeden (kleine, ähnliche Gruppen/Offline-Betrieb). Team-Art fließt in die Startrunden-Auslosung ein." data-sport-attr-variants="pair player">
+    <div class="card" data-tags="flex" data-doc="docs/format-flex-turnier.html" data-i18n-attr="data-desc:home.card.flex.desc" data-desc="Feste Teams unterschiedlicher Zusammensetzung spielen in einer gemeinsamen Rangliste. Im Schweizer System entstehen weitere Paarungen anhand des Tabellenstands; alternativ spielt jedes Team gegen jedes andere. Eine optionale Kennzeichnung als Herren-, Damen- oder Mixed-Team kann bei der Auslosung der ersten Schweizer Runde berücksichtigt werden." data-sport-attr-variants="pair player">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.flex.tag" data-sport-variants="pair player">Custom Event · Team-Wertung</span>
         <h2 data-i18n="home.format.flex">Flex-Turnier</h2>
-        <div class="sub" data-i18n="home.card.flex.sub" data-sport-variants="pair player">Herren-, Damen- und Mixed-Teams gemeinsam · faire Paarung · eine Rangliste</div>
+        <div class="sub" data-i18n="home.card.flex.sub" data-sport-variants="pair player">Feste Teams · Schweizer System oder Jeder-gegen-Jeden</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1456,8 +1441,8 @@
         </div>
         <div class="features">
          <span class="feat" data-i18n="home.card.flex.feat1" data-sport-variants="pair player">Team-Art (♂/♀/Mixed) direkt bei Teamnamen</span>
-         <span class="feat" data-i18n="home.card.flex.feat2" data-sport-variants="pair player">faire Startrunden-Auslosung nach Team-Art</span>
-         <span class="feat" data-i18n="home.card.flex.feat3">Schweizer System bei breitem Niveau-Spektrum</span>
+         <span class="feat" data-i18n="home.card.flex.feat2" data-sport-variants="pair player">optionale Startrunden-Auslosung nach Team-Art</span>
+         <span class="feat" data-i18n="home.card.flex.feat3">Schweizer Paarungen nach Tabellenstand</span>
          <span class="feat" data-i18n="home.card.flex.feat4" data-sport-variants="pair player">eine gemeinsame Team-Rangliste</span>
         </div>
       </div>
@@ -1471,21 +1456,21 @@
     <!-- ── Card: Tandem (eigener Filter-Tag "tandem"; nutzt den bestehenden
          Universalbogen "Gruppen + Finalrunde" – Tandem ändert nur die
          Team-Bildung bei der Anmeldung, nicht den Spielmodus). ── -->
-    <div class="card" data-tags="tandem" data-doc="docs/format-tandem.html" data-i18n-attr="data-desc:home.card.tandem.desc" data-desc="Tandem-Turnier für alle Niveaus, Anmeldung als Team zu zweit: Ein Tandem besteht entweder aus einem fortgeschrittenen Spieler (N4/N5) und einem Anfänger (N1/N2) oder aus zwei N3-Spielern. Erlaubt sind ausschließlich die Konstellationen N5+N1, N5+N2, N4+N1, N4+N2 sowie N3+N3, damit die Teams untereinander möglichst homogen und die Spiele ausgeglichen sind. Gespielt wird danach mit dem gewohnten Gruppen- oder Rundenmodus.">
+    <div class="card" data-tags="tandem" data-doc="docs/format-tandem.html" data-i18n-attr="data-desc:home.card.tandem.desc" data-desc="Zwei Personen melden sich als festes Team an. Die hier beschriebene Ausschreibung sieht N4/N5 mit N1/N2 oder zwei Personen auf N3 vor; die Turnierleitung prüft diese Zusammenstellung außerhalb der App. Gespielt und gewertet wird anschließend mit dem gewählten Gruppen- oder Rundenbogen.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.tag.teamEntry">Sonderform · Team-Anmeldung</span>
         <h2 data-i18n="home.format.tandem">Tandem</h2>
-        <div class="sub" data-i18n="home.card.tandem.sub">Team-Anmeldung zu zweit · feste Niveau-Konstellationen für ausgeglichene Teams</div>
+        <div class="sub" data-i18n="home.card.tandem.sub">Feste Zweierteams · Niveau-Kombination laut Ausschreibung</div>
       </div>
       <div class="card-body">
         <div class="stats">
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.tandem.stat1">Anmeldung als 2er-Team, alle Niveaus</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.tandem.stat3">5 erlaubte Konstellationen (N5+N1 … N3+N3)</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.tandem.stat3">5 beschriebene Niveau-Kombinationen</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat" data-i18n="home.card.tandem.feat1">homogene Teamstärke durch feste Niveau-Paarung</span>
+         <span class="feat" data-i18n="home.card.tandem.feat1">Teamzusammenstellung durch Turnierleitung prüfen</span>
          <span class="feat" data-i18n="home.card.tandem.feat2">läuft auf Basis von „Gruppen + Finalrunde“</span>
          <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
@@ -1501,21 +1486,21 @@
     <!-- ── Card: Eltern-Kind-Turnier (eigener Filter-Tag "elternkind"; nutzt
          den Universalbogen "Gruppen + Finalrunde" mit finalMode=none, da
          explizit im reinen Gruppenmodus (ohne Finalrunde) gespielt wird). ── -->
-    <div class="card" data-tags="elternkind" data-doc="docs/format-eltern-kind.html" data-i18n-attr="data-desc:home.card.elternkind.desc" data-desc="Eltern-Kind-Turnier, Anmeldung als Team: Ein Team besteht aus einem Kind (u15 bzw. 10–14 Jahre, Niveau 1–3) und einer erwachsenen Person. Die erwachsene Person sollte fortgeschritten sein (Niveau 3–5) und muss nicht zwangsläufig Elternteil sein. Es können sich Mixed-, Damen- und Herrenteams anmelden. Gespielt wird im reinen Gruppenmodus, ohne anschließende Finalrunde.">
+    <div class="card" data-tags="elternkind" data-doc="docs/format-eltern-kind.html" data-i18n-attr="data-desc:home.card.elternkind.desc" data-desc="Ein Kind und eine erwachsene Begleitperson bilden ein festes Team; die Begleitperson muss kein Elternteil sein. Alters- und Niveauvorgaben legt die Ausschreibung fest, die Turnierleitung prüft sie außerhalb der App. Der verlinkte Bogen plant Gruppenspiele ohne anschließende Finalrunde.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.tag.teamEntry">Sonderform · Team-Anmeldung</span>
         <h2 data-i18n="home.format.elternkind">Eltern-Kind-Turnier</h2>
-        <div class="sub" data-i18n="home.card.elternkind.sub">Team aus Kind (10–14 J., N1–3) + erwachsener Person (N3–5) · reiner Gruppenmodus</div>
+        <div class="sub" data-i18n="home.card.elternkind.sub">Kind + erwachsene Begleitperson · Gruppenspiele ohne Finale</div>
       </div>
       <div class="card-body">
         <div class="stats">
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.elternkind.stat1">Anmeldung als 2er-Team, Mixed/Damen/Herren</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.stat.fields10">1–10 Felder</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.elternkind.stat3">Kind (N1–3) + fortgeschrittene Person (N3–5)</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.elternkind.stat3">Teilnahmebedingungen laut Ausschreibung</span></span>
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.elternkind.stat4">nur Gruppenphase, keine Finalrunde</span></span>
         </div>
         <div class="features">
-         <span class="feat" data-i18n="home.card.elternkind.feat1">homogene Teamstärke durch Kind-Erwachsenen-Paarung</span>
+         <span class="feat" data-i18n="home.card.elternkind.feat1">Begleitperson muss kein Elternteil sein</span>
          <span class="feat" data-i18n="home.card.elternkind.feat2">läuft auf Basis von „Gruppen + Finalrunde“ (Finalmodus: keine Finalrunde)</span>
          <span class="feat" data-i18n="home.feat.byeAbsent">Freilos &amp; Ausfall</span>
          <span class="feat" data-i18n="home.feat.setModes">6 Satzmodi (bis 15/21, 1–3 Sätze)</span>
@@ -1533,24 +1518,24 @@
          Finalrunde", die parallelen Zusatzdisziplinen (z.B. Spikeball,
          Wikingerschach, Mini-Tischtennis – austauschbare Beispiele) werden
          getrennt erfasst und in der Doku erklärt). ── -->
-    <div class="card" data-tags="meisterschaften" data-doc="docs/format-meisterschaften.html" data-i18n-attr="data-desc:home.card.meisterschaften.desc" data-desc="Bei den BeachL-Meisterschaften wird das vielseitigste Team gesucht: Parallel zum Beachvolleyball-Turnier laufen weitere Turnierformate in zusätzlichen Disziplinen (z.B. Spikeball, Wikingerschach oder Mini-Tischtennis – die konkrete Auswahl kann von Event zu Event variieren). Mit der Anmeldung als 2er-Team (Herren, Damen oder Mixed) bestätigt ihr die Teilnahme an allen parallel stattfindenden Disziplinen. Die besten Turnierergebnisse (i.d.R. 3 von 4) zählen für die Gesamtwertung, zusätzlich gibt es Preise pro Disziplin.">
+    <div class="card" data-tags="meisterschaften" data-doc="docs/format-meisterschaften.html" data-i18n-attr="data-desc:home.card.meisterschaften.desc" data-desc="Bei diesem Mehrdisziplinen-Event tritt ein festes Zweierteam in mehreren Wettbewerben an. Disziplinen, Teilnahmebedingungen und Gesamtwertung legt die Ausschreibung fest. Hier plant und wertet ihr den Beachvolleyball-Teil; einen gemeinsamen Zeitplan und die disziplinübergreifende Gesamtwertung erstellt die Turnierleitung außerhalb der App.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.meisterschaften.tag">Sonderform · Multi-Disziplin</span>
-        <h2 data-i18n="home.format.meisterschaften">Meisterschaften</h2>
-        <div class="sub" data-i18n="home.card.meisterschaften.sub">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · beste Ergebnisse zählen</div>
+        <h2 data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</h2>
+        <div class="sub" data-i18n="home.card.meisterschaften.sub">Hier: Beachvolleyball-Teil · Gesamtwertung extern</div>
       </div>
       <div class="card-body">
         <div class="stats">
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.card.meisterschaften.stat1">Anmeldung als 2er-Team (Herren/Damen/Mixed)</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.card.meisterschaften.stat2">mehrere parallele Disziplinen (Auswahl variabel)</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.meisterschaften.stat3">beste Ergebnisse zählen (i.d.R. 3 von 4)</span></span>
-         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.meisterschaften.stat4">paralleler Zeitplan über alle Disziplinen</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg></span> <span data-i18n="home.card.meisterschaften.stat2">Disziplinen laut Ausschreibung</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span data-i18n="home.card.meisterschaften.stat3">Gesamtwertung außerhalb der App</span></span>
+         <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.card.meisterschaften.stat4">Gemeinsamen Zeitplan separat erstellen</span></span>
         </div>
         <div class="features">
          <span class="feat" data-i18n="home.card.meisterschaften.feat1">Beachvolleyball-Teil per „Gruppen + Finalrunde“</span>
-         <span class="feat" data-i18n="home.card.meisterschaften.feat2">eigene Einzelwertung je Disziplin</span>
-         <span class="feat" data-i18n="home.card.meisterschaften.feat3">Gesamtwertung aus den besten Einzelergebnissen</span>
-         <span class="feat" data-i18n="home.card.meisterschaften.feat4">Preise pro Disziplin + Gesamtsieger</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat2">Weitere Disziplinen separat organisieren</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat3">Keine automatische Gesamtwertung</span>
+         <span class="feat" data-i18n="home.card.meisterschaften.feat4">Wertungsregeln laut Ausschreibung</span>
         </div>
       </div>
       <div class="card-footer">
@@ -1564,11 +1549,11 @@
          bestehenden Universalbogen "Jeder gegen Jeden" – eine Begegnung
          fasst die 3 Teilspiele (2× 2vs2 + 1× 4vs4) zu einem Match-Ergebnis
          zusammen, siehe Doku). ── -->
-    <div class="card" data-tags="daviscup" data-doc="docs/format-davis-cup.html" data-i18n-attr="data-desc:home.card.daviscup.desc" data-desc="Anmeldung erfolgt als Einzelperson. Vor Ort werden die Spieler nach Niveau eingeteilt und den Teams (je vier Spieler) zugelost. Jede Begegnung zwischen zwei Teams besteht aus drei Teilspielen: zwei Spielen 2 gegen 2 und einem Spiel 4 gegen 4. Das Team mit den meisten gewonnenen Teilspielen gewinnt die Begegnung.">
+    <div class="card" data-tags="daviscup" data-doc="docs/format-davis-cup.html" data-i18n-attr="data-desc:home.card.daviscup.desc" data-desc="Bei dieser Beachvolleyball-Variante meldet ihr euch einzeln an; die Turnierleitung lost außerhalb der App Viererteams nach Niveau. Eine Teambegegnung umfasst laut Eventkonzept zwei Spiele 2 gegen 2 und ein Spiel 4 gegen 4. Die App plant Teambegegnungen Jeder-gegen-Jeden; Auslosung, Teilspiele und Mehrheitswertung verwaltet die Turnierleitung separat.">
       <div class="card-header">
         <span class="format-tag" data-i18n="home.card.daviscup.tag">Sonderform · Team-Auslosung</span>
-        <h2 data-i18n="home.format.daviscup">Davis Cup</h2>
-        <div class="sub" data-i18n="home.card.daviscup.sub">Einzelanmeldung · Auslosung zu 4er-Teams nach Niveau · 2× 2vs2 + 1× 4vs4</div>
+        <h2 data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</h2>
+        <div class="sub" data-i18n="home.card.daviscup.sub">Teambegegnungen im Rundenbogen · Teilspiele separat</div>
       </div>
       <div class="card-body">
         <div class="stats">
@@ -1578,9 +1563,9 @@
          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span> <span data-i18n="home.stat.timeWindow">Zeitfenster wählbar</span></span>
         </div>
         <div class="features">
-         <span class="feat" data-i18n="home.card.daviscup.feat1">niveaubasierte Auslosung der Teams vor Ort</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat1">Turnierleitung lost Teams außerhalb der App</span>
          <span class="feat" data-i18n="home.card.daviscup.feat2">3 Teilspiele je Begegnung (2× 2vs2 + 1× 4vs4)</span>
-         <span class="feat" data-i18n="home.card.daviscup.feat3">Begegnung entscheidet die Mehrheit der Teilspiele</span>
+         <span class="feat" data-i18n="home.card.daviscup.feat3">Mehrheitswertung außerhalb der App</span>
          <span class="feat" data-i18n="home.card.daviscup.feat4">läuft auf Basis von „Jeder gegen Jeden“</span>
         </div>
       </div>
@@ -1591,12 +1576,33 @@
       </div>
     </div>
 
+    <div id="home-firmencup" class="card" data-tags="firmencup" data-format-category="event" data-format-sport="volleyball.beach" data-i18n-attr="data-desc:home.firmencup.desc" data-sport-attr-variants="" data-desc="Firmen können mehrere Teams melden; gespielt wird auf Zeit mit vier Personen je Team auf dem Feld. Die App plant Gruppen-, Final- und Platzierungsspiele und führt die Teamwertung. Die Firmenwertung ist vorläufig und nicht bestätigt: Derzeit zählt nur die Endplatzierung eines ausgewählten Teams je Firma, nicht die Summe aller Teamergebnisse.">
+      <div class="card-header">
+        <span class="format-tag" data-i18n="home.firmencup.category">Eventformat</span>
+        <h2 data-i18n="home.firmencup.title">Firmencup</h2>
+        <div class="sub" data-i18n="home.firmencup.card-sub">Vier gegen vier auf Zeit · Firmenwertung vorläufig</div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> <span data-i18n="home.firmencup.teams">Ab 2 Teams · technisch bis 128</span></span>
+          <span class="stat"><span class="icon"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span> <span data-i18n="home.firmencup.timed">Spiele mit Zeitlimit</span></span>
+        </div>
+        <div class="features">
+          <span class="feat" data-i18n="home.firmencup.feature1">Gruppen- und Platzierungsrunden</span>
+          <span class="feat" data-i18n="home.firmencup.feature2">Anwesenheit prüfen und Ergebnisse eintragen</span>
+          <span class="feat" data-i18n="home.firmencup.feature3">Lokal nutzen · Live-Link optional</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="Firmencup.html?lang=de" data-i18n="home.firmencup.open">Firmencup öffnen</a>
+      </div>
+    </div>
+
   </div><!-- /.grid -->
 
 </main>
 
 <footer>
-  <span data-i18n="home.footer">CompetitionPilot · Turnierplanung und Ergebniserfassung</span>
   <div class="footer-legal">
     © <span id="cpYear"></span> ·
     <button type="button" id="btnShowContact" class="footer-contact-btn" data-i18n="chrome.contact">Copyright/Kontakt</button>
@@ -2395,7 +2401,7 @@
       rr: 'home.format.rr',
       gruppen: 'home.card.gruppen.title',
       koc: 'home.format.koc',
-      mpp: 'home.format.mpp'
+      mpp: 'home.card.mpp.title'
     };
 
     /* Die Zeit-Frage ist nur relevant, wenn die Empfehlung sonst auf
@@ -2515,7 +2521,11 @@
       const btn = document.getElementById('wizardResultBtn');
       if (!rec) { box.hidden = true; btn.onclick = null; return; }
       box.hidden = false;
-      const label = FORMAT_LABEL_KEYS[rec.tag] ? T(FORMAT_LABEL_KEYS[rec.tag]) : rec.tag;
+      let labelKey = FORMAT_LABEL_KEYS[rec.tag];
+      if (rec.tag === 'de' && (window.__BL_HOME_SPORT__ || '').indexOf('table-tennis.') === 0) {
+        labelKey += '.tt';
+      }
+      const label = labelKey ? T(labelKey) : rec.tag;
       text.innerHTML = '<strong>' + T('home.wizard.recommendation', { label: label }) + '</strong><br>' + rec.reason;
       btn.onclick = function () { wizardJumpToTag(rec.tag); };
     }
@@ -2646,9 +2656,14 @@
   function prioritizeCards(id) {
     var grid = document.querySelector('.grid');
     if (!grid) return;
-    var priorities = id === 'volleyball.beach'
-      ? ['gruppen-final', 'ko-flex', 'mpp', 'runden_rr', 'runden_swiss', 'de-flex']
-      : ['gruppen-final', 'ko-flex', 'runden_rr', 'mpp', 'runden_swiss', 'de-flex'];
+    // Competition examples, not participation counts; see MULTI_SPORT_RULES.md.
+    var bySport = {
+      'volleyball.beach': ['de-flex', 'mpp', 'gruppen-final', 'runden_rr', 'ko-flex', 'runden_swiss'],
+      'volleyball.indoor': ['gruppen-final', 'runden_rr', 'ko-flex', 'runden_swiss', 'de-flex', 'mpp'],
+      'table-tennis.singles': ['gruppen-final', 'ko-flex', 'runden_rr', 'runden_swiss', 'de-flex', 'mpp'],
+      'table-tennis.doubles': ['ko-flex', 'gruppen-final', 'runden_rr', 'runden_swiss', 'de-flex', 'mpp']
+    };
+    var priorities = bySport[id] || bySport['volleyball.beach'];
     var cards = Array.prototype.filter.call(grid.children, function (card) {
       return card.classList.contains('card');
     });
@@ -2663,7 +2678,8 @@
   }
   window.homeCardSportAllowed = function (card, id) {
     var format = cardFormat(card);
-    return !format || sport.supportsFormat(id, format);
+    var onlySport = card.getAttribute('data-format-sport');
+    return (!onlySport || onlySport === id) && (!format || sport.supportsFormat(id, format));
   };
   var launchSequence = 0;
   function newLaunchId() {
@@ -2706,6 +2722,10 @@
   }
   function updateLinks(id) {
     document.querySelectorAll('.card-footer a.btn-open').forEach(function (link) {
+      if (link.closest('#home-firmencup')) {
+        link.href = 'Firmencup.html?lang=' + (document.documentElement.lang === 'en' ? 'en' : 'de');
+        return;
+      }
       applyLaunchSport(link, id);
     });
     var timer = document.getElementById('home-timer-link');

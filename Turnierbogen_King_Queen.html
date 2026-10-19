@@ -100,13 +100,10 @@
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Jede Runde bilden sich neue
-      2er-Teams: die aktuell stärkste Person spielt mit der aktuell schwächsten zusammen (Ausgleichs-Team),
-      Herren, Damen und Niveaustufen werden dabei gemeinsam berücksichtigt.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
     <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen laut Plan aufrufen, alle Spiele gleichzeitig
-      austragen, danach das Ergebnis in die Kästchen eintragen.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen nach dem Zeitplan aufrufen, Spiele austragen und die Ergebnisse eintragen.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
@@ -228,6 +225,8 @@
 <div class="legend" id="h-legend"></div>
 
 <script src="core/turnier-core.js"></script>
+<script src="core/turnier-outcome.js"></script>
+<script src="core/turnier-stage.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
 <script src="core/turnier-resume-picker.js"></script>
@@ -825,6 +824,7 @@
 <script>
 if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="core/sheet-header.js" defer></script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">

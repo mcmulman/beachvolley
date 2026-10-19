@@ -23,6 +23,7 @@
   const LIVE_PREFIX = 'beachl.t.';
   const SCHEMA = 2;
   const Sport = root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null);
+  const Outcome = root.TOutcome || (typeof require === 'function' ? require('./turnier-outcome.js') : null);
 
   /* DE/EN-Prototyp (core/turnier-i18n.js): übersetzt nur Anzeigetexte auf
      freigeschalteten Seiten. Gespeicherte Titel und Typen bleiben deutsch. */
@@ -348,8 +349,8 @@
     if (liveSheetOf(key) == null) return false;
     try {
       const t = JSON.parse(raw);
-      return !!t && ['results', 'teamNames', 'fieldNames', 'frozen', 'absent',
-        'manualStandings', 'manualPlacements', 'round1'].some(f => nonEmpty(t[f]));
+      return !!t && ['results', 'teamNames', 'pairMembers', 'fieldNames', 'frozen', 'absent',
+        'outcomes', 'stageDecisions', 'manualStandings', 'manualPlacements', 'round1'].some(f => nonEmpty(t[f]));
     } catch (e) { return false; }
   }
   function archiveCurrentInView(view, opts) {
@@ -363,11 +364,16 @@
      Stand archivieren, Schnappschuss schreiben, Index pflegen.
      → Promise<{ archived }>; reject bei ungültigen Daten/Speicherfehlern. */
   function validTournamentRecord(t, sheet) {
+    const Stage = root.TStage || (typeof require === 'function' ? require('./turnier-stage.js') : null);
+    if (t && t.stageDecisions != null
+        && !(Array.isArray(t.stageDecisions) && t.stageDecisions.length === 0)
+        && (!Stage || !Stage.validate(t).ok)) return false;
     const object = v => !!v && typeof v === 'object' && !Array.isArray(v);
     const integer = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
     if (!object(t) || t.schema !== SCHEMA || t.sheet !== sheet || !object(t.config)) return false;
     const sport = Sport ? Sport.recordSport(t) : null;
     if (Sport && !sport.ok) return false;
+    if (Sport && !Sport.validatePairMembers(t)) return false;
     if (!Sport && t.sport && (t.sport.id !== 'volleyball.beach' || t.sport.version !== 1)) return false;
     const c = t.config, base = sheet.split('.')[0];
     if (Sport) {
@@ -376,6 +382,9 @@
       if (c.setMode != null && modes.indexOf(c.setMode) < 0) return false;
       if (c.finalSetMode && modes.indexOf(c.finalSetMode) < 0) return false;
       if (c.rankingProfile != null && profile.rankingProfiles.indexOf(c.rankingProfile) < 0) return false;
+      const outcomeProfiles = Array.isArray(profile.outcomeProfiles) ? profile.outcomeProfiles : [];
+      if (c.outcomeProfile != null && outcomeProfiles.indexOf(c.outcomeProfile) < 0) return false;
+      if (t.outcomes != null && (!Outcome || !Outcome.validateMap(t.outcomes, { outcomeProfile: c.outcomeProfile }).ok)) return false;
       if (c.customSetTarget != null && !integer(c.customSetTarget, 11, 50)) return false;
       if (c.modeMinutes != null && (!object(c.modeMinutes) || Object.keys(c.modeMinutes).some(mode =>
           modes.indexOf(mode) < 0 || !integer(c.modeMinutes[mode], 1, 360)))) return false;

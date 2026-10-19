@@ -685,6 +685,19 @@
     var a = matchSideName(td, 'a'), b = matchSideName(td, 'b');
     if (!a || !b) return null;
     var href = timerHref() + '&a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b);
+    ['a', 'b'].forEach(function (side) {
+      var name = td.querySelector('.pside-' + side + ' [data-player-one]');
+      if (name) {
+        href += '&' + side + '1=' + encodeURIComponent(name.getAttribute('data-player-one') || '');
+        href += '&' + side + '2=' + encodeURIComponent(name.getAttribute('data-player-two') || '');
+      } else {
+        var lines = td.querySelectorAll('.pside-' + side + ' .t-line');
+        if (lines.length === 2) {
+          href += '&' + side + '1=' + encodeURIComponent(lines[0].textContent.trim());
+          href += '&' + side + '2=' + encodeURIComponent(lines[1].textContent.trim());
+        }
+      }
+    });
     var mid = td.getAttribute('data-mid');
     var targets = matchTargets(td);
     if (mid && targets.length) href += '&m=' + encodeURIComponent(mid) + '&t=' + targets.join(',');
@@ -836,7 +849,7 @@
     if (!actions || actions.querySelector('.bl-timer-link')) return;
     var link = document.createElement('a');
     link.className = 'app-bar__btn bl-timer-link noprint';
-    link.href = timerHref();
+    link.href = currentTimerHref();
     link.setAttribute('aria-label', tx('enh.timerAria', 'Score Counter öffnen (Turnierergebnisse bleiben unverändert)'));
     link.setAttribute('title', tx('enh.timerAria', 'Score Counter öffnen (Turnierergebnisse bleiben unverändert)'));
     var ic = document.createElement('span');
@@ -850,11 +863,24 @@
     link.appendChild(lbl);
     /* Bögen ergänzen ?id= erst nach dem Laden – Ziel erst bei Benutzung bilden. */
     ['mousedown', 'touchstart', 'focus', 'click'].forEach(function (type) {
-      link.addEventListener(type, function () { link.href = timerHref(); }, type === 'touchstart' ? { passive: true } : false);
+      link.addEventListener(type, function () { link.href = currentTimerHref(); }, type === 'touchstart' ? { passive: true } : false);
     });
     var printBtn = actions.querySelector('button.app-bar__btn:not(.i18n-switch)');
     if (printBtn && printBtn.parentNode === actions) actions.insertBefore(link, printBtn);
     else actions.appendChild(link);
+  }
+  function currentTimerHref() {
+    try {
+      var saved = JSON.parse(window.localStorage.getItem('BEACHL.matchTimer') || 'null');
+      var page = String(location.pathname || '').split('/').pop() + (location.search || '');
+      if (saved && saved.match && saved.match.source === page) {
+        var cards = document.querySelectorAll('td.match[data-mid]');
+        for (var i = 0; i < cards.length; i++) {
+          if (cards[i].getAttribute('data-mid') === saved.match.ref) return matchTimerHref(cards[i]) || timerHref();
+        }
+      }
+    } catch (e) { /* Standalone counter if no saved match is available. */ }
+    return timerHref();
   }
 
   function boot() { layoutKpis(); observe(); mountTimerLink(); setTimeout(update, 80); }

@@ -49,10 +49,10 @@
    Auswahl, Kopieren-Button, Fehler mit "Erneut versuchen" direkt im Dialog).
    ========================================================================== */
 (function (root, factory) {
-  const api = factory();
+  const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TShare = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
 
   /* DE/EN-Prototyp (core/turnier-i18n.js): Dialoge/Meldungen nur auf
@@ -250,8 +250,9 @@
     const count = Number(record.config && record.config.teams)
       || Number(record.config && record.config.men) + Number(record.config && record.config.women) || 0;
     const teams = [];
-    for (let n = 1; n <= count; n++) teams.push(record.teamNames && record.teamNames[n]
-      || (o.sheet.indexOf('kingqueen') === 0 ? 'Person ' : 'Team ') + n);
+    for (let n = 1; n <= count; n++) teams.push(root.TSport
+      ? root.TSport.teamLabel(record, n, (o.sheet.indexOf('kingqueen') === 0 ? 'Person ' : 'Team ') + n)
+      : record.teamNames && record.teamNames[n] || 'Team ' + n);
     const body = {
       formatVersion: 2, sheet: o.sheet, file: o.file || '', type: o.type || '',
       title: record.title || o.title || '', teams: teams.length ? teams : (Array.isArray(o.teams) ? o.teams : []),

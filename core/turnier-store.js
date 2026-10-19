@@ -35,6 +35,8 @@
 
   const SCHEMA = 2;
   const Sport = root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null);
+  const Outcome = root.TOutcome || (typeof require === 'function' ? require('./turnier-outcome.js') : null);
+  const Stage = root.TStage || (typeof require === 'function' ? require('./turnier-stage.js') : null);
   const PREFIX = 'beachl.t.';          // + sheetId
   const BACKUP_PREFIX = 'beachl.b.';   // + sheetId, previous valid revision
   const REVISION_PREFIX = 'beachl.r.'; // revision high-water mark, also survives corrupt records
@@ -794,6 +796,15 @@
           || !Number.isInteger(modeMinutes[mode]) || modeMinutes[mode] < 1 || modeMinutes[mode] > 360))) return false;
     return true;
   }
+  function supportsSavedOutcomes(record, profile) {
+    const config = record.config || {};
+    const profiles = profile && Array.isArray(profile.outcomeProfiles) ? profile.outcomeProfiles : [];
+    if (config.outcomeProfile != null && profiles.indexOf(config.outcomeProfile) < 0) return false;
+    if (record.outcomes == null) return true;
+    if (!Outcome) return !(record.outcomes && typeof record.outcomes === 'object'
+      && Object.keys(record.outcomes).length);
+    return Outcome.validateMap(record.outcomes, { outcomeProfile: config.outcomeProfile }).ok;
+  }
   function showSportBlock(code) {
     if (!root.document || !root.document.body) return;
     const body = root.document.body;
@@ -812,6 +823,8 @@
           ? 'Dieses Turnier verwendet ein unbekanntes Wertungsprofil. Die Daten bleiben unverändert. / This tournament uses an unknown ranking profile. The data remain unchanged.'
           : code === 'unsupported-mode'
             ? 'Dieses Turnier verwendet einen unbekannten Satz- oder Spielmodus. Die Daten bleiben unverändert. / This tournament uses an unknown set or game mode. The data remain unchanged.'
+        : code === 'unsupported-outcome'
+          ? 'Dieses Turnier enthält Sonderergebnisse (z. B. Default), die diese App-Version nicht sicher auswerten kann. Die Daten bleiben unverändert. / This tournament contains special match outcomes (e.g. default) that this app version cannot evaluate safely. The data remain unchanged.'
         : 'Dieses Turnier verwendet ein unbekanntes oder nicht unterstütztes Sportprofil bzw. eine Profilversion. Die gespeicherten Daten bleiben unverändert. / This tournament uses an unknown or unsupported sport profile or version. The saved data remain unchanged.';
     const link = root.document.createElement('a');
     link.href = 'index.html';
@@ -859,6 +872,10 @@
       absent: [],
       /* results[matchId] = [[a1,b1],[a2,b2],[a3,b3]] – fehlende Werte null */
       results: {},
+      /* Versionierte Sonderergebnisse (Default/unvollständig), getrennt vom
+         tatsächlich gespielten Stand – siehe core/turnier-outcome.js. */
+      outcomes: {},
+      stageDecisions: [],
       /* eingefrorene, bereits generierte Paarungen (Schweizer System) */
       frozen: {},
       /* eingefrorener Satzmodus je Runde/Phase, sobald Ergebnisse vorliegen */
@@ -901,6 +918,7 @@
     }
     const sport = sportForRecord(data);
     if (!sport.ok) return { ok: false, code: sport.code };
+    if (Sport && !Sport.validatePairMembers(data)) return { ok: false, code: 'corrupt' };
     if (!supportsSportSheet(sport.profile, sheetId)) return { ok: false, code: 'unsupported-format' };
     if (data.config && data.config.rankingProfile != null
         && (!Array.isArray(sport.profile.rankingProfiles)
@@ -908,6 +926,10 @@
       return { ok: false, code: 'unsupported-ranking' };
     }
     if (!supportsSavedRules(data, sport.profile)) return { ok: false, code: 'unsupported-mode' };
+    if (!supportsSavedOutcomes(data, sport.profile)) return { ok: false, code: 'unsupported-outcome' };
+    if (data.stageDecisions != null
+        && !(Array.isArray(data.stageDecisions) && data.stageDecisions.length === 0)
+        && (!Stage || !Stage.validate(data).ok)) return { ok: false, code: 'unsupported-outcome' };
     if (sport.migrated && !isCurrentSheet(sheetId)) return { ok: false, code: 'incompatible' };
     data.sport = sportValue(sport.profile);
     return { ok: true, data: data };
@@ -943,6 +965,7 @@
           issue: parsed.code,
           sportBlocked: parsed.code === 'unsupported-sport' || parsed.code === 'unsupported-format'
             || parsed.code === 'unsupported-ranking' || parsed.code === 'unsupported-mode'
+            || parsed.code === 'unsupported-outcome'
         };
       }
       if (requested.explicit && parsed.data.sport.id !== requested.profile.id) {
@@ -1003,7 +1026,7 @@
       teams: t.config ? t.config.teams : undefined,
       sport: t.sport || { id: 'volleyball.beach', version: 1 },
       updated: t.updated,
-      filled: Object.keys(t.results || {}).length
+      filled: Object.keys(Object.assign({}, t.results, t.outcomes)).length + (t.stageDecisions || []).length
     };
   }
   function refreshIndexInView(view) {
@@ -1099,6 +1122,8 @@
     out.fieldNames = t.fieldNames || {};
     out.absent = Array.isArray(t.absent) ? t.absent : [];
     out.results = t.results || {};
+    out.outcomes = t.outcomes || {};
+    out.stageDecisions = t.stageDecisions || [];
     out.frozen = t.frozen || {};
     out.frozenModes = t.frozenModes || {};
     out.manualStandings = t.manualStandings || {};
@@ -1473,7 +1498,7 @@
     return t.results[matchId] || [[null, null], [null, null], [null, null]];
   }
   /* Löscht NUR die Ergebnisse, nicht Namen/Konfiguration. */
-  function clearScores(t) { t.results = {}; return t; }
+  function clearScores(t) { t.results = {}; t.outcomes = {}; t.stageDecisions = []; return t; }
 
   /* ----------------------------------------------- Manuelle Korrekturen
      Punkte-Tabellen (Gruppen-/Haupt-/Endtabelle). field ∈ {place,dPts,dBd}.
@@ -1560,6 +1585,7 @@
      Objekte, die per Teamnummer verschlüsselt sind (z. B. teamGender). */
   function remapCommon(t, map, extraKeys) {
     t.teamNames = remapKeys(t.teamNames, map);
+    if (t.pairMembers) t.pairMembers = remapKeys(t.pairMembers, map);
     t.absent = remapList(t.absent, map);
     ['manualStandings', 'manualPlacements'].forEach(f => {
       const o = t[f] || {};
@@ -1632,31 +1658,40 @@
       if (!m || seen.has(m.id)) return;
       seen.add(m.id);
       const r = t.results && t.results[m.id];
-      if (!hasInput(r)) return;
+      const o = t.outcomes && t.outcomes[m.id];
+      if (!hasInput(r) && !o) return;
       const a = mapSide(m.a, map), b = mapSide(m.b, map);
       if (a == null || b == null) return;
-      out.push({ phase: ph(m.id), a: sideKey(a), b: sideKey(b),
-        r: JSON.parse(JSON.stringify(r)), used: false });
+      const entry = { phase: ph(m.id), a: sideKey(a), b: sideKey(b),
+        r: hasInput(r) ? JSON.parse(JSON.stringify(r)) : null, used: false };
+      if (o) entry.o = JSON.parse(JSON.stringify(o));
+      out.push(entry);
     });
     return out;
   }
   /* getMatches() baut den Bogen mit dem aktuellen t.results neu auf und
      liefert [{id, a, b}] in neuer Nummerierung. Mehrere Durchläufe, weil
      Final-/KO-Spiele erst feststehen, wenn die Vorrunde wieder eingetragen
-     ist. Rückgabe: Anzahl wieder eingesetzter Ergebnisse.                */
+     ist. Rückgabe: Anzahl wieder eingesetzter Ergebnisse. Sonderergebnisse
+     folgen derselben Begegnung (bei getauschter Seite mit getauschtem
+     Verlierer).                                                            */
   function restoreResults(t, snap, getMatches, phaseOf) {
     const ph = phaseOf || matchPhase;
     t.results = {};
+    t.outcomes = {};
+    const restored = new Set();
     for (let pass = 0; pass < 30; pass++) {
       let added = 0;
       (getMatches() || []).forEach(m => {
-        if (!m || m.a == null || m.b == null || t.results[m.id]) return;
+        if (!m || m.a == null || m.b == null || restored.has(m.id)) return;
         const p = ph(m.id), ka = sideKey(m.a), kb = sideKey(m.b);
         const e = snap.find(s => !s.used && s.phase === p
           && ((s.a === ka && s.b === kb) || (s.a === kb && s.b === ka)));
         if (!e) return;
         e.used = true;
-        t.results[m.id] = e.a === ka ? e.r : swapResult(e.r);
+        restored.add(m.id);
+        if (e.r) t.results[m.id] = e.a === ka ? e.r : swapResult(e.r);
+        if (e.o) t.outcomes[m.id] = e.a === ka || !Outcome ? e.o : Outcome.swapSide(e.o);
         added++;
       });
       if (!added) break;
@@ -1664,7 +1699,8 @@
     return snap.filter(s => s.used).length;
   }
   function anyResults(t) {
-    return Object.keys(t.results || {}).some(id => hasInput(t.results[id]));
+    return Object.keys(t.results || {}).some(id => hasInput(t.results[id]))
+      || Object.keys(t.outcomes || {}).length > 0 || (t.stageDecisions || []).length > 0;
   }
 
   /* Voreinstellung über die URL (?teams=8&fields=4&…), z. B. aus Links der
@@ -1674,7 +1710,7 @@
      oder undefined liefert. */
   function applyUrlConfig(t, spec, search) {
     if (!t || !t.config || !spec) return false;
-    if (t.results && Object.keys(t.results).length) return false;
+    if (anyResults(t)) return false;
     let q;
     try { q = new URLSearchParams(search != null ? search : location.search); }
     catch (e) { return false; }

@@ -1,16 +1,25 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v176';
+const CACHE_VERSION = 'beachl-turniere-v212';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
   './',
   './index.html',
+  './Firmencup.html',
+  './core/firmencup.js',
+  './core/firmencup-store.js',
+  './core/firmencup-share.js',
+  './core/firmencup-server.js',
+  './core/firmencup-page.js',
+  './core/firmencup.css',
   './manifest.webmanifest',
   './app-skin.css',
   './spielplan.css',
   './appbar.js',
+  './core/sheet-header.js',
+  './core/sheet-header.css',
   './form-flow.js',
   './spielplan-enh.js',
   './core/affiliate-teasers.css',
@@ -39,6 +48,7 @@ const PRECACHE = [
   './core/compat-flexgap.css',
   './core/turnier-archive.js',
   './core/turnier-core.js',
+  './core/turnier-outcome.js',
   './core/turnier-format.js',
   './core/turnier-resume-picker.js',
   './core/turnier-share.js',
@@ -47,6 +57,7 @@ const PRECACHE = [
   './core/vendor/jsQR.js',
   './core/vendor/JSQR-LICENSE.txt',
   './core/turnier-sport.js',
+  './core/turnier-stage.js',
   './core/qrcode-generator.js',
   './core/turnier-native.js',
   './core/turnier-feedback.js',

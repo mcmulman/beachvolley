@@ -62,6 +62,7 @@
     if (c.customSetTarget != null) cfg.customSetTarget = c.customSetTarget;
     if (c.modeMinutes && Object.keys(c.modeMinutes).length) cfg.modeMinutes = copy(c.modeMinutes);
     const sourcePeople = base === 'kingqueen', targetPeople = targetId === 'kingqueen';
+    if ((source.stageDecisions || []).length) return blocked();
     const sourceCourt = base === 'koc', targetCourt = targetId === 'koc';
     const count = sourcePeople ? c.men + c.women : c.teams;
     if (!integer(count, 2, 128) || (sourcePeople && (!integer(c.men, 0, 16) || !integer(c.women, 0, 16)))) return blocked();
@@ -95,6 +96,8 @@
       cfg.teams = count;
       if (Object.keys(names).some(k => +k > count && names[k])) return blocked('extraNames');
       tournament.teamNames = copy(names);
+      if (Sport && !Sport.validatePairMembers(source)) return blocked('invalid');
+      if (source.pairMembers) tournament.pairMembers = copy(source.pairMembers);
     }
     cfg.startTime = c.startTime;
     if (!targetCourt && c.endTime != null) cfg.endTime = c.endTime;

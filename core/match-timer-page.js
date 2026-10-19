@@ -64,6 +64,7 @@
   var state = TM.create();
   var normalOnSmallScreen = false;
   var storageOk = true;
+  var serveAvailable = true;
   var tickId = null;
   var lastTimeText = '';
   var wakeLock = null;
@@ -515,6 +516,7 @@
       });
     });
     el.servePlayers.hidden = !shown;
+    el.serveTeaser.hidden = shown || !serveAvailable;
     renderOnOff(el.serveShow, el.serveState, shown);
     if (!el.serveDialog.hidden) renderServeDialog();
   }
@@ -594,7 +596,10 @@
     var v = TM.server(state);
     var back = modal && modal.back;
     var onChip = back && back.className && back.className.indexOf('mt-pl') === 0;
-    closeModal(onChip && v && v.player != null ? el.pl[v.side][v.player] : true);
+    /* Vom Teaser aus (danach ausgeblendet): Fokus auf den Aufschläger bzw. ersten Spieler. */
+    var fromTeaser = back === el.serveTeaser && state.serveShown;
+    var chip = v && v.player != null ? el.pl[v.side][v.player] : (fromTeaser ? el.pl[v ? v.side : 'a'][0] : null);
+    closeModal((onChip || fromTeaser) && chip ? chip : true);
   }
   function onServeBegin(btn) {
     if (commit(TM.startServe(state, btn.getAttribute('data-begin'), firstPicks()))) announce(serveSentence());
@@ -618,6 +623,14 @@
     var i = Number(btn.getAttribute('data-next'));
     if (commit(TM.setNextServer(state, other, i))) {
       announce(tx('timer.serve.next', 'Nächster Aufschläger · {name}', { name: sideName(other) }) + ': ' + playerLabel(other, i));
+    }
+  }
+  /* Teaser bei ausgeschalteter Anzeige: bestehende Aufschlagwahl öffnen
+     (Teaser bleibt Rücksprungziel) und einschalten – nichts wird geraten. */
+  function onServeTeaser() {
+    openServeDialog(null);
+    if (commit(TM.setServeShown(state, true))) {
+      announce(tx('timer.serve.show', 'Aufschlag anzeigen') + ': ' + tx('timer.serve.on', 'An'));
     }
   }
   function onServeShown() {
@@ -1040,6 +1053,10 @@
     var params;
     try { params = new URLSearchParams(root.location.search); } catch (e) { return null; }
     var names = TM.prefillNames(params.get('a'), params.get('b'));
+    if (names) names.players = {
+      a: params.has('a1') || params.has('a2') ? [params.get('a1') || '', params.get('a2') || ''] : null,
+      b: params.has('b1') || params.has('b2') ? [params.get('b1') || '', params.get('b2') || ''] : null
+    };
     var ref = params.get('m');
     var targets = String(params.get('t') || '').split(',').filter(function (x) { return x !== ''; });
     if (names) names.match = ref && targets.length ? { ref: ref, targets: targets } : null;
@@ -1049,6 +1066,7 @@
       params.delete('b');
       params.delete('m');
       params.delete('t');
+      ['a1', 'a2', 'b1', 'b2'].forEach(function (key) { params.delete(key); });
       try {
         var q = params.toString();
         root.history.replaceState(root.history.state, '', root.location.pathname + (q ? '?' + q : '') + root.location.hash);
@@ -1057,20 +1075,32 @@
     return names;
   }
   function withMatch(s, names) {
-    return names.match ? TM.setMatch(s, names.match.ref, names.match.targets) : TM.setMatch(s, null, null);
+    return names.match ? TM.setMatch(s, names.match.ref, names.match.targets, returnTarget) : TM.setMatch(s, null, null);
+  }
+  function withNames(s, names, swapped) {
+    var n = TM.setNames(s, swapped ? names.b : names.a, swapped ? names.a : names.b);
+    ['a', 'b'].forEach(function (side) {
+      var sourceSide = swapped ? (side === 'a' ? 'b' : 'a') : side;
+      if (!names.players[sourceSide]) return;
+      [0, 1].forEach(function (index) {
+        n = TM.setPlayerName(n, side, index, names.players[sourceSide][index]);
+      });
+    });
+    return n;
   }
   function applyPrefill(names) {
     if (!names) return;
     /* Dasselbe Spiel erneut geöffnet: Stand (auch nach Seitentausch) behalten. */
-    if (names.match && state.match && names.match.ref === state.match.ref) return;
-    if (names.a === state.names.a && names.b === state.names.b) {
-      if (!state.match && names.match) commit(withMatch(state, names));
+    if (names.match && state.match && names.match.ref === state.match.ref
+        && state.match.source === returnTarget) {
+      commit(withNames(state, names, state.match.swapped));
       return;
     }
+    if (!names.match && names.a === state.names.a && names.b === state.names.b) return;
     var label = function (side) { return names[side] || (side === 'a' ? tx('timer.sideA', 'Seite A') : tx('timer.sideB', 'Seite B')); };
     if (!TM.hasProgress(state)) {
       /* Neue Teams: eine früher gewählte Eröffnung gilt nicht mehr. */
-      commit(withMatch(TM.clearServe(TM.setNames(state, names.a, names.b)), names));
+      commit(withMatch(withNames(TM.clearServe(state), names, false), names));
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: label('a'), b: label('b') }));
       return;
     }
@@ -1085,7 +1115,7 @@
     pendingPrefill = null;
     closeModal(el.primary);
     if (accept && names) {
-      commit(withMatch(TM.clearServe(TM.setNames(TM.reset(state), names.a, names.b)), names));
+      commit(withMatch(withNames(TM.clearServe(TM.reset(state)), names, false), names));
       announce(tx('timer.announce.prefill', 'Namen übernommen: {a} gegen {b}', { a: sideName('a'), b: sideName('b') }));
     }
   }
@@ -1272,6 +1302,12 @@
   /* -------------------------------------------------------- Initialisierung */
   function mount() {
     el.root = byId('match-timer');
+    Array.prototype.forEach.call(doc.querySelectorAll('.mt-name, .mt-setup-input'), function (input) {
+      input.maxLength = TM.MAX_NAME;
+    });
+    Array.prototype.forEach.call(doc.querySelectorAll('.mt-player'), function (input) {
+      input.maxLength = TM.MAX_PLAYER;
+    });
     if (!el.root) return;
     el.clock = byId('mt-clock');
     el.footer = byId('mt-footer');
@@ -1367,6 +1403,7 @@
     el.setupFirstName = { a: byId('mt-setup-ftn-a'), b: byId('mt-setup-ftn-b') };
     el.serveOpen = byId('mt-serve-open');
     el.serveShow = byId('mt-serve-show');
+    el.serveTeaser = byId('mt-serve-teaser');
     el.serveState = byId('mt-serve-state');
     el.servePlayers = byId('mt-serve-players');
     el.serveDialog = byId('mt-serve-dialog');
@@ -1425,6 +1462,7 @@
       }
       var capabilities = profile.capabilities || {};
       byId('mt-serve-set').hidden = !capabilities.serveCounter;
+      serveAvailable = !!capabilities.serveCounter;
       Array.prototype.forEach.call(doc.querySelectorAll('[data-switch-select]'), function (select) {
         select.parentNode.hidden = !capabilities.sidesSwitch;
       });
@@ -1463,6 +1501,7 @@
     });
     el.ruleSelects.forEach(function (sel) { sel.addEventListener('change', onRuleChange); });
     el.serveOpen.addEventListener('click', function () { openServeDialog(null); });
+    el.serveTeaser.addEventListener('click', onServeTeaser);
     el.svBegin.forEach(function (btn) { btn.addEventListener('click', function () { onServeBegin(btn); }); });
     el.svFirst.forEach(function (btn) { btn.addEventListener('click', function () { onServeFirst(btn); }); });
     el.setupBegin.forEach(function (btn) {

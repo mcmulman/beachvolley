@@ -1,6 +1,10 @@
 /* app-skin.css – App-like Bildschirm-Oberfläche für die Turnierbögen.
-   ALLE Regeln sind auf @media screen beschränkt → keine Auswirkung auf die Druckausgabe. */
+   Bildschirm-Design; die separate Druckregel erhält die K&Q-Teilnehmerliste. */
 @import url("core/section-toggle.css") screen;
+@import url("core/sheet-header.css");
+@media print {
+  #rosterSection.naming-close-panel { display: flex !important; }
+}
 @media screen {
 
   :root {
@@ -177,147 +181,6 @@
     }
   }
 
-  /* ── Sticky App-Leiste ── */
-  .app-bar {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    padding-top: calc(8px + env(safe-area-inset-top, 0px));
-    padding-left: calc(12px + env(safe-area-inset-left, 0px));
-    padding-right: calc(12px + env(safe-area-inset-right, 0px));
-    min-height: var(--app-bar-h);
-    background: var(--app-blue-dark);
-    color: #fff;
-    box-shadow: 0 1px 6px rgba(26, 58, 92, .2);
-    margin-bottom: 14px;
-  }
-
-  .app-bar__back {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-    min-height: 40px;
-    padding: 7px 15px 7px 10px;
-    font-size: 14px;
-    font-weight: 650;
-    color: #fff;
-    text-decoration: none;
-    background: rgba(255, 255, 255, .20);
-    border: 1px solid rgba(255, 255, 255, .34);
-    border-radius: 999px;
-    transition: background .16s, transform .12s, box-shadow .16s;
-  }
-  .app-bar__back:hover { background: rgba(255, 255, 255, .30); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
-  .app-bar__back:active { transform: scale(.96); }
-  .app-bar__back .chev {
-    display: inline-block;
-    box-sizing: border-box;
-    width: 9px;
-    height: 9px;
-    font-size: 0;
-    line-height: 0;
-    border: solid currentColor;
-    border-width: 0 0 2.4px 2.4px;
-    transform: rotate(45deg);
-    margin: 0 1px 0 2px;
-  }
-
-  .app-bar__title {
-    flex: 1;
-    min-width: 0;
-    font-size: 15.5px;
-    font-weight: 700;
-    letter-spacing: .2px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .app-bar__brand,
-  .app-bar__context {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .app-bar__brand { font-size: 13px; line-height: 1.2; }
-  .app-bar__context { font-size: 10px; font-weight: 500; line-height: 1.2; opacity: .82; }
-
-  .app-bar__actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .app-bar__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 38px;
-    min-width: 38px;
-    padding: 0 12px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
-    background: rgba(255, 255, 255, .14);
-    border: 1px solid rgba(255, 255, 255, .22);
-    border-radius: var(--app-radius-md);
-    transition: background .16s, transform .12s;
-  }
-  .app-bar__btn:hover { background: rgba(255, 255, 255, .24); }
-  .app-bar__btn:active { transform: scale(.95); }
-  .app-bar__btn .ic { font-size: 16px; line-height: 1; display: inline-flex; align-items: center; }
-  .app-bar__btn .ic svg { display: block; width: 20px; height: 20px; flex: 0 0 auto; }
-
-  /* Auf schmalen Screens: Nav-Label „Übersicht" bleibt sichtbar (klare
-     Orientierung); nur die Aktions-Buttons werden auf Icons reduziert. */
-  @media (max-width: 560px) {
-    .app-bar { gap: 8px; padding-left: 10px; padding-right: 10px; }
-    .app-bar__back { padding: 7px 14px 7px 9px; }
-    .app-bar__btn .lbl { display: none; }
-    .app-bar__btn { padding: 0; min-width: 40px; }
-    .app-bar__title { font-size: 14px; }
-    .app-bar__brand { font-size: 12px; }
-  }
-  /* Auf kleinen Displays bleibt der gekürzte Titel als Orientierung sichtbar;
-     die Sprachkennung wird unter 768px global ausgeblendet. */
-  @media (max-width: 440px) {
-    .app-bar__title { font-size: 12px; }
-  }
-  @media (max-width: 380px) {
-    .app-bar__back .lbl { display: none; }
-    .app-bar__back { padding: 0; min-width: 40px; justify-content: center; }
-  }
-
-  /* Sichtbarer Fokus für Tastatur-/Screenreader-Bedienung.
-     :focus-visible erst ab Safari 15.4 (AGENTS.md §7b) - :focus als
-     Fallback zeigt den Ring auf aelteren iPads dann bei JEDEM Fokus
-     (auch Touch/Klick), :not(:focus-visible) beschraenkt es dort, wo
-     unterstuetzt, wieder auf reine Tastaturbedienung. */
-  .app-bar a:focus,
-  .app-bar button:focus {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-  .app-bar a:focus:not(:focus-visible),
-  .app-bar button:focus:not(:focus-visible) {
-    outline: none;
-  }
-  .app-bar a:focus-visible,
-  .app-bar button:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-
   /* ═══════════════════════════════════════════════════════════════════
      VEREINHEITLICHTE, MODERNE BILDSCHIRM-OBERFLÄCHE FÜR ALLE BÖGEN
      Nur @media screen → keinerlei Auswirkung auf die Druckausgabe.
@@ -474,6 +337,7 @@
   .guide-heading .section-toggle-close { order: 2; }
   .guide-heading .section-toggle-open { order: 2; }
   .section-toggle-close--external { display: flex; margin: 0 0 4px auto; }
+  .naming-close-panel { padding-top: 56px !important; }
   /* „Wertung & Details anzeigen“ bleibt ein ruhiger Outline-Button. */
   .format-info-toggle {
     background: #fff;
@@ -1052,7 +916,6 @@
       padding-left: calc(10px + env(safe-area-inset-left, 0px));
       padding-right: calc(10px + env(safe-area-inset-right, 0px));
     }
-    .tournament-sheet .app-bar { padding-left: 10px; padding-right: 10px; }
     .tournament-sheet #tserver-status { padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important; }
     .tournament-sheet .teams { table-layout: fixed; }
     .tournament-sheet .teams .name { word-wrap: break-word; overflow-wrap: break-word; }
@@ -1068,7 +931,6 @@
     .tournament-sheet .central-table .teamcol .t-nm { width: 140px; font-size: 12px; }
   }
   @media (max-width: 640px) {
-    .tournament-sheet .app-bar__back, .tournament-sheet .app-bar__btn { min-width: 44px; }
     .tournament-sheet .ngrid input { width: 100%; min-width: 0; }
     .tournament-sheet .cfgfield > input, .tournament-sheet .cfgfield > select { width: 100%; min-width: 0; }
     .tournament-sheet .cfgcard-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1115,7 +977,7 @@
     .tournament-sheet .table-scroll.is-wide th[data-field] { min-width: 200px; }
   }
   @media (max-height: 480px) and (max-width: 960px) {
-    .tournament-sheet .app-bar, .tournament-sheet .schedule-roundbar { position: static; }
+    .tournament-sheet .schedule-roundbar { position: static; }
     .tournament-sheet .mobile-jumpbar { position: static; }
     .tournament-sheet { padding-bottom: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   }

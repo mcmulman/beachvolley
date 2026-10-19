@@ -1,0 +1,138 @@
+/* Shared tournament header; deliberately no page, form or table selectors. */
+@media print {
+  .app-bar { display: none !important; }
+}
+@media screen {
+  .app-bar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    min-height: var(--app-bar-h, 54px);
+    background: var(--app-blue-dark, #1a3a5c);
+    color: #fff;
+    box-shadow: 0 1px 6px rgba(26, 58, 92, .2);
+    margin-bottom: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .app-bar, .app-bar * { box-sizing: border-box; }
+  .app-bar__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 7px 15px 7px 10px;
+    font-size: 14px;
+    font-weight: 650;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(255, 255, 255, .20);
+    border: 1px solid rgba(255, 255, 255, .34);
+    border-radius: 999px;
+    transition: background .16s, transform .12s, box-shadow .16s;
+  }
+  .app-bar__back:hover { background: rgba(255, 255, 255, .30); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
+  .app-bar__back:active { transform: scale(.96); }
+  .app-bar__back .chev {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 9px;
+    height: 9px;
+    font-size: 0;
+    line-height: 0;
+    border: solid currentColor;
+    border-width: 0 0 2.4px 2.4px;
+    transform: rotate(45deg);
+    margin: 0 1px 0 2px;
+  }
+  .app-bar__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-bar__brand, .app-bar__context {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-bar__brand { font-size: 13px; line-height: 1.2; }
+  .app-bar__context { font-size: 10px; font-weight: 500; line-height: 1.2; opacity: .82; }
+  .app-bar__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .app-bar__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0 12px;
+    margin: 0;
+    min-height: 0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: normal;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: var(--app-radius-md, 10px);
+    transition: background .16s, transform .12s;
+  }
+  .app-bar__btn:hover { background: rgba(255, 255, 255, .24); }
+  .app-bar__btn:active { transform: scale(.95); }
+  .app-bar__btn .ic { font-size: 16px; line-height: 1; display: inline-flex; align-items: center; }
+  .app-bar__btn .ic svg { display: block; width: 20px; height: 20px; flex: 0 0 auto; }
+  /* Invisible 44px touch targets preserve the existing bar height. */
+  .app-bar__back, .app-bar__btn { position: relative; }
+  .app-bar__back::after, .app-bar__btn::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 100%; height: 100%; min-width: 44px; min-height: 44px;
+    -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+  }
+  @media (max-width: 960px) {
+    .app-bar { padding-left: 10px; padding-right: 10px; }
+  }
+  @media (max-width: 640px) {
+    .app-bar__back, .app-bar__btn { min-width: 44px; }
+  }
+  @media (max-width: 560px) {
+    .app-bar { gap: 8px; }
+    .app-bar__back { padding: 7px 14px 7px 9px; }
+    .app-bar__btn .lbl { display: none; }
+    .app-bar__btn { padding: 0; min-width: 44px; }
+    .app-bar__title { font-size: 14px; }
+    .app-bar__brand { font-size: 12px; }
+  }
+  @media (max-width: 440px) {
+    .app-bar__title { font-size: 12px; }
+  }
+  @media (max-width: 380px) {
+    .app-bar__back .lbl { display: none; }
+    .app-bar__back { padding: 0; min-width: 44px; justify-content: center; }
+  }
+  /* :focus is the Safari 12 fallback. */
+  .app-bar a:focus, .app-bar button:focus { outline: 2px solid #fff; outline-offset: 2px; }
+  .app-bar a:focus:not(:focus-visible), .app-bar button:focus:not(:focus-visible) { outline: none; }
+  .app-bar a:focus-visible, .app-bar button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  @media (max-height: 480px) and (max-width: 960px) {
+    .app-bar { position: static; }
+  }
+}

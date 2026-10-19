@@ -104,9 +104,7 @@
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Alle Teams stehen auf einer Feld-Leiter. Feld 1 ist das
-      <b>King &amp; Queen Court</b>. Auf jedem Feld spielen (im Normalfall 4 Teams je Feld) zwei
-      Spiele gleichzeitig – Setzplatz 1 gegen 4, Setzplatz 2 gegen 3.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Bei vier Teams auf einer Feldstufe entstehen die Paarungen Setzplatz 1 gegen 4 und 2 gegen 3. Die praktische Abwicklung dieser Spiele organisiert die Turnierleitung.</span></li>
     <li><span class="hi" data-i18n="kotc.guide.timeLabel">Zeitlimit statt Zielpunktzahl:</span> <span data-i18n="kotc.guide.timePre">Jede Runde dauert</span> <span id="g-roundmin">–</span> <span data-i18n="kotc.guide.timePost">Min.
       Gespielt wird auf Zeit – es zählen die Punkte, die in dieser Zeit erzielt werden (kein fester
       Zielwert, kein 2-Punkte-Zwang). Ein Unentschieden ist möglich.</span></li>
@@ -120,11 +118,9 @@
     <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
   </button>
   <div class="format-info-content format-info-text" id="scoringTables" data-i18n-html="kotc.legend" hidden>
-    <b>Wertung:</b> Primär entscheiden die <b>kumulierten Punkte</b> aus allen Runden (klassische
-    King-of-the-Court-Regel). Haben nicht alle Teams gleich viele Runden gespielt (Feld-Freilos), wird
-    auf <b>Punkte pro gespielter Runde</b> umgeschaltet – analog zur „ungleiche Spielanzahl"-Regel bei den
-    übrigen Formaten (AGENTS.md §4.2). Bei weiterhin gleichem Wert entscheidet das <b>höchste je erreichte
-    Feld</b>, zuletzt das Los.
+    <b>Wertung dieser Feldleiter-Variante:</b> Zuerst zählen die <b>erzielten Punkte</b>, bei ungleicher Spielanzahl die <b>Punkte pro Spiel</b>.
+    Danach entscheidet das <b>höchste je erreichte Feld</b>. Verbleibende Gleichstände teilen sich den Platz;
+    die Teamnummer bestimmt nur die Anzeigereihenfolge. Die App lost nicht.
   </div>
 </div>
 
@@ -224,6 +220,8 @@
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
 <script src="core/turnier-core.js"></script>
+<script src="core/turnier-outcome.js"></script>
+<script src="core/turnier-stage.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
 <script src="core/turnier-resume-picker.js"></script>
@@ -259,9 +257,10 @@
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
-    for(let i=1;i<=max;i++) teams.push(names[i] || ('Team ' + i));
+    for(let i=1;i<=max;i++) teams.push(TSport.teamLabel(cur, i, 'Team ' + i));
     const empty = !Object.keys(cur.results || {}).length
       && !Object.keys(cur.teamNames || {}).length
+      && !Object.keys(cur.pairMembers || {}).length
       && !(cur.absent || []).length;
     return { sheet:SHEET, file:SHEET_FILE, type:SHEET_TYPE, empty:empty,
              keys:[TStore.PREFIX + SHEET], title:cur.title, teams:teams,
@@ -289,9 +288,9 @@
   let structureKey = '';
   let roundFilter = 'all';
 
-  function labeler(){ return TUI.makeLabeler(S.teamNames); }
+  function labeler(){ return TUI.makeLabeler(S); }
   function ctxFor(){
-    return { teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, (S.absent||[]).includes(n)) };
+    return { teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, (S.absent||[]).includes(n)) };
   }
   function activeTeams(){ const out=[]; for(let i=1;i<=S.config.teams;i++) out.push(i); return out; }
 
@@ -401,7 +400,7 @@
 
   function buildStructure(){
     buildTeamsTable();
-    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
+    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor(), { removable: true, minTeams: MIN_TEAMS });
     buildLadder();
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
@@ -452,7 +451,7 @@
     document.querySelectorAll('[data-team-name]').forEach(td => {
       const n = +td.getAttribute('data-team-name');
       if(!Number.isFinite(n)) return;
-      td.innerHTML = TUI.teamNameHtml(n, S.teamNames, (S.absent||[]).includes(n));
+      td.innerHTML = TUI.teamNameHtml(n, S, (S.absent||[]).includes(n));
     });
 
     const ctx = ctxFor();
@@ -558,23 +557,16 @@
       if(next[0] != null && next[1] != null) rebuild();
     });
 
-    document.getElementById('nameGrid').addEventListener('input', e => {
-      const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
-      if(!n) return;
-      const v = e.target.value.trim();
-      if(v) S.teamNames[n] = v; else delete S.teamNames[n];
+    TUI.wireParticipantNames($('nameGrid'), () => S, () => {
       TStore.save(S); paint();
     });
     $('btnShuffle').addEventListener('click', () => {
-      const names = activeTeams().map(t => S.teamNames[t] || '');
-      for(let i=names.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
-      S.teamNames = {};
-      names.forEach((v,i) => { if(v) S.teamNames[i+1] = v; });
-      TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS }); paint();
+      TUI.shuffleParticipantNames(S, activeTeams());
+      TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS }); paint();
     });
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearNames'))) return;
-      S.teamNames = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS }); paint();
+      S.teamNames = {}; S.pairMembers = {}; TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS }); paint();
     });
     ['nameGrid', 'absentGrid'].forEach(id => document.getElementById(id).addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('[data-remove-team]');
@@ -644,6 +636,7 @@
 <script>
 if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="core/sheet-header.js" defer></script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">

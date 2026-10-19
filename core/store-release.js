@@ -12,7 +12,7 @@
     function text(key, fallback) {
       return window.TI18n && window.TI18n.active() ? window.TI18n.t(key) : fallback;
     }
-    document.querySelectorAll('.footer-amazon, #home-timer-link').forEach(function (node) {
+    document.querySelectorAll('.footer-amazon, #home-timer-link, #home-firmencup').forEach(function (node) {
       node.parentNode.removeChild(node);
     });
     [

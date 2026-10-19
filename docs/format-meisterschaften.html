@@ -55,7 +55,7 @@
       <p class="subtitle">Beachvolleyball + mehrere Zusatzdisziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis) · das vielseitigste Team gewinnt</p>
 
       <h2>Kurzübersicht</h2>
-      <p>Bei den <strong>BeachL-Meisterschaften</strong> geht es nicht nur um Beachvolleyball – gesucht wird das <strong>vielseitigste Team</strong>. Neben einem Beachvolleyballturnier laufen <strong>parallel</strong> Turnierformate in weiteren Disziplinen. Welche Disziplinen das im Einzelnen sind, <strong>kann von Event zu Event variieren</strong> – als Beispiele haben sich zuletzt <strong>Spikeball</strong>, <strong>Wikingerschach</strong> und <strong>Mini-Tischtennis</strong> etabliert (früher z.B. auch Beerpong). Mit der Anmeldung bestätigt jedes Team seine Teilnahme an <strong>allen</strong> parallel stattfindenden Turnieren/Disziplinen des jeweiligen Events. Es zählen die <strong>besten Turnierergebnisse</strong> (üblicherweise 3 von 4) für die Gesamtwertung des Sieger-Teams; zusätzlich werden auch Preise <strong>pro Disziplin</strong> vergeben.</p>
+      <p>Bei diesem Mehrdisziplinen-Event tritt ein festes Zweierteam in mehreren Wettbewerben an. Disziplinen, Teilnahmebedingungen, Wertungsformel und mögliche Preise legt die jeweilige Ausschreibung fest. Der verlinkte Bogen verwaltet nur den Beachvolleyball-Teil; den gemeinsamen Zeitplan und die Gesamtwertung erstellt die Turnierleitung außerhalb der App.</p>
 
       <h2>Anmeldung</h2>
       <p>Angemeldet wird als <strong>Team aus 2 Personen</strong> – egal ob männlich, weiblich oder Mixed. Es gibt keine Niveau- oder Geschlechtervorgabe wie beim Tandem-Format.</p>
@@ -65,8 +65,8 @@
         <li>Jedes Team tritt in <strong>mehreren Disziplinen</strong> an: einem Beachvolleyballturnier sowie üblicherweise drei weiteren Disziplinen nach Wahl der Turnierleitung (z.B. Spikeball, Wikingerschach, Mini-Tischtennis).</li>
         <li>Die Disziplinen laufen <strong>parallel</strong> zueinander, d.h. jedes Team wechselt im Laufe der Veranstaltung zwischen den Stationen.</li>
         <li>Jede Disziplin hat ihr <strong>eigenes Mini-Turnier</strong> mit eigener Platzierung/Punktevergabe.</li>
-        <li>Für die <strong>Gesamtwertung</strong> zählen üblicherweise nur die <strong>drei besten</strong> Einzelergebnisse eines Teams (bei anderer Disziplin-Anzahl entsprechend angepasst) – das schwächste Ergebnis wird gestrichen.</li>
-        <li>Zusätzlich zur Gesamtwertung gibt es <strong>Einzelpreise pro Disziplin</strong>.</li>
+        <li>Die Ausschreibung legt fest, welche Ergebnisse für die Gesamtwertung zählen. „Drei von vier“ ist ein mögliches Eventmodell, keine Vorgabe der App.</li>
+        <li>Ob es Gesamt- oder Disziplinpreise gibt, entscheidet die Veranstaltung.</li>
       </ol>
 
       <h2>Empfohlener Spielbogen je Disziplin</h2>
@@ -74,10 +74,10 @@
         <thead><tr><th>Disziplin</th><th>Empfehlung</th></tr></thead>
         <tbody>
           <tr><td>Beachvolleyball</td><td><strong>Gruppen + Finalrunde</strong> – der klassische Universalbogen dieses Repos, skaliert von 4–24 Teams und liefert am Ende eine klare Platzierung je Team.</td></tr>
-          <tr><td>Weitere Disziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis)</td><td>Da diese Disziplinen meist kleine Felder und kurze Zeitfenster haben, eignen sich am ehesten <strong>„Jeder gegen Jeden“</strong> (feste, kurze Rundenpläne bei kleinen Gruppen) oder ein einfaches <strong>KO-System</strong>, wenn die Zeit knapp ist bzw. viele Teams antreten.</td></tr>
+          <tr><td>Weitere Disziplinen (Beispiele: Spikeball, Wikingerschach, Mini-Tischtennis)</td><td>Separat organisieren. Für diese Eventdisziplinen sind keine eigenen Sportprofile implementiert; reguläre Tischtennis-Unterstützung belegt keine Unterstützung für Mini-Tischtennis.</td></tr>
         </tbody>
       </table>
-      <p>Die konkrete Auswahl der Zusatzdisziplinen liegt bei der Turnierleitung und kann sich von Veranstaltung zu Veranstaltung unterscheiden – die obige Tabelle ist daher als Orientierung zu verstehen, nicht als feste Vorgabe. Dieses Repo bildet aktuell keinen eigenen „Kombi-Bogen“ ab, der beliebig viele Disziplinen automatisch zu einer Gesamtwertung zusammenrechnet. Die Turnierleitung trägt dazu am einfachsten die Platzierung/Punktzahl jedes Teams aus den Einzelbögen der jeweiligen Disziplinen in eine gemeinsame Auswertungstabelle ein und streicht dort je Team das schwächste Ergebnis.</p>
+      <p>Die App bietet keinen Kombi-Bogen und keinen disziplinübergreifenden Zeitplan. Die Turnierleitung sammelt die Ergebnisse separat und berechnet die Gesamtwertung nach der Ausschreibung; auch mögliche Streichresultate werden dort geregelt.</p>
 
       <h2>Wann geeignet</h2>
       <ul>
@@ -85,10 +85,10 @@
         <li>Veranstaltungen, die sowohl eine Gesamtwertung als auch separate Disziplin-Preise vergeben möchten</li>
       </ul>
 
-      <div class="note">Dieses Format ist bewusst kein offizieller FIVB-/Swiss-Volley-Standard, sondern ein <strong>custom Multi-Disziplin-Event</strong> dieses Vereins. Jede Disziplin nutzt einen der bestehenden Universalbögen dieses Repos; welche Zusatzdisziplinen neben Beachvolleyball stattfinden, entscheidet die Turnierleitung für das jeweilige Event. Die Gesamtwertung über die besten Einzelergebnisse erfolgt separat außerhalb der Bögen.</div>
+      <div class="note">Dies ist ein <strong>Mehrdisziplinen-Eventkonzept</strong>, kein offizieller FIVB-/Swiss-Volley-Standard. Der Beachvolleyball-Teil nutzt einen bestehenden Bogen. Weitere Disziplinen und die Gesamtwertung werden separat organisiert; ihre Regeln werden nicht durch die Sportprofile der App abgedeckt.</div>
 
       <h2>Wertung</h2>
-      <p>Jede Disziplin liefert ein eigenes Ergebnis/eine eigene Platzierung je Team. Für die Gesamtwertung zählen die <strong>besten Ergebnisse</strong> (üblicherweise 3 von 4, je nach tatsächlicher Anzahl der Disziplinen entsprechend angepasst); das schlechteste Ergebnis wird gestrichen. Zusätzlich werden <strong>Preise pro Disziplin</strong> unabhängig von der Gesamtwertung vergeben.</p>
+      <p>Jede Disziplin liefert ein Ergebnis oder eine Platzierung je Team. Die Turnierleitung führt diese außerhalb der App nach der ausgeschriebenen Wertungsformel zusammen. Eine automatische Gesamtwertung oder Preisvergabe ist nicht implementiert.</p>
     </div>
   </div>
 

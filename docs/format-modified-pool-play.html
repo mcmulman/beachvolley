@@ -104,11 +104,10 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <ul>
     <li>Wenn die Zeit für ein komplettes Round-Robin in jeder Gruppe nicht reicht, aber ein reines
       Einzel-K.-o.-Turnier (bei dem ein Team nach nur einem Spiel ausscheidet) zu hart wäre</li>
-    <li>Für Turniere mit straffem Zeitplan, die trotzdem sicherstellen wollen, dass <strong>jedes Team mindestens
-      zwei Spiele</strong> bekommt (im Gegensatz zu einer ersten Runde im reinen KO-System)</li>
+    <li>Wenn bei vollständigen Dreier- oder Vierergruppen ohne Ausfälle <strong>zwei Gruppenspiele je Team</strong> vorgesehen werden sollen</li>
     <li>Bei Turnieren mit Zeitdruck, bei denen die Gruppenphase möglichst
-      kompakt bleiben soll, ohne auf eine faire Platzierung innerhalb der Gruppe zu verzichten</li>
-    <li><strong>Nicht</strong> geeignet, wenn eine möglichst „gerechte" Gruppenphase mit jeder-gegen-jeden-Vergleich
+      kompakt bleiben soll und in Vierergruppen Platzierungsspiele statt einer Gesamttabelle gewünscht sind</li>
+    <li><strong>Nicht</strong> geeignet, wenn eine Gruppenphase mit jeder-gegen-jeden-Vergleich
       gewünscht ist (dafür „Jeder gegen Jeden") oder wenn Gruppengrößen jenseits von 3–4 Teams nötig sind (dafür
       „Gruppen + Finalrunde" mit vollem Round-Robin)</li>
   </ul>
@@ -123,8 +122,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
     <li><strong>Gewinnerspiel</strong> (Sieger vs. Sieger) um <strong>Platz 1/2</strong> der Gruppe</li>
     <li><strong>Verliererspiel</strong> (Verlierer vs. Verlierer) um <strong>Platz 3/4</strong> der Gruppe</li>
   </ol>
-  <p>Der Gruppenplatz steht damit unmittelbar durch die Bracket-Position fest – es ist <strong>keine
-  Tabelle mit Punkten und Differenzwerten</strong> nötig, und ein Gleichstand ist strukturell ausgeschlossen.</p>
+  <p>Der Gruppenplatz ergibt sich aus den Entscheidungen im Bracket, nicht aus einer Tabelle mit Punkten und Differenzwerten. Alle vier Spiele benötigen einen Sieger; offene Ergebnisse, Remis oder Ausfälle können Plätze offenlassen.</p>
   <h3>3er-Gruppe (Sonderfall)</h3>
   <p>„Bei 3er-Gruppen hat der Erstgesetzte ein Freilos im 1. Spiel" (<code>AGENTS.md</code> §1). Ein Bracket wie bei
   der 4er-Gruppe würde hier keine Spiele sparen – volles Round-Robin für 3 Teams braucht ohnehin nur 3 Spiele. MPP
@@ -132,16 +130,11 @@ tr:nth-child(even) td { background: #f0f4f9; }
   Runde erhält; die Platzierung läuft danach wie gewohnt über die Tabellenwertung des gewählten Sportprofils
   (<code>AGENTS.md</code> §7/§8).</p>
   <h3>Andere Gruppengrößen</h3>
-  <p>Dieser Turnierbogen unterstützt für Modified Pool Play <strong>ausschließlich Gruppen mit 3 oder 4 Teams</strong>
-  – das entspricht der realen Wettkampfpraxis (größere Gruppen bräuchten einen eigenen, nicht standardisierten
-  Bracket, kleinere ergäben kein sinnvolles Gewinner-/Verliererspiel). Die Teamzahl wird deshalb automatisch in
-  reine 3er-/4er-Gruppen zerlegt (möglichst viele 4er-Gruppen, 3er-Gruppen nur für den Rest); sollte eine manuell
-  gewählte Gruppenzahl eine andere Größe ergeben, weist der Bogen deutlich darauf hin und spielt diese Gruppe
-  stattdessen komplett als Round-Robin (keine Spielabbrüche, nur kein Effizienzgewinn für diese eine Gruppe).</p>
+  <p>Die automatische Einteilung bildet Dreier- und Vierergruppen mit möglichst wenigen Dreiergruppen. Ergibt eine manuell gewählte Gruppenzahl andere Größen, zeigt der Bogen eine Warnung und spielt diese Gruppen vollständig als Round Robin; die verkürzte Vierergruppen-Mechanik gilt dort nicht.</p>
   <p><strong>Empfohlene Teamzahl:</strong> 6–24 Teams (in reinen 4er- oder gemischten 3er-/4er-Gruppen). Eine
   Gesamtzahl von genau 5 Teams lässt sich nicht in reine 3er-/4er-Gruppen zerlegen.</p>
-  <p>Die anschließende <strong>Finalrunde</strong> (Über-Kreuz-Platzierungsrunde, KO-Runde, Hauptrunde oder gar
-  keine) funktioniert exakt wie beim Bogen „Gruppen + Finalrunde" – MPP ersetzt nur die Art, wie der Gruppenplatz
+  <p>Die fünf wählbaren <strong>Finalmodi</strong> (Über-Kreuz-Platzierungsrunde, KO-Runde, Hauptrunde,
+  Platzierungsblöcke oder keine Finalrunde) funktionieren wie beim Bogen „Gruppenphase + Finalrunde“ – MPP ersetzt nur die Art, wie der Gruppenplatz
   ermittelt wird, nicht wie er danach weiterverwendet wird.</p>
 </section>
 <section id="wertung">
@@ -157,10 +150,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <strong>Beachvolleyball</strong>: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand entscheiden
   Ball-Differenz, dann Ballpunkte, dann direkter Vergleich, zuletzt das Los (<code>AGENTS.md</code> §7/§8).</p>
   <p><strong>Hallenvolleyball und Tischtennis</strong> verwenden eigene Profilwertungen – je nach Profil z.&nbsp;B. 3-2-1-0-Punkte oder Siege, danach Satz- bzw. Spieldifferenz, Ball- bzw. Punktdifferenz und direkter Vergleich. Maßgeblich sind die im Bogen angezeigte Wertung und die Ausschreibung der Veranstaltung.</p>
-  <p>Fällt ein Team im Setzplatz-Spiel einer 4er-Gruppe aus, zieht der Gegner kampflos ins Gewinner-/Verliererspiel
-  weiter (Freilos) – genau wie beim KO-System. Fallen beide Setzplatz-Spiele einer Gruppe gleichzeitig auf ein
-  ausgefallenes Team, bleiben die Plätze 3/4 dieser Gruppe offen, bis mindestens ein reales Ergebnis eingetragen
-  wird; dieses Verhalten ist identisch zu einem beidseitigen Ausfall in einer klassischen Round-Robin-Gruppe.</p>
+  <p>Fällt ein Team im ersten Spiel einer Vierergruppe aus, zieht der Gegner kampflos ins Gewinnerspiel ein. Da dabei kein Verlierer entsteht, erhält die verbleibende Seite des Verliererspiels gegebenenfalls Platz 3 ohne Spiel; Platz 4 bleibt frei. Fehlen beide Zubringer zum Verliererspiel, bleiben Plätze 3/4 frei.</p>
 </section>
 <section id="vorteile">
   <h2>Vorteile / Nachteile</h2>
@@ -170,8 +160,8 @@ tr:nth-child(even) td { background: #f0f4f9; }
     </thead>
     <tbody>
       <tr><td>Deutlich weniger Spiele als volles Round-Robin (4 statt 6 in der 4er-Gruppe)</td><td>Jedes Team hat nur 2 Gruppenspiele – weniger Vergleichsmöglichkeiten als beim vollen Round-Robin</td></tr>
-      <tr><td>Jedes Team spielt mindestens 2 Spiele – fairer als ein reines Einzel-K.-o.-Turnier</td><td>Nur für 3er-/4er-Gruppen definiert – bei anderen Gruppengrößen kein Effizienzgewinn</td></tr>
-      <tr><td>Der Gruppenplatz steht in 4er-Gruppen ohne Tabelle/Tie-Breaker eindeutig fest</td><td>Ein einzelnes schwaches Spiel in Runde 1 legt bereits fest, ob ein Team um Platz 1/2 oder nur um Platz 3/4 spielt</td></tr>
+      <tr><td>Zwei Gruppenspiele je Team in vollständigen 3er-/4er-Gruppen ohne Ausfälle</td><td>Andere manuell gewählte Gruppengrößen spielen vollständiges Round Robin</td></tr>
+      <tr><td>4er-Gruppen ermitteln Plätze durch Entscheidungsspiele statt einer Tabelle</td><td>Eine Niederlage in Runde 1 begrenzt den Gruppenplatz auf 3/4</td></tr>
     </tbody>
   </table>
 </section>

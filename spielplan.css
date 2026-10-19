@@ -1660,3 +1660,26 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
   }
   body .bl-mtimer svg { width: 17px; height: 17px; }
 }
+
+/* Spielentscheidungen (Default/Spielabbruch) – siehe core/turnier-outcome.js */
+.outcome-btn { display:block; margin:4px auto 0; padding:6px 10px; min-height:32px; font:inherit; font-size:12px;
+  border:1px solid #9aa8bc; border-radius:6px; background:#fff; color:#1b2b4b; cursor:pointer; }
+.outcome-btn[hidden] { display:none; }
+.outcome-note { font-weight:600; }
+td.match[data-outcome="pending"] .outcome-note { color:#8a5a00; }
+td.match[data-outcome="applied"] .outcome-note { color:#1b2b4b; }
+td.match[data-outcome="invalid"] .outcome-note { color:#b00020; }
+.outcome-overlay { position:fixed; top:0; right:0; bottom:0; left:0; z-index:1000; background:rgba(0,0,0,.45);
+  overflow:auto; padding:12px; box-sizing:border-box; }
+.outcome-dialog { max-width:480px; margin:0 auto; background:#fff; color:#1b2b4b; border-radius:10px; padding:16px;
+  box-sizing:border-box; }
+.outcome-dialog h2 { margin:0 0 6px; font-size:18px; }
+.outcome-dialog fieldset { border:1px solid #d8e1ec; border-radius:6px; margin:8px 0; padding:6px 10px; }
+.outcome-radio, .outcome-field { display:block; margin:6px 0; }
+.outcome-field span { display:block; font-size:12px; margin-bottom:2px; }
+.outcome-field select, .outcome-field input { width:100%; box-sizing:border-box; min-height:36px; font:inherit; }
+.outcome-hint, .outcome-policy { font-size:12px; color:#4a566b; margin:6px 0; }
+.outcome-preview { font-weight:600; margin:6px 0; }
+.outcome-error { color:#b00020; margin:6px 0; min-height:1em; }
+.outcome-actions button { min-height:40px; margin:4px 8px 0 0; padding:6px 14px; font:inherit; }
+@media print { .outcome-btn, .outcome-overlay { display:none !important; } }

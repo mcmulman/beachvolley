@@ -50,8 +50,8 @@
   var VERSION = 1;
   var STORAGE_KEY = 'BEACHL.matchTimer';
   var MAX_SCORE = 999;
-  var MAX_NAME = 40;
-  var MAX_PLAYER = 24;
+  var MAX_NAME = 500;
+  var MAX_PLAYER = 100;
   var MAX_UNDO = 30;
   var MAX_SETS = 9;
   var MAX_COUNTDOWN_MS = 180 * 60000;
@@ -184,8 +184,14 @@
       first: servePair(s.first, cleanFirst),
       players: cleanPlayers(s.players),
       serveShown: s.serveShown === true,
-      match: s.match ? { ref: s.match.ref, targets: s.match.targets.slice(), swapped: !!s.match.swapped } : null
+      match: copyMatch(s.match)
     };
+  }
+  function copyMatch(match) {
+    if (!match) return null;
+    var out = { ref: match.ref, targets: match.targets.slice(), swapped: !!match.swapped };
+    if (match.source) out.source = match.source;
+    return out;
   }
 
   function segmentMs(s, now) {
@@ -685,11 +691,12 @@
   /* ---------------------------------------------- Spiel aus dem Turnierbogen
      ref = Spiel-ID im Bogen; targets = Satzziele der Satzspalten. swapped
      merkt sich Seitentausche, damit das Ergebnis richtig herum zurückgeht. */
-  function setMatch(s, ref, list) {
+  function setMatch(s, ref, list, source) {
     var r = String(ref == null ? '' : ref).slice(0, MAX_REF);
     var t = cleanTargets(list);
     var n = clone(s);
     n.match = r && t.length ? { ref: r, targets: t, swapped: false } : null;
+    if (n.match && returnTarget(source)) n.match.source = returnTarget(source);
     return n;
   }
   function matchComplete(s) {
@@ -767,7 +774,10 @@
     var m = raw.match;
     if (m && typeof m === 'object' && typeof m.ref === 'string' && m.ref) {
       var t = cleanTargets(m.targets);
-      if (t.length) s.match = { ref: m.ref.slice(0, MAX_REF), targets: t, swapped: m.swapped === true };
+      if (t.length) {
+        s.match = { ref: m.ref.slice(0, MAX_REF), targets: t, swapped: m.swapped === true };
+        if (returnTarget(m.source)) s.match.source = returnTarget(m.source);
+      }
     }
     return s;
   }

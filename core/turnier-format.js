@@ -7,13 +7,69 @@
    Der HTML-Bogen ruft nur noch build() auf und rendert das Ergebnis.
    ========================================================================== */
 (function (root, factory) {
-  const api = factory(root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null));
+  const TC = root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null);
+  const api = factory(TC, root.TOutcome || (typeof require === 'function' ? require('./turnier-outcome.js') : null),
+    root.TStage || (typeof require === 'function' ? require('./turnier-stage.js') : null));
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TFormat = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC, TOutcome, TStage) {
   'use strict';
 
   const GROUP_NAMES = 'ABCDEFGH'.split('');
+
+  function matchWinsOf(modeId) {
+    try { return TC.modeDef(modeId).matchWins; } catch (e) { return undefined; }
+  }
+
+  /* Hinweistexte zu Wertungsprofilen, die keinen Losentscheid kennen. */
+  function rankingName(profile) {
+    return profile === 'indoor-dvv-bso-2026' ? 'DVV-Wertung'
+      : profile === 'tt-ittf-individual-groups-2026' ? 'ITTF-Gruppenwertung'
+      : /^tt-dttb-/.test(profile) ? 'DTTB-Wertung' : 'FIVB-Wertung';
+  }
+  function unsupportedText(profile, reason) {
+    if (profile === 'tt-dttb-swiss-ranking-2026') {
+      return 'DTTB WO D7.6: nicht unterstützter Fall (' + reason + '); Rangfolge bleibt offen.';
+    }
+    if (profile === 'tt-ittf-individual-groups-2026') {
+      return 'ITTF Statutes 2026 §§3.7.4.4/3.7.5: nicht unterstützter Gruppenfall ('
+        + reason + '); Rangfolge und Qualifikation bleiben offen.';
+    }
+    return rankingName(profile) + ' wegen '
+      + (reason === 'unequal-games' ? 'ungleicher Spielanzahl'
+        : reason === 'mode' ? 'nicht unterstütztem Satzmodus'
+        : reason === 'outcome' ? (profile === 'tt-dttb-individual-round-robin-2026'
+          ? 'Sonderergebnis oder Abwesenheit (DTTB WO D7.9/D7.10 nicht umgesetzt)'
+          : 'Default/Spielabbruch (DVV BSO §5.3 nicht umgesetzt)')
+        : reason === 'swiss' ? 'Schweizer System (dafür gilt DTTB WO D7.6, nicht D7.5)'
+        : reason === 'bye' ? 'Freilos (keine D7.5-Wertung dafür implementiert)' : 'Freilos/Walkover')
+      + ' nicht berechenbar; Gruppenplatzierungen bleiben offen.';
+  }
+  function isStrictProfile(profile) {
+    return profile === 'indoor-fivb-2026' || profile === 'indoor-dvv-bso-2026'
+      || profile === 'tt-dttb-individual-round-robin-2026'
+      || profile === 'tt-dttb-swiss-ranking-2026'
+      || profile === 'tt-ittf-individual-groups-2026';
+  }
+  function unresolvedText(profile) {
+    if (profile === 'tt-dttb-swiss-ranking-2026') {
+      return 'DTTB WO D7.6: Restgleichstand; offizieller direkter Vergleich/Losentscheid erforderlich. Die App lost nicht.';
+    }
+    if (profile === 'tt-dttb-individual-round-robin-2026') {
+      return 'Gleichstand nach DTTB WO D7.5 – ein offizieller Losentscheid ist erforderlich; die App lost nicht.';
+    }
+    return profile === 'indoor-dvv-bso-2026'
+      ? 'Gleichstand nach den DVV-Kriterien – Entscheidungsspiel nach BSO §5.2.4 nötig; die App entscheidet nicht.'
+      : profile === 'tt-ittf-individual-groups-2026'
+        ? 'ITTF Statutes 2026 §3.7.5: Gleichstand nach Matchpunkten, Spiel- und Punktquotient; offizieller Losentscheid erforderlich. Die App lost nicht.'
+      : 'Gleichstand nach allen umgesetzten Kriterien – offizielle Entscheidung (Regelwerk der Veranstaltung) nötig.';
+  }
+  function isDttbRanking(profile) {
+    return profile === 'tt-dttb-individual-round-robin-2026';
+  }
+  function isIttfRanking(profile) {
+    return profile === 'tt-ittf-individual-groups-2026';
+  }
 
   /* Wie viele Gruppen sind bei N Teams sinnvoll?
      Ziel (AGENTS.md §5): Gruppen von 4–6 Teams. Darunter spielt jeder zu
@@ -142,7 +198,7 @@
     function resultOf(matchId, modeId) {
       const key = matchId + '|' + modeId;
       if (resCache.has(key)) return resCache.get(key);
-      const r = TC.computeResult(c.results[matchId], modeId);
+      const r = TOutcome.resultFor(c, matchId, modeId);
       resCache.set(key, r);
       return r;
     }
@@ -162,7 +218,7 @@
         if (aAbs) { out.push({ bye: b }); return; }
         if (bAbs) { out.push({ bye: a }); return; }
         const r = resultOf(m.id, m.setMode || modeId);
-        if (r) out.push({ a, b, result: r });
+        if (r) out.push({ a, b, result: r, matchWins: matchWinsOf(m.setMode || modeId) });
       });
       return out;
     }
@@ -178,10 +234,22 @@
         return a != null && b != null && !absent.has(a) && !absent.has(b);
       }).length;
       const complete = total > 0 && played.filter(p => p.result).length === total;
+      const dttbUnsupported = isDttbRanking(c.rankingProfile)
+        ? koOnly || mppMode ? 'mode'
+          : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
+          : teamList.length % 2 || played.some(p => p.bye != null) ? 'bye'
+          : complete && unequal ? 'unequal-games' : null
+        : null;
+      const ittfUnsupported = isIttfRanking(c.rankingProfile)
+        ? koOnly || mppMode ? 'format'
+          : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
+          : teamList.length % 2 || played.some(p => p.bye != null) ? 'bye'
+          : complete && unequal ? 'unequal-games' : null
+        : null;
       const ranked = TC.rank(active, st, {
         criteria, matches: played, rankingProfile: c.rankingProfile,
-        unsupportedReason: c.rankingProfile === 'indoor-fivb-2026' && complete && unequal
-          ? 'unequal-games' : null
+        unsupportedReason: dttbUnsupported || ittfUnsupported || (isStrictProfile(c.rankingProfile) && complete && unequal
+          ? 'unequal-games' : null)
       });
       return {
         teams: active, ranked, stat: st, criteria, perGame: unequal,
@@ -739,11 +807,11 @@
       const t = groupTables[n];
       if (t.rankingUnsupported) {
         const reason = t.ranked.find(e => e.unsupported).unsupported;
-        warnings.push('Gruppe ' + n + ': FIVB-Wertung wegen '
-          + (reason === 'unequal-games' ? 'ungleicher Spielanzahl' : 'Freilos/Walkover')
-          + ' nicht berechenbar; Gruppenplatzierungen bleiben offen.');
+        warnings.push('Gruppe ' + n + ': ' + unsupportedText(c.rankingProfile, reason));
       } else if (t.complete && t.ranked.some(e => e.shared)) {
-        warnings.push('Gruppe ' + n + ': Gleichstand nach allen Kriterien – hier entscheidet das Los.');
+        warnings.push('Gruppe ' + n + ': ' + (isStrictProfile(c.rankingProfile)
+          ? unresolvedText(c.rankingProfile)
+          : 'Gleichstand nach allen Kriterien – hier entscheidet das Los.'));
       }
     });
 
@@ -823,9 +891,14 @@
     }, cfg || {});
 
     const warnings = [], notes = [];
+    const stageCheck = TStage.validate({ sport: c.sport, config: c, results: c.results,
+      frozenModes: c.roundModes, frozen: c.fixedPairs, stageDecisions: c.stageDecisions });
+    const withdrawal = stageCheck.ok ? stageCheck.active : null;
     const absent = new Set((c.absent || []).map(Number));
     const all = TC.normalizeTeamList(c.teams);
-    const active = all.filter(t => !absent.has(t));
+    const swissWithdrawal = withdrawal && c.mode === 'swiss' && withdrawal.stage === 'swiss' ? withdrawal : null;
+    const active = all.filter(t => !absent.has(t)
+      && (!withdrawal || c.mode === 'swiss' || t !== withdrawal.participant));
 
     /* Satzmodus je Runde: einmal angefangen, bleibt er stehen. Sonst würden
        bereits eingetragene Ergebnisse nachträglich ungültig. */
@@ -837,7 +910,7 @@
     function resultOf(matchId, modeId) {
       const k = matchId + '|' + modeId;
       if (resCache.has(k)) return resCache.get(k);
-      const r = TC.computeResult(c.results[matchId], modeId);
+      const r = TOutcome.resultFor(c, matchId, modeId);
       resCache.set(k, r);
       return r;
     }
@@ -846,6 +919,7 @@
       for (let i = 0; i < count + 4; i++) {
         const v = c.results[idOf(r, i)];
         if (v && v.some(p => p && p.some(x => x != null && x !== ''))) return true;
+        if (TOutcome.hasOutcome(c, idOf(r, i))) return true;
       }
       return false;
     }
@@ -863,6 +937,33 @@
       rd.setMode = mode;
       rd.matches.forEach(m => {
         m.ta = m.a; m.tb = m.b;
+        if (withdrawal && c.mode === 'rr'
+            && (m.a === withdrawal.participant || m.b === withdrawal.participant)) {
+          m.annulled = true;
+          m.dead = true;
+          if (m.id === withdrawal.matchId) {
+            const recorded = TStage.recordedResult({ results: c.results }, withdrawal, mode, m);
+            m.recordedResult = recorded.ok ? recorded.result : null;
+          }
+          return;
+        }
+        if (swissWithdrawal && (m.a === swissWithdrawal.participant || m.b === swissWithdrawal.participant)) {
+          if (rd.round < swissWithdrawal.round) {
+            m.result = resultOf(m.id, mode);
+          } else if (m.id === swissWithdrawal.matchId) {
+            const recorded = TStage.recordedResult({ results: c.results }, swissWithdrawal, mode, m);
+            m.withdrawalMatch = true;
+            m.recordedResult = recorded.ok ? recorded.result : null;
+            m.result = recorded.ok ? Object.assign({}, recorded.result, { administrative: false }) : null;
+          } else if (rd.round > swissWithdrawal.round) {
+            const recorded = TStage.walkoverResult({ results: c.results }, swissWithdrawal, mode, m);
+            m.withdrawalMatch = true;
+            m.walkover = true;
+            m.recordedResult = recorded.ok ? recorded.result : null;
+            m.result = recorded.ok ? Object.assign({}, recorded.result, { administrative: false }) : null;
+          }
+          return;
+        }
         const aAbs = absent.has(m.a), bAbs = absent.has(m.b);
         if (aAbs && bAbs) { m.dead = true; return; }
         if (aAbs) { m.bye = m.b; return; }
@@ -870,11 +971,16 @@
         m.result = resultOf(m.id, mode);
       });
       rd.frozen = roundHasInput(rd.round, rd.matches.length);
+      rd.pairsFrozen = !!(c.fixedPairs && c.fixedPairs[rd.round] && c.fixedPairs[rd.round].length);
+      if (swissWithdrawal && rd.round > swissWithdrawal.round
+          && !rd.matches.some(m => m.a === swissWithdrawal.participant || m.b === swissWithdrawal.participant)) {
+        rd.withdrawalLoss = { team: swissWithdrawal.participant, roundStarted: false };
+      }
       tableCache.clear();
     }
 
     function roundStarted(rd) {
-      return rd.matches.some(m => m.result || m.bye != null);
+      return rd.matches.some(m => m.bye != null || m.result && (!m.walkover || rd.pairsFrozen));
     }
 
     /* Kumuliert über alle bisher erzeugten Runden bis einschliesslich `upto`.
@@ -886,9 +992,13 @@
         rd.matches.forEach(m => {
           if (m.dead) return;
           if (m.bye != null) { out.push({ bye: m.bye }); return; }
-          if (m.result) out.push({ a: m.ta, b: m.tb, result: m.result });
+          if (m.result) out.push({ a: m.ta, b: m.tb, result: m.result, matchWins: matchWinsOf(rd.setMode) });
         });
         if (rd.bye != null && !absent.has(rd.bye) && roundStarted(rd)) out.push({ bye: rd.bye });
+        if (rd.withdrawalLoss) {
+          rd.withdrawalLoss.roundStarted = roundStarted(rd);
+          if (rd.withdrawalLoss.roundStarted) out.push({ withdrawalLoss: rd.withdrawalLoss.team });
+        }
       });
       return out;
     }
@@ -902,17 +1012,68 @@
       const reachedRounds = rounds.filter(rd => rd.round <= upto);
       const complete = reachedRounds.length > 0 && reachedRounds.every(rd =>
         rd.matches.every(m => m.dead || m.bye != null || m.result)
-        && (rd.bye == null || absent.has(rd.bye) || roundStarted(rd)));
+        && (rd.bye == null || absent.has(rd.bye) || roundStarted(rd))
+        && (!rd.withdrawalLoss || rd.withdrawalLoss.roundStarted));
+      const swissRanking = c.rankingProfile === 'tt-dttb-swiss-ranking-2026';
+      const seenPairs = new Set(), seenByes = new Set();
+      let invalidSwissSchedule = false;
+      reachedRounds.forEach(rd => {
+        const used = new Set();
+        rd.matches.forEach(m => {
+          const key = TC.pairKey(m.a, m.b);
+          if (m.a === m.b || active.indexOf(m.a) < 0 || active.indexOf(m.b) < 0
+              || used.has(m.a) || used.has(m.b) || seenPairs.has(key)) invalidSwissSchedule = true;
+          used.add(m.a); used.add(m.b); seenPairs.add(key);
+        });
+        if (rd.withdrawalLoss && !rd.matches.some(m =>
+            m.a === rd.withdrawalLoss.team || m.b === rd.withdrawalLoss.team)) {
+          used.add(rd.withdrawalLoss.team);
+        }
+        if (rd.bye != null) {
+          if (used.has(rd.bye) || seenByes.has(rd.bye) || active.indexOf(rd.bye) < 0) invalidSwissSchedule = true;
+          used.add(rd.bye); seenByes.add(rd.bye);
+        }
+        if (used.size !== active.length) invalidSwissSchedule = true;
+      });
+      const dttbUnsupported = swissRanking
+        ? c.mode !== 'swiss' ? 'format'
+          : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
+          : reachedRounds.some(rd => ['tt-best-of-5', 'tt-best-of-7'].indexOf(rd.setMode) < 0) ? 'mode'
+          : invalidSwissSchedule ? 'pairings'
+          : complete && unequal ? 'unequal-games' : null
+        : isDttbRanking(c.rankingProfile)
+        ? c.mode === 'swiss' ? 'swiss'
+          : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
+          : rounds.some(rd => rd.bye != null) || played.some(m => m.bye != null) ? 'bye'
+          : complete && unequal ? 'unequal-games' : null
+        : null;
+      const ittfUnsupported = isIttfRanking(c.rankingProfile)
+        ? c.mode !== 'rr' ? 'format'
+          : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
+          : rounds.some(rd => rd.bye != null) || played.some(m => m.bye != null) ? 'bye'
+          : complete && unequal ? 'unequal-games' : null
+        : null;
       const ranked = TC.rank(active, st, {
         criteria, matches: played, rankingProfile: c.rankingProfile,
-        unsupportedReason: c.rankingProfile === 'indoor-fivb-2026' && complete && unequal
-          ? 'unequal-games' : null
+        interim: swissRanking && (!complete || upto < rounds.length),
+        swiss: c.mode === 'swiss',
+        unsupportedReason: (!stageCheck.ok ? 'stage-decision' : null) || dttbUnsupported || ittfUnsupported || (isStrictProfile(c.rankingProfile) && complete && unequal
+          ? 'unequal-games' : null)
       });
-      const t = { ranked, stat: st, criteria, perGame: unequal, played };
+      const t = { ranked, stat: st, criteria, perGame: unequal && !swissRanking, played, complete };
       tableCache.set(upto, t);
       return t;
     }
-    function rankUpto(upto) { return tableUpto(upto).ranked.map(e => e.team); }
+    function rankUpto(upto) {
+      const table = tableUpto(upto);
+      if (c.rankingProfile !== 'tt-dttb-swiss-ranking-2026') return table.ranked.map(e => e.team);
+      return TC.rank(active, table.stat, {
+        rankingProfile: c.rankingProfile, criteria: table.criteria, matches: table.played,
+        swiss: true, interim: true,
+        unsupportedReason: table.ranked.find(e => e.unsupported)
+          ? table.ranked.find(e => e.unsupported).unsupported : null
+      }).map(e => e.team);
+    }
 
     if (c.mode === 'rr') {
       /* Der Plan steht vollständig vorher fest und darf sich durch einen
@@ -959,8 +1120,10 @@
           const left = all.filter(t => !used.has(t));
           /* Ausgefallene Teams sind nie gepaart und dürfen das Freilos der
              eingefrorenen Runde nicht verdecken. */
-          const leftActive = left.filter(t => !absent.has(t));
-          bye = leftActive.length === 1 ? leftActive[0] : (left.length === 1 ? left[0] : null);
+          const leftActive = left.filter(t => !absent.has(t)
+            && !(swissWithdrawal && r > swissWithdrawal.round && t === swissWithdrawal.participant));
+          bye = leftActive.length === 1 ? leftActive[0]
+            : (!swissWithdrawal && left.length === 1 ? left[0] : null);
         } else if (r === 1 && c.round1 && c.round1.length) {
           pairs = c.round1.map(p => [p[0], p[1]]);
           const used = new Set();
@@ -981,7 +1144,8 @@
           if (list.length % 2 === 1) bye = list.pop();
           for (let i = 0; i + 1 < list.length; i += 2) pairs.push([list[i], list[i + 1]]);
         } else {
-          const order = rankUpto(r - 1).filter(t => !absent.has(t));
+          const order = rankUpto(r - 1).filter(t => !absent.has(t)
+            && !(swissWithdrawal && r > swissWithdrawal.round && t === swissWithdrawal.participant));
           const sw = TC.genSwissRound(order, reserved.size ? blockedFor() : played, byeHist, want - r);
           pairs = sw.pairs || [];
           bye = sw.bye;
@@ -1047,23 +1211,33 @@
       place: e.place, team: e.team, shared: e.shared,
       source: c.mode === 'swiss' ? 'Schweizer Tabelle' : 'Gesamttabelle'
     }));
+    if (withdrawal && c.mode === 'rr') placements.push({ place: all.length, team: withdrawal.participant,
+      shared: false, source: 'DTTB WO D7.9' });
 
     const totalMatches = rounds.reduce((a, rd) => a + rd.matches.length, 0);
     const openMatches = rounds.reduce((a, rd) =>
       a + rd.matches.filter(m => !m.result && m.bye == null && !m.dead).length, 0);
     if (table.ranked.some(e => e.unsupported)) {
       const reason = table.ranked.find(e => e.unsupported).unsupported;
-      warnings.push('FIVB-Wertung wegen '
-        + (reason === 'unequal-games' ? 'ungleicher Spielanzahl' : 'Freilos/Walkover')
-        + ' nicht berechenbar; Gruppenplatzierungen bleiben offen.');
+      warnings.push(unsupportedText(c.rankingProfile, reason));
     } else if (openMatches === 0 && totalMatches > 0 && table.ranked.some(e => e.shared)) {
-      warnings.push('Gleichstand nach allen Kriterien – hier entscheidet das Los.');
+      warnings.push(isStrictProfile(c.rankingProfile)
+        ? unresolvedText(c.rankingProfile)
+        : 'Gleichstand nach allen Kriterien – hier entscheidet das Los.');
     }
     if (absent.size) {
       notes.push(c.mode === 'swiss'
         ? 'Ausgefallene Teams werden in noch nicht begonnenen Runden nicht mehr eingeplant. '
           + 'In bereits begonnenen Runden erhält der Gegner ein Freilos.'
         : 'Der Spielplan bleibt unverändert – die Gegner ausgefallener Teams erhalten ein Freilos.');
+    }
+    if (swissWithdrawal) {
+      const lossRounds = rounds.filter(rd => rd.withdrawalLoss && rd.withdrawalLoss.roundStarted)
+        .map(rd => rd.round);
+      notes.push('DTTB WO D7.6: bisherige Siege bleiben; keine weitere Teilnahme. Für begonnene spätere Runden '
+        + 'wird je eine kampflose Niederlage gewertet'
+        + (lossRounds.length ? ' (Runde ' + lossRounds.join(', ') + ')' : '')
+        + '. Ohne feststehende Paarung werden weder Gegner noch Buchholzbeitrag erfunden.');
     }
     if (c.mode === 'swiss') {
       notes.push('Die Paarungen einer Runde stehen erst fest, wenn die vorherige Runde '
@@ -1079,7 +1253,7 @@
     return {
       config: c, mode: c.mode, rounds, slots, startMin, endMin,
       table, tableUpto, rankUpto, placements, pairs: pairsOut,
-      warnings, notes, absent: Array.from(absent), activeTeams: active,
+      warnings, notes, withdrawal, absent: Array.from(absent), activeTeams: active,
       matchById, resultOf, modeOfRound,
       matchLabel: id => (matchById[id] && matchById[id].name) ? matchById[id].name : id,
       resolve: ref => (typeof ref === 'number' ? ref : TC.resolveRef(ref, {}))

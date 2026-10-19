@@ -4,11 +4,11 @@
   var docs = {
     // 0: titleKey, 1: summaryKey, 2: isGeneric, 3: formatKey
     'format-gruppen-platzierungsrunde.html': ['home.card.gruppen.title', 'doc.summary.gruppen', true, 'gruppen-final'],
-    'format-jeder-gegen-jeden.html': ['home.format.rr', 'doc.summary.rr', true, 'runden_rr'],
+    'format-jeder-gegen-jeden.html': ['home.card.rr.title', 'doc.summary.rr', true, 'runden_rr'],
     'format-schweizer-system.html': ['home.format.swiss', 'doc.summary.swiss', true, 'runden_swiss'],
     'format-ko-system.html': ['home.ko.title', 'doc.summary.ko', true, 'ko-flex'],
     'format-double-elimination.html': ['home.card.de.title', 'doc.summary.de', true, 'de-flex'],
-    'format-modified-pool-play.html': ['home.format.mpp', 'doc.summary.mpp', true, 'mpp'],
+    'format-modified-pool-play.html': ['home.card.mpp.title', 'doc.summary.mpp', true, 'mpp'],
     'format-king-of-the-court.html': ['home.format.koc', 'home.card.koc.desc', false, 'koc'],
     'format-king-queen.html': ['home.format.kingqueen', 'home.card.kingqueen.desc', false, 'kingqueen'],
     'format-flex-turnier.html': ['home.format.flex', 'doc.summary.flex', true, 'flex_rr'],
@@ -104,6 +104,7 @@
       }
     }
 
+    var nativeTitle = container.querySelector('h1');
     var summary = document.createElement('section');
     summary.className = 'doc-en-summary';
     summary.innerHTML = '<h1></h1><h2></h2><p class="doc-en-description"></p>' +
@@ -173,6 +174,17 @@
         } else {
           activeProfile = FALLBACK_PROFILES['volleyball.beach'];
         }
+      }
+
+      var localizedTitleKey = titleKey;
+      if (formatKey === 'de-flex' && activeProfile && activeProfile.id.indexOf('table-tennis.') === 0) {
+        localizedTitleKey += '.tt';
+      }
+      title.textContent = TI18n.t(localizedTitleKey);
+      if (isGeneric && nativeTitle) nativeTitle.textContent = TI18n.t(localizedTitleKey);
+      if (english || isGeneric) {
+        document.title = 'CompetitionPilot – ' + title.textContent + ' – ' +
+          (english ? 'Format guide' : 'Turnierformat-Erklärung');
       }
 
       contextTitle.textContent = TI18n.t('doc.context.title');

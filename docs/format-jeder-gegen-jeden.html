@@ -93,7 +93,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <h2>Kurzübersicht</h2>
   <p>Alle Teams spielen gegen alle anderen genau einmal. Niemand scheidet aus, und die Endplatzierung entsteht aus einer Gesamttabelle über alle gespielten Runden.</p>
   <div class="note">
-    <strong>Kurz gesagt:</strong> maximale Vergleichbarkeit, weil jedes Team auf denselben Gegnerpool trifft.
+    <strong>Kurz gesagt:</strong> Bei vollständiger Teilnahme trifft jedes Team einmal auf alle anderen; Gleichstände in der Tabelle können bestehen bleiben.
   </div>
 </section>
 <section id="geeignet">
@@ -101,21 +101,21 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <ul>
     <li>Bis etwa 8 Teams</li>
     <li>Ausreichend Gesamtzeit für alle Runden; die Spieldauer hängt vom Spielmodus ab (Beachvolleyball, 1 Satz bis 21: grob rund 30 Minuten pro Spiel inklusive Wechsel)</li>
-    <li>Wenn Fairness, Gleichheit und eine vollständige Tabelle wichtiger sind als ein Finalcharakter</li>
+    <li>Wenn alle Paarungen und eine Gesamttabelle statt einer Ausscheidungsrunde gewünscht sind</li>
   </ul>
 </section>
 <section id="ablauf">
   <h2>Ablauf</h2>
-  <p>Bei <strong>N Teams</strong> entstehen <strong>N-1 Runden</strong>. Jedes Team absolviert entsprechend <strong>N-1 Spiele</strong>.</p>
+  <p>Bei <strong>N Teams</strong> entstehen bei gerader Teamzahl <strong>N−1 Runden</strong>, bei ungerader Teamzahl <strong>N Runden</strong>. Ohne Ausfälle absolviert jedes Team <strong>N−1 Spiele</strong>; ein Freilos ist kein gespieltes Match.</p>
   <ul>
-    <li>Bei gerader Teamzahl können alle Felder bzw. Tische durchgehend belegt werden.</li>
+    <li>Bei gerader Teamzahl enthält jede Runde N/2 Begegnungen; die Zahl der Felder bzw. Tische bestimmt, wie viele davon gleichzeitig stattfinden.</li>
     <li>Bei ungerader Teamzahl hat pro Runde ein Team Freilos.</li>
     <li>Die Tabelle wächst Runde für Runde, bis alle Begegnungen einmal gespielt wurden.</li>
   </ul>
 </section>
 <section id="spielplan">
   <h2>Spielplan (Berger-Tableau)</h2>
-  <p>Der Spielplan wird vorab festgelegt. Das Berger-Tableau rotiert die Startplätze von Runde zu Runde, sodass jede Paarung genau einmal vorkommt und die Belastung gleichmäßig verteilt bleibt.</p>
+  <p>Der Spielplan wird vorab festgelegt. Das Berger-Tableau rotiert die Startplätze von Runde zu Runde, sodass jede Paarung genau einmal vorkommt.</p>
   <p>Der Vorteil: Nach dem Start muss nichts neu ausgelost werden. Sobald eine Runde beendet ist, steht die nächste Paarung bereits fest.</p>
 </section>
 <section id="wertung">
@@ -140,7 +140,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
 </section>
 <section id="freilos">
   <h2>Freilos</h2>
-  <p>Fehlt ein Team oder ist die Teamzahl ungerade, erhält pro Runde genau ein anderes Team ein Freilos. Dieses wird als <strong>1 Sieg</strong> gewertet, jedoch <strong>ohne Satz-, Ball- bzw. Punktdifferenz</strong>.</p>
+  <p>Bei ungerader Teamzahl hat pro Runde ein Team Freilos. Ausfälle lassen den festen Spielplan unverändert und können zusätzliche kampflose Begegnungen verursachen. Die Wertung richtet sich nach dem gewählten Profil; ein Freilos ist kein gespieltes Match und ersetzt keine profilabhängige Rückzugsentscheidung.</p>
 </section>
 <section id="konstellationen">
   <h2>Typische Konstellationen</h2>
@@ -156,7 +156,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
       <tr><th>Vorteile</th><th>Nachteile</th></tr>
     </thead>
     <tbody>
-      <tr><td>Sehr fair, weil alle gegen alle spielen</td><td>Wird mit steigender Teamzahl schnell lang</td></tr>
+      <tr><td>Jede Paarung wird einmal angesetzt</td><td>Wird mit steigender Teamzahl schnell lang</td></tr>
       <tr><td>Einfacher, fester Spielplan ohne Umorganisation</td><td>Wenig Finaldramaturgie</td></tr>
       <tr><td>Klare Gesamttabelle ohne Ausscheiden</td><td>Bei ungerader Teamzahl entstehen Freilose</td></tr>
     </tbody>

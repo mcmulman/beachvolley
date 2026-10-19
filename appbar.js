@@ -17,6 +17,57 @@
     try { localStorage.setItem(namesPreference, panel.hidden ? '0' : '1'); } catch (e) {}
   }
 
+  function addNamingClosers() {
+    if (!window.TNative || !window.TNative.mountClose) return;
+    [
+      { panel: namesPanel(), button: document.getElementById('btnToggleNames'), preference: namesPreference },
+      { panel: document.getElementById('fieldpanel'), button: document.getElementById('btnToggleFields'),
+        preference: 'BEACHL.uiSection.v1:' + location.pathname + ':fields' }
+    ].forEach(function (entry) {
+      var panel = entry.panel, button = entry.button;
+      if (!panel || !button || panel.__namingCloseWired || !initialUiApplied) return;
+      panel.__namingCloseWired = true;
+      panel.classList.add('naming-close-panel');
+      button.setAttribute('aria-controls', panel.id);
+      var close = window.TNative.mountClose(panel, 'Schließen', function () {
+        // Use the sheet's own toggle, including its active state and related roster actions.
+        if (!panel.hidden && !button.disabled) button.click();
+        if (!panel.hidden) return;
+        button.focus();
+      }, null, true);
+      close.classList.add('section-toggle-close');
+      close.setAttribute('aria-controls', panel.id);
+      function sync() {
+        var expanded = !panel.hidden;
+        button.setAttribute('aria-expanded', String(expanded));
+        close.setAttribute('aria-expanded', String(expanded));
+        close.hidden = !expanded || button.disabled;
+        var state = window.TStore && window.TStore.initialUiState && window.TStore.initialUiState();
+        if (!state || !state.readOnly) {
+          try { localStorage.setItem(entry.preference, expanded ? '1' : '0'); } catch (e) {}
+        }
+      }
+      if (panel.id === 'fieldpanel') {
+        var saved = null;
+        try { saved = localStorage.getItem(entry.preference); } catch (e) {}
+        if (!button.disabled && saved !== null && panel.hidden === (saved === '1')) button.click();
+      }
+      button.addEventListener('click', function () {
+        sync();
+        if (!panel.hidden) {
+          var input = panel.querySelector('input:not([disabled]):not([readonly]), select:not([disabled])');
+          if (input) input.focus();
+        }
+      });
+      if (window.MutationObserver) {
+        new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+        new MutationObserver(sync).observe(button, { attributes: true, attributeFilter: ['disabled'] });
+      }
+      sync();
+      if (window.TI18n && window.TI18n.active()) window.TI18n.apply(close);
+    });
+  }
+
   function initializeVisibility() {
     if (initialUiApplied || !document.body.hasAttribute('data-bar-title')) return;
     var state = window.TStore && window.TStore.initialUiState && window.TStore.initialUiState();
@@ -359,52 +410,8 @@
       legacy.classList.add('legacy-nav');
     }
 
-    var bar = document.createElement('div');
-    bar.className = 'app-bar noprint';
-
-    var back = document.createElement('a');
-    back.className = 'app-bar__back';
-    back.href = overviewHref;
-    back.innerHTML = '<span class="chev">‹</span><span class="lbl">Übersicht</span>';
-    back.setAttribute('aria-label', 'Zur Übersicht');
-    bar.appendChild(back);
-
-    var title = document.createElement('div');
-    title.className = 'app-bar__title';
-    var brandTitle = document.createElement('span');
-    brandTitle.className = 'app-bar__brand';
-    brandTitle.textContent = 'CompetitionPilot';
-    title.appendChild(brandTitle);
-    var contextTitle = document.createElement('span');
-    contextTitle.className = 'app-bar__context';
-    contextTitle.textContent = barTitle();
-    title.appendChild(contextTitle);
-    bar.appendChild(title);
-
-    var actions = document.createElement('div');
-    actions.className = 'app-bar__actions';
-
-    if (infoLink) {
-      var info2 = document.createElement('a');
-      info2.className = 'app-bar__btn';
-      info2.href = infoLink.href;
-      info2.target = infoLink.target;
-      info2.rel = 'noopener';
-      info2.innerHTML = '<span class="ic"><span style="display:none">📖</span><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span class="lbl">Info</span>';
-      info2.setAttribute('aria-label', 'Format-Info');
-      actions.appendChild(info2);
-    }
-
-    /* Das versteckte Emoji dient turnier-i18n.js zur Erkennung der Buttons. */
-    var printBtn = document.createElement('button');
-    printBtn.type = 'button';
-    printBtn.className = 'app-bar__btn';
-    printBtn.innerHTML = '<span class="ic"><span style="display:none">🖨</span><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><span class="lbl">Drucken</span>';
-    printBtn.setAttribute('aria-label', 'Drucken');
-    printBtn.addEventListener('click', function () { window.print(); });
-    actions.appendChild(printBtn);
-
-    bar.appendChild(actions);
+    var bar = window.TSheetHeader.create({ title: barTitle(), overviewHref: overviewHref, infoLink: infoLink });
+    var title = bar.querySelector('.app-bar__context');
     document.body.insertBefore(bar, document.body.firstChild);
 
     // Titel live nachziehen, falls die Seite document.title dynamisch aktualisiert
@@ -424,6 +431,7 @@
       var language = document.querySelector('.app-bar__actions .i18n-switch');
       if (language && language.nextElementSibling) language.parentNode.appendChild(language);
       initializeVisibility();
+      addNamingClosers();
       addTeamCaptionEditors();
       var tables = document.querySelectorAll('table.sched, table.track, table.stand, table.central-table');
       for (var i = 0; i < tables.length; i++) {

@@ -17,6 +17,7 @@
       matchUnitKey: 'sport.unit.set', modeIds: Object.freeze(['15', '21', '2x15', '2x21', '2x15tb', '2x21tb']),
       rankingProfiles: Object.freeze(['beach-house']),
       rankingProfileLabels: Object.freeze({ 'beach-house': 'sport.ranking.beach' }),
+      outcomeProfiles: Object.freeze(['fivb-beach-2025-2028']),
       capabilities: Object.freeze({ serveCounter: true, sidesSwitch: true }),
       formats: Object.freeze(GENERIC_FORMATS.concat(['koc', 'kingqueen', 'tandem', 'eltern-kind', 'meisterschaften', 'daviscup']))
     }),
@@ -26,10 +27,12 @@
       participantKey: 'sport.participant.team', surfaceKey: 'sport.surface.court',
       matchUnitKey: 'sport.unit.set',
       modeIds: Object.freeze(['indoor-1x25', 'indoor-2x25', 'indoor-bo3', 'indoor-bo5', 'indoor-custom']),
-      rankingProfiles: Object.freeze(['indoor-3-2-1-0', 'indoor-fivb-2026', 'indoor-hobby']),
+      rankingProfiles: Object.freeze(['indoor-3-2-1-0', 'indoor-fivb-2026', 'indoor-dvv-bso-2026', 'indoor-hobby']),
+      outcomeProfiles: Object.freeze(['fivb-volleyball-2025-2028']),
       rankingProfileLabels: Object.freeze({
         'indoor-3-2-1-0': 'sport.ranking.indoor321',
         'indoor-fivb-2026': 'sport.ranking.indoorFivb2026',
+        'indoor-dvv-bso-2026': 'sport.ranking.indoorDvvBso2026',
         'indoor-hobby': 'sport.ranking.hobby'
       }),
       capabilities: Object.freeze({ serveCounter: false, sidesSwitch: false }),
@@ -40,8 +43,13 @@
       defaultMode: 'tt-best-of-5',
       participantKey: 'sport.participant.player', surfaceKey: 'sport.surface.table',
       matchUnitKey: 'sport.unit.game', modeIds: Object.freeze(['tt-best-of-3', 'tt-best-of-5', 'tt-best-of-7']),
-      rankingProfiles: Object.freeze(['table-tennis-hobby']),
-      rankingProfileLabels: Object.freeze({ 'table-tennis-hobby': 'sport.ranking.tableTennis' }),
+      rankingProfiles: Object.freeze(['table-tennis-hobby', 'tt-dttb-individual-round-robin-2026', 'tt-dttb-swiss-ranking-2026', 'tt-ittf-individual-groups-2026']),
+      rankingProfileLabels: Object.freeze({
+        'table-tennis-hobby': 'sport.ranking.tableTennis',
+        'tt-dttb-individual-round-robin-2026': 'sport.ranking.tableTennisDttb2026',
+        'tt-dttb-swiss-ranking-2026': 'sport.ranking.tableTennisSwiss2026',
+        'tt-ittf-individual-groups-2026': 'sport.ranking.tableTennisIttfGroups2026'
+      }),
       capabilities: Object.freeze({ serveCounter: false, sidesSwitch: false }),
       formats: GENERIC_FORMATS
     }),
@@ -50,8 +58,13 @@
       defaultMode: 'tt-best-of-5',
       participantKey: 'sport.participant.pair', surfaceKey: 'sport.surface.table',
       matchUnitKey: 'sport.unit.game', modeIds: Object.freeze(['tt-best-of-3', 'tt-best-of-5', 'tt-best-of-7']),
-      rankingProfiles: Object.freeze(['table-tennis-hobby']),
-      rankingProfileLabels: Object.freeze({ 'table-tennis-hobby': 'sport.ranking.tableTennis' }),
+      rankingProfiles: Object.freeze(['table-tennis-hobby', 'tt-dttb-individual-round-robin-2026', 'tt-dttb-swiss-ranking-2026', 'tt-ittf-individual-groups-2026']),
+      rankingProfileLabels: Object.freeze({
+        'table-tennis-hobby': 'sport.ranking.tableTennis',
+        'tt-dttb-individual-round-robin-2026': 'sport.ranking.tableTennisDttb2026',
+        'tt-dttb-swiss-ranking-2026': 'sport.ranking.tableTennisSwiss2026',
+        'tt-ittf-individual-groups-2026': 'sport.ranking.tableTennisIttfGroups2026'
+      }),
       capabilities: Object.freeze({ serveCounter: false, sidesSwitch: false }),
       formats: GENERIC_FORMATS
     })
@@ -136,6 +149,30 @@
       : { ok: false, code: 'unsupported-sport' };
   }
 
+  function supportsPairMembers(record) {
+    const id = record && record.sport ? record.sport.id : BEACH.id;
+    return (id === BEACH.id || id === 'table-tennis.doubles')
+      && !/^kingqueen(?:\.|$)/.test(record && record.sheet || '');
+  }
+  function pairMembers(record, team) {
+    const members = supportsPairMembers(record) && record && record.pairMembers && record.pairMembers[team];
+    return Array.isArray(members) ? members.map(name => String(name || '').trim()) : ['', ''];
+  }
+  function teamLabel(record, team, fallback) {
+    const members = pairMembers(record, team);
+    return members[0] && members[1] ? members.join(' & ')
+      : String(record && record.teamNames && record.teamNames[team] || fallback || '');
+  }
+  function validatePairMembers(record) {
+    if (!record || !has.call(record, 'pairMembers')) return true;
+    const map = record.pairMembers;
+    return object(map) && (supportsPairMembers(record) || Object.keys(map).length === 0)
+      && Object.keys(map).every(key => /^[1-9]\d{0,2}$/.test(key)
+        && +key <= 128
+        && Array.isArray(map[key]) && map[key].length === 2
+        && map[key].every(name => typeof name === 'string' && name.length <= 100));
+  }
+
   return {
     PROFILES: PROFILES,
     IDs: Object.keys(PROFILES),
@@ -149,6 +186,10 @@
     validate: validate,
     recordSport: recordSport,
     value: value,
-    fromSearch: fromSearch
+    fromSearch: fromSearch,
+    supportsPairMembers: supportsPairMembers,
+    pairMembers: pairMembers,
+    teamLabel: teamLabel,
+    validatePairMembers: validatePairMembers
   };
 });

@@ -62,7 +62,9 @@
           + '<p>' + esc(glossaryNote) + '</p>';
       }
       const section = root.document.getElementById('configSection');
-      if (section && id === 'volleyball.indoor') {
+      if (section && (id === 'volleyball.indoor'
+          || (id.indexOf('table-tennis.') === 0
+            && (opts.mode === 'rr' || opts.mode === 'swiss' || opts.mode === 'groups')))) {
         let controls = root.document.getElementById('sport-profile-controls');
         if (!controls) {
           controls = root.document.createElement('div');
@@ -75,6 +77,9 @@
           const select = root.document.createElement('select');
           select.id = 'ranking-profile-select';
           profile.rankingProfiles.forEach(function (rankingId) {
+            if (rankingId === 'tt-dttb-swiss-ranking-2026' && opts.mode !== 'swiss') return;
+            if (rankingId === 'tt-dttb-individual-round-robin-2026' && opts.mode === 'swiss') return;
+            if (rankingId === 'tt-ittf-individual-groups-2026' && opts.mode === 'swiss') return;
             const option = root.document.createElement('option');
             option.value = rankingId;
             option.textContent = tx(profile.rankingProfileLabels[rankingId], rankingId);
@@ -89,7 +94,7 @@
           limitation.id = 'ranking-profile-limitation';
           limitation.className = 'sport-profile-note';
           limitation.textContent = tx('sport.ranking.indoorFivbNote',
-            'Nur für gleichmäßig gespielte Pools mit normalen Ergebnissen. Erkannte Freilose blockieren die Rangfolge; Aufgabe/Default und Weltranglisten-Fallback sind nicht implementiert.');
+            'Nur für gleichmäßig gespielte Pools mit normalen Ergebnissen. Erkannte Freilose blockieren die Rangfolge; Aufgabe, Disqualifikation und Weltranglisten-Fallback sind nicht implementiert.');
           limitation.hidden = true;
           controls.appendChild(field);
           controls.appendChild(note);
@@ -105,13 +110,13 @@
         if (select) {
           select.value = record && record.config && record.config.rankingProfile
             ? record.config.rankingProfile : profile.rankingProfiles[0];
-          if (limitation) limitation.hidden = select.value !== 'indoor-fivb-2026';
+          showRankingLimit(limitation, select.value);
           const uiState = root.TStore && root.TStore.initialUiState();
           select.disabled = !!(uiState && uiState.readOnly) || !opts.getTournament || !opts.repaint;
           if (select.getAttribute('data-bound') !== '1') {
             select.setAttribute('data-bound', '1');
             select.addEventListener('change', function () {
-              if (limitation) limitation.hidden = select.value !== 'indoor-fivb-2026';
+              showRankingLimit(limitation, select.value);
               const state = opts.getTournament && opts.getTournament();
               if (!state || !state.config || profile.rankingProfiles.indexOf(select.value) < 0) return;
               const previous = state.config.rankingProfile || profile.rankingProfiles[0];
@@ -136,9 +141,225 @@
           }
         }
       }
+      if (section && opts.outcomes) mountOutcomeControls(section, profile, opts);
       if (section && id !== 'volleyball.beach') mountModeEstimateControls(section, profile, opts);
     }
     return true;
+  }
+  function showRankingLimit(el, value) {
+    if (!el) return;
+    el.hidden = value !== 'indoor-fivb-2026' && value !== 'indoor-dvv-bso-2026'
+      && value !== 'tt-dttb-individual-round-robin-2026' && value !== 'tt-dttb-swiss-ranking-2026'
+      && value !== 'tt-ittf-individual-groups-2026';
+    el.textContent = value === 'tt-dttb-swiss-ranking-2026'
+      ? tx('sport.ranking.tableTennisSwissNote', 'DTTB WO D7.6: Siege → Buchholz → direkter Vergleich (nur zwei Gleichstehende) → offizieller Losentscheid. Freilos = ein Sieg ohne Spiel-/Punktgutschrift; Buchholz zählt die Siege aller bisherigen Gegner, für ein Freilos die Siege des Tabellenletzten. Zwischenstände: nur Siege/Buchholz. Kein Feinbuchholz. Mehrfachgleichstände bleiben offen zur offiziellen Entscheidung. Eine endgültige D7.9-Entscheidung wegen Nichtantretens nach Zeit-/Aufrufprüfung oder vorzeitiger Aufgabe erhält alle bisherigen Siege und beendet die weitere Teilnahme; für jede tatsächlich fortgesetzte spätere Runde wird eine kampflose Niederlage gewertet. Vorübergehende Abwesenheit oder Verletzung allein ist keine solche Entscheidung; die allgemeine Abwesenheitsmarkierung und andere Sonderausgänge blockieren die D7.6-Wertung. Ohne bereits feststehende Paarung werden weder Gegner noch Buchholzbeitrag oder Spielstand erfunden. Ein feststehendes künftiges Spiel bleibt unverändert und wird als D7.10-Walkover aufgezeichnet. Paarungen sind App-Vorschläge, keine zertifizierte DTTB-Auslosung: Turnierleitung muss Setzung, Sieggruppen und Absteiger prüfen. Keine Prüfung der Doppel-Aufschlag-/Schlagreihenfolge. Manuelle Tabellenkorrekturen sind hier deaktiviert.')
+      : value === 'tt-ittf-individual-groups-2026'
+      ? tx('sport.ranking.tableTennisIttfGroupsNote',
+        'ITTF Statutes 2026 §§3.7.4.4/3.7.5: nur Gruppen-/Qualifikationsphasen im Einzel-/Doppelwettbewerb; der Hauptevent ist KO. 2 Matchpunkte für Sieg, 1 für Niederlage im gespielten Match. Bei Gleichstand Mini-Tabelle nur unter den Gleichstehenden: Matchpunkte → Spielquotient → Punktquotient; nach jeder Teilauflösung wird mit den verbleibenden Gleichstehenden neu gerechnet. Freilose, Abwesenheit und Sonderausgänge sperren die Wertung; eine unvollständige Gruppe qualifiziert nicht weiter. Der offizielle Losentscheid bleibt manuell. Das Schluss-Spielpaar nach §3.7.5.5 bzw. eine Jury-Ausnahme werden nicht geplant oder geprüft; bitte den Spielplan fachlich prüfen. Nicht für Swiss, Modified Pool Play oder den KO-Hauptevent.')
+      : value === 'tt-dttb-individual-round-robin-2026'
+      ? tx('sport.ranking.tableTennisDttbNote',
+        'DTTB WO D7.5 für Einzel/Doppel-RR. Auf Runden-/Flex-RR ist ein ausdrücklich bestätigter D7.9-Stufenrückzug mit D7.10-Aufzeichnung unterstützt. Freilose, sonstige Abwesenheit/Sonderergebnisse und ungleiche Spielpläne blockieren. D7.9/D7.10 für D7.6-Swiss ist separat auf den Runden-/Flex-Swiss-Bögen umgesetzt: frühere Siege bleiben, spätere Walkover-Niederlagen werden erfasst, ohne eine Round-Robin-Annullierung anzuwenden. Disqualifikation, Mehrfachrückzüge, automatische Folgestufen und Doppel-Reihenfolgen sind nicht umgesetzt. Restgleichstände benötigen den offiziellen Losentscheid; die App lost nicht. Nicht für Swiss-Wertung.')
+      : value === 'indoor-dvv-bso-2026'
+      ? tx('sport.ranking.indoorDvvNote',
+        'Nur für gleichmäßig gespielte Pools im Modus Best-of-3 oder Best-of-5 ohne Freilose. Bleibt nach direktem Vergleich ein Gleichstand, wird er markiert; das Entscheidungsspiel wird nicht berechnet. DVV BSO §5.3 (Nichtantritt/Spielabbruch) ist nicht umgesetzt; Default/Spielabbruch nach FIVB-Regel 6.4 sind hier nicht als DVV-Wertung freigegeben.')
+      : value === 'indoor-fivb-2026' ? tx('sport.ranking.indoorFivbNote',
+        'Nur für gleichmäßig gespielte Pools mit normalen Ergebnissen. Erkannte Freilose blockieren die Rangfolge; Aufgabe, Disqualifikation und Weltranglisten-Fallback sind nicht implementiert.')
+        : '';
+  }
+  function paintStageMatch(td, match) {
+    if (!match.annulled && !match.withdrawalMatch) return;
+    const note = td.querySelector('.mnote-slot');
+    if (note) note.textContent = match.annulled
+      ? tx('stage.annulled', 'D7.9: nicht in der Stufenwertung')
+        + (match.recordedResult ? ' · D7.10: ' + match.recordedResult.awardedSets.map(s => s.join(':')).join(', ') : '')
+      : tx(match.walkover ? 'stage.swiss.walkover' : 'stage.swiss.trigger',
+        match.walkover ? 'D7.6: kampflose Niederlage · D7.10: ' : 'D7.9/D7.10: Wertung gemäß Schweizer System · ')
+        + (match.recordedResult ? match.recordedResult.awardedSets.map(s => s.join(':')).join(', ') : '');
+    if (match.withdrawalMatch) td.querySelectorAll('input.score').forEach(el => {
+      el.disabled = true;
+      el.setAttribute('aria-disabled', 'true');
+    });
+  }
+  function paintStage(state, opts) {
+    const Stage = root.TStage;
+    if (!Stage || !root.document) return;
+    const doc = root.document;
+    const isSwissProfile = state.config.mode === 'swiss' && state.config.rankingProfile === Stage.SWISS_RANKING;
+    const applicable = state.sport.id.indexOf('table-tennis.') === 0
+      && (state.config.mode === 'rr' && state.config.rankingProfile === Stage.RANKING || isSwissProfile);
+    let button = doc.getElementById('stage-decision-button');
+    if (!button) {
+      button = doc.createElement('button');
+      button.id = 'stage-decision-button';
+      button.type = 'button';
+      button.className = 'nbtn noprint';
+      doc.getElementById('configSection').appendChild(button);
+    }
+    const decision = Stage.active(state);
+    button.hidden = !applicable;
+    button.textContent = decision ? tx('stage.undo', 'Stufenentscheidung widerrufen …')
+      : tx(isSwissProfile ? 'stage.swiss.add' : 'stage.add',
+        isSwissProfile ? 'DTTB-Swiss-Rückzug …' : 'DTTB Stufenrückzug …');
+    const readOnly = root.TStore.initialUiState().readOnly;
+    const swissPlan = isSwissProfile && !decision ? opts.build(state) : null;
+    const hasSwissTrigger = !!decision || !isSwissProfile || !!(swissPlan && swissPlan.rounds.some(rd =>
+      rd.matches.some(m => !m.result && !m.dead && m.bye == null)));
+    button.disabled = !!readOnly || !hasSwissTrigger;
+    button.onclick = () => stageDialog(state, opts, decision);
+    const locked = (state.stageDecisions || []).length > 0;
+    ['ranking-profile-select', 'teamCount', 'btnToggleAbsent', 'btnClearAbsent', 'btnShuffle',
+      'btnExportFinal', 'modeSelect', 'mode'].forEach(id => {
+      const el = doc.getElementById(id);
+      if (!el) return;
+      if (locked) {
+        if (!el.hasAttribute('data-stage-locked')) el.setAttribute('data-stage-locked', String(el.disabled));
+        el.disabled = true;
+      } else if (el.hasAttribute('data-stage-locked')) {
+        el.disabled = el.getAttribute('data-stage-locked') === 'true';
+        el.removeAttribute('data-stage-locked');
+      }
+    });
+    if (locked) doc.querySelectorAll('[data-remove-team], [data-absent-input]').forEach(el => { el.disabled = true; });
+    const absenceButton = doc.getElementById('btnToggleAbsent');
+    if (absenceButton && isSwissProfile && !locked) {
+      if (!absenceButton.hasAttribute('data-stage-absence-disabled')) {
+        absenceButton.setAttribute('data-stage-absence-disabled', String(absenceButton.disabled));
+      }
+      absenceButton.disabled = true;
+      absenceButton.title = tx('stage.swiss.absenceUnavailable',
+        'Vorübergehende Abwesenheit ist keine D7.9-Rückzugsentscheidung und wird in diesem D7.6-Profil nicht automatisch gewertet.');
+    } else if (absenceButton && absenceButton.hasAttribute('data-stage-absence-disabled')) {
+      absenceButton.disabled = absenceButton.getAttribute('data-stage-absence-disabled') === 'true';
+      absenceButton.removeAttribute('data-stage-absence-disabled');
+      absenceButton.title = '';
+    }
+    if (isSwissProfile && !locked) {
+      doc.querySelectorAll('[data-absent-input]').forEach(el => {
+        if (!el.hasAttribute('data-stage-absence-disabled')) {
+          el.setAttribute('data-stage-absence-disabled', String(el.disabled));
+        }
+        el.disabled = true;
+      });
+    } else {
+      doc.querySelectorAll('[data-absent-input][data-stage-absence-disabled]').forEach(el => {
+        el.disabled = el.getAttribute('data-stage-absence-disabled') === 'true';
+        el.removeAttribute('data-stage-absence-disabled');
+      });
+    }
+    let summary = doc.getElementById('stage-decision-summary');
+    if (!summary) {
+      summary = doc.createElement('p');
+      summary.id = 'stage-decision-summary';
+      const notice = doc.getElementById('noticeBox');
+      notice.parentNode.insertBefore(summary, notice.nextSibling);
+    }
+    summary.hidden = !locked;
+    if (decision && decision.stage === 'swiss') {
+      const plan = opts.build(state);
+      const losses = plan.rounds.filter(rd => (rd.withdrawalLoss && rd.withdrawalLoss.roundStarted)
+        || rd.matches.some(m => m.walkover))
+        .map(rd => tx('stage.roundLabel', 'Runde {round}', { round: rd.round }));
+      summary.textContent = tx('stage.swiss.summary',
+        'DTTB WO D7.6/D7.9: {participant} behält {wins} Siege. Keine weitere Teilnahme; spätere begonnene Runden als kampflose Niederlage: {rounds}. Ohne feststehende Paarung werden weder Gegner noch Buchholzbeitrag oder Spielstand erfunden. Auslösendes Ergebnis bleibt gespeichert; D7.10-Aufzeichnung getrennt.',
+        { participant: participantWord() + ' ' + decision.participant,
+          wins: plan.table.stat[decision.participant].won,
+          rounds: losses.length ? losses.join(', ') : '–' })
+        + ' ' + tx('outcome.authority.' + decision.authority, decision.authority)
+        + ': ' + decision.reference + ' · ' + decision.decidedAt;
+    } else {
+      summary.textContent = decision
+        ? tx('stage.summary', 'DTTB WO D7.9: {participant} – alle Ergebnisse dieser Round-Robin-Stufe annulliert; letzter Platz {place}. Keine weitere Teilnahme. Originaleingaben bleiben erhalten.',
+          { participant: participantWord() + ' ' + decision.participant, place: state.config.teams })
+          + ' ' + tx('outcome.authority.' + decision.authority, decision.authority)
+          + ': ' + decision.reference + ' · ' + decision.decidedAt
+      : tx('stage.revoked', 'Stufenentscheidung widerrufen; Originalergebnisse wieder in der Wertung. Entscheidungsverlauf bleibt gespeichert.');
+    }
+  }
+  function stageDialog(state, opts, existing) {
+    const Stage = root.TStage, doc = root.document;
+    if (doc.getElementById('stage-dialog-overlay')) return;
+    const plan = opts.build(state);
+    const overlay = doc.createElement('div');
+    overlay.id = 'stage-dialog-overlay';
+    overlay.className = 'outcome-overlay noprint';
+    const swiss = state.config.mode === 'swiss' && state.config.rankingProfile === Stage.SWISS_RANKING;
+    let triggerRounds = plan.rounds;
+    if (swiss) {
+      const current = plan.rounds.find(rd => rd.matches.some(m => !m.result && !m.dead && m.bye == null));
+      triggerRounds = current ? [current] : [];
+    }
+    const options = triggerRounds.map(rd => rd.matches.filter(m => !m.result && !m.dead && m.bye == null)
+      .map(m => '<option value="' + esc(m.id) + '">' + esc(rd.round + ': ' + m.a + ' – ' + m.b) + '</option>').join('')).join('');
+    const field = (name, label, contents) => '<label class="outcome-field"><span>' + esc(label) + '</span>' + contents + '</label>';
+    overlay.innerHTML = '<div class="outcome-dialog" role="dialog" aria-modal="true" aria-labelledby="stage-title" tabindex="-1">'
+      + '<h2 id="stage-title">' + esc(tx(swiss ? 'stage.swiss.add' : 'stage.add',
+        swiss ? 'DTTB-Swiss-Rückzug …' : 'DTTB Stufenrückzug …')) + '</h2>'
+      + '<p>' + esc(tx(swiss ? 'stage.swiss.boundary' : 'stage.boundary',
+        swiss
+          ? 'Nur eine endgültige D7.9-Entscheidung wegen Nichtantretens nach Zeit-/Aufrufprüfung oder vorzeitiger Aufgabe. Im D7.6-Schweizer System bleiben alle bisherigen Siege erhalten; ab dann keine weitere Teilnahme, je begonnener späterer Runde eine kampflose Niederlage. Bereits feststehende Paarungen bleiben unverändert; ohne Paarung werden weder Gegner noch Buchholzbeitrag oder Ergebnis erfunden. Vorübergehende Abwesenheit oder Verletzung allein ist kein Rückzug. D7.10 erfasst das auslösende Spiel.'
+          : 'Nur DTTB WO D7.9 Nichtantreten oder vorzeitige Aufgabe in einer einzelnen RR-Stufe. Nicht für vorübergehende Abwesenheit, Verletzung allein, Disqualifikation oder Swiss. Swiss D7.6 behält frühere Siege; spätere kampflose Niederlagen sind hier noch nicht umgesetzt. Mehrere Rückzüge und automatische Folgestufen sind nicht unterstützt.')) + '</p>'
+      + (existing ? '<p>' + esc(tx('stage.undo', 'Stufenentscheidung widerrufen …')) + '</p>'
+        : field('match', tx('stage.match', 'Auslösendes Spiel'), '<select data-stage="match">' + options + '</select>')
+          + field('participant', tx('stage.participant', 'Ausgeschlossener Teilnehmer'), '<select data-stage="participant"></select>')
+          + field('reason', tx('stage.reason', 'Bestätigter Tatbestand'), '<select data-stage="reason"><option value="not-appeared">'
+            + esc(tx('stage.noShow', 'Nichtantreten nach D7.9 (Zeit/Aufrufe geprüft)')) + '</option><option value="retired">'
+            + esc(tx('stage.retired', 'Vorzeitige Aufgabe')) + '</option></select>'))
+      + field('authority', tx('stage.authority', 'Entschieden durch'), '<select data-stage="authority"><option value="referee">'
+        + esc(tx('outcome.authority.referee', 'Schiedsgericht')) + '</option><option value="organizer">'
+        + esc(tx('outcome.authority.organizer', 'Turnierleitung')) + '</option></select>')
+      + field('reference', tx('stage.reference', 'Entscheidungsreferenz / Name (Pflicht)'), '<input data-stage="reference" maxlength="200">')
+      + '<label class="outcome-radio"><input type="checkbox" data-stage="confirmed"> '
+        + esc(existing
+          ? tx(swiss ? 'stage.swiss.revokeConfirm' : 'stage.confirm',
+            'Ich bestätige den protokollierten Widerruf und die Wiederherstellung.')
+          : tx(swiss ? 'stage.swiss.confirm' : 'stage.confirm',
+            swiss
+              ? 'Ich bestätige die endgültige D7.9-Rückzugsentscheidung, den D7.6-Umfang und dass dies keine vorübergehende Abwesenheit ist. Frühere Siege bleiben; weitere Runden werden als Niederlagen gewertet.'
+              : 'Ich bestätige die endgültige Entscheidung und den Umfang: gesamte aktuelle RR-Stufe und keine weitere Teilnahme in dieser Konkurrenz.')) + '</label>'
+      + '<p data-stage-error role="alert"></p><div class="outcome-actions"><button type="button" data-stage-save class="primary">'
+        + esc(tx('outcome.act.save', 'Speichern')) + '</button><button type="button" data-stage-cancel>'
+        + esc(tx('outcome.act.cancel', 'Abbrechen')) + '</button></div></div>';
+    doc.body.appendChild(overlay);
+    const f = n => overlay.querySelector('[data-stage="' + n + '"]');
+    if (!existing) {
+      const sync = () => {
+        const m = plan.matchById[f('match').value];
+        f('participant').innerHTML = [m.a, m.b].map(t =>
+          '<option value="' + t + '">' + esc(participantWord() + ' ' + t + (displayName(state, t) ? ': ' + displayName(state, t) : '')) + '</option>').join('');
+      };
+      f('match').onchange = sync; sync();
+    }
+    const close = () => { overlay.remove(); const b = doc.getElementById('stage-decision-button'); if (b) b.focus(); };
+    overlay.querySelector('[data-stage-cancel]').onclick = close;
+    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    overlay.querySelector('[data-stage-save]').onclick = async () => {
+      const error = overlay.querySelector('[data-stage-error]');
+      if (!f('confirmed').checked || !f('reference').value.trim()) {
+        error.textContent = tx('stage.required', 'Referenz und ausdrückliche Bestätigung erforderlich.'); return;
+      }
+      const entry = {
+        v: 1, id: 'decision-' + Date.now() + '-' + (state.stageDecisions || []).length,
+        kind: existing ? 'revoke' : 'withdrawal', policy: Stage.POLICY,
+        scope: swiss ? 'swiss-event-withdrawal' : 'stage-and-following',
+        stage: swiss ? 'swiss' : 'round-robin',
+        participant: existing ? existing.participant : +f('participant').value,
+        matchId: existing ? existing.matchId : f('match').value,
+        reason: existing ? existing.reason : f('reason').value,
+        authority: f('authority').value, reference: f('reference').value.trim(), decidedAt: new Date().toISOString()
+      };
+      if (existing) entry.reverses = existing.id;
+      const check = Stage.change(state, entry, opts.build);
+      if (!check.ok) {
+        error.textContent = tx('stage.error.' + check.code,
+          tx('stage.error', 'Entscheidung blockiert ({code}). Eingaben/Umfang prüfen; keine Daten wurden geändert.',
+            { code: check.code })); return;
+      }
+      const saved = await root.TStore.save(check.state);
+      if (!saved) { error.textContent = tx('stage.saveFailed', 'Speichern fehlgeschlagen; keine Entscheidung angewendet.'); return; }
+      Object.assign(state, check.state);
+      close(); opts.repaint();
+    };
+    overlay.querySelector('.outcome-dialog').focus();
   }
   function mountModeEstimateControls(section, profile, opts) {
     let box = root.document.getElementById('sport-mode-estimate-controls');
@@ -351,8 +572,11 @@
     const n = team == null ? '' : String(team).trim();
     const absentHtml = '<span class="abt">' + esc(tx('ui.absent', 'ausgefallen')) + '</span>';
     if (!n) return absent ? absentHtml : '';
-    const nm = ((teamNames && teamNames[n]) || '').trim();
-    const label = '<span class="t-line">' + esc(participantWord()) + ' ' + esc(n) + '</span>'
+    const nm = displayName(teamNames, n);
+    const members = teamNames && teamNames.teamNames && TSport ? TSport.pairMembers(teamNames, n) : ['', ''];
+    const metadata = teamNames && teamNames.teamNames && TSport && TSport.supportsPairMembers(teamNames)
+      ? ' data-player-one="' + esc(members[0]) + '" data-player-two="' + esc(members[1]) + '"' : '';
+    const label = '<span class="t-line"' + metadata + '>' + esc(participantWord()) + ' ' + esc(n) + '</span>'
       + (nm ? '<span class="tnm t-nm">(' + esc(nm) + ')</span>' : '');
     return absent ? label + ' ' + absentHtml : label;
   }
@@ -364,9 +588,13 @@
   function makeLabeler(teamNames) {
     return function (n) {
       if (n == null) return '';
-      const nm = teamNames && teamNames[n];
+      const nm = displayName(teamNames, n);
       return nm ? String(nm) : (participantWord() + ' ' + n);
     };
+  }
+  function displayName(value, team) {
+    return value && value.teamNames && TSport ? TSport.teamLabel(value, team)
+      : String(value && value[team] || '').trim();
   }
 
   /* Beschriftung einer Seite: entweder das aufgelöste Team oder – solange es
@@ -523,7 +751,8 @@
         /* Hinweis (z. B. "Unentschieden") bewusst AUSSERHALB von .presult:
            als drittes Flex-Kind wuerde er die space-between-Verteilung stoeren
            und das rechte Team aus der rechten Kante in die Mitte schieben. */
-        + '<span class="mnote-slot" data-note></span>')
+        + '<span class="mnote-slot" data-note></span>'
+        + '<button type="button" class="outcome-btn noprint" data-outcome-btn hidden></button>')
       + '</span>'
       /* Platzhalter fuer die Freilos-Ansicht – wird erst bei einem Ausfall
          gefuellt (siehe paintByeCard).                                       */
@@ -1093,15 +1322,63 @@
     const names = { pts: tx('ui.criteria.pts', 'Punkte'), ptsPer: tx('ui.criteria.ptsPer', 'Punkte je Spiel'),
       bd: tx(isNonBeach ? 'ui.criteria.pointsDiff' : 'ui.criteria.bd', isNonBeach ? 'Punktedifferenz' : 'Ball-Differenz'),
       bdPer: tx(isNonBeach ? 'ui.criteria.pointsDiffPer' : 'ui.criteria.bdPer', isNonBeach ? 'Punktedifferenz je Match' : 'Ball-Differenz je Spiel'),
+      won: tx('ui.criteria.won', 'Siege'), lost: tx('ui.criteria.lost', 'Niederlagen'),
+      matchDiff: tx('ui.criteria.matchDiff', 'Matchpunktedifferenz'),
       h2h: tx('ui.criteria.h2h', 'direkter Vergleich'),
+      setRatio: tx('ui.criteria.setRatio', 'Satzquotient'), pointRatio: tx('ui.criteria.pointRatio', 'Ballpunktquotient'),
       ballsFor: tx(isNonBeach ? 'ui.criteria.points' : 'ui.criteria.ballsFor', isNonBeach ? 'Punkte' : 'erzielte Bälle'),
       ballsForPer: tx('ui.criteria.ballsForPer', 'erzielte Bälle je Spiel'),
       sd: tx(isTableTennis ? 'ui.criteria.gamesDiff' : 'ui.criteria.sd',
         isTableTennis ? 'Spieldifferenz' : 'Satzdifferenz'),
       sdPer: tx(isTableTennis ? 'ui.criteria.gamesDiffPer' : 'ui.criteria.sdPer',
         isTableTennis ? 'Spieldifferenz je Match' : 'Satzdifferenz je Spiel') };
+    if (TC.activeRanking() === 'tt-dttb-swiss-ranking-2026') {
+      return tx('sport.ranking.tableTennisSwissNote', 'DTTB WO D7.6: Siege → Buchholz → direkter Vergleich (nur zwei Gleichstehende) → offizieller Losentscheid. Freilos = ein Sieg ohne Spiel-/Punktgutschrift; Buchholz zählt die Siege aller bisherigen Gegner, für ein Freilos die Siege des Tabellenletzten. Zwischenstände: nur Siege/Buchholz. Kein Feinbuchholz. Mehrfachgleichstände bleiben offen zur offiziellen Entscheidung. Eine endgültige D7.9-Entscheidung wegen Nichtantretens nach Zeit-/Aufrufprüfung oder vorzeitiger Aufgabe erhält alle bisherigen Siege und beendet die weitere Teilnahme; für jede tatsächlich fortgesetzte spätere Runde wird eine kampflose Niederlage gewertet. Vorübergehende Abwesenheit oder Verletzung allein ist keine solche Entscheidung; die allgemeine Abwesenheitsmarkierung und andere Sonderausgänge blockieren die D7.6-Wertung. Ohne bereits feststehende Paarung werden weder Gegner noch Buchholzbeitrag oder Spielstand erfunden. Ein feststehendes künftiges Spiel bleibt unverändert und wird als D7.10-Walkover aufgezeichnet. Paarungen sind App-Vorschläge, keine zertifizierte DTTB-Auslosung: Turnierleitung muss Setzung, Sieggruppen und Absteiger prüfen. Keine Prüfung der Doppel-Aufschlag-/Schlagreihenfolge. Manuelle Tabellenkorrekturen sind hier deaktiviert.');
+    }
+    if (TC.activeRanking() === 'tt-ittf-individual-groups-2026') {
+      return tx('sport.ranking.tableTennisIttfGroupsNote',
+        'ITTF Statutes 2026 §§3.7.4.4/3.7.5: nur Gruppen-/Qualifikationsphasen im Einzel-/Doppelwettbewerb; der Hauptevent ist KO. 2 Matchpunkte für Sieg, 1 für Niederlage im gespielten Match. Bei Gleichstand Mini-Tabelle nur unter den Gleichstehenden: Matchpunkte → Spielquotient → Punktquotient; nach jeder Teilauflösung wird mit den verbleibenden Gleichstehenden neu gerechnet. Freilose, Abwesenheit und Sonderausgänge sperren die Wertung; eine unvollständige Gruppe qualifiziert nicht weiter. Der offizielle Losentscheid bleibt manuell. Das Schluss-Spielpaar nach §3.7.5.5 bzw. eine Jury-Ausnahme werden nicht geplant oder geprüft; bitte den Spielplan fachlich prüfen. Nicht für Swiss, Modified Pool Play oder den KO-Hauptevent.');
+    }
+    if (TC.activeRanking() === 'tt-dttb-individual-round-robin-2026') {
+      return tx('ui.criteria.hintDttb',
+        'DTTB WO D7.5: Siege → weniger Niederlagen → globale Spieldifferenz → globale Punktedifferenz → direkter Vergleich (Matchpunkt-, Spiel- und Punktedifferenz). Ein verbleibender Gleichstand bleibt geteilt; offizieller Losentscheid erforderlich.',
+        { list: criteria.map(c => names[c] || c).join(' → ') });
+    }
     return tx('ui.criteria.hint', 'Reihenfolge bei Gleichstand: {list} → Losentscheid. Ein „=“ hinter dem Platz bedeutet: hier entscheidet das Los.',
       { list: criteria.map(c => names[c] || c).join(' → ') });
+  }
+
+  function dttbSwissTableHtml(plan, ctx) {
+    const label = key => esc(tx(key, key));
+    let html = '<thead><tr><th>' + esc(participantWord()) + '</th><th>'
+      + label('ui.rank.place') + '</th><th>' + label('ui.criteria.won')
+      + '</th><th>Buchholz</th>';
+    plan.rounds.forEach(rd => { html += '<th>R' + rd.round + '<br>'
+      + label('sport.ranking.swissRound') + '</th>'; });
+    html += '</tr></thead><tbody>';
+    const started = plan.table.played.length > 0;
+    plan.table.ranked.forEach(e => {
+      const place = !started || e.unsupported ? '–' : String(e.place) + (e.shared ? '=' : '.');
+      html += '<tr data-team="' + e.team + '"><td>' + cardNameHtml(e.team, e.team, ctx)
+        + '</td><td>' + place + '</td><td>' + e.stat.won + '</td><td>' + e.stat.buchholz + '</td>';
+      plan.rounds.forEach(rd => {
+        const table = plan.tableUpto(rd.round);
+        const m = rd.matches.find(match => match.a === e.team || match.b === e.team);
+        const bye = table.played.some(match => match.bye === e.team);
+        let value = '';
+        if (rd.bye === e.team && bye) value = label('rs.swiss.byeWin');
+        else if (m && m.result) {
+          const won = (m.result.winner === 'a' ? m.a : m.b) === e.team;
+          value = label(won ? 'rs.swiss.win' : 'rs.swiss.loss');
+          value += ' ' + (m.a === e.team ? m.result.aSets : m.result.bSets)
+            + ':' + (m.a === e.team ? m.result.bSets : m.result.aSets);
+        }
+        if (value) value += '<br>Σ ' + table.stat[e.team].won + ' / ' + table.stat[e.team].buchholz;
+        html += '<td>' + value + '</td>';
+      });
+      html += '</tr>';
+    });
+    return html + '</tbody>';
   }
 
   /* ================================================== 6. LAUFENDE TABELLE
@@ -1190,15 +1467,75 @@
   }
   function namePanelHtml(teams, teamNames, opts) {
     const o = opts || {};
+    const record = teamNames && teamNames.teamNames ? teamNames : null;
+    if (record) teamNames = record.teamNames;
     const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
     return teams.map(t => {
       const row = '<label class="nrow"><span class="nnum">' + t + '</span>'
         + '<input type="text" data-name-input="' + esc(t) + '" value="' + esc(teamNames[t] || '')
-        + '" placeholder="' + esc(participantWord()) + ' ' + t + '" autocomplete="off" spellcheck="false"></label>';
+        + '" aria-label="' + esc(participantWord() + ' ' + t) + '" placeholder="' + esc(participantWord()) + ' ' + t + '" autocomplete="off" spellcheck="false"></label>'
+        + pairPanelHtml(record, t);
       if (!o.removable) return row;
       return '<div class="nrow-del">' + row
-        + teamDelBtnHtml(t, teamNames[t] || (participantWord() + ' ' + t), canRemove) + '</div>';
+        + teamDelBtnHtml(t, displayName(record || teamNames, t) || (participantWord() + ' ' + t), canRemove) + '</div>';
     }).join('');
+  }
+  function pairPanelHtml(record, team) {
+    if (!TSport || !TSport.supportsPairMembers(record) || !record) return '';
+    const members = TSport.pairMembers(record, team);
+    return '<div class="pair-editor">' + [0, 1].map(index =>
+      '<label><span>' + esc(tx('ui.pair.player', 'Spieler:in {n}', { n: index + 1 })) + '</span>'
+      + '<input type="text" maxlength="100" data-pair-team="' + esc(team)
+      + '" data-pair-index="' + index + '" value="' + esc(members[index])
+      + '" placeholder="' + esc(tx('ui.pair.optional', 'Name (optional)'))
+      + '" autocomplete="off" spellcheck="false"></label>').join('')
+      + '<output data-pair-label="' + esc(team) + '">' + esc(TSport.teamLabel(record, team, participantWord() + ' ' + team))
+      + '</output></div>';
+  }
+  function editParticipantName(record, input) {
+    const before = JSON.stringify([record.teamNames, record.pairMembers]);
+    const team = input.getAttribute && input.getAttribute('data-pair-team');
+    if (team && TSport.supportsPairMembers(record)) {
+      record.pairMembers = record.pairMembers || {};
+      const members = TSport.pairMembers(record, team);
+      members[+input.getAttribute('data-pair-index')] = input.value.trim().slice(0, 100);
+      if (members.some(Boolean)) record.pairMembers[team] = members;
+      else delete record.pairMembers[team];
+    } else {
+      const key = input.getAttribute && input.getAttribute('data-name-input');
+      if (!key) return false;
+      if (input.value.trim()) record.teamNames[key] = input.value.trim();
+      else delete record.teamNames[key];
+    }
+    if (root.document) {
+      root.document.querySelectorAll('[data-pair-label]').forEach(output => {
+        const id = output.getAttribute('data-pair-label');
+        output.textContent = TSport.teamLabel(record, id, participantWord() + ' ' + id);
+      });
+    }
+    return before !== JSON.stringify([record.teamNames, record.pairMembers]);
+  }
+  function wireParticipantNames(container, getRecord, changed) {
+    ['input', 'change'].forEach(event => container.addEventListener(event, e => {
+      if (editParticipantName(getRecord(), e.target)) changed();
+    }));
+  }
+  function shuffleParticipantNames(record, teams) {
+    if (participantOrderLocked(record)) return;
+    const entries = teams.map(team => ({ name: record.teamNames[team], members: (record.pairMembers || {})[team] }));
+    for (let i = entries.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [entries[i], entries[j]] = [entries[j], entries[i]];
+    }
+    record.teamNames = {}; record.pairMembers = {};
+    entries.forEach((entry, index) => {
+      if (entry.name) record.teamNames[teams[index]] = entry.name;
+      if (entry.members) record.pairMembers[teams[index]] = entry.members;
+    });
+  }
+  function participantOrderLocked(record) {
+    return TStore.anyResults(record) || ['frozen', 'frozenModes', 'manualStandings', 'manualPlacements']
+      .some(key => Object.keys(record[key] || {}).length > 0);
   }
   function fieldPanelHtml(count, fieldNames) {
     let html = '';
@@ -1609,13 +1946,23 @@
     const drawPossible = TC.isMulti(setMode) && !def.matchWins && !TC.hasDecidingSet(setMode);
     const profile = TC.activeProfile();
     const ranking = TC.activeRanking();
-    const indoorPoints = ranking === 'indoor-3-2-1-0';
+    const strict = ranking === 'indoor-fivb-2026' || ranking === 'indoor-dvv-bso-2026';
+    const officialBo5 = strict && def.matchWins === 3;
+    const indoorPoints = ranking === 'indoor-3-2-1-0' || (ranking === 'indoor-fivb-2026' && !officialBo5);
     const winPoints = indoorPoints ? 3 : TC.WIN_PTS;
     const lossPoints = indoorPoints ? 0 : TC.LOSS_PTS;
     const setLabel = profile.indexOf('table-tennis.') === 0 ? 'Spiel' : 'Satz';
     let w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
       + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
       + '<tr><td>' + tx(indoorPoints ? 'ui.scoring.clearWin' : 'ui.scoring.win', indoorPoints ? 'Sieg ohne Satzverlust' : 'Sieg') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: winPoints }) + '</td></tr>';
+    if (officialBo5) {
+      w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
+        + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
+        + '<tr><td>' + tx('ui.scoring.win30', 'Sieg 3:0 oder 3:1') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 3 }) + '</td></tr>'
+        + '<tr><td>' + tx('ui.scoring.win32', 'Sieg 3:2') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 2 }) + '</td></tr>'
+        + '<tr><td>' + tx('ui.scoring.loss23', 'Niederlage 2:3') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 1 }) + '</td></tr>'
+        + '<tr><td>' + tx('ui.scoring.loss03', 'Niederlage 0:3 oder 1:3') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 0 }) + '</td></tr></table>';
+    }
     if (indoorPoints) {
       w += '<tr><td>' + tx('ui.scoring.closeWin', 'Sieg mit Satzverlust') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 2 }) + '</td></tr>'
        + '<tr><td>' + tx('ui.scoring.closeLoss', 'Niederlage mit Satzgewinn') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 1 }) + '</td></tr>';
@@ -1640,7 +1987,9 @@
     chain.forEach((c, i) => {
       t += '<tr><td>' + (i + 1) + '</td><td>' + esc(names[c] || c) + '</td></tr>';
     });
-    t += '<tr><td>' + (chain.length + 1) + '</td><td>' + tx('ui.scoring.lots', 'Losentscheid («=» in der Tabelle)') + '</td></tr></table>';
+    t += '<tr><td>' + (chain.length + 1) + '</td><td>' + (strict
+      ? tx('ui.scoring.officialDecision', 'Offene Entscheidung nach Regelwerk («=» in der Tabelle, kein Losentscheid)')
+      : tx('ui.scoring.lots', 'Losentscheid («=» in der Tabelle)')) + '</td></tr></table>';
 
     return '<div class="row"><div style="flex:0 0 46%">' + w + '</div><div class="grow">' + t + '</div></div>';
   }
@@ -1690,6 +2039,275 @@
         const offset = sticky ? header.getBoundingClientRect().height + 12 : 12;
         window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
       }
+    });
+  }
+
+  /* ============================================ 8b. SPIELENTSCHEIDUNGEN
+     Default/Spielabbruch nach FIVB-Regel 6.4 (siehe core/turnier-outcome.js).
+     Die gespielten Sätze (S.results) bleiben unverändert; die Entscheidung
+     ist ein getrennter, versionierter Datensatz (S.outcomes). Er wirkt erst,
+     wenn er „endgültig“ bestätigt ist.                                        */
+  function outcomeApi() {
+    return root.TOutcome || (typeof require === 'function' ? require('./turnier-outcome.js') : null);
+  }
+  const OUTCOME_ERRORS = {
+    'unsupported-mode': ['Für diesen Spielmodus ist die gewählte Regel nicht umgesetzt.', 'outcome.err.unsupportedMode'],
+    'scores-not-allowed': ['Bei einem Default dürfen keine Satzergebnisse eingetragen sein. Zuerst die Eingaben leeren.', 'outcome.err.scoresNotAllowed'],
+    'match-already-decided': ['Das Spiel ist bereits durch gespielte Sätze entschieden; eine Entscheidung ist nicht nötig.', 'outcome.err.alreadyDecided'],
+    'partial-set-complete': ['Der letzte Satz ist bereits regulär beendet; bitte ihn als gespielten Satz belassen und das Spiel nur dann abbrechen, wenn weitere Sätze fehlen.', 'outcome.err.partialComplete'],
+    'invalid-partial-set': ['Der unterbrochene Satz hat einen ungültigen Zwischenstand (Punkte fehlen oder erreichen das Satzziel).', 'outcome.err.invalidPartial'],
+    'invalid-completed-set': ['Ein abgeschlossener Satz ist kein gültiges Satzergebnis.', 'outcome.err.invalidCompleted'],
+    'missing-set': ['Zwischen den eingetragenen Sätzen fehlt ein Satz.', 'outcome.err.missingSet'],
+    'too-many-sets': ['Es sind mehr Sätze eingetragen, als der Modus zulässt.', 'outcome.err.tooManySets'],
+    'unsupported-kind': ['Diese Art der Entscheidung (z. B. Aufgabe, Disqualifikation) ist nicht umgesetzt.', 'outcome.err.unsupportedKind']
+  };
+  function outcomeError(code) {
+    const e = OUTCOME_ERRORS[code];
+    return e ? tx(e[1], e[0]) : tx('outcome.err.invalid', 'Die Entscheidung ist ungültig ({code}).', { code: String(code) });
+  }
+  function setsText(sets) {
+    return sets.map(function (s) { return s[0] + ':' + s[1]; }).join(', ');
+  }
+  function paintOutcome(td, state, id, modeId) {
+    const O = outcomeApi();
+    if (!td || !O) return;
+    const btn = td.querySelector('[data-outcome-btn]');
+    if (!btn) return;
+    const policy = state && state.config && state.config.outcomeProfile;
+    const st = O.statusFor(state, id, modeId);
+    const inputs = Array.prototype.slice.call(td.querySelectorAll('input.score'));
+    const open = inputs.some(function (i) { return !i.disabled; });
+    td.removeAttribute('data-outcome');
+    btn.hidden = !(st.state !== 'none' || (policy && open));
+    if (btn.hidden) return;
+    btn.textContent = st.state === 'none'
+      ? tx('outcome.btn.add', 'Entscheidung …') : tx('outcome.btn.edit', 'Entscheidung ändern');
+    if (st.state === 'none') return;
+    td.setAttribute('data-outcome', st.state);
+    const note = td.querySelector('[data-note]');
+    let text;
+    if (st.state === 'invalid') {
+      text = outcomeError(st.code);
+    } else {
+      const o = st.outcome;
+      const bits = [tx('outcome.kind.' + o.kind, o.kind === 'default' ? 'Default' : 'Spielabbruch'),
+        tx('outcome.reason.' + o.reason, o.reason)];
+      const r = st.result;
+      bits.push(tx('outcome.badge.awarded', 'Wertung {score}', { score: r.aSets + ':' + r.bSets }));
+      bits.push(st.state === 'applied' ? tx('outcome.status.final', 'endgültig')
+        : tx('outcome.status.provisionalShort', 'vorläufig – zählt noch nicht'));
+      text = bits.join(' · ');
+      if (o.kind === 'default') {
+        inputs.forEach(function (i) { i.disabled = true; });
+      }
+    }
+    if (note) { note.textContent = text; note.className = 'mnote-slot outcome-note'; }
+  }
+
+  function closeOutcomeDialog() {
+    const doc = root.document;
+    const old = doc && doc.getElementById('outcome-dialog-overlay');
+    if (old) {
+      const back = old._returnFocus;
+      old.parentNode.removeChild(old);
+      if (back && back.focus) back.focus();
+    }
+  }
+  function openOutcomeDialog(ctx) {
+    const O = outcomeApi();
+    const doc = root.document;
+    const state = ctx.state;
+    const id = ctx.id;
+    const modeId = ctx.modeId;
+    const policyId = (state.config && state.config.outcomeProfile)
+      || (state.outcomes && state.outcomes[id] && state.outcomes[id].policy);
+    if (!O || !policyId) return;
+    closeOutcomeDialog();
+    const existing = state.outcomes && state.outcomes[id] ? state.outcomes[id] : null;
+    const kindNow = existing ? existing.kind : 'default';
+    const overlay = doc.createElement('div');
+    overlay.id = 'outcome-dialog-overlay';
+    overlay.className = 'outcome-overlay noprint';
+    overlay._returnFocus = doc.activeElement;
+    const sideOpt = function (side) {
+      const name = side === 'a' ? ctx.nameA : ctx.nameB;
+      return '<option value="' + side + '"' + (existing && existing.loser === side ? ' selected' : '') + '>'
+        + esc(name) + '</option>';
+    };
+    const radio = function (name, value, label, checked) {
+      return '<label class="outcome-radio"><input type="radio" name="' + name + '" value="' + value + '"'
+        + (checked ? ' checked' : '') + '> <span>' + esc(label) + '</span></label>';
+    };
+    overlay.innerHTML = '<div class="outcome-dialog" role="dialog" aria-modal="true" aria-labelledby="outcome-title" tabindex="-1">'
+      + '<h2 id="outcome-title">' + esc(tx('outcome.dialog.title', 'Spielentscheidung')) + '</h2>'
+      + '<p class="outcome-match">' + esc(ctx.nameA) + ' – ' + esc(ctx.nameB) + '</p>'
+      + '<p class="outcome-policy">' + esc(tx('outcome.policy.' + policyId, policyId)) + '</p>'
+      + '<fieldset><legend>' + esc(tx('outcome.field.kind', 'Art')) + '</legend>'
+      + radio('outcome-kind', 'default', tx('outcome.kind.default', 'Default'), kindNow === 'default')
+      + radio('outcome-kind', 'incomplete', tx('outcome.kind.incomplete', 'Spielabbruch'), kindNow === 'incomplete')
+      + '</fieldset>'
+      + '<p class="outcome-hint" data-hint></p>'
+      + '<label class="outcome-field"><span>' + esc(tx('outcome.field.loser', 'Verursachendes Team (Verlierer)')) + '</span>'
+      + '<select data-f="loser">' + sideOpt('a') + sideOpt('b') + '</select></label>'
+      + '<label class="outcome-field"><span>' + esc(tx('outcome.field.reason', 'Grund')) + '</span><select data-f="reason"></select></label>'
+      + '<label class="outcome-field"><span>' + esc(tx('outcome.field.authority', 'Entschieden durch')) + '</span><select data-f="authority">'
+      + O.AUTHORITIES.map(function (a) {
+        return '<option value="' + a + '"' + (existing && existing.authority === a ? ' selected' : '') + '>'
+          + esc(tx('outcome.authority.' + a, a)) + '</option>';
+      }).join('') + '</select></label>'
+      + '<fieldset><legend>' + esc(tx('outcome.field.status', 'Status')) + '</legend>'
+      + radio('outcome-status', 'provisional', tx('outcome.status.provisional', 'Vorläufig – zählt noch nicht für Tabelle und Weiterkommen'), !existing || existing.status !== 'final')
+      + radio('outcome-status', 'final', tx('outcome.status.final2', 'Endgültig bestätigt – wird gewertet'), !!existing && existing.status === 'final')
+      + '</fieldset>'
+      + '<label class="outcome-field"><span>' + esc(tx('outcome.field.note', 'Notiz (optional)')) + '</span>'
+      + '<input type="text" data-f="note" maxlength="' + O.MAX_NOTE + '" value="' + esc(existing ? existing.note : '') + '"></label>'
+      + '<p class="outcome-preview" data-preview aria-live="polite"></p>'
+      + '<p class="outcome-error" data-error role="alert"></p>'
+      + '<p class="outcome-hint">' + esc(tx('outcome.hint.scope', 'Disqualifikation und Aufgabe werden nicht automatisch gewertet; ihr Umfang entscheidet die Schiedsrichter- bzw. Turnierleitung.')) + '</p>'
+      + '<div class="outcome-actions">'
+      + '<button type="button" data-act="save" class="primary">' + esc(tx('outcome.act.save', 'Speichern')) + '</button>'
+      + '<button type="button" data-act="cancel">' + esc(tx('outcome.act.cancel', 'Abbrechen')) + '</button>'
+      + (existing ? '<button type="button" data-act="remove">' + esc(tx('outcome.act.remove', 'Entscheidung entfernen')) + '</button>' : '')
+      + '</div></div>';
+    doc.body.appendChild(overlay);
+    const dlg = overlay.querySelector('.outcome-dialog');
+    const field = function (n) { return overlay.querySelector('[data-f="' + n + '"]'); };
+    const checked = function (n) { const el = overlay.querySelector('input[name="' + n + '"]:checked'); return el ? el.value : ''; };
+    const fillReasons = function () {
+      const kind = checked('outcome-kind');
+      const sel = field('reason');
+      const keep = existing && existing.kind === kind ? existing.reason : sel.value;
+      sel.innerHTML = O.REASONS[kind].map(function (r) {
+        return '<option value="' + r + '"' + (r === keep ? ' selected' : '') + '>' + esc(tx('outcome.reason.' + r, r)) + '</option>';
+      }).join('');
+      overlay.querySelector('[data-hint]').textContent = kind === 'default'
+        ? tx('outcome.hint.default', 'Default: Sieger erhält alle benötigten Sätze mit 0:Satzziel (Indoor 3×25:0, Beach 2×21:0). Es dürfen keine Satzergebnisse eingetragen sein.')
+        : tx('outcome.hint.incomplete', 'Spielabbruch: gespielte Sätze und den Zwischenstand des unterbrochenen Satzes in die Satzfelder eintragen; die erzielten Punkte bleiben erhalten, fehlende Sätze erhält der Gegner mit 0:Satzziel.');
+    };
+    const candidate = function () {
+      return O.create({
+        kind: checked('outcome-kind'), loser: field('loser').value, reason: field('reason').value,
+        authority: field('authority').value, status: checked('outcome-status'),
+        note: field('note').value.trim(), decidedAt: new Date().toISOString()
+      }, policyId);
+    };
+    const preview = function () {
+      const c = candidate();
+      const ev = O.evaluate(c, state.results && state.results[id], modeId);
+      overlay.querySelector('[data-preview]').textContent = ev.ok
+        ? tx('outcome.preview', 'Wertung: {score} (Sätze {sets})', { score: ev.result.aSets + ':' + ev.result.bSets, sets: setsText(ev.result.awardedSets) })
+        : '';
+      overlay.querySelector('[data-error]').textContent = ev.ok ? '' : outcomeError(ev.code);
+      return ev;
+    };
+    fillReasons();
+    preview();
+    overlay.addEventListener('change', function (e) {
+      if (e.target && e.target.name === 'outcome-kind') fillReasons();
+      preview();
+    });
+    overlay.addEventListener('input', preview);
+    const close = closeOutcomeDialog;
+    const canChange = function (next) {
+      const check = O.validateChange(state, id, next, ctx.buildPlan);
+      if (!check.ok) {
+        overlay.querySelector('[data-error]').textContent = tx('outcome.err.downstreamInputs',
+          'Diese Entscheidung würde die Teams in Spielen mit Eingaben ändern. Zuerst die betroffenen nachfolgenden Ergebnisse und Entscheidungen leeren: {matches}.',
+          { matches: check.affected.join(', ') });
+      }
+      return check.ok;
+    };
+    overlay.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); close(); } });
+    overlay.addEventListener('click', function (e) {
+      const act = e.target && e.target.getAttribute && e.target.getAttribute('data-act');
+      if (e.target === overlay || act === 'cancel') { close(); return; }
+      if (act === 'remove') {
+        if (!canChange(null)) return;
+        delete state.outcomes[id];
+        close();
+        ctx.changed();
+        return;
+      }
+      if (act === 'save') {
+        const ev = preview();
+        if (!ev.ok) return;
+        const next = candidate();
+        if (!canChange(next)) return;
+        state.outcomes = state.outcomes || {};
+        state.outcomes[id] = next;
+        close();
+        ctx.changed();
+      }
+    });
+    dlg.focus();
+  }
+  /* Delegierter Klick auf die Entscheidungs-Schaltflächen einer Spielkarte. */
+  function wireOutcomes(rootEl, opts) {
+    if (!rootEl || rootEl.getAttribute('data-outcome-wired') === '1') return;
+    rootEl.setAttribute('data-outcome-wired', '1');
+    rootEl.addEventListener('click', function (e) {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-outcome-btn]') : null;
+      if (!btn) return;
+      const td = btn.closest('td.match');
+      if (!td) return;
+      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
+      openOutcomeDialog({
+        state: opts.state(), id: td.getAttribute('data-mid'), modeId: td.getAttribute('data-set-mode'),
+        nameA: a ? a.textContent.replace(/\s+/g, ' ').trim() : 'A', nameB: b ? b.textContent.replace(/\s+/g, ' ').trim() : 'B',
+        buildPlan: opts.buildPlan,
+        changed: function () {
+          const sel = root.document.getElementById('outcome-profile-select');
+          const st = opts.state();
+          if (sel && st) sel.disabled = Object.keys(st.outcomes || {}).length > 0;
+          opts.changed();
+        }
+      });
+    });
+  }
+
+  /* Auswahl des Regelwerks für Default/Spielabbruch (nur Volleyball). */
+  function mountOutcomeControls(section, profile, opts) {
+    const O = outcomeApi();
+    if (!O || !profile.outcomeProfiles || !profile.outcomeProfiles.length) return;
+    let box = root.document.getElementById('outcome-profile-controls');
+    if (!box) {
+      box = root.document.createElement('div');
+      box.id = 'outcome-profile-controls';
+      box.className = 'sport-profile-controls';
+      box.innerHTML = '<label class="cfgfield"><span data-cap></span><select id="outcome-profile-select"></select></label>'
+        + '<p class="sport-profile-note" data-note1></p>';
+      const setup = section.querySelector('.cfg-action-groups') || section.querySelector('.cfg-setup-content') || section;
+      setup.appendChild(box);
+    }
+    const select = box.querySelector('select');
+    box.querySelector('[data-cap]').textContent = tx('outcome.select.label', 'Nichtantreten und Spielabbruch');
+    select.innerHTML = '<option value="">' + esc(tx('outcome.select.none', 'Ohne Sonderwertung')) + '</option>'
+      + profile.outcomeProfiles.map(function (pid) {
+        return '<option value="' + esc(pid) + '">' + esc(tx('outcome.policy.' + pid, pid)) + '</option>';
+      }).join('');
+    box.querySelector('[data-note1]').textContent = tx('outcome.select.note',
+      'Optional für FIVB-Hallen-Best-of-5 und Beach-Best-of-3 (2×21, Entscheidungssatz bis 15). Nur endgültig bestätigte Entscheidungen zählen.');
+    const record = opts.getTournament ? opts.getTournament() : null;
+    select.value = record && record.config && record.config.outcomeProfile ? record.config.outcomeProfile : '';
+    const uiState = root.TStore && root.TStore.initialUiState();
+    const locked = record && record.outcomes && Object.keys(record.outcomes).length > 0;
+    select.disabled = !!(uiState && uiState.readOnly) || !opts.getTournament || !opts.repaint || !!locked;
+    select.title = locked ? tx('outcome.select.locked', 'Erst alle Entscheidungen entfernen, dann kann die Regel geändert werden.') : '';
+    if (select.getAttribute('data-bound') === '1') return;
+    select.setAttribute('data-bound', '1');
+    select.addEventListener('change', function () {
+      const state = opts.getTournament && opts.getTournament();
+      if (!state || !state.config) return;
+      const previous = state.config.outcomeProfile || null;
+      state.config.outcomeProfile = select.value || null;
+      Promise.resolve(opts.save ? opts.save(state) : TStore.save(state)).then(function (saved) {
+        if (!saved) { state.config.outcomeProfile = previous; select.value = previous || ''; return; }
+        opts.repaint();
+      }).catch(function (error) {
+        state.config.outcomeProfile = previous;
+        select.value = previous || '';
+        root.console.error('Outcome profile could not be saved', error);
+      });
     });
   }
 
@@ -2513,15 +3131,16 @@
 
   return {
     configureProfile,
+    paintStage, paintStageMatch,
     participantWord,
     surfaceWord,
     surfaceLabel,
     unitWord,
     esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
-    setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard,
-    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    namePanelHtml, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
+    setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
+    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, neededFieldsForPlan, fillPlanFixes, timefit,

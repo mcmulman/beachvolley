@@ -62,7 +62,7 @@
     var disclosure = document.createElement('p');
     disclosure.className = 'affiliate-disclosure';
     localize(disclosure, 'home.affiliate.disclosure',
-      'Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Preise und Verfügbarkeit können sich ändern.');
+      'Als Amazon-Partner verdiene ich an qualifizierten Verkäufen.');
     section.appendChild(disclosure);
 
     var grid = document.createElement('div');

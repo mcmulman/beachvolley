@@ -243,6 +243,8 @@
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
 <script src="core/turnier-core.js"></script>
+<script src="core/turnier-outcome.js"></script>
+<script src="core/turnier-stage.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
 <script src="core/turnier-resume-picker.js"></script>
@@ -340,9 +342,10 @@
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
-    for(let i=1;i<=max;i++) teams.push(names[i] || ('Team ' + i));
+    for(let i=1;i<=max;i++) teams.push(TSport.teamLabel(cur, i, 'Team ' + i));
     const empty = !Object.keys(cur.results || {}).length
      && !Object.keys(cur.teamNames || {}).length
+     && !Object.keys(cur.pairMembers || {}).length
      && !Object.keys(cur.fieldNames || {}).length
      && !Object.keys(cur.frozen || {}).length
      && !(cur.absent || []).length;
@@ -367,12 +370,12 @@
   S = await TStore.load(storageSheetId(MODE), DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true, mode: MODE });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(storageSheetId(MODE), DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true, mode: MODE });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.sheet = storageSheetId(MODE);
   S.config.mode = MODE;
@@ -391,15 +394,15 @@
   const isSwiss = () => S.config.mode === 'swiss';
 
   /* ------------------------------------------------------------ Kontext */
-  function labeler(){ return TUI.makeLabeler(S.teamNames); }
+  function labeler(){ return TUI.makeLabeler(S); }
   function swissTeamLabel(n) {
     if (n == null) return '';
-    const nm = (S.teamNames && S.teamNames[n]) ? String(S.teamNames[n]).trim() : '';
+    const nm = TSport.teamLabel(S, n);
     return nm ? ('Team ' + n + ' (' + nm + ')') : ('Team ' + n);
   }
   function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
-    return { setMode: mode, teamLabel: isSwiss() ? swissTeamLabel : labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)), fieldLabel: fieldLabel,
+    return { setMode: mode, teamLabel: isSwiss() ? swissTeamLabel : labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, S.absent.includes(n)), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? term(B.matchLabel(id)) : id,
              resolve: ref => (typeof ref === 'number' ? ref : null),
              fields: S.config.fields, modeLabel: setModeLabel(mode) };
@@ -470,15 +473,17 @@
   }
 
   /* ----------------------------------------------------------- Aufbau */
-  function planFor(c){
+  function planFor(c, state){
+    const s = state || S;
     return TPlanning.apply(TFormat.buildRounds({
       mode: c.mode, teams: c.teams, fields: c.fields,
       rounds: c.rounds, setMode: c.setMode,
-      roundModes: S.frozenModes, startTime: c.startTime,
-      absent: S.absent, results: S.results,
-      fixedPairs: isSwiss() ? S.frozen : {},
-      round1: isSwiss() ? S.round1 : null
-    }), c, S.results);
+      rankingProfile: c.rankingProfile, sport: s.sport, stageDecisions: s.stageDecisions,
+      roundModes: s.frozenModes, startTime: c.startTime,
+      absent: s.absent, results: s.results, outcomes: s.outcomes,
+      fixedPairs: c.mode === 'swiss' ? s.frozen : {},
+      round1: c.mode === 'swiss' ? s.round1 : null
+    }), c, TOutcome.withInputs(s));
   }
   function compute(){
     B = planFor(S.config);
@@ -600,7 +605,7 @@
        paintStandings()); Jeder-gegen-Jeden -> Ausfuellanleitung + Korrektur-
        Toolbar fuer die laufende Tabelle (siehe paintTrack()). */
     if (hintEl) hintEl.hidden = false;
-    $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
+    $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
     $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedBody'), roundFilter);
@@ -632,6 +637,7 @@
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    TUI.paintStage(S, { build: s => planFor(s.config, s), repaint: () => { structureKey = ''; rebuild(); } });
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -640,7 +646,7 @@
     document.querySelectorAll('[data-team-name]').forEach(td => {
       const n = +td.getAttribute('data-team-name');
       if (!Number.isFinite(n)) return;
-      td.innerHTML = TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n));
+      td.innerHTML = TUI.teamNameHtml(n, S, S.absent.includes(n));
     });
 
     paintSchedule();
@@ -700,7 +706,9 @@
       });
       TUI.paintMatch(td, m.result, ctx);
       TUI.markScoreInputs(td, ctx.setMode);
+      TUI.paintOutcome(td, S, id, ctx.setMode);
       TUI.paintByeCard(td, { dead: dead, winner: bye ? m.bye : null }, ctx);
+      TUI.paintStageMatch(td, m);
     });
     // Eingetragene Runden kennzeichnen (Paarung/Modus stehen fest)
     B.rounds.forEach(rd => {
@@ -719,7 +727,9 @@
     if (isSwiss()) {
       renderSwissCentralTable(standEl, ctx);
       if (hintEl) {
-        hintEl.innerHTML = MSTD.toolbarHtml('final-swiss');
+        hintEl.innerHTML = S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
+          ? TUI.hintHtml(TUI.criteriaHint(B.table.criteria), TUI.criteriaHint(B.table.criteria))
+          : MSTD.toolbarHtml('final-swiss');
       }
     }
     /* Bei Jeder-gegen-Jeden bleibt standTable/standTableWrap unsichtbar
@@ -739,7 +749,8 @@
     const teams = allTeams();
     const tbody = document.getElementById('trackBody');
     const hintEl = $('hintRank');
-    const editing = MSTD.isEditing('final');
+    const dttbRanking = S.config.rankingProfile === 'tt-dttb-individual-round-robin-2026';
+    const editing = !dttbRanking && MSTD.isEditing('final');
     const manual = TStore.getManualStandings(S, 'final');
     /* Korrektur-Spalten nur zeigen, wenn sie etwas enthalten: "Korr." bei
        vorhandenen Δ-Werten oder im Bearbeiten-Modus, die Rücksetz-Spalte
@@ -749,7 +760,7 @@
       const hasCorr = Object.keys(manual || {}).some(function (k) {
         const ov = manual[k] || {};
         return !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
-      });
+      }) && !dttbRanking;
       trackEl.classList.toggle('is-editing', !!editing);
       trackEl.classList.toggle('has-corr', hasCorr);
     }
@@ -758,12 +769,12 @@
       hintEl.innerHTML = TUI.hintHtml(
         TUI.criteriaHint(B.table.criteria),
         T('rs.track.hintPrint', { criteria: TUI.criteriaHint(B.table.criteria) }))
-        + MSTD.toolbarHtml('final');
+        + (dttbRanking ? '' : MSTD.toolbarHtml('final'));
     }
 
     const hasEntry = m => {
       if(m.result) return true;
-      const r = S.results[m.id];
+      const r = TOutcome.withInputs(S)[m.id];
       return !!(r && r.some(set => set && (set[0] != null || set[1] != null)));
     };
 
@@ -823,7 +834,9 @@
       const ov = manual[t] || {};
       const delta = Number(ov[field]) || 0;
       td.classList.toggle('is-manual', !!delta);
-      if (editing) {
+      if (dttbRanking) {
+        td.textContent = '';
+      } else if (editing) {
         td.innerHTML = '<input type="number" step="1" class="mstd-in mstd-delta" data-field="' + field
           + '" value="' + (delta || '') + '" placeholder="±0" title="' + TUI.esc(T('rs.mstd.deltaTitle')) + '">';
       } else {
@@ -834,6 +847,7 @@
       const t = +tr.getAttribute('data-team');
       const actTd = tr.querySelector('td[data-actcol]');
       if (!actTd) return;
+      if (dttbRanking) { actTd.textContent = ''; return; }
       const ov = manual[t] || {};
       const hasAny = !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
       actTd.innerHTML = (editing && hasAny)
@@ -846,7 +860,7 @@
        Die Δ-Korrekturen fließen direkt in Rang & Sortierung ein (analog zur
        Endtabelle / zum Schweizer System), ein zusätzlicher Platz-Override
        wird hier nicht gebraucht (siehe Rücksprache mit dem Nutzer). */
-    const anyResult = doneRounds.size > 0;
+    const anyResult = doneRounds.size > 0 || !!B.withdrawal;
     const rows = rrRankedRows();
     const place = {};
     rows.forEach(row => { place[row.team] = row; });
@@ -870,6 +884,11 @@
   /* Jeder-gegen-Jeden: Rangfolge inkl. Δ-Korrekturen – dieselbe Reihenfolge
      für die Platz-Spalte der laufenden Tabelle UND für "Finalrunde spielen". */
   function rrRankedRows(){
+    if (S.config.rankingProfile === 'tt-dttb-individual-round-robin-2026') {
+      return B.placements.map((entry, i) => ({
+        team: entry.team, place: entry.place, shared: entry.shared, i
+      }));
+    }
     const manual = TStore.getManualStandings(S, 'final');
     const rows = B.table.ranked.map((e, i) => {
       const ov = manual[e.team] || {};
@@ -897,6 +916,12 @@
 
   function renderSwissCentralTable(standEl) {
     if (!standEl) return;
+    if (S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026') {
+      standEl.removeAttribute('data-mstd-key');
+      standEl.className = 'central-table';
+      standEl.innerHTML = TUI.dttbSwissTableHtml(B, ctxFor(S.config.setMode));
+      return;
+    }
     const rounds = B.rounds.length;
     /* Kein <caption>: Die Ueberschrift dieses Abschnitts ist die <h1>
        "Schweizer Tabelle" darueber - ein zweiter Titel waere doppelt. */
@@ -1032,7 +1057,7 @@
           + (medal ? medal + ' ' : '') + effPlace + '.</span>';
       }
       const nm = document.getElementById('cteam_' + t);
-      if (nm) nm.innerHTML = TUI.teamNameHtml(t, S.teamNames, S.absent.includes(t));
+      if (nm) nm.innerHTML = TUI.teamNameHtml(t, S, S.absent.includes(t));
       const rb = document.getElementById('crank_' + t);
       if (rb) rb.innerHTML = badge;
 
@@ -1160,7 +1185,7 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, S.results, S.config.planning.locked);
+    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked);
     S.sheet = storageSheetId(MODE);
     return TStore.save(S);
   }
@@ -1169,6 +1194,7 @@
      Ergebnisse bleiben erhalten, sofern es die Begegnung weiterhin gibt –
      im Schweizer System innerhalb derselben (festgeschriebenen) Runde.   */
   function removeTeam(t){
+    if ((S.stageDecisions || []).length) return;
     const n = S.config.teams;
     if(n - 1 < MIN_TEAMS){ alert(T('sheet.alert.minTeams', { n: MIN_TEAMS })); return; }
     if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
@@ -1196,7 +1222,7 @@
          sie mit der neuen Teamzahl optimal gepaart werden. */
       const rs = Object.keys(S.frozen).map(Number).sort((a, b) => b - a);
       for(const r of rs){
-        const has = Object.keys(S.results).some(id => id.indexOf('sw_' + r + '_') === 0 && TStore.hasInput(S.results[id]));
+        const has = Object.keys(S.results).some(id => id.indexOf('sw_' + r + '_') === 0 && TStore.hasInput(TOutcome.withInputs(S)[id]));
         if(has) break;
         delete S.frozen[r]; if(S.frozenModes) delete S.frozenModes[r];
       }
@@ -1238,11 +1264,7 @@
     $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.currentTarget));
     $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.currentTarget));
 
-    $('nameGrid').addEventListener('input', e => {
-      const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
-      if(!n) return;
-      const v = e.target.value.trim();
-      if(v) S.teamNames[n] = v; else delete S.teamNames[n];
+    TUI.wireParticipantNames($('nameGrid'), () => S, () => {
       save(); paint();
     });
     $('fieldGrid').addEventListener('input', e => {
@@ -1273,19 +1295,20 @@
          der Runde 1 werden gelöscht, sonst wanderten sie auf die neuen
          Paarungen (gleiche Spiel-IDs sw_1_*). */
       const hasInput = (id) => {
-        const v = S.results[id];
+        const v = TOutcome.withInputs(S)[id];
         return !!(v && v.some(p => p && p.some(x => x != null && x !== '')));
       };
       const laterStarted = Object.keys(S.frozen).some(r => +r > 1)
-        || Object.keys(S.results).some(id => /^sw_(\d+)_/.test(id) && +id.split('_')[1] > 1 && hasInput(id));
+        || Object.keys(TOutcome.withInputs(S)).some(id => /^sw_(\d+)_/.test(id) && +id.split('_')[1] > 1 && hasInput(id));
       if(laterStarted){
         alert(T('rs.alert.drawLocked'));
         return;
       }
-      const r1Started = !!S.frozen[1] || Object.keys(S.results).some(id => id.indexOf('sw_1_') === 0 && hasInput(id));
+      const r1Started = !!S.frozen[1] || Object.keys(TOutcome.withInputs(S)).some(id => id.indexOf('sw_1_') === 0 && hasInput(id));
       if(r1Started && !confirm(T('rs.confirm.redraw'))) return;
       if(r1Started){
         Object.keys(S.results).forEach(id => { if(id.indexOf('sw_1_') === 0) delete S.results[id]; });
+        Object.keys(S.outcomes).forEach(id => { if(id.indexOf('sw_1_') === 0) delete S.outcomes[id]; });
         if(S.frozenModes) delete S.frozenModes[1];
       }
       const list = allTeams().filter(t => !S.absent.includes(t));
@@ -1298,15 +1321,12 @@
     });
 
     $('btnShuffle').addEventListener('click', () => {
-      const names = allTeams().map(t => S.teamNames[t] || '');
-      for(let i=names.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
-      S.teamNames = {};
-      names.forEach((v,i) => { if(v) S.teamNames[i+1] = v; });
+      TUI.shuffleParticipantNames(S, allTeams());
       save(); structureKey=''; rebuild();
     });
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearNames'))) return;
-      S.teamNames = {}; save(); structureKey=''; rebuild();
+      S.teamNames = {}; S.pairMembers = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
     $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
@@ -1318,9 +1338,14 @@
       save(); structureKey=''; rebuild();
     });
     function exportRankingToFinal(){
+        if ((S.stageDecisions || []).length) return;
       const teams = allTeams().filter(t => !S.absent.includes(t));
       if(teams.length < 2){ alert(T('rs.alert.exportMin')); return; }
       const table = B.table;
+      if (S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
+          && (!table.complete || table.ranked.some(e => e.shared || e.unsupported))) {
+        alert(T('sport.ranking.swissExportBlocked')); return;
+      }
       /* B.table hat kein eigenes "complete"-Flag (TFormat.buildRounds liefert
          nur ranked/stat/criteria/played) - vollständig ist der Stand, wenn
          KEIN Spiel mehr offen ist (kein Ergebnis, kein Freilos, nicht tot). */
@@ -1335,7 +1360,7 @@
         const rankedOrder = (table && table.ranked && table.ranked.length)
           ? (isSwiss() ? table.ranked.map(e => e.team) : rrRankedRows().map(r => r.team))
           : teams;
-        const names = rankedOrder.map(t => (S.teamNames && S.teamNames[t]) ? String(S.teamNames[t]).trim() || ('Team ' + t) : ('Team ' + t));
+        const names = rankedOrder.map(t => TSport.teamLabel(S, t, 'Team ' + t));
         const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(names)))));
         window.open('Turnierbogen_Gruppen_Finalrunde.html#rankimport=' + encoded, '_blank');
       };
@@ -1378,7 +1403,7 @@
     $('btnTimefit').addEventListener('click', () => TUI.timefit());
 
     const onRoundNav = e => {
-      const f = TUI.roundBarValue(e, B.slots, roundFilter, TUI.lastFilledRound(B.slots, S.results));
+      const f = TUI.roundBarValue(e, B.slots, roundFilter, TUI.lastFilledRound(B.slots, TOutcome.withInputs(S)));
       if(f == null) return;
       roundFilter = f;
       $('roundbar').innerHTML = TUI.roundBarHtml(B.slots, roundFilter);
@@ -1402,6 +1427,7 @@
       return rd ? rd.setMode : S.config.setMode;
     };
     TUI.wireScoreInputs($('schedBody'), onScore);
+    TUI.wireOutcomes($('schedBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); rebuild(); } });
   }
 
   if(!S.round1) S.round1 = null;
@@ -1423,6 +1449,7 @@
 <script>
 if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="core/sheet-header.js" defer></script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">

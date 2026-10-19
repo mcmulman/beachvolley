@@ -133,7 +133,13 @@
   function enable(on) { forcedActive = on == null ? null : !!on; }
 
   function storedLang() {
-    if (current == null) current = readPref() || deviceLang();
+    if (current == null) {
+      var d = doc(), query = null;
+      if (d && d.documentElement.hasAttribute('data-i18n-query') && root.location) {
+        query = new URLSearchParams(root.location.search).get('lang');
+      }
+      current = LANGS.indexOf(query) >= 0 ? query : readPref() || deviceLang();
+    }
     return current;
   }
   /* Sprache für Ausgaben: auf nicht freigeschalteten Seiten immer Deutsch. */
@@ -255,7 +261,7 @@
     });
   }
 
-  /* ── App-Leiste (appbar.js ist tabu) nachträglich lokalisieren ────────── */
+  /* ── Gemeinsame App-Leiste nachträglich lokalisieren ─────────────────── */
   const GROUP_KEYS = {
     'Teams & Felder': 'chrome.group.teams',
     'Spielplanung': 'chrome.group.planning',
@@ -264,6 +270,8 @@
   function localizeChrome() {
     const d = doc();
     if (!d || !active() || lang() === DEFAULT_LANG) return;
+    const bar = d.querySelector('.app-bar');
+    if (bar) bar.setAttribute('aria-label', t('chrome.pageNavigation'));
     const back = d.querySelector('.app-bar__back');
     if (back && !back.__i18n) {
       back.__i18n = true;
@@ -372,6 +380,13 @@
 
   function reload() {
     const loc = root.location;
+    const d = doc();
+    if (loc && d && d.documentElement.hasAttribute('data-i18n-query')) {
+      const url = new URL(loc.href);
+      url.searchParams.set('lang', storedLang());
+      loc.href = url.href;
+      return;
+    }
     if (loc && typeof loc.reload === 'function') loc.reload();
   }
 

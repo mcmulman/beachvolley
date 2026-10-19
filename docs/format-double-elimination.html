@@ -107,8 +107,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
     <li>Wenn ein einzelnes schlechtes Spiel nicht sofort das Turnier-Aus bedeuten soll</li>
     <li>Bei überschaubarer Teamzahl (Volleyball A/A+: 4–32 Teams; andere Profile in diesem Bogen: 4–16) und ausreichend Zeit – ein Doppel-K.-o.-Baum
       braucht deutlich mehr Spiele als ein einfacher KO-Baum</li>
-    <li>Für Turniere mit Wettkampfcharakter, bei denen Fairness gegenüber einem Ausrutscher wichtiger ist als
-      ein kurzer Zeitplan</li>
+    <li>Wenn nach einer ersten Niederlage noch ein Titelweg offenbleiben soll und ausreichend Zeit vorhanden ist</li>
     <li><strong>Nicht</strong> geeignet bei sehr engem Zeitfenster oder sehr vielen Teams – dort ist das reine
       KO-System (<a href="format-ko-system.html">Turnierbogen KO-System</a>) oder eine Gruppenphase mit
       anschließendem KO die bessere Wahl.</li>
@@ -131,7 +130,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <p>Ein Freilos in Runde 1 der Gewinner-Runde erzeugt keinen „Verlierer" – das entsprechende Team zieht kampflos
   weiter und taucht nicht in der Verlierer-Runde auf (kein Phantom-Gegner).</p>
   <p><strong>Empfohlene Teamzahl:</strong> 4–32 Teams für die Volleyball-Veranstaltungsvariante, sonst 4–16 in diesem Bogen. Ein Doppel-K.-o.-Baum benötigt etwa doppelt so viele
-  Spiele wie ein einfacher KO-Baum (2n-2 statt n-1 Spiele) – bei mehr als 32 Teams wird der Zeitbedarf selbst mit
+  Spiele wie ein einfacher KO-Baum (ohne Ausfälle 2n−2 oder mit Reset 2n−1, jeweils ohne zusätzliches Spiel um Platz 3) – bei mehr als 32 Teams wird der Zeitbedarf selbst mit
   mehreren Feldern bzw. Tischen schnell unrealistisch (vgl. Tableau-Richtwerte nach Feldanzahl in <code>AGENTS.md</code> §2).
   Unter 4 Teams gäbe es keine sinnvolle Verlierer-Runde (schon im „Halbfinale" stünde ein Freilos).</p>
 </section>
@@ -148,8 +147,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
       erst eine Niederlage – es ist ein <strong>zweites, entscheidendes Spiel</strong> nötig
       (der „Bracket-Reset" bzw. das „Entscheidungsspiel").</li>
   </ul>
-  <p>Dieser Bogen setzt die vollständige Standard-Regel mit Reset-Spiel um (statt einer vereinfachten Variante
-  ohne Reset), weil das die etablierte, in Wettkampfregeln übliche Fassung von Double Elimination ist. Das
+  <p>Dieser Bogen verwendet ein bedingtes Reset-Spiel. Das
   Reset-Spiel ist im Bogen immer als eigene Zeile angelegt, wird aber nur benötigt und gewertet, wenn genau dieser
   Fall eintritt – der Bogen weist das deutlich aus.</p>
 </section>
@@ -159,7 +157,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <strong>keine feste Rangliste</strong>, sondern Platzbereiche:</p>
   <ul>
     <li><strong>Platz 1/2:</strong> Sieger/Verlierer des entscheidenden Spiels im Grand Final (mit oder ohne Reset).</li>
-    <li><strong>Platz 3:</strong> Verlierer des Verlierer-Finales (der letzten Runde der Verlierer-Runde).</li>
+    <li><strong>Platz 3:</strong> Verlierer des Verlierer-Finales (der letzten Runde der Verlierer-Runde), sofern kein zusätzliches Platzierungsspiel vorgesehen ist. Die lokalen Volleyball-Profile A/A+ ergänzen ab 16 Teams ein Spiel um Platz 3/4 zwischen den Verlierern der letzten beiden Verlierer-Runden.</li>
     <li><strong>ab Platz 4:</strong> alle Teams, die in derselben Runde der Verlierer-Runde ihre zweite
       Niederlage kassiert haben, teilen sich denselben Platzbereich (z. B. „4.–5.").</li>
   </ul>
@@ -173,7 +171,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
       <tr><th>Vorteile</th><th>Nachteile</th></tr>
     </thead>
     <tbody>
-      <tr><td>Ein einzelnes schwaches Spiel wirft ein Team nicht sofort raus</td><td>Deutlich mehr Spiele als beim einfachen KO-System (2n-2 statt n-1)</td></tr>
+      <tr><td>Eine erste Niederlage beendet den Titelweg noch nicht</td><td>Mehr Spiele als beim einfachen K.-o.; ein Reset und lokale Platzierungsspiele können hinzukommen</td></tr>
       <tr><td>Faireres Gesamtergebnis, da Pech in einem Spiel ausgleichbar ist</td><td>Komplexerer, weniger auf den ersten Blick verständlicher Turnierbaum</td></tr>
       <tr><td>Spannender Showdown im Grand Final (inkl. möglichem Reset-Spiel)</td><td>Zeitplan schwerer kalkulierbar, da ein Reset-Spiel optional dazukommen kann</td></tr>
     </tbody>

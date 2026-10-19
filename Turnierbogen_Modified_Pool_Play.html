@@ -304,6 +304,8 @@
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
 <script src="core/turnier-core.js"></script>
+<script src="core/turnier-outcome.js"></script>
+<script src="core/turnier-stage.js"></script>
 <script src="core/turnier-format.js"></script>
 <script src="core/turnier-store.js"></script>
 <script src="core/turnier-resume-picker.js"></script>
@@ -345,9 +347,10 @@
     const names = cur.teamNames || {};
     const max = +cur.config.teams || 0;
     const teams = [];
-    for(let i=1;i<=max;i++) teams.push(names[i] || ('Team ' + i));
+    for(let i=1;i<=max;i++) teams.push(TSport.teamLabel(cur, i, 'Team ' + i));
     const empty = !Object.keys(cur.results || {}).length
       && !Object.keys(cur.teamNames || {}).length
+      && !Object.keys(cur.pairMembers || {}).length
       && !Object.keys(cur.fieldNames || {}).length
       && !Object.keys(cur.frozen || {}).length
       && !(cur.absent || []).length;
@@ -360,12 +363,12 @@
   let S = await TStore.load(SHEET, DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(SHEET, DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
   const MSTD = TUI.initManualEditing(document, {
@@ -389,10 +392,10 @@
   let roundFilter = 'all';
 
   /* ------------------------------------------------------------ Kontext */
-  function labeler(){ return TUI.makeLabeler(S.teamNames); }
+  function labeler(){ return TUI.makeLabeler(S); }
   function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
-    return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)), fieldLabel: fieldLabel,
+    return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, S.absent.includes(n)), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
              fields: S.config.fields, modeLabel: modeLabel(mode) };
@@ -445,13 +448,14 @@
   }
 
   /* ----------------------------------------------------------- Aufbau */
-  function planFor(c){
+  function planFor(c, state){
+    const s = state || S;
     return TPlanning.apply(TFormat.build({
       teams: c.teams, groups: c.groups, fields: c.fields,
       setMode: c.setMode, finalSetMode: c.finalSetMode || null,
       finalMode: c.finalMode, poolMode: 'mpp', startTime: c.startTime,
-      absent: S.absent, results: S.results
-    }), c, S.results);
+      absent: s.absent, results: s.results, outcomes: s.outcomes
+    }), c, TOutcome.withInputs(s));
   }
   function compute(){
     B = planFor(S.config);
@@ -493,7 +497,7 @@
     buildTeamsTable();
     buildGroupOverview();
     $('trackBody').innerHTML = TUI.trackTableHtml(activeTeams(), B.groupRounds.length, cg);
-    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S.teamNames, { removable: true, minTeams: MIN_TEAMS });
+    $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
     $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, cg, { removable: true, minTeams: MIN_TEAMS });
     TUI.applyRoundFilter($('schedGrpBody'), roundFilter);
@@ -537,7 +541,7 @@
     document.querySelectorAll('[data-team-name]').forEach(td => {
       const n = +td.getAttribute('data-team-name');
       if (!Number.isFinite(n)) return;
-      td.innerHTML = TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n));
+      td.innerHTML = TUI.teamNameHtml(n, S, S.absent.includes(n));
     });
 
     // Gruppeneinteilung
@@ -597,6 +601,7 @@
       });
       TUI.paintMatch(td, m.result, ctx);
       TUI.markScoreInputs(td, ctx.setMode);
+      TUI.paintOutcome(td, S, id, ctx.setMode);
       TUI.paintByeCard(td, { winner: bye ? m.bye : null }, ctx);
       const note = td.querySelector('[data-note]');
       if(note && m.needsDecision) note.textContent = T('mpp.match.needsDecision');
@@ -618,7 +623,7 @@
       teams.forEach(t => {
         th += '<tr>'
           + '<td class="pl"></td>'
-          + '<td class="nm">' + TUI.teamNameHtml(t, S.teamNames, S.absent.includes(t)) + '</td>'
+          + '<td class="nm">' + TUI.teamNameHtml(t, S, S.absent.includes(t)) + '</td>'
           + '<td></td><td></td>' + (showDraw ? '<td></td>' : '') + '<td></td><td></td><td></td><td></td>'
           + '</tr>';
       });
@@ -646,7 +651,7 @@
       for (let p = 1; p <= B.groups[g].length; p++) {
         const e = t.ranked.find(x => x.place === p);
         rows += '<tr><td class="pl">' + p + '.</td><td>'
-          + (e && e.team != null ? TUI.teamNameHtml(e.team, S.teamNames, S.absent.includes(e.team)) : '<span style="color:#999">–</span>')
+          + (e && e.team != null ? TUI.teamNameHtml(e.team, S, S.absent.includes(e.team)) : '<span style="color:#999">–</span>')
           + '</td></tr>';
       }
       return '<table class="mpp-placelist"><tbody>' + rows + '</tbody></table>';
@@ -720,7 +725,7 @@
   function paintPlacements(){
     const key = 'final';
     const editable = MSTD.isEditing(key);
-    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S.teamNames, S.absent.includes(n)) };
+    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S, S.absent.includes(n)) };
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
     const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('mpp.place.empty')) + '</td></tr>';
@@ -945,7 +950,7 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, S.results, S.config.planning.locked); return TStore.save(S); }
+    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked); return TStore.save(S); }
   /* Team endgültig löschen: Nummern dahinter rücken nach, der Plan wird
      für die neue Teamzahl neu gebildet. Ergebnisse von Begegnungen, die es
      in derselben Phase weiterhin gibt, bleiben erhalten.                  */
@@ -996,11 +1001,7 @@
     $('btnToggleFields').addEventListener('click', e => toggle('fieldpanel', e.currentTarget));
     $('btnToggleAbsent').addEventListener('click', e => toggle('absentpanel', e.currentTarget));
 
-    $('nameGrid').addEventListener('input', e => {
-      const n = e.target.getAttribute && e.target.getAttribute('data-name-input');
-      if(!n) return;
-      const v = e.target.value.trim();
-      if(v) S.teamNames[n] = v; else delete S.teamNames[n];
+    TUI.wireParticipantNames($('nameGrid'), () => S, () => {
       save(); rebuild();
     });
     $('fieldGrid').addEventListener('input', e => {
@@ -1025,15 +1026,12 @@
     });
 
     $('btnShuffle').addEventListener('click', () => {
-      const names = activeTeams().map(t => S.teamNames[t] || '');
-      for(let i=names.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
-      S.teamNames = {};
-      names.forEach((v,i) => { if(v) S.teamNames[i+1] = v; });
+      TUI.shuffleParticipantNames(S, activeTeams());
       save(); structureKey=''; rebuild();
     });
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearNames'))) return;
-      S.teamNames = {}; save(); structureKey=''; rebuild();
+      S.teamNames = {}; S.pairMembers = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
     $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
@@ -1089,6 +1087,8 @@
     onScoreFin.setMode = () => B.finalSetMode;
     TUI.wireScoreInputs($('schedGrpBody'), onScore);
     TUI.wireScoreInputs($('schedFinBody'), onScoreFin);
+    TUI.wireOutcomes($('schedGrpBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
+    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
   }
 
   fillSelects();
@@ -1109,6 +1109,7 @@
 <script>
 if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())&&'serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="core/sheet-header.js" defer></script>
 <script src="appbar.js" defer></script>
 <script src="spielplan-enh.js"></script>
 <footer style="text-align:center;padding:16px 20px 20px;margin-top:24px;font-size:11px;color:#5a6375;border-top:1px solid #d8e1ec;">

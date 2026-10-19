@@ -65,8 +65,37 @@
       sport: 'volleyball.indoor',
       criteria: ['won', 'pts', 'setRatio', 'pointRatio', 'h2h']
     }),
+    /* DVV Bundesspielordnung 07/2026 §5.2: Matchpunkte → gewonnene Spiele →
+       Satzquotient → Ballpunktquotient → direkter Vergleich (nur Matchpunkte,
+       Siege, Satzquotient). Kein Los: ein verbleibender Gleichstand braucht
+       ein Entscheidungsspiel (§5.2.4) und bleibt offen. */
+    'indoor-dvv-bso-2026': Object.freeze({
+      sport: 'volleyball.indoor',
+      criteria: ['pts', 'won', 'setRatio', 'pointRatio', 'h2h'],
+      h2hCriteria: ['pts', 'won', 'setRatio'],
+      matchWinsSupported: [2, 3],
+      unresolvedTie: 'deciding-match'
+    }),
     'indoor-hobby': Object.freeze({ sport: 'volleyball.indoor', criteria: ['won', 'sd', 'bd', 'h2h'] }),
-    'table-tennis-hobby': Object.freeze({ sport: 'table-tennis.*', criteria: ['won', 'sd', 'bd', 'h2h'] })
+    'table-tennis-hobby': Object.freeze({ sport: 'table-tennis.*', criteria: ['won', 'sd', 'bd', 'h2h'] }),
+    'tt-dttb-individual-round-robin-2026': Object.freeze({
+      sport: 'table-tennis.*',
+      criteria: ['won', 'lost', 'sd', 'bd', 'h2h'],
+      h2hCriteria: ['matchDiff', 'sd', 'bd'],
+      unresolvedTie: 'official-lots'
+    }),
+    'tt-ittf-individual-groups-2026': Object.freeze({
+      sport: 'table-tennis.*',
+      criteria: ['pts', 'h2h'],
+      unresolvedTie: 'official-lots'
+    }),
+    'tt-dttb-swiss-ranking-2026': Object.freeze({
+      sport: 'table-tennis.*',
+      criteria: ['won', 'buchholz', 'h2h'],
+      h2hCriteria: ['won'],
+      matchWinsSupported: [3, 4],
+      unresolvedTie: 'official-lots'
+    })
   });
 
   /* Empfohlene Mindestdauer je Spiel in Minuten (inkl. Wechselzeit). */
@@ -1215,14 +1244,31 @@
       ballsFor: 0, ballsAgainst: 0, bd: 0
     };
   }
-  function matchPoints(result, rankingProfile) {
-    if ((rankingProfile !== 'indoor-3-2-1-0' && rankingProfile !== 'indoor-fivb-2026')
+  function matchPoints(result, rankingProfile, matchWins) {
+    const dvv = rankingProfile === 'indoor-dvv-bso-2026';
+    if (rankingProfile === 'tt-ittf-individual-groups-2026') {
+      return result && result.winner === 'a' ? { a: 2, b: 1 }
+        : result && result.winner === 'b' ? { a: 1, b: 2 } : { a: 0, b: 0 };
+    }
+    if (rankingProfile === 'tt-dttb-individual-round-robin-2026'
+        || rankingProfile === 'tt-dttb-swiss-ranking-2026') {
+      return result && result.winner === 'a' ? { a: 1, b: 0 }
+        : result && result.winner === 'b' ? { a: 0, b: 1 } : { a: 0, b: 0 };
+    }
+    if ((rankingProfile !== 'indoor-3-2-1-0' && rankingProfile !== 'indoor-fivb-2026' && !dvv)
         || !result || result.winner == null) {
       return { a: result && result.draw ? DRAW_PTS : result && result.winner === 'a' ? WIN_PTS : LOSS_PTS,
         b: result && result.draw ? DRAW_PTS : result && result.winner === 'b' ? WIN_PTS : LOSS_PTS };
     }
-    const close = Math.min(result.aSets, result.bSets) > 0;
-    const winnerPoints = close ? 2 : 3, loserPoints = close ? 1 : 0;
+    /* DVV Best-of-3: 2 Punkte für jeden Sieg, 0 für jede Niederlage.
+       Fünfsatz-Spiele nach FIVB/DVV: 3:0 und 3:1 → 3/0, 3:2 → 2/1. Das
+       organisatorische Profil 3/2/1/0 zählt weiter jeden Satzgewinn des
+       Verlierers. */
+    const loserSets = Math.min(result.aSets, result.bSets);
+    const official = (dvv || rankingProfile === 'indoor-fivb-2026') && matchWins === 3;
+    const close = official ? loserSets >= 2 : dvv ? false : loserSets > 0;
+    const winnerPoints = dvv && matchWins === 2 ? 2 : close ? 2 : 3;
+    const loserPoints = close ? 1 : 0;
     return result.winner === 'a'
       ? { a: winnerPoints, b: loserPoints } : { a: loserPoints, b: winnerPoints };
   }
@@ -1236,11 +1282,17 @@
     normalizeTeamList(teams).forEach(t => st[t] = emptyStat());
 
     (played || []).forEach(m => {
+      if (m.withdrawalLoss != null) {
+        const s = st[m.withdrawalLoss];
+        if (s) { s.games++; s.lost++; }
+        return;
+      }
       if (m.bye != null) {
         const s = st[m.bye];
         if (s) {
           s.games++; s.byes++; s.won++;
-          s.pts += rankingProfile === 'indoor-3-2-1-0' ? 3 : WIN_PTS;
+          s.pts += rankingProfile === 'indoor-3-2-1-0' ? 3
+            : rankingProfile === 'tt-dttb-swiss-ranking-2026' ? 1 : WIN_PTS;
         }
         return;
       }
@@ -1253,7 +1305,7 @@
       sb.setsFor += res.bSets; sb.setsAgainst += res.aSets;
       sa.ballsFor += res.aBalls; sa.ballsAgainst += res.bBalls;
       sb.ballsFor += res.bBalls; sb.ballsAgainst += res.aBalls;
-      const points = matchPoints(res, rankingProfile);
+      const points = matchPoints(res, rankingProfile, m.matchWins);
       if (res.winner === 'a') { sa.won++; sb.lost++; sa.pts += points.a; sb.pts += points.b; }
       else if (res.winner === 'b') { sb.won++; sa.lost++; sb.pts += points.b; sa.pts += points.a; }
       else { sa.drawn++; sb.drawn++; sa.pts += points.a; sb.pts += points.b; }
@@ -1263,6 +1315,16 @@
       st[t].sd = st[t].setsFor - st[t].setsAgainst;
       st[t].bd = st[t].ballsFor - st[t].ballsAgainst;
     });
+    if (rankingProfile === 'tt-dttb-swiss-ranking-2026') {
+      const list = normalizeTeamList(teams);
+      const bottomWins = list.length ? Math.min.apply(null, list.map(t => st[t].won)) : 0;
+      list.forEach(t => { st[t].buchholz = st[t].byes * bottomWins; });
+      (played || []).forEach(m => {
+        if (m.bye != null || !m.result || !st[m.a] || !st[m.b]) return;
+        st[m.a].buchholz += st[m.b].won;
+        st[m.b].buchholz += st[m.a].won;
+      });
+    }
     if (o.perGame) normalizePerGame(st);
     return st;
   }
@@ -1320,6 +1382,9 @@
     pts:         { label: 'Punkte',            get: s => s.pts,         dir: -1 },
     ptsPer:      { label: 'Punkte/Spiel',      get: s => s.ptsPer,      dir: -1 },
     won:         { label: 'Siege',             get: s => s.won,         dir: -1 },
+    buchholz:    { label: 'Buchholz',          get: s => s.buchholz,    dir: -1 },
+    lost:        { label: 'Niederlagen',       get: s => s.lost,        dir: 1 },
+    matchDiff:   { label: 'Punktedifferenz',   get: s => s.won - s.lost, dir: -1 },
     wonPer:      { label: 'Siege/Spiel',       get: s => s.wonPer,      dir: -1 },
     setRatio:    { label: 'Satzquotient',     get: s => quotient(s.setsFor, s.setsAgainst), dir: -1 },
     pointRatio:  { label: 'Punktquotient',    get: s => quotient(s.ballsFor, s.ballsAgainst), dir: -1 },
@@ -1345,9 +1410,23 @@
     const list = normalizeTeamList(teams).filter(t => st[t]);
     const chain = o.criteria || DEFAULT_CRITERIA;
     const matches = o.matches || [];
+    const rankingId = o.rankingProfile || activeRankingProfile;
+    const rankingDef = RANKING_PROFILES[rankingId] || {};
+    const strictProfile = rankingId === 'indoor-fivb-2026' || rankingId === 'indoor-dvv-bso-2026';
     const unsupportedReason = o.unsupportedReason
-      || ((o.rankingProfile || activeRankingProfile) === 'indoor-fivb-2026'
-        && matches.some(m => m.bye != null) ? 'bye' : null);
+      || (rankingId === 'tt-dttb-swiss-ranking-2026' && !o.swiss ? 'format'
+        : strictProfile && matches.some(m => m.bye != null) ? 'bye'
+        : rankingId === 'indoor-dvv-bso-2026' && matches.some(m => m.result && m.result.administrative) ? 'outcome'
+        : rankingId === 'tt-dttb-individual-round-robin-2026' && matches.some(m => m.bye != null) ? 'bye'
+        : rankingId === 'tt-dttb-individual-round-robin-2026'
+          && matches.some(m => m.result && m.result.administrative) ? 'outcome'
+        : rankingId === 'tt-ittf-individual-groups-2026' && matches.some(m => m.bye != null) ? 'bye'
+        : rankingId === 'tt-ittf-individual-groups-2026'
+          && matches.some(m => m.result && m.result.administrative) ? 'outcome'
+        : rankingId === 'tt-dttb-swiss-ranking-2026'
+          && matches.some(m => m.result && (m.result.administrative || m.result.draw)) ? 'outcome'
+        : rankingDef.matchWinsSupported && matches.some(m => m.result
+          && rankingDef.matchWinsSupported.indexOf(m.matchWins) < 0) ? 'mode' : null);
     if (unsupportedReason) {
       return list.map(t => ({ team: t, place: 1, shared: true,
         unsupported: unsupportedReason, stat: st[t] }));
@@ -1376,12 +1455,41 @@
        dann greift der nächste Schritt bzw. der Losentscheid.                  */
     function splitByH2H(group) {
       if (group.length < 2) return [group];
+      /* D7.6 does not define a mini-table for a multi-way direct comparison. */
+      if (rankingId === 'tt-dttb-swiss-ranking-2026'
+          && (o.interim || group.length !== 2)) return [group];
+      if (rankingId === 'tt-ittf-individual-groups-2026') {
+        let parts = [group];
+        ['pts', 'setRatio', 'pointRatio'].forEach(crit => {
+          const next = [];
+          parts.forEach(part => {
+            if (part.length < 2) { next.push(part); return; }
+            const tied = new Set(part);
+            const direct = matches.filter(m => m.bye == null && tied.has(m.a)
+              && tied.has(m.b) && m.result);
+            const directStats = standings(part, direct, { rankingProfile: rankingId });
+            const buckets = new Map();
+            part.forEach(t => {
+              const criterion = CRITERIA[crit];
+              const value = criterion.get(directStats[t]);
+              const key = value == null || Number.isNaN(value) ? '∅' : String(value);
+              if (!buckets.has(key)) buckets.set(key, { value, teams: [] });
+              buckets.get(key).teams.push(t);
+            });
+            Array.from(buckets.values())
+              .sort((a, b) => CRITERIA[crit].dir * (a.value - b.value))
+              .forEach(bucket => next.push(bucket.teams));
+          });
+          parts = next;
+        });
+        return parts;
+      }
       const set = new Set(group);
       const sub = (matches || []).filter(m =>
         m.bye == null && set.has(m.a) && set.has(m.b) && m.result);
       if (!sub.length) return [group];
-      const mst = standings(group, sub, { perGame: true, rankingProfile: o.rankingProfile });
-      const subChain = chain.filter(c => c !== 'h2h');
+      const mst = standings(group, sub, { perGame: true, rankingProfile: rankingId });
+      const subChain = rankingDef.h2hCriteria || chain.filter(c => c !== 'h2h');
       let parts = [group];
       subChain.forEach(crit => {
         const next = [];
@@ -1419,9 +1527,16 @@
     const out = [];
     let place = 1;
     groups.forEach(g => {
-      const sorted = g.slice().sort(cmpFallback);
+      const sorted = rankingDef.unresolvedTie ? g.slice() : g.slice().sort(cmpFallback);
       const shared = g.length > 1;
-      sorted.forEach(t => out.push({ team: t, place, shared, stat: st[t] }));
+      sorted.forEach(t => {
+        const entry = { team: t, place, shared, stat: st[t] };
+        if (shared && rankingDef.unresolvedTie) {
+          entry.unresolved = rankingId === 'tt-dttb-swiss-ranking-2026' && g.length > 2
+            ? 'official-direct-comparison' : rankingDef.unresolvedTie;
+        }
+        out.push(entry);
+      });
       place += g.length;
     });
     return out;
@@ -1453,7 +1568,9 @@
     if (ranking && (ranking.sport === activeProfileId || ranking.sport === 'table-tennis.*')) {
       if (!o.unequalGames) return ranking.criteria.slice();
       if (rankingId === 'indoor-3-2-1-0') return ['ptsPer', 'sdPer', 'bdPer', 'h2h'];
-      if (rankingId === 'indoor-fivb-2026') return ranking.criteria.slice();
+      if (rankingId === 'indoor-fivb-2026' || rankingId === 'indoor-dvv-bso-2026') return ranking.criteria.slice();
+      if (rankingId === 'tt-dttb-individual-round-robin-2026'
+          || rankingId === 'tt-dttb-swiss-ranking-2026') return ranking.criteria.slice();
       if (rankingId !== 'beach-house') return ['wonPer', 'sdPer', 'bdPer', 'h2h'];
     }
     return o.unequalGames
