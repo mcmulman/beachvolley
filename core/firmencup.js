@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const SCHEMA = 1;
-  const LEGACY_FORMAT = 1, FLEXIBLE_FORMAT = 2, CURRENT_FORMAT = 3;
+  const CURRENT_FORMAT = 4;
   const MIN_TEAMS = 2, MAX_TEAMS = 128, MAX_ORGANIZATIONS = 128;
   function check(ok, message) { if (!ok) throw new Error(message); }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -13,29 +13,15 @@
   function text(s, max) { return typeof s === 'string' && s.trim().length > 0 && s.length <= max; }
   function identifier(s) { return typeof s === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(s) && ['__proto__', 'constructor', 'prototype'].indexOf(s) < 0; }
   function unique(items) { return new Set(items).size === items.length; }
-  function refereeMode(e) { return e.config.refereeMode || 'external'; }
-  function rankingMode(e) { return e.config.rankingMode || 'nominee'; }
-  function scoringProfile(e) { return e.config.scoringProfile || 'legacy'; }
-  function tiePolicy(e) { return e.config.tiePolicy || 'draw'; }
+  function refereeMode(e) { return e.config.refereeMode; }
+  function rankingMode(e) { return e.config.rankingMode; }
+  function scoringProfile(e) { return e.config.scoringProfile; }
+  function tiePolicy(e) { return e.config.tiePolicy; }
   function winPoints(e) { return scoringProfile(e) === 'wins' ? 1 : 2; }
   function courtCapacity(e) {
     return refereeMode(e) === 'external' ? Math.min(e.config.fields, e.config.referees) : e.config.fields;
   }
-  function formatVersion(e) { return e.formatVersion == null ? LEGACY_FORMAT : e.formatVersion; }
-  function teamLimits(e) {
-    const version = e ? formatVersion(e) : CURRENT_FORMAT;
-    return version === LEGACY_FORMAT ? { min: 40, max: 64 } :
-      version === FLEXIBLE_FORMAT ? { min: 16, max: 80 } : { min: MIN_TEAMS, max: MAX_TEAMS };
-  }
-  function cupSize(e) {
-    if (formatVersion(e) < CURRENT_FORMAT) return 8;
-    return e.teams.length <= 8 ? 0 : e.teams.length === 9 ? 4 : 8;
-  }
-  function finalPoolSizes(e) {
-    const rest = e.teams.length - cupSize(e);
-    const count = !cupSize(e) ? 1 : formatVersion(e) === LEGACY_FORMAT ? Math.round(rest / 4) : Math.ceil(rest / 5);
-    return Array.from({ length: count }, (_, i) => Math.floor(rest / count) + (i < rest % count ? 1 : 0));
-  }
+  function teamLimits() { return { min: MIN_TEAMS, max: MAX_TEAMS }; }
   function time(s) {
     check(typeof s === 'string' && /^\d{2}:\d{2}$/.test(s) && +s.slice(0, 2) < 24 && +s.slice(3) < 60, 'Invalid start time / Startzeit');
     return +s.slice(0, 2) * 60 + +s.slice(3);
@@ -46,31 +32,36 @@
   }
   function validateSetup(e) {
     check(e && e.schema === SCHEMA && identifier(e.id) && text(e.title, 120), 'Invalid event / Veranstaltung');
-    const version = formatVersion(e);
-    check([LEGACY_FORMAT, FLEXIBLE_FORMAT, CURRENT_FORMAT].indexOf(version) >= 0, 'Invalid format version / Ungültige Formatversion');
+    const version = e.formatVersion;
+    if (version !== CURRENT_FORMAT) {
+      const error = new Error('Unsupported format; original data unchanged / Format nicht unterstützt; Originaldaten unverändert');
+      error.code = 'unsupported-format';
+      throw error;
+    }
+    check(Object.keys(e).every(key => ['schema', 'formatVersion', 'id', 'title', 'config', 'teams', 'organizations',
+      'status', 'revision', 'results', 'pools', 'matches', 'drawOrder', 'startedAt', 'checkIns', 'outcomes',
+      'withdrawals', 'replans', 'fieldLimit', 'liveWave', 'transfers'].indexOf(key) >= 0), 'Invalid event fields / Ungültige Veranstaltungsfelder');
     const c = e.config;
     check(c && integer(c.minutes, 1, 60) && integer(c.change, 1, 30) && integer(c.fields, 1, 16) &&
       integer(c.rest, 1, 5) && integer(c.referees, 1, 16) && integer(c.window, 30, 1440), 'Invalid capacity or timing / Kapazität oder Zeit');
     time(c.start);
     check(c.mixed === 'optional' || c.mixed === 'one-woman', 'Invalid mixed policy / Ungültige Mixed-Regel');
-    check(c.refereeMode === undefined || ['external', 'teams', 'none'].indexOf(c.refereeMode) >= 0,
+    check(['external', 'teams', 'none'].indexOf(c.refereeMode) >= 0,
       'Invalid referee mode / Ungültiger Schiri-Modus');
-    check(c.rankingMode === undefined || ['teams', 'mean', 'nominee'].indexOf(c.rankingMode) >= 0,
+    check(['teams', 'mean', 'nominee'].indexOf(c.rankingMode) >= 0,
       'Invalid company ranking / Ungültige Firmenwertung');
-    check(c.scoringProfile === undefined || ['wins', 'legacy'].indexOf(c.scoringProfile) >= 0,
+    check(['wins', 'legacy'].indexOf(c.scoringProfile) >= 0,
       'Invalid scoring profile / Ungültiges Wertungsprofil');
-    check(c.tiePolicy === undefined || ['lead', 'draw'].indexOf(c.tiePolicy) >= 0,
+    check(['lead', 'draw'].indexOf(c.tiePolicy) >= 0,
       'Invalid time tie policy / Ungültige Zeitgleichstandsregel');
     const draft = e.status === 'draft';
     const limits = teamLimits(e), range = limits.min + '–' + limits.max;
     check(Array.isArray(e.teams) && integer(e.teams.length, draft ? 0 : limits.min, limits.max),
       range + ' teams required for scheduling / Für den Spielplan sind ' + range + ' Teams erforderlich' +
-      (version === CURRENT_FORMAT ? ' (technical capacity limit, not a sports rule / technische Kapazitätsgrenze, keine Sportregel)' : ''));
-    check(Array.isArray(e.organizations) && (version < CURRENT_FORMAT || e.organizations.length <= MAX_ORGANIZATIONS) &&
+      ' (technical capacity limit, not a sports rule / technische Kapazitätsgrenze, keine Sportregel)');
+    check(Array.isArray(e.organizations) && e.organizations.length <= MAX_ORGANIZATIONS &&
       ((draft && !e.teams.length) || e.organizations.length > 0),
-    version === CURRENT_FORMAT ?
-      '1–128 companies/organizations/groups required (empty drafts allowed) / 1–128 Firmen/Organisationen/Gruppen erforderlich (leere Entwürfe erlaubt)' :
-      'Company/Organization/Group required / Firma/Organisation/Gruppe erforderlich');
+      '1–128 companies/organizations/groups required (empty drafts allowed) / 1–128 Firmen/Organisationen/Gruppen erforderlich (leere Entwürfe erlaubt)');
     check(unique(e.teams.map(t => t.id)) && unique(e.organizations.map(o => o.id)), 'Duplicate ID / Doppelte ID');
     e.organizations.forEach(o => {
       check(identifier(o.id) && text(o.name, 100), 'Invalid Company/Organization/Group / Ungültige Firma/Organisation/Gruppe');
@@ -91,11 +82,11 @@
     }
     return e;
   }
-  function create(id, title, config, teams, organizations, formatVersion) {
-    return validateSetup({ schema: SCHEMA, formatVersion: formatVersion == null ? CURRENT_FORMAT : formatVersion,
+  function create(id, title, config, teams, organizations) {
+    return validateSetup({ schema: SCHEMA, formatVersion: CURRENT_FORMAT,
       id: id, title: title, config: clone(config), teams: clone(teams),
       organizations: clone(organizations), status: 'draft', revision: 0, results: {}, pools: [], matches: [],
-      finalPools: [], drawOrder: [], startedAt: null, checkIns: {}, outcomes: {},
+      drawOrder: [], startedAt: null, checkIns: {}, outcomes: {},
       withdrawals: {}, replans: [], fieldLimit: courtCapacity({ config: config }) });
   }
   function transferTeam(e, teamId, targetOrgId, choices, now) {
@@ -137,6 +128,10 @@
     return validate(next);
   }
   function validateTransition(old, next) {
+    Object.keys(old.outcomes).forEach(id => {
+      check(JSON.stringify(old.outcomes[id]) === JSON.stringify(next.outcomes[id]),
+        'Recorded decision cannot be removed or changed / Erfasste Entscheidung darf nicht entfernt oder geändert werden');
+    });
     Object.keys(old.results).forEach(id => {
       check(next.results[id], 'Recorded result cannot be removed / Erfasstes Ergebnis darf nicht entfernt werden');
       if (JSON.stringify(old.results[id]) === JSON.stringify(next.results[id])) return;
@@ -166,7 +161,7 @@
         'Company nominations frozen / Nominierungen eingefroren');
       check(JSON.stringify(old.teams) === JSON.stringify(next.teams) &&
         JSON.stringify(old.config) === JSON.stringify(next.config) && old.startedAt === next.startedAt &&
-        old.title === next.title && formatVersion(old) === formatVersion(next),
+        old.title === next.title && old.formatVersion === next.formatVersion,
       'Started event setup frozen / Gestartete Veranstaltung eingefroren');
     }
     old.matches.forEach(m => {
@@ -221,6 +216,33 @@
     const m = matches.find(m => m.id === ref.match);
     check(m, 'Missing bracket dependency / Fehlende Abhängigkeit');
     return Array.from(new Set(possible(m.a, matches).concat(possible(m.b, matches))));
+  }
+  function routeConflicts(matches) {
+    const cache = {}, byId = {};
+    matches.forEach(m => { byId[m.id] = m; });
+    function paths(ref) {
+      if (typeof ref === 'string') { const out = {}; out[ref] = [{}]; return out; }
+      const key = ref.match + ':' + ref.outcome;
+      if (cache[key]) return cache[key];
+      const m = byId[ref.match], out = {};
+      [paths(m.a), paths(m.b)].forEach(side => Object.keys(side).forEach(id => {
+        if (!out[id]) out[id] = [];
+        side[id].forEach(path => {
+          const next = Object.assign({}, path); next[ref.match] = ref.outcome;
+          out[id].push(next);
+        });
+      }));
+      cache[key] = out;
+      return out;
+    }
+    function overlaps(a, b) {
+      const left = paths(a), right = paths(b);
+      return Object.keys(left).some(id => right[id] && left[id].some(x =>
+        right[id].some(y => Object.keys(x).every(key => !y[key] || x[key] === y[key]))));
+    }
+    return function (a, b) {
+      return [a.a, a.b].some(x => [b.a, b.b].some(y => overlaps(x, y)));
+    };
   }
   function dutyCandidates(e, playing) {
     return e.teams.filter(t => !playing.has(t.id) && checkInStatus(e, t.id) !== 'absent' &&
@@ -290,14 +312,11 @@
     }
     return plan;
   }
-  // Potential bracket participants reserve rest even before winners are known.
   function schedule(e, matches, startWave, earliest) {
-    const remaining = matches.slice(), done = {}, last = {}, plan = [];
-    e.matches.forEach(m => {
-      done[m.id] = m.wave;
-      possible(m.a, e.matches).concat(possible(m.b, e.matches)).forEach(id => { last[id] = Math.max(last[id] == null ? -100 : last[id], m.wave); });
-    });
+    const remaining = matches.slice(), done = {}, plan = [];
+    e.matches.forEach(m => { done[m.id] = m.wave; });
     const all = e.matches.concat(matches);
+    const conflict = routeConflicts(all);
     let wave = startWave;
     const courts = Math.min(e.fieldLimit || e.config.fields, courtCapacity(e));
     if (refereeMode(e) === 'teams') matches.forEach(m => {
@@ -316,28 +335,27 @@
         const ready = (!earliest || earliest[m.id] <= wave) &&
           (refereeMode(e) !== 'teams' || dutyCandidates(e, proposed).length >= field + 1) &&
           refs.every(r => done[r.match] != null && done[r.match] < wave) &&
-          ids.every(id => !used.has(id) && (last[id] == null || wave - last[id] > e.config.rest));
+          !e.matches.concat(plan).some(prior =>
+            wave - prior.wave <= e.config.rest && conflict(m, prior));
         if (!ready) { i++; continue; }
         const item = Object.assign({}, m, { wave: wave, field: ++field,
           startMin: time(e.config.start) + wave * (e.config.minutes + e.config.change) +
             (e.replans || []).reduce((sum, replan) => sum + (wave >= replan.fromWave ? replan.delayMinutes : 0), 0) });
         plan.push(item); remaining.splice(i, 1); done[m.id] = wave;
-        ids.forEach(id => { last[id] = wave; used.add(id); });
+        ids.forEach(id => used.add(id));
       }
       wave++;
       check(wave < 10000, 'Schedule impossible / Spielplan nicht möglich');
     }
     return assignReferees(e, plan);
   }
-  function build(e, options) {
+  function build(e) {
     validateSetup(e); check(e.status === 'draft', 'Setup frozen / Anmeldung eingefroren');
     validateSetup(Object.assign({}, e, { status: 'groups' }));
-    if (formatVersion(e) < CURRENT_FORMAT && !(options && options.allowMissingRoster)) {
-      check(e.teams.every(t => t.roster.length >= 2),
-        'At least two named players required per team / Mindestens zwei Spieler:innen-Namen je Team erforderlich');
-    }
+    check(!(refereeMode(e) === 'teams' && e.teams.length <= 4),
+      'Group + bracket with 2–4 teams: choose external or no referees; no team can be safely preassigned outside every possible final / Gruppen + Baum mit 2–4 Teams: externe oder keine Schiris wählen; kein Team ist für alle möglichen Finalpaarungen sicher spielfrei');
     const next = clone(e);
-    const poolCount = formatVersion(next) === LEGACY_FORMAT ? 8 : Math.ceil(next.teams.length / 8);
+    const poolCount = Math.ceil(next.teams.length / 4);
     next.pools = balanced(next.teams.map(t => t.id), poolCount);
     next.matches = [];
     next.matches = schedule(next, interleave(next.pools.map((p, i) => rr(p, 'G' + (i + 1), 'group'))), 0);
@@ -399,39 +417,76 @@
       rows.forEach((r, j) => seeds.push(Object.assign({}, r, { poolRank: j + 1 })));
     });
     seeds.sort((a, b) => a.poolRank - b.poolRank || compare(next, a, b) || drawOrder.indexOf(a.id) - drawOrder.indexOf(b.id));
-    const size = cupSize(next), top = seeds.slice(0, size).map(r => r.id), matches = [];
-    const pairs = size === 8 ? [[0, 7], [3, 4], [1, 6], [2, 5]] : size === 4 ? [[0, 3], [1, 2]] : [];
-    pairs.forEach((pair, i) => matches.push({ id: 'Q' + i, a: top[pair[0]], b: top[pair[1]], phase: 'cup' }));
-    function ref(match, outcome) { return { match: match, outcome: outcome }; }
-    if (size === 8) ['winner', 'loser'].forEach((outcome, section) => {
-      for (let i = 0; i < 2; i++) matches.push({ id: 'S' + section + i, a: ref('Q' + (i * 2), outcome),
-        b: ref('Q' + (i * 2 + 1), outcome), phase: 'cup' });
-      ['winner', 'loser'].forEach((result, j) => matches.push({ id: 'F' + section + j,
-        a: ref('S' + section + '0', result), b: ref('S' + section + '1', result),
-        phase: 'cup', placement: 1 + section * 4 + j * 2 }));
-    });
-    if (size === 4) ['winner', 'loser'].forEach((outcome, i) => {
-      matches.push({ id: 'F0' + i, a: ref('Q0', outcome), b: ref('Q1', outcome),
-        phase: 'cup', placement: 1 + i * 2 });
-    });
-    // Small events replay one complete pool; larger events use contiguous seed bands without byes.
-    const rest = seeds.slice(size).map(r => r.id);
-    const sizes = finalPoolSizes(next);
-    next.finalPools = [];
-    let offset = 0;
-    const placementLists = [];
-    for (let i = 0; i < sizes.length; i++) {
-      const size = sizes[i];
-      const ids = rest.slice(offset, offset + size), name = 'P' + (i + 1);
-      next.finalPools.push({ id: name, teams: ids, firstRank: top.length + 1 + offset });
-      placementLists.push(rr(ids, name, 'placement'));
-      offset += size;
-    }
-    matches.push.apply(matches, interleave(placementLists));
+    const matches = classification(seeds.map(r => r.id), next.pools);
     const first = Math.max.apply(null, next.matches.map(m => m.wave)) + next.config.rest + 1;
     next.matches.push.apply(next.matches, schedule(next, matches, first));
     next.status = 'finals';
     return next;
+  }
+  function classification(ids, pools) {
+    const matches = [];
+    const group = {};
+    pools.forEach((pool, i) => pool.forEach(id => { group[id] = i; }));
+    function tree(slots, first) {
+      if (slots.length === 1) {
+        const ref = slots[0], match = matches.find(m => m.id === ref.match);
+        match[ref.outcome + 'Placement'] = first;
+        return;
+      }
+      let size = 2;
+      while (size < slots.length) size *= 2;
+      let order = [1, 2];
+      for (let width = 4; width <= size; width *= 2) {
+        const next = [];
+        order.forEach(seed => { next.push(seed, width + 1 - seed); });
+        order = next;
+      }
+      if (slots.every(ref => typeof ref === 'string')) {
+        const pairs = [];
+        for (let i = 0; i < size; i += 2) {
+          if (slots[order[i] - 1] && slots[order[i + 1] - 1]) pairs.push(i);
+        }
+        const opponents = pairs.map(i => order[i + 1]), assigned = {};
+        function cross(pair, seen) {
+          for (let j = 0; j < opponents.length; j++) {
+            if (seen.has(j) || group[slots[order[pair] - 1]] === group[slots[opponents[j] - 1]]) continue;
+            seen.add(j);
+            if (assigned[j] === undefined || cross(assigned[j], seen)) { assigned[j] = pair; return true; }
+          }
+          return false;
+        }
+        pairs.forEach(pair => cross(pair, new Set()));
+        const matched = new Set(Object.keys(assigned).map(key => assigned[key]));
+        const unused = opponents.filter((_, j) => assigned[j] === undefined);
+        Object.keys(assigned).forEach(key => { order[assigned[key] + 1] = opponents[key]; });
+        pairs.filter(pair => !matched.has(pair)).forEach(pair => { order[pair + 1] = unused.shift(); });
+      }
+      const winners = [], losers = [];
+      for (let i = 0; i < size; i += 2) {
+        const a = slots[order[i] - 1], b = slots[order[i + 1] - 1];
+        if (!a || !b) { winners.push(a || b); continue; }
+        const match = { id: 'B' + matches.length, a: a, b: b, phase: 'cup' };
+        if (slots.length === 2) match.placement = first;
+        matches.push(match);
+        winners.push({ match: match.id, outcome: 'winner' });
+        losers.push({ match: match.id, outcome: 'loser' });
+      }
+      if (slots.length > 2) {
+        tree(winners, first);
+        tree(losers, first + winners.length);
+      }
+    }
+    let size = 4;
+    while (size < Math.ceil(ids.length / 4)) size *= 2;
+    size = Math.min(size, ids.length);
+    if (ids.length === 5) size = 2;
+    for (let offset = 0; offset < ids.length;) {
+      let count = Math.min(size, ids.length - offset);
+      if (ids.length - offset - count === 1) count++;
+      tree(ids.slice(offset, offset + count), offset + 1);
+      offset += count;
+    }
+    return matches;
   }
   function score(e, matchId, a, b, drawWinner, validating) {
     const m = e.matches.find(m => m.id === matchId);
@@ -493,53 +548,20 @@
     next.replans.push({ fromWave: fromWave, delayMinutes: delayMinutes, fields: fields,
       reason: reason.trim(), at: now, actor: 'organizer' });
     next.fieldLimit = fields;
-    if (refereeMode(e) === 'teams') {
+    if (refereeMode(e) === 'teams' || fields !== e.fieldLimit) {
       next.matches = next.matches.filter(m => m.wave < fromWave);
       const fixtures = future.map(m => { const copy = clone(m); delete copy.refereeTeam; return copy; });
       const planned = schedule(next, fixtures, fromWave, previousWaves);
       const byId = {};
       next.matches.concat(planned).forEach(m => { byId[m.id] = m; });
       next.matches = e.matches.map(m => byId[m.id]);
-    } else if (fields === e.fieldLimit) {
+    } else {
       next.matches.forEach(m => {
         if (m.wave >= fromWave && Object.prototype.hasOwnProperty.call(previousWaves, m.id)) {
           m.startMin = time(next.config.start) + m.wave * (next.config.minutes + next.config.change) +
             next.replans.reduce((sum, item) => sum + (m.wave >= item.fromWave ? item.delayMinutes : 0), 0);
         }
       });
-    } else {
-      const fixed = next.matches.filter(m => m.wave < fromWave), all = next.matches;
-      const done = {}, last = {}, remaining = future.map(m => all.find(item => item.id === m.id));
-      fixed.forEach(m => {
-        done[m.id] = m.wave;
-        possible(m.a, all).concat(possible(m.b, all)).forEach(id => {
-          last[id] = Math.max(last[id] == null ? -100 : last[id], m.wave);
-        });
-      });
-      const limit = Math.min(fields, courtCapacity(next));
-      let wave = fromWave, guard = 0;
-      while (remaining.length) {
-        const used = new Set(), assigned = [];
-        let field = 0;
-        for (let i = 0; i < remaining.length && field < limit;) {
-          const m = remaining[i], ids = Array.from(new Set(possible(m.a, all).concat(possible(m.b, all))));
-          const parents = [m.a, m.b].filter(ref => typeof ref !== 'string');
-          const ready = previousWaves[m.id] <= wave && parents.every(ref => done[ref.match] != null && done[ref.match] < wave) &&
-            ids.every(id => !used.has(id) && (last[id] == null || wave - last[id] > next.config.rest));
-          if (!ready) { i++; continue; }
-          m.wave = wave;
-          m.field = ++field;
-          m.startMin = time(next.config.start) + wave * (next.config.minutes + next.config.change) +
-            next.replans.reduce((sum, item) => sum + (wave >= item.fromWave ? item.delayMinutes : 0), 0);
-          assigned.push(ids);
-          remaining.splice(i, 1);
-          done[m.id] = wave;
-          ids.forEach(id => used.add(id));
-        }
-        assigned.forEach(ids => ids.forEach(id => { last[id] = wave; }));
-        wave++;
-        check(++guard < 10000, 'Remaining matches cannot be safely replanned / Restspiele können nicht konfliktfrei umgeplant werden');
-      }
     }
     return next;
   }
@@ -618,10 +640,12 @@
       if (winner) rows.push({ id: winner, rank: m.placement });
       if (loser) rows.push({ id: loser, rank: m.placement + 1 });
     });
-    e.finalPools.forEach(p => {
-      if (e.matches.filter(m => m.pool === p.id).every(m => e.results[m.id] || e.outcomes[m.id])) {
-        table(e, p.teams, p.id).forEach(r => rows.push({ id: r.id, rank: p.firstRank + r.rank - 1 }));
-      }
+    e.matches.forEach(m => {
+      ['winner', 'loser'].forEach(outcome => {
+        if (!m[outcome + 'Placement'] || (!e.results[m.id] && !e.outcomes[m.id])) return;
+        const id = resolve(e, { match: m.id, outcome: outcome });
+        if (id) rows.push({ id: id, rank: m[outcome + 'Placement'] });
+      });
     });
     return rows.sort((a, b) => a.rank - b.rank);
   }
@@ -633,12 +657,11 @@
       kind: 'match', id: m.id, from: m.placement, to: m.placement + 1, decided: done(m),
       teams: [resolve(e, m.a), resolve(e, m.b)]
     }));
-    e.finalPools.forEach(p => {
-      const matches = e.matches.filter(m => m.pool === p.id);
-      slots.push({ kind: 'pool', id: p.id, from: p.firstRank, to: p.firstRank + p.teams.length - 1,
-        decided: matches.every(done), teams: p.teams.slice(),
-        played: matches.filter(done).length, total: matches.length });
-    });
+    e.matches.forEach(m => ['winner', 'loser'].forEach(outcome => {
+      const rank = m[outcome + 'Placement'];
+      if (rank) slots.push({ kind: 'match', id: m.id, from: rank, to: rank,
+        decided: done(m), teams: [resolve(e, { match: m.id, outcome: outcome })] });
+    }));
     return slots.sort((a, b) => a.from - b.from);
   }
   function organizationStandings(e) {
@@ -669,46 +692,98 @@
     });
     return rows;
   }
-  function gameCounts(e) {
-    const rows = e.teams.map(t => ({ id: t.id, scheduled: 0, played: 0 }));
-    const byId = {}, cupLevels = {}, depth = {};
-    rows.forEach(row => { byId[row.id] = row; cupLevels[row.id] = new Set(); });
-    function level(m) {
-      if (depth[m.id] != null) return depth[m.id];
-      depth[m.id] = 1 + Math.max.apply(null, [m.a, m.b].map(ref =>
-        typeof ref === 'string' ? 0 : level(e.matches.find(item => item.id === ref.match))));
-      return depth[m.id];
+  function teamOverview(e, id) {
+    check(e.teams.some(t => t.id === id), 'Unknown team / Unbekanntes Team');
+    const poolIndex = e.pools.findIndex(pool => pool.indexOf(id) >= 0);
+    const complete = m => !!(e.results[m.id] || e.outcomes[m.id]);
+    const ordered = e.matches.slice().sort((a, b) => a.wave - b.wave || a.field - b.field);
+    const games = ordered.filter(m => resolve(e, m.a) === id || resolve(e, m.b) === id);
+    const duties = ordered.filter(m => m.refereeTeam === id);
+    const pending = {};
+    function remaining(ref) {
+      const resolved = resolve(e, ref);
+      if (resolved) return [resolved];
+      const key = ref.match + ':' + ref.outcome;
+      if (pending[key]) return pending[key];
+      const source = e.matches.find(m => m.id === ref.match);
+      pending[key] = complete(source) ? [] : remaining(source.a).concat(remaining(source.b));
+      return pending[key];
     }
+    return { id: id, pool: poolIndex < 0 ? null : 'G' + (poolIndex + 1),
+      members: poolIndex < 0 ? [] : e.pools[poolIndex].slice(),
+      completed: games.filter(complete), upcoming: games.filter(m => !complete(m)),
+      duties: duties.map(m => ({ match: m, completed: complete(m) })),
+      conditional: ordered.some(m => !complete(m) && games.indexOf(m) < 0 &&
+        remaining(m.a).concat(remaining(m.b)).indexOf(id) >= 0),
+      finalsPending: e.status === 'groups' };
+  }
+  function gameCounts(e) {
+    let plan = e;
+    if (e.status === 'groups') {
+      plan = clone(e);
+      plan.matches.forEach(m => { plan.results[m.id] = { a: 1, b: 0, drawWinner: null }; });
+      plan = finals(plan, plan.teams.map(t => t.id));
+    }
+    const rows = e.teams.map(t => ({ id: t.id, scheduled: 0, played: 0, min: 0, max: 0 }));
+    const byId = {};
+    rows.forEach(row => { byId[row.id] = row; });
     e.matches.forEach(m => {
-      const ids = Array.from(new Set(possible(m.a, e.matches).concat(possible(m.b, e.matches))));
-      ids.forEach(id => {
-        // The cup plays out every place: each entrant has one fixture per bracket level,
-        // not every potential winner/loser fixture on that level.
-        if (m.phase === 'cup') cupLevels[id].add(level(m));
-        else byId[id].scheduled++;
-      });
-      if (e.results[m.id]) [resolve(e, m.a), resolve(e, m.b)].forEach(id => {
-        if (byId[id]) byId[id].played++;
+      [resolve(e, m.a), resolve(e, m.b)].forEach(id => {
+        if (id) { byId[id].scheduled++; if (e.results[m.id]) byId[id].played++; }
       });
     });
-    rows.forEach(row => { row.scheduled += cupLevels[row.id].size; });
+    const cache = {};
+    function routes(ref) {
+      if (typeof ref === 'string') { const out = {}; out[ref] = { min: 0, max: 0 }; return out; }
+      const key = ref.match + ':' + ref.outcome;
+      if (cache[key]) return cache[key];
+      const m = plan.matches.find(item => item.id === ref.match), out = {};
+      const resolved = resolve(plan, ref);
+      [routes(m.a), routes(m.b)].forEach(side => Object.keys(side).forEach(id => {
+        if (resolved && resolved !== id) return;
+        const value = { min: side[id].min + 1, max: side[id].max + 1 };
+        if (out[id]) { out[id].min = Math.min(out[id].min, value.min); out[id].max = Math.max(out[id].max, value.max); }
+        else out[id] = value;
+      }));
+      cache[key] = out;
+      return out;
+    }
+    const paths = {};
+    plan.matches.filter(m => m.phase === 'cup').forEach(m => ['winner', 'loser'].forEach(outcome => {
+      if (!m.placement && !m[outcome + 'Placement']) return;
+      const candidates = routes({ match: m.id, outcome: outcome });
+      Object.keys(candidates).forEach(id => {
+        const value = candidates[id];
+        if (!paths[id]) paths[id] = value;
+        else paths[id] = { min: Math.min(paths[id].min, value.min), max: Math.max(paths[id].max, value.max) };
+      });
+    }));
+    rows.forEach(row => {
+      const group = plan.matches.filter(m => m.phase === 'group' && (m.a === row.id || m.b === row.id)).length;
+      row.min = group + (paths[row.id] ? paths[row.id].min : 0);
+      row.max = group + (paths[row.id] ? paths[row.id].max : 0);
+    });
     function range(key) {
-      const values = rows.map(row => row[key]);
-      return { min: values.length ? Math.min.apply(null, values) : 0,
-        max: values.length ? Math.max.apply(null, values) : 0 };
+      return { min: rows.length ? Math.min.apply(null, rows.map(r => r[key])) : 0,
+        max: rows.length ? Math.max.apply(null, rows.map(r => r[key])) : 0 };
     }
-    const scheduled = range('scheduled'), played = range('played');
-    let final = null;
-    if (e.status === 'finals') final = { min: scheduled.min, max: scheduled.max, exact: true };
-    else if (e.status === 'groups') {
-      const additions = finalPoolSizes(e).map(size => size - 1);
-      if (cupSize(e)) additions.push(Math.log(cupSize(e)) / Math.log(2));
-      // Before seeding, group size and final route are correlated. These are safe
-      // outer bounds, not a claim that either extreme is attained by the draw.
-      final = { min: scheduled.min + Math.min.apply(null, additions),
-        max: scheduled.max + Math.max.apply(null, additions), exact: false };
+    const final = e.status === 'draft' ? null : {
+      min: Math.min.apply(null, rows.map(r => r.min)), max: Math.max.apply(null, rows.map(r => r.max)),
+      exact: e.status === 'finals'
+    };
+    if (e.status === 'groups') {
+      // Before the draw any team may enter either band; do not promise the illustrative seed route.
+      const lo = Math.min.apply(null, rows.map(r => r.min - plan.matches.filter(m => m.phase === 'group' && (m.a === r.id || m.b === r.id)).length));
+      const hi = Math.max.apply(null, rows.map(r => r.max - plan.matches.filter(m => m.phase === 'group' && (m.a === r.id || m.b === r.id)).length));
+      const groupRange = range('scheduled');
+      final.min = groupRange.min + lo; final.max = groupRange.max + hi;
     }
-    return { teams: rows, scheduled: scheduled, played: played, final: final };
+    if (e.status === 'finals') rows.forEach(row => {
+      row.scheduled = row.min;
+      row.scheduledMax = row.max;
+    });
+    return { teams: rows, scheduled: e.status === 'finals' ? { min: final.min, max: final.max } :
+      range('scheduled'), played: range('played'), final: final };
   }
   function estimate(e) {
     const slot = e.config.minutes + e.config.change;
@@ -718,7 +793,7 @@
       return plan.matches.length ? Math.max.apply(null, plan.matches.map(m => m.startMin - time(plan.config.start) + slot)) : 0;
     }
     function phaseSpans(plan, projected) {
-      return ['group', 'cup', 'placement'].map(phase => {
+      return ['group', 'cup'].map(phase => {
         const matches = plan.matches.filter(m => m.phase === phase);
         if (!matches.length) return null;
         return { phase: phase, matches: matches.length,
@@ -752,30 +827,18 @@
       courts: Math.max.apply(null, e.matches.map(m => m.field).concat([0])),
       phases: phaseSpans(e, false) };
   }
-  function validate(e, options) {
-    const publicSnapshot = !!(options && options.publicSnapshot);
-    if (e && e.config) {
-      e.outcomes = e.outcomes || {};
-      e.withdrawals = e.withdrawals || {};
-      e.replans = e.replans || [];
-      e.fieldLimit = e.fieldLimit == null ? courtCapacity(e) : e.fieldLimit;
-    }
+  function validate(e) {
     validateSetup(e);
     check(['draft', 'groups', 'finals'].indexOf(e.status) >= 0 && integer(e.revision, 0, Number.MAX_SAFE_INTEGER), 'Invalid state / Status');
-    if (!publicSnapshot && e.status !== 'draft' && formatVersion(e) < CURRENT_FORMAT) {
-      check(e.teams.every(t => t.roster.length >= 2),
-        'At least two named players required per team / Mindestens zwei Spieler:innen-Namen je Team erforderlich');
-    }
     check(e.results && typeof e.results === 'object' && !Array.isArray(e.results), 'Invalid results / Ergebnisse');
-    check(Array.isArray(e.matches) && Array.isArray(e.pools) && Array.isArray(e.finalPools) && Array.isArray(e.drawOrder), 'Invalid schedule / Spielplan');
+    check(Array.isArray(e.matches) && Array.isArray(e.pools) && Array.isArray(e.drawOrder), 'Invalid schedule / Spielplan');
     check(e.outcomes && typeof e.outcomes === 'object' && !Array.isArray(e.outcomes) &&
       e.withdrawals && typeof e.withdrawals === 'object' && !Array.isArray(e.withdrawals) &&
       Array.isArray(e.replans) && integer(e.fieldLimit, 1, courtCapacity(e)),
     'Invalid operational state / Ungültiger Veranstaltungsstatus');
-    const baseline = create(e.id, e.title, e.config, e.teams, e.organizations,
-      formatVersion(e));
+    const baseline = create(e.id, e.title, e.config, e.teams, e.organizations);
     let expected = baseline;
-    if (e.status !== 'draft') expected = build(baseline, { allowMissingRoster: true });
+    if (e.status !== 'draft') expected = build(baseline);
     const groupIds = expected.matches.map(m => m.id);
     groupIds.forEach(id => {
       if (e.outcomes[id]) {
@@ -788,10 +851,11 @@
     const sameFixtures = e.matches.length === expected.matches.length && e.matches.every((m, i) => {
       const x = refereeMode(e) === 'teams' ? expected.matches.find(item => item.id === m.id) : expected.matches[i];
       return x && m.id === x.id && JSON.stringify(m.a) === JSON.stringify(x.a) && JSON.stringify(m.b) === JSON.stringify(x.b) &&
-        m.phase === x.phase && m.pool === x.pool && m.placement === x.placement;
+        m.phase === x.phase && m.pool === x.pool && m.placement === x.placement &&
+        m.winnerPlacement === x.winnerPlacement && m.loserPlacement === x.loserPlacement;
     });
     check(unique(e.matches.map(m => m.id)) && sameFixtures && JSON.stringify(e.pools) === JSON.stringify(expected.pools) &&
-      JSON.stringify(e.finalPools) === JSON.stringify(expected.finalPools), 'Schedule mismatch / Spielplan verändert');
+      JSON.stringify(e.drawOrder) === JSON.stringify(expected.drawOrder), 'Schedule mismatch / Spielplan verändert');
     expected.matches.filter(m => m.phase !== 'group').forEach(m => {
       if (e.outcomes[m.id]) {
         const d = e.outcomes[m.id]; expected = decideOutcome(expected, m.id, d.type, d.absentTeam, d.winnerTeam, d.note, d.at);
@@ -863,7 +927,8 @@
     }
     check(e.fieldLimit === (e.replans.length ? e.replans[e.replans.length - 1].fields : courtCapacity(e)),
       'Current field count does not match replan history / Aktuelle Feldzahl stimmt nicht mit Umplanungshistorie überein');
-    const lastUse = {}, bookedCourts = {};
+    const bookedCourts = {}, previous = [];
+    const conflict = routeConflicts(e.matches);
     e.matches.slice().sort((a, b) => a.wave - b.wave || a.field - b.field).forEach(m => {
       check(integer(m.wave, 0, 9999) && integer(m.field, 1, e.config.fields) &&
         m.startMin === time(e.config.start) + m.wave * (e.config.minutes + e.config.change) +
@@ -874,15 +939,14 @@
       bookedCourts[key] = true;
       const fieldCapacity = e.replans.reduce((limit, r) => m.wave >= r.fromWave ? r.fields : limit, courtCapacity(e));
       check(m.field <= fieldCapacity, 'Court exceeds event capacity / Feldzahl überschreitet Veranstaltungskapazität');
-      Array.from(new Set(possible(m.a, e.matches).concat(possible(m.b, e.matches)))).forEach(id => {
-        check(lastUse[id] == null || m.wave - lastUse[id] > e.config.rest, 'Team rest conflict / Team-Ruhezeitkonflikt');
-        lastUse[id] = m.wave;
-      });
-      validateReferees(e);
+      check(!previous.some(prior => m.wave - prior.wave <= e.config.rest && conflict(m, prior)),
+        'Team rest conflict / Team-Ruhezeitkonflikt');
+      previous.push(m);
       [m.a, m.b].filter(ref => typeof ref !== 'string').forEach(ref => {
         const parent = e.matches.find(item => item.id === ref.match);
         check(parent && parent.wave < m.wave, 'Bracket dependency must precede its match / Vorgängerspiel muss vorher liegen');
       });
+      validateReferees(e);
     });
     check(!Object.keys(e.results).length || !!e.startedAt, 'Invalid nomination lock / Nominierungssperre');
     check(e.status !== 'draft' || !e.startedAt, 'Draft cannot have started / Anmeldung kann nicht gestartet sein');
@@ -892,16 +956,6 @@
         typeof e.liveWave.startedAt === 'string' && Number.isFinite(Date.parse(e.liveWave.startedAt)), 'Invalid live wave / Ungültige Live-Welle');
     }
     return e;
-  }
-  function publicSnapshot(e) {
-    validate(e);
-    const copy = clone(e);
-    copy.teams.forEach(t => { t.roster = []; });
-    delete copy.checkIns;
-    Object.keys(copy.outcomes || {}).forEach(id => { copy.outcomes[id].note = ''; });
-    Object.keys(copy.withdrawals || {}).forEach(id => { copy.withdrawals[id].note = ''; });
-    (copy.transfers || []).forEach(entry => { if (entry.note !== undefined) entry.note = ''; });
-    return { kind: 'firmencup-public', version: SCHEMA, capturedAt: new Date().toISOString(), event: copy };
   }
   function validateReferees(e) {
     const waves = {};
@@ -936,8 +990,8 @@
     validateReferees: validateReferees, refereeStats: refereeStats,
     create: create, build: build, finals: finals, score: score, resolve: resolve,
     table: table, standings: standings, placementSlots: placementSlots, organizationStandings: organizationStandings, estimate: estimate,
-    gameCounts: gameCounts,
-    validate: validate, publicSnapshot: publicSnapshot, beginWave: beginWave, checkIn: checkIn,
+    gameCounts: gameCounts, teamOverview: teamOverview,
+    validate: validate, beginWave: beginWave, checkIn: checkIn,
     decideOutcome: decideOutcome, replan: replan, transferTeam: transferTeam, validateTransition: validateTransition,
     checkInStatus: checkInStatus, waveReadiness: waveReadiness, hasPlayedDescendant: hasPlayedDescendant,
     clock: clock, clone: clone };

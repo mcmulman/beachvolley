@@ -43,7 +43,7 @@
             if (e.id !== id) throw new Error('Event ID mismatch / Veranstaltungs-ID stimmt nicht');
             result = { id: id, title: e.title, status: e.status };
           } catch (error) {
-            result = { id: id, status: 'corrupt', error: error.message };
+            result = { id: id, status: error.code === 'unsupported-format' ? 'unsupported' : 'corrupt', error: error.message };
           }
           result.savedAt = validId(id) ? savedAt(values.get(local + id)) : null;
           if (options && options.removal) {
@@ -65,12 +65,11 @@
     },
     remove: function (id, expected) {
       const current = key(id), keys = [current, backup + id, server + id, local + id];
-      if (!Array.isArray(expected) || (expected.length !== 3 && expected.length !== keys.length) ||
+      if (!Array.isArray(expected) || expected.length !== keys.length ||
           expected[0] == null || expected.some(raw => raw !== null && typeof raw !== 'string')) {
         throw new Error('Deletion snapshot required / Löschstand erforderlich');
       }
-      // Old three-key snapshots are safe only while local metadata is absent.
-      const snapshot = expected.length === 3 ? expected.concat(null) : expected.slice();
+      const snapshot = expected.slice();
       return root.TStore.transaction(function (view) {
         if (keys.some((k, index) => view.getItem(k) !== snapshot[index])) {
           throw new Error('Changed in another tab. Reload / In anderem Tab geändert. Neu laden.');

@@ -16,13 +16,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
     'home.firmencup.title': 'Company cup',
-    'home.firmencup.desc': 'Companies can enter several teams, playing timed matches with four players per team on court. The app creates group, final and placement fixtures and maintains team standings. Company scoring is provisional and not approved: currently, only one selected team’s final placing counts for each company, rather than the combined results of all its teams.',
+    'home.firmencup.desc': 'Group stage + bracket: company cups play round robin within balanced pools, usually of three or four teams. Title and placement brackets then decide every place through winner and loser paths. All pool winners remain in the title race; byes are not matches. With 40 teams, six or seven matches per team are planned. Two or three teams play a final or semifinal and final after one pool. Matches are timed four-a-side. Team standings are the default; optional company standings use all teams’ mean final rank or one selected team (house rules, no federation approval).',
     'home.firmencup.open': 'Open company cup',
     'home.firmencup.category': 'Event format',
     'home.firmencup.card-sub': 'Timed four-a-side · provisional company scoring',
     'home.firmencup.teams': 'From 2 teams',
     'home.firmencup.timed': 'Matches with a time limit',
-    'home.firmencup.feature1': 'Pool play and placement rounds',
+    'home.firmencup.feature1': 'Group stage + title/placement brackets',
     'home.firmencup.feature2': 'Check attendance and record results',
     'home.firmencup.feature3': 'Use locally · optional live link',
     'formatSwitch.label': 'Switch tournament format',
@@ -1716,7 +1716,9 @@
     'home.card.gruppen.sub': 'Round robin within groups · selectable final format',
     'home.card.gruppen.stat3': '2–6 groups or automatic',
     'home.card.gruppen.feat1': '5 final-round formats',
-    'home.card.gruppen.feat2': 'Optional cross-over placement',
+    'home.card.gruppen.feat2': 'Group stage + knockout bracket option',
+    'home.card.gruppen.ko': 'Open with knockout bracket',
+    'home.card.gruppen.koTitle': 'Select group stage + knockout bracket directly; without a preset, the sheet starts with cross-over placement.',
     'home.card.gruppen.blocks': 'Final round from a ranking',
     'home.card.gruppen.blocksTitle': 'Final round for a ranking that has already been played (e.g. after a round robin): split the teams into placement blocks; each block plays for its own places.',
 
@@ -1757,7 +1759,7 @@
     'home.card.mpp.stat4': 'Group of 3/4, no withdrawals: 2 matches/team',
     'home.card.mpp.feat1': 'Group of 4: seed 1 vs. 4, 2 vs. 3',
     'home.card.mpp.feat2': 'Group of 4: winners’/losers’ match',
-    'home.card.mpp.feat3': '5 final-round formats',
+    'home.card.mpp.feat3': '5 final formats incl. knockout bracket',
 
     /* ── Card "King/Queen of the Court" ── */
     'home.card.koc.desc': 'Fixed teams play timed rounds on a court ladder. With multiple courts, results determine movement up or down; winning teams stay on the top court. Standings use points scored, or points per match when match counts differ—not simply the court reached in the final round.',

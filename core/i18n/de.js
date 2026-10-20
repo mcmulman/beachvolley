@@ -17,13 +17,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
     'home.firmencup.title': 'Firmencup',
-    'home.firmencup.desc': 'Firmen können mehrere Teams melden; gespielt wird auf Zeit mit vier Personen je Team auf dem Feld. Die App plant Gruppen-, Final- und Platzierungsspiele und führt die Teamwertung. Die Firmenwertung ist vorläufig und nicht bestätigt: Derzeit zählt nur die Endplatzierung eines ausgewählten Teams je Firma, nicht die Summe aller Teamergebnisse.',
+    'home.firmencup.desc': 'Gruppenphase + Baum: Firmencups spielen innerhalb ausgeglichener Gruppen von meist drei oder vier Teams Jeder-gegen-jeden. Danach entscheiden Titel- und Platzierungsbäume mit Sieger- und Verliererwegen alle Plätze. Alle Gruppensieger bleiben im Titelrennen; Freilose zählen nicht als Spiele. Bei 40 Teams sind sechs oder sieben Spiele je Team geplant. Zwei oder drei Teams spielen nach einer Gruppe ein Finale bzw. Halbfinale und Finale. Gespielt wird vier gegen vier auf Zeit. Standard ist die Teamwertung; optional zählt je Firma der mittlere Endrang aller Teams oder ein ausgewähltes Team (Hausregeln, keine Verbandsfreigabe).',
     'home.firmencup.open': 'Firmencup öffnen',
     'home.firmencup.category': 'Eventformat',
     'home.firmencup.card-sub': 'Vier gegen vier auf Zeit · Firmenwertung vorläufig',
     'home.firmencup.teams': 'Ab 2 Teams',
     'home.firmencup.timed': 'Spiele mit Zeitlimit',
-    'home.firmencup.feature1': 'Gruppen- und Platzierungsrunden',
+    'home.firmencup.feature1': 'Gruppenphase + Titel-/Platzierungsbäume',
     'home.firmencup.feature2': 'Anwesenheit prüfen und Ergebnisse eintragen',
     'home.firmencup.feature3': 'Lokal nutzen · Live-Link optional',
     'formatSwitch.label': 'Turnierform wechseln',
@@ -1716,7 +1716,9 @@
     'home.card.gruppen.sub': 'Alle spielen in ihrer Gruppe gegeneinander · Finalmodus wählbar',
     'home.card.gruppen.stat3': '2–6 Gruppen o. automatisch',
     'home.card.gruppen.feat1': '5 Finalmodi wählbar',
-    'home.card.gruppen.feat2': 'Überkreuz-Platzierung wählbar',
+    'home.card.gruppen.feat2': 'Gruppenphase + K.-o.-Baum wählbar',
+    'home.card.gruppen.ko': 'Mit K.-o.-Baum öffnen',
+    'home.card.gruppen.koTitle': 'Gruppenphase + K.-o.-Baum direkt auswählen; ohne Vorauswahl startet der Bogen mit Überkreuz-Platzierung.',
     'home.card.gruppen.blocks': 'Als Finalrunde aus Rangliste',
     'home.card.gruppen.blocksTitle': 'Finalrunde für eine bereits gespielte Rangliste (z. B. nach „Jeder gegen Jeden“): Teams in Platzierungsblöcke einteilen, jeder Block spielt um seine eigenen Plätze.',
 
@@ -1757,7 +1759,7 @@
     'home.card.mpp.stat4': '3er-/4er-Gruppe ohne Ausfälle: 2 Spiele/Team',
     'home.card.mpp.feat1': '4er-Gruppe: Setzplatz 1 vs. 4, 2 vs. 3',
     'home.card.mpp.feat2': '4er-Gruppe: Gewinner-/Verliererspiel',
-    'home.card.mpp.feat3': '5 Finalmodi wählbar',
+    'home.card.mpp.feat3': '5 Finalmodi inkl. K.-o.-Baum',
 
     /* ── Karte „King/Queen of the Court“ ── */
     'home.card.koc.desc': 'Feste Teams spielen zeitbegrenzte Runden auf einer Feldleiter. Bei mehreren Feldern steigen sie je nach Ergebnis auf oder ab; am obersten Feld bleiben die siegreichen Teams. Für die Rangliste zählen erzielte Punkte, bei unterschiedlicher Spielanzahl die Punkte pro Spiel – nicht allein das zuletzt erreichte Feld.',
