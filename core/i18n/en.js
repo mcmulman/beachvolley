@@ -16,10 +16,10 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
     'home.firmencup.title': 'Company cup',
-    'home.firmencup.desc': 'Group stage + bracket: company cups play round robin within balanced pools, usually of three or four teams. Title and placement brackets then decide every place through winner and loser paths. All pool winners remain in the title race; byes are not matches. With 40 teams, six or seven matches per team are planned. Two or three teams play a final or semifinal and final after one pool. Matches are timed four-a-side. Team standings are the default; optional company standings use all teams’ mean final rank or one selected team (house rules, no federation approval).',
+    'home.firmencup.desc': 'Group stage + bracket: company cups play round robin within balanced pools, usually of three or four teams. Title and placement brackets then decide every place by default through winner and loser paths; lower seed bands can share their places. All pool winners remain in the title race; byes are not matches. With 40 teams, playing all places gives six or seven planned matches per team; sharing lower places gives fewer. Two or three teams play a final or semifinal and final after one pool. Matches are timed, uniformly or separately for groups and brackets. Team standings are the default; optional company standings use all teams’ mean final rank or one selected team (house rules, no federation approval).',
     'home.firmencup.open': 'Open company cup',
     'home.firmencup.category': 'Event format',
-    'home.firmencup.card-sub': 'Timed four-a-side · provisional company scoring',
+    'home.firmencup.card-sub': 'Timed matches · provisional company scoring',
     'home.firmencup.teams': 'From 2 teams',
     'home.firmencup.timed': 'Matches with a time limit',
     'home.firmencup.feature1': 'Group stage + title/placement brackets',

@@ -268,7 +268,7 @@
   function captureSetupSettings() {
     const form = document.getElementById('fc-edit');
     if (!form) return null;
-    const names = ['title', 'start', 'end', 'minutes', 'change', 'rest', 'fields', 'referees', 'mixed', 'refereeMode', 'rankingMode', 'scoringProfile', 'tiePolicy'];
+    const names = ['title', 'start', 'end', 'minutes', 'treeMinutes', 'timingMode', 'groupCount', 'placementThrough', 'change', 'rest', 'fields', 'referees', 'refereeMode', 'rankingMode', 'scoringProfile', 'tiePolicy'];
     return names.reduce((draft, name) => {
       const field = form.elements.namedItem(name);
       if (field) draft[name] = field.value;
@@ -306,7 +306,7 @@
     const form = document.getElementById('fc-edit');
     if (!form) return false;
     updateTimeWindowValidity(form);
-    return Array.from(form.querySelectorAll('[name="title"], [name="start"], [name="end"], [name="minutes"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="mixed"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'))
+    return Array.from(form.querySelectorAll('[name="title"], [name="start"], [name="end"], [name="minutes"], [name="treeMinutes"], [name="timingMode"], [name="groupCount"], [name="placementThrough"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'))
       .some(field => !field.validity.valid);
   }
   function settings(c) {
@@ -323,7 +323,11 @@
       '</div>' +
       '<p class="fc-note fc-time-window-note">' + tr('Verfügbares Zeitfenster, nicht das berechnete Turnierende. Ende vor Anfang bedeutet Folgetag; gleiche Uhrzeiten 24 Stunden. Dauer: 30 Minuten bis 24 Stunden.', 'Available time window, not the calculated tournament finish. An earlier end means the next day; equal times mean 24 hours. Duration: 30 minutes to 24 hours.') + '</p>' +
       '<div class="fc-grid">' +
+      '<label>' + tr('Spielzeit je Phase', 'Playing time by phase') + '<select name="timingMode">' +
+      [['uniform', tr('Einheitlich', 'Uniform')], ['separate', tr('Vorrunde und Baumphase getrennt', 'Separate group and bracket stages')]].map(row =>
+        '<option value="' + row[0] + '"' + (row[0] === value('timingMode') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
       label('minutes', tr('Spielzeit je Spielrunde (Min.)', 'Playing time per slot (min)'), value('minutes'), 'number', 1, 60) +
+      label('treeMinutes', tr('Spielzeit Baumphase (Min.)', 'Bracket stage playing time (min)'), value('treeMinutes'), 'number', 1, 60) +
       label('change', tr('Wechselzeit nach der Spielrunde (Min.)', 'Changeover after each slot (min)'), value('change'), 'number', 1, 30) +
       label('rest', tr('Mindestzahl spielfreier Runden zwischen eigenen Spielen (1–5)', 'Minimum non-playing slots between own matches (1–5)'), value('rest'), 'number', 1, 5) +
       '<p class="fc-note fc-rest-help" id="fc-rest-help">' + tr('Spielruhe ist nicht dienstfrei: Team-Schiris dürfen in spielfreien Runden pfeifen.', 'Match rest is not duty-free: team referees may officiate during non-playing slots.') + '</p>' +
@@ -332,6 +336,15 @@
         ['draw', tr('Remis zulassen · im K.-o. Losentscheid', 'Allow draws · knockout uses a lottery')]].map(row =>
         '<option value="' + row[0] + '"' + (row[0] === value('tiePolicy') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
       '</div></fieldset><fieldset><legend>' + tr('Felder & Spielregeln', 'Courts & playing rules') + '</legend><div class="fc-grid">' +
+      '<label>' + tr('Gruppenanzahl', 'Number of pools') + '<select name="groupCount" required>' +
+      groupCountOptions(Number(value('groupCount'))) + '</select></label>' +
+      '<p class="fc-note">' + tr('Automatisch: möglichst Vierergruppen. Manuell sind 1 bis zur halben Teamzahl möglich; alle Gruppen bleiben ausgeglichen und haben mindestens zwei Teams. Größere Gruppen erzeugen entsprechend mehr Spiele – die Vorschau zeigt den tatsächlichen Plan und Zeitwarnungen.',
+        'Automatic: aim for pools of four. Manually choose 1 through half the team count; pools stay balanced and contain at least two teams. Larger pools generate more matches—the preview shows the actual plan and timing warnings.') + '</p>' +
+      '<label>' + tr('Platzierungen', 'Placements') + '<select name="placementThrough" required data-bands="' +
+      esc(JSON.stringify(setupBands(Number(value('groupCount'))))) + '">' +
+      placementOptions(String(value('placementThrough')), Number(value('groupCount'))) + '</select></label>' +
+      '<p class="fc-note">' + tr('Der Titelblock wird immer vollständig ausgespielt. Hintere Blöcke können je Block einen gemeinsamen Rang teilen; dadurch sinkt die Zahl der Spiele. Firmenmittelwerte verwenden den ersten Rang des geteilten Blocks.',
+        'The title band is always fully played. Lower bands can share a rank within each band, reducing match counts. Company means use the first rank of each shared band.') + '</p>' +
       label('fields', tr('Verfügbare Felder', 'Available courts'), value('fields'), 'number', 1, 16) +
       '<label>' + tr('Schiri-Modus', 'Referee mode') + '<select name="refereeMode">' +
       [['teams', tr('Team-Schiris · ein anderes Team je Spiel', 'Team referees · another team per match')],
@@ -349,11 +362,36 @@
       [['wins', tr('1 Punkt je Sieg · 0 sonst · keine Ballkriterien', '1 point per win · otherwise 0 · no ball criteria')],
         ['legacy', tr('Alternative: 2/1/0 · Ballkriterien je Spiel', 'Alternative: 2/1/0 · ball criteria per game')]].map(row =>
         '<option value="' + row[0] + '"' + (row[0] === value('scoringProfile') ? ' selected' : '') + '>' + row[1] + '</option>').join('') + '</select></label>' +
-      '<label>' + tr('Auf dem Feld: 4 gegen 4 · Mixed-Vorgabe', 'On court: 4 vs 4 · mixed requirement') + '<select name="mixed">' +
-      '<option value="optional"' + (value('mixed') === 'optional' ? ' selected' : '') + '>' + tr('Vier Spieler:innen auf dem Feld, keine Mixed-Vorgabe', 'Four on court, no mixed requirement') + '</option>' +
-      '<option value="one-woman"' + (value('mixed') === 'one-woman' ? ' selected' : '') + '>' + tr('Vier auf dem Feld, mindestens eine Frau', 'Four on court, at least one woman') + '</option></select></label>' +
       '<details class="fc-config-rule-help"><summary>' + tr('Zeitgleichstand & Seitenwechsel erklärt', 'Time ties & side changes explained') + '</summary><p>' +
       timingExplanation(value('tiePolicy')) + '</p></details></div></fieldset></div>';
+  }
+  function groupCountOptions(current) {
+    const count = event.teams.length, max = count >= 2 ? Math.floor(count / 2) : 0;
+    const choices = [{ value: 0, text: tr('Automatisch · auf Vierergruppen zielen', 'Automatic · aim for groups of four') }];
+    for (let n = 1; n <= max; n++) choices.push({ value: n, text: n + ' ' + tr('Gruppen', 'pools') });
+    const valid = choices.some(choice => choice.value === current);
+    if (!valid) choices.unshift({ value: '',
+      text: tr('Aktuelle Gruppenzahl ungültig – neu wählen', 'Current pool count invalid – choose again') });
+    return choices.map(choice => '<option value="' + choice.value + '"' +
+      (choice.value === current || !valid && choice.value === '' ? ' selected' : '') +
+      (choice.value === '' ? ' disabled' : '') + '>' +
+      esc(choice.text) + '</option>').join('');
+  }
+  function setupBands(groupCount) {
+    return F.classificationBands(event.teams.length, F.effectivePoolCount(event.teams.length, { groupCount: groupCount }));
+  }
+  function placementOptions(current, groupCount) {
+    const bands = setupBands(groupCount), cuts = bands.slice(0, -1);
+    const choices = [{ value: 0, text: tr('Alle Plätze ausspielen', 'Play all places') }].concat(cuts.map(band => ({
+      value: band.to, text: tr('Individuell bis ', 'Individual places through ') + band.to + ' · ' +
+        bands.filter(lower => lower.from > band.to).map(lower => placeRange(lower.from, lower.to) + tr(' geteilt', ' shared')).join(' / ')
+    })));
+    const valid = choices.some(choice => String(choice.value) === current);
+    if (!valid) choices.unshift({ value: '',
+      text: tr('Gruppen geändert – Platzierungsblöcke neu wählen', 'Pools changed – choose placement bands again') });
+    return choices.map(choice => '<option value="' + choice.value + '"' +
+      (String(choice.value) === current || !valid && choice.value === '' ? ' selected' : '') +
+      (choice.value === '' ? ' disabled' : '') + '>' + esc(choice.text) + '</option>').join('');
   }
   function setupPreview(saved) {
     return '<section id="fc-setup-preview" class="fc-setup-preview" aria-labelledby="fc-setup-preview-title">' +
@@ -405,9 +443,23 @@
       updatePreviewBadges(host, event, F.estimate(event), true);
       return;
     }
+    const groupCount = form.elements.namedItem('groupCount');
+    const placementThrough = form.elements.namedItem('placementThrough');
+    if (groupCount && placementThrough) {
+      const bands = JSON.stringify(setupBands(Number(groupCount.value)));
+      const selectedCut = placementThrough.dataset.bands !== bands && placementThrough.value !== '0' ? '' : placementThrough.value;
+      placementThrough.dataset.bands = bands;
+      placementThrough.innerHTML = placementOptions(selectedCut, Number(groupCount.value));
+    }
     const values = key => host.querySelector('[data-preview-value="' + key + '"]');
     const setValue = (key, value) => { values(key).textContent = value; };
     const refereeCount = form.elements.namedItem('referees');
+    const separate = form.elements.namedItem('timingMode').value === 'separate';
+    const treeTime = form.elements.namedItem('treeMinutes');
+    treeTime.closest('label').hidden = !separate && treeTime.validity.valid;
+    form.elements.namedItem('minutes').closest('label').firstChild.textContent = separate ?
+      tr('Spielzeit Vorrunde (Min.)', 'Group stage playing time (min)') :
+      tr('Spielzeit je Spielrunde (Min.)', 'Playing time per slot (min)');
     form.elements.namedItem('rest').setAttribute('aria-describedby', 'fc-rest-help');
     form.elements.namedItem('end').setAttribute('aria-describedby', 'fc-time-window-help');
     form.querySelector('.fc-time-window-note').id = 'fc-time-window-help';
@@ -567,11 +619,12 @@
   }
   function config(form) {
     const data = new FormData(form), c = {};
-    ['minutes', 'change', 'fields', 'referees', 'rest'].forEach(k => { c[k] = Number(data.get(k)); });
+    ['minutes', 'treeMinutes', 'change', 'fields', 'referees', 'rest', 'groupCount', 'placementThrough'].forEach(k => { c[k] = Number(data.get(k)); });
+    c.timingMode = String(data.get('timingMode'));
+    c.placementMode = c.placementThrough === 0 ? 'all' : 'shared';
     c.start = String(data.get('start') || '');
     const duration = timeWindow(c.start, String(data.get('end') || ''));
     c.window = duration == null ? 0 : duration;
-    c.mixed = data.get('mixed');
     c.refereeMode = data.get('refereeMode') || F.refereeMode(event);
     c.rankingMode = data.get('rankingMode') || F.rankingMode(event);
     c.scoringProfile = data.get('scoringProfile') || F.scoringProfile(event);
@@ -618,7 +671,7 @@
     }
     finally { busy = false; app.setAttribute('aria-busy', 'false'); }
   }
-  const defaults = { start: '13:00', minutes: 14, change: 3, fields: 8, referees: 8, rest: 1, window: 360, mixed: 'optional', refereeMode: 'teams', rankingMode: 'teams', scoringProfile: 'wins', tiePolicy: 'lead' };
+  const defaults = { start: '13:00', minutes: 14, treeMinutes: 14, timingMode: 'uniform', groupCount: 0, placementMode: 'all', placementThrough: 0, change: 3, fields: 8, referees: 8, rest: 1, window: 360, refereeMode: 'teams', rankingMode: 'teams', scoringProfile: 'wins', tiePolicy: 'lead' };
   async function landing(expandMore) {
     const rows = await Store.list({ removal: true });
     const landingTitle = tr('Firmencup erstellen/konfigurieren', 'Create / configure company cup');
@@ -822,15 +875,21 @@
   }
   function rules() {
     return '<details id="fc-rules"><summary>' + tr('Regeln der Turnierleitung & Grenzen', 'Organizer rules & limits') + '</summary><p>' +
-      tr('Freizeitformat mit eigenen Regeln der Turnierleitung, kein offizielles BeachL-/FIVB-Regelwerk. Vier Spieler:innen auf dem Feld. ', 'Recreational format with organizer-defined rules, not official BeachL/FIVB rules. Four players on court. ') +
-      (event.config.mixed === 'one-woman' ? tr('Mindestens eine Frau auf dem Feld (Prüfung durch Veranstalter:innen). ', 'At least one woman on court (organizer checks). ') : tr('Keine Mixed-Vorgabe. ', 'No mixed requirement. ')) +
-      rosterGuidance() + ' ' + tr('Eine maximale sportliche Teamgröße ist fachlich nicht festgelegt. Die App prüft weder Zusammensetzung noch Kontakte/Rotation.', 'No sporting team-size maximum is defined. The app does not check composition, contacts or rotation.') + '</p><p>' +
-      tr('Gemeinsamer Start und reguläres Zeitende je Spielrunde (gleichzeitige Spiele), ', 'Shared start and regular time limit per slot (simultaneous matches), ') + event.config.minutes + tr(' Minuten Spielzeit + ', ' match minutes + ') + event.config.change +
+      tr('Freizeitformat mit eigenen Regeln der Turnierleitung, kein offizielles BeachL-/FIVB-Regelwerk. ', 'Recreational format with organizer-defined rules, not official BeachL/FIVB rules. ') +
+      rosterGuidance() + '</p><p>' +
+      tr('Gemeinsamer Start und reguläres Zeitende je Spielrunde (gleichzeitige Spiele), ', 'Shared start and regular time limit per slot (simultaneous matches), ') + playingTimeSummary() + ' + ' + event.config.change +
       tr(' Minuten Wechselintervall. ', ' changeover minutes. ') + timingExplanation() + ' ' + scoringExplanation() + '</p><p>' +
-        tr('Gruppenphase + Klassifikationsbäume: ausgeglichene Gruppen mit höchstens vier Teams, innerhalb jeder Gruppe Jeder-gegen-jeden. Sieger- und Verliererwege spielen anschließend alle Plätze aus. Titelbaum: mindestens vier Setzplätze oder die kleinste Zweierpotenz, die alle Gruppensieger aufnimmt, begrenzt auf die Teamzahl. Weitere Setzblöcke gleicher Größe spielen eigene Platzierungsbäume; ein einzelner Restplatz vergrößert den vorherigen Block. Ausnahme fünf Teams: Titelbaum mit zwei Teams, Dreier-Baum um 3–5. Alle Gruppensieger sind im Titelbaum. Bei sieben Teams: Gruppen 4+3, Vierer-Titelbaum und Dreier-Baum um 5–7. Bei 40 Teams: zehn Vierergruppen, 16er-Titelbaum und Bäume um 17–32 und 33–40. Zwei Teams spielen nach ihrem Gruppenspiel ein Finale; drei Teams Halbfinale und Finale mit Freilos für Setzplatz 1, der Halbfinalverlierer ist Dritter. Freilose sind keine gespielten Matches. Wiederholte Paarungen sind möglich. Für 2–4 Teams ohne vorab sicher verfügbare Team-Schiris ausdrücklich externe oder keine Schiris wählen. Setzung nach Gruppenplatz, gewähltem Wertungsprofil und protokolliertem Los; bei ungleichen Gruppen kann die gewählte Siegzahlwertung unterschiedliche Siegchancen bieten. Eigene Hausregel, keine Verbandsfreigabe.',
-          'Group stage + classification brackets: balanced pools of at most four teams, round robin within each pool. Winner and loser paths decide every place. Title bracket: at least four seeds or the smallest power of two accommodating all pool winners, capped at the team count. Further seed bands of that size enter placement brackets; a single remaining team enlarges the preceding band. Five-team exception: two-team title bracket and three-team bracket for 3–5. All pool winners enter the title bracket. Seven teams: pools of 4+3, four-team title bracket and three-team bracket for 5–7. Forty teams: ten pools of four, 16-team title bracket and brackets for 17–32 and 33–40. Two teams play a final after their pool match; three teams play a semifinal and final with seed 1 receiving a bye, and the semifinal loser finishing third. Byes are not played matches. Rematches are possible. For 2–4 teams without safely available preassigned team referees, explicitly choose external or no referees. Seeding uses pool place, the selected scoring profile and a recorded draw; unequal pools can offer unequal win opportunities under total-win scoring. Organizer-defined format, no federation approval.') +
+        tr('Gruppenphase + Klassifikationsbäume: automatische Gruppen zielen auf Vierergruppen; manuell sind 1 bis halb so viele Gruppen wie Teams wählbar. Gruppen werden möglichst gleich groß verteilt, jede hat mindestens zwei Teams und spielt Jeder-gegen-jeden; Gruppengrößen sind nicht künstlich begrenzt. Sieger- und Verliererwege spielen standardmäßig alle Plätze aus; vollständige hintere Setzblöcke können je Block denselben Rang teilen. Der Titelblock umfasst alle Gruppensieger und mindestens vier Setzplätze (bei zwei/drei Teams höchstens die Teamzahl; Ausnahme fünf Teams: zwei Titelplätze); die übrigen vollständigen Blöcke erhalten eigene Klassifikationsbäume. Bei sieben Teams und automatischer Einteilung: Gruppen 4+3, Titelblock 4 und Block 5–7. Bei 40 Teams automatisch: zehn Vierergruppen, Titelblock 16, dann 17–32 und 33–40. Zwei Teams spielen nach der Gruppenbegegnung ein Finale; bei drei Teams spielt Setzplatz 1 dank Freilos im Finale, der Halbfinalverlierer erhält Platz 3. Freilose sind keine gespielten Matches. Wiederholte Paarungen sind möglich, insbesondere bei wenigen manuell gewählten Gruppen. Für 2–4 Teams ohne vorab sicher verfügbare Team-Schiris ausdrücklich externe oder keine Schiris wählen. Setzung nach Gruppenplatz, gewähltem Wertungsprofil und protokolliertem Los; ungleiche Gruppen können unterschiedliche Siegchancen bieten. Eigene Hausregel, keine Verbandsfreigabe.',
+          'Group stage + classification brackets: automatic grouping aims for pools of four; manually choose 1 through half the number of teams. Pools are balanced, contain at least two teams, and play round robin; pool size has no artificial cap. Winner and loser paths play all places by default; complete lower seed bands can each share a rank. The title band includes every pool winner and at least four seeds (capped at the team count for two/three teams; five-team exception: two title places); remaining complete bands receive separate classification brackets. Seven teams, automatic: pools of 4+3, title band of 4 and band 5–7. Forty teams, automatic: ten pools of four, title band 16, then 17–32 and 33–40. Two teams play a final after their group match; with three teams, seed 1 receives a bye into the final and the semifinal loser finishes third. Byes are not played matches. Rematches are possible, especially with few manually selected pools. For 2–4 teams without safely available preassigned team referees, explicitly choose external or no referees. Seeding uses pool place, the selected scoring profile and a recorded draw; unequal pools can offer unequal winning opportunities. Organizer-defined format, no federation approval.') +
       tr(' In der ersten Baumrunde werden die Gegner der unteren Setzhälfte möglichst gruppenfremd zugeordnet; Freilose und die Zugehörigkeit zum Titel-/Platzierungsblock bleiben erhalten.',
         ' In each bracket’s opening round, lower-half opponents are matched across pools where possible; byes and title/placement-band membership remain unchanged.') + '</p><p>' +
+      (event.config.placementMode === 'all' ? tr('Gewählt: Alle Plätze ausspielen.', 'Selected: play all places.') :
+        tr('Gewählt: Individuell bis Platz ', 'Selected: individual places through ') + event.config.placementThrough + ' · ' +
+        F.classificationBands(event.teams.length, F.effectivePoolCount(event.teams.length, event.config))
+          .filter(band => band.from > event.config.placementThrough)
+          .map(band => placeRange(band.from, band.to) + tr(' geteilt', ' shared')).join(' / ') +
+        tr('. Geteilte Blöcke spielen nicht; alle Teams darin erhalten den ersten Rang des Blocks, auch für den Firmenmittelwert. Spielzahlen sinken entsprechend.',
+          '. Shared bands do not play; all their teams receive the band’s first rank, including for company means. Match counts decrease accordingly.')) + '</p><p>' +
       rankingExplanation() +
       '</p><p class="fc-note">' + decisionExplanation() + '</p></details>';
   }
@@ -850,14 +909,19 @@
       ' ' + tr('Hausregel: Seitenwechsel nach jeweils 7 gespielten Ballpunkten insgesamt (Summe beider Teams: 7, 14, 21, …), manuell durch Teams/Schiris; kein automatischer Live-Zähler.',
         'House rule: switch sides every 7 total played ball points (sum of both teams: 7, 14, 21, …), managed manually by teams/referees; no automatic live counter.');
   }
-  function matchModeSummary() {
-    return event.config.minutes + tr(' Min. Zeitspiel', ' min timed play') + ' · ' +
+  function playingTimeSummary(phase) {
+    return !phase && event.config.timingMode === 'separate' ?
+      tr('Vorrunde ', 'Groups ') + event.config.minutes + tr(' Min. / Baumphase ', ' min / brackets ') + event.config.treeMinutes + ' min' :
+      F.matchMinutes(event, phase) + tr(' Min. Zeitspiel', ' min timed play');
+  }
+  function matchModeSummary(phase) {
+    return playingTimeSummary(phase) + ' · ' +
       (F.scoringProfile(event) === 'wins' ? tr('1 Tabellenpunkt je Sieg', '1 standings point per win') :
         tr('2/1/0 Tabellenpunkte', '2/1/0 standings points'));
   }
   // One compact, round-wide mode line; per-court cards show only what differs (teams, referee team).
-  function roundModeSummary() {
-    return tr('Quadro 4 gegen 4', 'Quadro 4 vs 4') + ' · ' + matchModeSummary() + ' · ' +
+  function roundModeSummary(phase) {
+    return matchModeSummary(phase) + ' · ' +
       tr('Seitenwechsel alle 7 Ballpunkte (gesamt)', 'Switch sides every 7 ball points (total)');
   }
   function scoreEntryExplanation(matches) {
@@ -906,6 +970,9 @@
       (done ? tr('abgeschlossen', 'complete') : tr('vorläufig', 'provisional')) + '</span>';
   }
   function placeRange(from, to) { return from === to ? String(from) : from + '–' + to; }
+  function placedRank(row) {
+    return row.sharedTo ? placeRange(row.rank, row.sharedTo) + tr(' geteilt', ' shared') : row.rank;
+  }
   function resultsStatus() {
     const state = resultsState();
     if (!event.matches.length) return '<section id="fc-results-status" class="fc-results-status noprint" tabindex="-1"><h2>' +
@@ -942,9 +1009,10 @@
     const state = resultsState(), rows = state.rows, orgs = F.organizationStandings(event), finals = event.status === 'finals';
     const complete = state.final;
     const champions = rows.filter(r => r.rank === 1), orgWinners = orgs.filter(r => r.rank === 1);
-    const placementRow = row => '<tr><td>' + row.rank + '</td><td>' + esc(teamName(row.id)) +
+    const placementRow = row => '<tr><td>' + placedRank(row) + '</td><td>' + esc(teamName(row.id)) +
       '</td><td>' + esc(orgName(event.teams.find(t => t.id === row.id).orgId)) + '</td></tr>';
     const placements = state.slots.map(slot => {
+      if (slot.kind === 'shared') return rows.filter(row => slot.teams.includes(row.id)).map(placementRow).join('');
       if (!slot.decided) return '<tr class="fc-open-row"><td>' + placeRange(slot.from, slot.to) +
         '</td><td colspan="2"><strong>' + slotLabel(slot) + '</strong></td></tr>';
       const outcome = event.outcomes[slot.id];
@@ -979,7 +1047,8 @@
       '</th><th>' + (finals ? tr('Team für den Firmenpokal / Endplatzierung', 'Company trophy team / final placing') : tr('Team für den Firmenpokal', 'Company trophy team')) + '</th></tr></thead><tbody>' +
       orgs.map(r => '<tr>' + (finals ? '<td>' + (r.rank || (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) + '</td>' : '') +
         '<td>' + esc(orgName(r.id)) + '</td><td>' + esc(teamName(r.nominee)) +
-        (finals ? ' / ' + (r.teamRank || (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) : '') +
+        (finals ? ' / ' + (r.teamRank ? placedRank(rows.find(row => row.id === r.nominee)) :
+          (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) : '') +
         '</td></tr>').join('') + '</tbody></table></section>');
   }
   function poolTable(rows, firstRank) {
@@ -1052,7 +1121,8 @@
   function capacityOverview(plan, c, draft) {
     const labels = {
       group: tr('Vorrunde', 'Group stage'),
-      cup: tr('Klassifikationsbäume · alle Plätze', 'Classification brackets · all places')
+      cup: plan.config.placementMode === 'all' ? tr('Klassifikationsbäume · alle Plätze', 'Classification brackets · all places') :
+        tr('Klassifikationsbäume · individuell bis ', 'Classification brackets · individual places through ') + plan.config.placementThrough
     };
     return '<dl class="fc-phase-times">' + c.phases.map(p => {
       const estimated = draft || p.estimated;
@@ -1329,7 +1399,7 @@
           options(event.teams.filter(t => t.id === a || t.id === b), r && r.drawWinner) + '</select></label>' : '') +
         '<p class="fc-score-error fc-error" id="fc-score-error-' + m.id + '" role="alert" hidden></p>' +
         '<button type="submit" class="fc-score-save">' + (r ? tr('Korrektur speichern', 'Save correction') : tr('Ergebnis speichern', 'Save score')) + '</button></form>' : '') +
-      '<p class="fc-match-mode fc-print-only">' + matchModeSummary() + '</p>' +
+      '<p class="fc-match-mode fc-print-only">' + matchModeSummary(m.phase) + '</p>' +
       (editable && !participant ? (!r && !outcome && absentHere ? '<p class="fc-warning">' + esc(teamName(absentHere)) +
           tr(' ist abwesend gemeldet: unter „Anwesenheit“ wieder da melden oder hier Nichtantreten entscheiden.', ' is reported absent: mark it back under “Attendance” or decide a nonappearance here.') + '</p>' : '') +
         (!r && !outcome ? '<details class="fc-outcome noprint"><summary id="fc-outcome-' + esc(m.id) + '">' + tr('Nichtantreten oder Rückzug entscheiden', 'Record nonappearance or withdrawal') +
@@ -1373,7 +1443,7 @@
       (start ? '<span class="fc-wave-actions noprint"><button type="button" id="fc-wave-start-' + wave + '" data-action="start-wave" data-wave="' + wave + '"' +
         (readiness.ready ? '' : ' disabled') + '>' + tr('Spielrunde ' + (wave + 1) + ' zentral starten', 'Start time slot ' + (wave + 1) + ' centrally') + '</button>' +
         (readiness.ready ? '' : '<span class="fc-note"> ' + tr('Noch nicht startbereit – siehe Turniertag oben.', 'Not ready yet – see event day above.') + '</span>') + '</span>' : '') +
-      '<span class="fc-wave-mode">' + roundModeSummary() + '</span></p>' +
+      '<span class="fc-wave-mode">' + roundModeSummary(matches[0].phase) + '</span></p>' +
       '<div class="fc-wave-matches">' + matches.map(fixture).join('') + '</div>' +
       '<p class="fc-wave-score-guide" id="fc-wave-score-guide-' + wave + '">' + scoreEntryExplanation(matches) + '</p></details>';
   }
@@ -1460,8 +1530,8 @@
     const resetConfig = kind === 'reset-config', pointsOnly = kind === 'reset-points';
     const origin = event;
     const text = resetConfig ?
-      tr('Regeln auf Standardwerte setzen? 13:00–19:00, 14 Minuten Spielzeit, 3 Minuten Wechsel, 8 Felder, Team-Schiris, mindestens 1 spielfreie Runde, Team-/Siegwertung, erste Führung, keine Mixed-Vorgabe.',
-        'Restore default rules? 13:00–19:00, 14 match minutes, 3 changeover minutes, 8 courts, team referees, minimum 1 non-playing slot, team/win standings, first lead, no mixed requirement.') :
+      tr('Regeln auf Standardwerte setzen? 13:00–19:00, einheitlich 14 Minuten Spielzeit, alle Plätze ausspielen, 3 Minuten Wechsel, 8 Felder, Team-Schiris, mindestens 1 spielfreie Runde, Team-/Siegwertung, erste Führung.',
+        'Restore default rules? 13:00–19:00, uniform 14 match minutes, play all places, 3 changeover minutes, 8 courts, team referees, minimum 1 non-playing slot, team/win standings, first lead.') :
       pointsOnly ? tr('Turnierstand einschließlich Ergebnissen, Entscheidungen und Ablaufprotokollen zurücksetzen; gewählte Regeln behalten?', 'Reset tournament progress including results, decisions and operational logs; keep selected rules?') :
         tr('Gesperrte Konfiguration in einer neuen lokalen Kopie bearbeiten?', 'Edit locked configuration in a new local copy?');
     if (!confirm(text + '\n' + tr('Neue lokale Kopie ohne Serverbindung. Original, bisherige Sicherungen und andere Turniere bleiben unverändert. Firmen, Teams, Namen, Titel und Anwesenheit bleiben erhalten. Ergebnisse, Entscheidungen, Rückzüge, Endrunde, Los-/Umplanungs-/Wechselprotokolle und Startzeiten werden in der Kopie entfernt. ',
@@ -1500,7 +1570,7 @@
       button('previous', tr('Vorherigen Stand als neue Veranstaltung kopieren', 'Copy previous snapshot as new event')) +
       '<h3>' + tr('Mehrgeräte-Live-Link (Web)', 'Multi-device live link (web)') + '</h3><p id="fc-server-status" role="status">' + esc(status) + '</p>' +
       '<label><input id="fc-share-consent" type="checkbox" style="width:auto;vertical-align:middle"> ' +
-      tr('Livefreigabe auf dem Server speichern. Zunächst privat; Zugriff nur über freigegebene Links. Spieler:innen-Kader und Anwesenheit bleiben privat. Jede Aktualisierung wird auf dem Server gespeichert.', 'Save live sharing on the server. Initially private; access only through shared links. Player rosters and attendance remain private. Each update is stored on the server.') + '</label>' +
+      tr('Livefreigabe auf dem Server speichern. Zunächst privat; Zugriff nur über freigegebene Links. Private Spieler:innen-Namen und Anwesenheit bleiben privat. Jede Aktualisierung wird auf dem Server gespeichert.', 'Save live sharing on the server. Initially private; access only through shared links. Private player names and attendance remain private. Each update is stored on the server.') + '</label>' +
       button('share', published ? tr('Live-Link aktualisieren', 'Update live link') : tr('Live-Teilnehmer:innen-Link veröffentlichen', 'Publish live participant link')) +
       (published ? '<div id="fc-share-output"><label>' + tr('Öffentlicher Nur-Lesen-Link (ohne Bearbeitungsrecht)', 'Public read-only link (no edit permission)') +
         '<textarea id="fc-share-url" readonly>' + esc(publicLink) + '</textarea></label><div id="fc-qr"></div><p id="fc-qr-note" role="status">' +
@@ -1682,8 +1752,8 @@
     app.innerHTML = (accessState ? '<p class="fc-access-state"><strong>' + accessState +
       (livePublic ? ' · ' + tr('Live · Serverrevision ' + liveRevision, 'Live · server revision ' + liveRevision) : '') + '</strong></p>' : '') +
       (readOnly ? '<p class="fc-warning">' + (participant ?
-        tr('Teilnehmer:innen-Zugriff: nur Ergebnisse und Punkteeingabe. Keine Konfiguration, Namen, Kader oder Anwesenheit.', 'Participant access: results and score entry only. No configuration, names, rosters or attendance.') :
-        tr('Öffentliche Live-Ansicht: aktualisiert sich bei Verbindung automatisch. Team-/Organisationsnamen und Ergebnisse sind sichtbar; Spieler:innen-Namen, Kader, Anwesenheit und Bearbeitungsrecht bleiben privat.', 'Public live view: refreshes automatically when connected. Team/organization names and results are visible; player names, rosters, attendance and editor rights remain private.')) + '</p>' :
+        tr('Teilnehmer:innen-Zugriff: nur Ergebnisse und Punkteeingabe. Keine Konfiguration, private Spieler:innen-Namen oder Anwesenheit.', 'Participant access: results and score entry only. No configuration, private player names or attendance.') :
+        tr('Öffentliche Live-Ansicht: aktualisiert sich bei Verbindung automatisch. Team-/Organisationsnamen und Ergebnisse sind sichtbar; Private Spieler:innen-Namen, Anwesenheit und Bearbeitungsrecht bleiben privat.', 'Public live view: refreshes automatically when connected. Team/organization names and results are visible; private player names, attendance and editor rights remain private.')) + '</p>' :
         editor()) +
       rules() + (readOnly ? capacity() : '') + cockpit() + (readOnly ? live() : organization()) + teamOverview() + searchPanel() +
       resultsStatus() + poolsHtml() + standingsHtml() + fixtures() +
@@ -1919,6 +1989,18 @@
     if (empty) throw new Error(tr('Team zuordnen oder unbenutzte Firma entfernen: ', 'Assign a team or remove the unused company: ') + empty.name);
     const unassigned = F.rankingMode(next) === 'nominee' && next.organizations.find(o => !next.teams.some(t => t.id === o.nominee && t.orgId === o.id));
     if (unassigned) throw new Error(tr('Unter „Firmen & Teams“ das Team für den Firmenpokal wählen für: ', 'Under “Companies & teams”, choose the company trophy team for: ') + unassigned.name);
+  }
+  function confirmPlacementChange(next) {
+    if (next.config.placementMode !== 'shared') return true;
+    const bands = target => F.classificationBands(target.teams.length, F.effectivePoolCount(target.teams.length, target.config));
+    const before = bands(event), after = bands(next);
+    if (JSON.stringify(before) === JSON.stringify(after)) return true;
+    if (!after.slice(0, -1).some(band => band.to === next.config.placementThrough)) {
+      throw new Error(tr('Die Teamänderung macht die gewählten Platzierungsblöcke ungültig. Zuerst unter „Konfiguration“ alle Plätze wählen, dann Teams ändern und die neuen Blöcke ausdrücklich wählen.',
+        'This team change invalidates the selected placement bands. First select all places in Configuration, then change teams and explicitly select the new bands.'));
+    }
+    return confirm(tr('Teamänderung: Neue geteilte Platzierungsblöcke ausdrücklich übernehmen? ', 'Team change: explicitly accept the new shared placement bands? ') +
+      after.filter(band => band.from > next.config.placementThrough).map(band => placeRange(band.from, band.to)).join(' / '));
   }
   function reopenDraft(next) {
     if (event.startedAt || Object.keys(event.results).length) throw new Error('Started event frozen / Gestartete Veranstaltung eingefroren');
@@ -2299,6 +2381,7 @@
     try { readyTeams(next); } catch (error) {
       throw new Error(error.message + ' ' + tr('Nichts wurde geändert; bitte zuerst unter „Firmen & Teams“ anpassen.', 'Nothing was changed; adjust under “Companies & teams” first.'));
     }
+    if (!confirmPlacementChange(next)) return;
     const built = F.build(next);
     if (!confirm(tr('Abwesende Teams aus der Anmeldung entfernen und Gruppenplan neu erstellen?', 'Remove absent teams from registration and rebuild the pool schedule?') + '\n' +
         tr('Entfernt: ', 'Removed: ') + ids.map(teamName).join(', ') +
@@ -2335,7 +2418,7 @@
       if (invalidSetupSettings()) {
         const form = document.getElementById('fc-edit');
         const invalidFields = form && Array.from(form.querySelectorAll(
-          '[name="title"], [name="start"], [name="end"], [name="minutes"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="mixed"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'
+          '[name="title"], [name="start"], [name="end"], [name="minutes"], [name="treeMinutes"], [name="timingMode"], [name="groupCount"], [name="placementThrough"], [name="change"], [name="rest"], [name="fields"], [name="referees"], [name="refereeMode"], [name="rankingMode"], [name="scoringProfile"], [name="tiePolicy"]'
         )).filter(field => !field.validity.valid);
         const invalid = invalidFields && (invalidFields.find(field => field.validationMessage) || invalidFields[0]);
         if (invalid) {
@@ -2382,7 +2465,7 @@
       await save(next);
       app.querySelector('[data-org-name="' + firstId + '"]').focus();
     } else if (name === 'add-team' || name === 'remove-team') {
-      const next = reopenDraft(copyDraftFromForm());
+      const next = reopenDraft(invalidSetupSettings() ? draftForPhaseChange() : copyDraftFromForm());
       if (!next) return;
       let addedTeamId = null;
       if (name === 'add-team') {
@@ -2411,6 +2494,7 @@
           }
         });
       }
+      if (!confirmPlacementChange(next)) return;
       await save(next);
       if (addedTeamId) {
         const input = app.querySelector('[data-team-name="' + addedTeamId + '"]');
@@ -2444,7 +2528,7 @@
       const before = event.matches.filter(m => m.wave >= fromWave && !event.results[m.id] && !event.outcomes[m.id]);
       const preview = F.replan(event, fromWave, delay, fields, reason);
       const after = preview.matches.filter(m => m.wave >= fromWave && !event.results[m.id] && !event.outcomes[m.id]);
-      const end = list => Math.max.apply(null, list.map(m => m.startMin + preview.config.minutes));
+      const end = list => Math.max.apply(null, list.map(m => m.startMin + F.matchMinutes(preview, m.phase)));
       const summary = tr('Umplanung ab Spielrunde ', 'Replan from time slot ') + (fromWave + 1) + ': ' + before.length +
         tr(' ungestartete Begegnungen. Bisheriges Planende ', ' unstarted fixtures. Previous scheduled end ') +
         F.clock(end(before)) + tr(', neues Planende ', ', new scheduled end ') + F.clock(end(after)) + '. ' +
@@ -2504,7 +2588,8 @@
     if (!node || !event) return;
     if (!event.liveWave) { node.textContent = readOnly ? tr('Noch kein tatsächlicher Start.', 'No actual start yet.') : ''; return; }
     const elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(event.liveWave.startedAt)) / 1000));
-    const play = event.config.minutes * 60, slot = (event.config.minutes + event.config.change) * 60;
+    const match = event.matches.find(m => m.wave === event.liveWave.wave);
+    const play = F.matchMinutes(event, match.phase) * 60, slot = play + event.config.change * 60;
     const remain = Math.max(0, (elapsed < play ? play : slot) - elapsed);
     node.textContent = tr('Spielrunde ', 'Time slot ') + (event.liveWave.wave + 1) + ' · ' +
       (elapsed < play ? tr('Spiel läuft ', 'Playing ') : elapsed < slot ? tr('Abpfiff / Wechsel ', 'Whistle / changeover ') : tr('Spielrunde beendet ', 'Time slot ended ')) +

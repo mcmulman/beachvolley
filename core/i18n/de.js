@@ -17,10 +17,10 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
     'home.firmencup.title': 'Firmencup',
-    'home.firmencup.desc': 'Gruppenphase + Baum: Firmencups spielen innerhalb ausgeglichener Gruppen von meist drei oder vier Teams Jeder-gegen-jeden. Danach entscheiden Titel- und Platzierungsbäume mit Sieger- und Verliererwegen alle Plätze. Alle Gruppensieger bleiben im Titelrennen; Freilose zählen nicht als Spiele. Bei 40 Teams sind sechs oder sieben Spiele je Team geplant. Zwei oder drei Teams spielen nach einer Gruppe ein Finale bzw. Halbfinale und Finale. Gespielt wird vier gegen vier auf Zeit. Standard ist die Teamwertung; optional zählt je Firma der mittlere Endrang aller Teams oder ein ausgewähltes Team (Hausregeln, keine Verbandsfreigabe).',
+    'home.firmencup.desc': 'Gruppenphase + Baum: Firmencups spielen innerhalb ausgeglichener Gruppen von meist drei oder vier Teams Jeder-gegen-jeden. Danach entscheiden Titel- und Platzierungsbäume mit Sieger- und Verliererwegen standardmäßig alle Plätze; hintere Setzblöcke können ihre Plätze teilen. Alle Gruppensieger bleiben im Titelrennen; Freilose zählen nicht als Spiele. Bei 40 Teams sind beim Ausspielen aller Plätze sechs oder sieben Spiele je Team geplant; mit geteilten hinteren Plätzen weniger. Zwei oder drei Teams spielen nach einer Gruppe ein Finale bzw. Halbfinale und Finale. Gespielt wird auf Zeit, einheitlich oder getrennt für Vorrunde und Baumphase. Standard ist die Teamwertung; optional zählt je Firma der mittlere Endrang aller Teams oder ein ausgewähltes Team (Hausregeln, keine Verbandsfreigabe).',
     'home.firmencup.open': 'Firmencup öffnen',
     'home.firmencup.category': 'Eventformat',
-    'home.firmencup.card-sub': 'Vier gegen vier auf Zeit · Firmenwertung vorläufig',
+    'home.firmencup.card-sub': 'Spiele auf Zeit · Firmenwertung vorläufig',
     'home.firmencup.teams': 'Ab 2 Teams',
     'home.firmencup.timed': 'Spiele mit Zeitlimit',
     'home.firmencup.feature1': 'Gruppenphase + Titel-/Platzierungsbäume',
