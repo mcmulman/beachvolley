@@ -29,7 +29,9 @@
     return '<div class="fc-pool-grid fc-team-directory">' + event.pools.map((pool, index) =>
       '<div class="fc-pool"><h3>' + esc(poolLabel('G' + (index + 1), event.status === 'finals')) + '</h3><ul>' + pool.map(id =>
         '<li><a href="#fc-team-overview-title" data-overview-team="' + esc(id) + '"' + (id === overviewTeam ? ' aria-current="true"' : '') + '>' +
-        esc(teamIdentity(id)) + '</a></li>').join('') + '</ul></div>').join('') + '</div>';
+        esc(teamIdentity(id)) + '</a>' + (!readOnly ? '<span class="fc-team-status noprint">' +
+          (event.withdrawals && event.withdrawals[id] ? tr('Zurückgezogen', 'Withdrawn') :
+            isAbsent(id) ? tr('Abwesend', 'Absent') : '') + '</span>' : '') + '</li>').join('') + '</ul></div>').join('') + '</div>';
   }
   function groupBreakdown(context) {
     if (!event.pools.length) return '';
@@ -204,7 +206,7 @@
       href: anchor.getAttribute('href'),
       phase: 'play',
       step: null,
-      target: function () { return document.getElementById(targetId); }
+      target: function () { return navigationTarget(targetId); }
     };
   }
   function updateStatusAction() {
@@ -842,17 +844,18 @@
   }
   function editor() {
     if (event.startedAt) return '<section id="fc-registration"><h2>' +
-      tr('Firmen & Teams', 'Companies & teams') + '</h2><p class="fc-note">' +
+      tr('Firmen & Teams', 'Companies & teams') + '</h2>' + checkin() + '<p class="fc-note">' +
       tr('Spielplan und Ergebnisse bleiben beim Firmenwechsel erhalten. Namen und Regeln sind seit Spielbeginn gesperrt.',
         'Changing a company preserves fixtures and results. Names and rules are locked after play starts.') + '</p>' +
-      event.organizations.map(o => '<fieldset class="fc-entity-card"><legend>' + esc(o.name) + '</legend><details><summary>' +
+      event.organizations.map(o => '<fieldset class="fc-entity-card"><legend>' + esc(o.name) + '</legend><details class="fc-company-teams"><summary>' +
         tr('Teams', 'Teams') + ' (' + event.teams.filter(t => t.orgId === o.id).length + ')</summary>' +
-        event.teams.filter(t => t.orgId === o.id).map(t => '<div class="fc-team-card"><h3>' + esc(t.name) + '</h3>' + teamBadge(t.id, event.status === 'finals', true) +
-          (t.roster.length ? '<p class="fc-note">' + tr('Spieler:innen (privat): ', 'Players (private): ') +
-            t.roster.map(esc).join(', ') + '</p>' : '') +
+        event.teams.filter(t => t.orgId === o.id).map(t => '<div class="fc-team-card" id="fc-team-card-' + esc(t.id) + '"><div class="fc-team-topline"><div class="fc-team-heading"><h3>' + esc(t.name) + '</h3>' + editorPoolLink(t.id) + '</div>' +
+          teamAttendance(t.id) + '</div>' +
+          (t.roster.length ? '<details class="fc-roster-details"><summary>' + tr('Spieler:innen (privat)', 'Players (private)') +
+            '</summary><p class="fc-note">' + t.roster.map(esc).join(', ') + '</p></details>' : '') +
           transferControls(t) + '</div>').join('') + '</details></fieldset>').join('') + '</section>' +
       '<section id="fc-locked-planning" aria-labelledby="fc-setup-preview-title">' + setupPreview(true) + '</section>';
-    return '<section id="fc-editor" class="noprint">' +
+    return '<section id="fc-editor" class="noprint">' + checkin() +
       '<p class="fc-note">' + tr('Bis zum Spielbeginn kannst du alle Angaben ändern.', 'You can edit all details until play starts.') + '</p>' +
       (!event.matches.length ? '<p class="fc-note">' + tr('Die Gruppenzuordnung steht erst nach dem Erstellen des Spielplans fest.', 'Pools are not assigned until the schedule is built.') + '</p>' : '') +
       '<form id="fc-teams-edit" novalidate><fieldset data-panel="1"><legend>' + tr('Firma/Organisation/Gruppe anlegen', 'Create Company/Organization/Group') + '</legend>' +
@@ -877,7 +880,7 @@
         '<select id="fc-new-team-org">' + options(event.organizations, event.organizations[0] && event.organizations[0].id) + '</select></label>' +
         '<p class="fc-note" id="fc-team-progress">' + event.teams.length + tr(' Teams angelegt · für den Spielplan mindestens ', ' teams added · schedule needs at least ') + F.teamLimits(event).min + ' ' + tr('Teams.', 'teams.') + '</p>' +
         (!event.teams.length ? '<p class="fc-empty">' + tr('Noch keine Teams. Wähle oben eine Firma und klicke auf „+ Team“.', 'No teams yet. Choose a company above, then select “+ Team”.') + '</p>' : '') +
-        event.teams.map((t, index) => '<fieldset class="fc-team-card" id="fc-team-card-' + esc(t.id) + '"><legend>' + esc(t.name) + ' · ' + esc(orgName(t.orgId)) + '</legend>' + teamBadge(t.id, false, true) + '<div class="fc-row"><label>' + tr('Teamname', 'Team name') +
+        event.teams.map((t, index) => '<fieldset class="fc-team-card' + (event.matches.length ? ' fc-team-has-attendance' : '') + '" id="fc-team-card-' + esc(t.id) + '"><legend>' + esc(t.name) + editorPoolLink(t.id) + '</legend><div class="fc-row"><label>' + tr('Teamname', 'Team name') +
           '<input data-team-name="' + esc(t.id) + '" value="' + esc(t.name) + '" maxlength="100" required></label>' +
           '<label>' + tr('Firma', 'Company') + '<select data-team-org="' + esc(t.id) + '">' + options(event.organizations, t.orgId) + '</select></label>' +
           '<details class="fc-roster-details" data-roster-team="' + esc(t.id) + '"><summary>' +
@@ -887,7 +890,7 @@
           '<p class="fc-note">' + tr('Optional · nicht öffentlich angezeigt', 'Optional · not shown publicly') + '</p>' +
           '<button type="button" data-add-member="' + esc(t.id) + '">' + tr('+ Spieler:in', '+ Player') + '</button></div></details>' +
           '<div class="fc-company-actions">' + ordering('teams', t.id, index, event.teams.length, t.name) +
-          '<button type="button" class="fc-delete-company" data-action="remove-team" data-team="' + esc(t.id) + '" aria-label="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '" title="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div></div></fieldset>').join('') +
+          '<button type="button" class="fc-delete-company" data-action="remove-team" data-team="' + esc(t.id) + '" aria-label="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '" title="' + esc(tr('Team entfernen: ', 'Remove team: ') + t.name) + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div>' + teamAttendance(t.id) + '</div></fieldset>').join('') +
       '<button type="button" data-action="add-team"' + (!event.organizations.length || event.teams.length >= teamLimit(event) ? ' disabled' : '') + '>+ Team</button>' +
       (event.teams.length ? button('remove-team', tr('Letztes Team entfernen', 'Remove last team')) : '') +
       (F.rankingMode(event) === 'nominee' && event.organizations.some(o => event.teams.filter(t => t.orgId === o.id).length > 1 && o.nominee === null) ?
@@ -908,8 +911,13 @@
         tr('Spielplan erstellen & weiter', 'Create schedule & continue')) + '</div>' +
       '</fieldset></form></section>';
   }
+  function editorPoolLink(id) {
+    const pool = teamPool(id);
+    return pool ? ' <a class="fc-team-pool-link" href="#fc-pool-' + esc(pool) + '" data-focus-target="fc-pool-' + esc(pool) + '">' +
+      teamBadge(id, event.status === 'finals', false) + '</a>' : '';
+  }
   function transferControls(team) {
-    return '<details><summary>' + tr('In andere Firma verschieben', 'Move to another company') +
+    return '<details class="fc-transfer"><summary>' + tr('Firma wechseln', 'Change company') +
       '</summary><form data-transfer-team="' + esc(team.id) + '"><label>' + tr('Neue Firma', 'New company') +
       '<select name="target"><option value="">' + tr('Bitte wählen', 'Please choose') + '</option>' +
       options(event.organizations.filter(o => o.id !== team.orgId), '') + '</select></label>' +
@@ -1015,6 +1023,15 @@
   function placedRank(row) {
     return row.sharedTo ? placeRange(row.rank, row.sharedTo) + tr(' geteilt', ' shared') : row.rank;
   }
+  function sharedRank(rank, rows) {
+    if (!rank) return '—';
+    return rows.filter(row => row.rank === rank).length > 1 ?
+      '<span class="fc-shared-rank" aria-label="' + tr('Rang ' + rank + ' geteilt', 'Rank ' + rank + ' shared') + '">' + rank + ' =</span>' : rank;
+  }
+  function resultsRules(text) {
+    return '<details class="fc-results-rules"><summary>' + tr('So wird gewertet', 'How ranking works') +
+      '</summary><p class="fc-note">' + text + '</p></details>';
+  }
   function resultsStatus() {
     const state = resultsState();
     if (!event.matches.length) return '<section id="fc-results-status" class="fc-results-status noprint" tabindex="-1"><h2>' +
@@ -1039,7 +1056,8 @@
         (state.played === state.total ?
           tr('Vorrunde vollständig – die Endphase kann jetzt ausgelost werden.', 'Group stage complete – the finals can now be drawn.') :
           tr('Gruppenphase läuft – Tabellen aktualisieren sich mit jedem Ergebnis.', 'Group stage in progress – tables update with every result.'))) + '</p>' +
-      back + '</section>';
+      '<progress class="fc-results-progress" value="' + state.played + '" max="' + state.total + '" aria-label="' +
+      tr('Gewertete Spiele', 'Matches recorded') + '">' + state.played + '/' + state.total + '</progress>' + back + '</section>';
   }
   function slotLabel(slot) {
     const name = slot.from === 1 ? tr('Finale offen', 'Final pending') : slot.from === 3 ?
@@ -1078,47 +1096,58 @@
         '</th><th>' + tr('Vorrundengruppe', 'Group-stage pool') + '</th></tr></thead><tbody>' + placements + '</tbody></table>' :
         '<p class="fc-note">' + tr('Endplatzierungen und Firmenwertung stehen erst nach der Endrunde fest. Bis dahin zählt der Zwischenstand der Gruppentabellen oben.',
           'Final places and the company ranking are decided only after the finals. Until then, the pool tables above show the current standings.') + '</p>') +
-      (!company ? '<p class="fc-note">' + rankingExplanation() + '</p></section>' :
-      F.rankingMode(event) === 'mean' ? '<h3>' + tr('Zusätzliche Firmenwertung · Mittelwert', 'Additional company ranking · mean') + '</h3><p class="fc-note">' + rankingExplanation() +
-        '</p><table class="fc-table"><thead><tr><th>' + tr('Rang', 'Rank') + '</th><th>' + tr('Firma', 'Company') + '</th><th>Teams</th><th>Ø ' + tr('Endrang', 'final rank') +
-        '</th></tr></thead><tbody>' + orgs.map(r => '<tr><td>' + (r.rank || '—') + '</td><td>' + esc(orgName(r.id)) + '</td><td>' + r.placed + '/' + r.count +
+      (!company ? '</section>' :
+      F.rankingMode(event) === 'mean' ? '<h3>' + tr('Zusätzliche Firmenwertung · Mittelwert', 'Additional company ranking · mean') + '</h3><p class="fc-note">' +
+        tr('Mittlerer Team-Endrang: kleiner ist besser. Firmenränge erst, wenn alle Teams platziert sind. = bedeutet geteilter Rang.',
+          'Mean team final rank: lower is better. Company ranks appear once all teams are placed. = means a shared rank.') +
+        '</p>' + resultsRules(rankingExplanation()) + '<table class="fc-table"><thead><tr><th>' + tr('Rang', 'Rank') + '</th><th>' + tr('Firma', 'Company') + '</th><th>' +
+        tr('Teams platziert', 'Teams placed') + '</th><th>Ø ' + tr('Endrang', 'final rank') +
+        '</th></tr></thead><tbody>' + orgs.map(r => '<tr><td>' + sharedRank(r.rank, orgs) + '</td><td>' + esc(orgName(r.id)) + '</td><td>' + r.placed + '/' + r.count +
           '</td><td>' + (r.meanRank == null ? '—' : r.meanRank.toFixed(2)) + '</td></tr>').join('') + '</tbody></table></section>' :
       (finals ? '<h3>' + (complete ? tr('Firmenwertung · Endstand', 'Company ranking · final standings') :
         tr('Firmenwertung · aktueller vorläufiger Stand', 'Company ranking · current provisional rule')) + '</h3>' : '') + '<p class="fc-note">' +
       tr('Die Endplatzierung des ausgewählten Teams entscheidet über den Firmenpokal. Alle Teams zählen unabhängig davon für den Teampokal.', 'The selected team’s final placing determines the company trophy ranking. All teams independently compete for the team trophy.') +
-      '</p><table class="fc-table' + (finals ? '' : ' fc-plain-table') + '"><thead><tr>' + (finals ? '<th>' + tr('Platz', 'Place') + '</th>' : '') + '<th>' + tr('Firma', 'Company') +
+      ' ' + tr('= bedeutet geteilter Firmenrang. Diese Firmenregel ist vorläufig, nicht sportfachlich bestätigt.',
+        '= means a shared company rank. This company rule is provisional, not sport-approved.') +
+      '</p>' + resultsRules(rankingExplanation()) + '<table class="fc-table' + (finals ? '' : ' fc-plain-table') + '"><thead><tr>' + (finals ? '<th>' + tr('Platz', 'Place') + '</th>' : '') + '<th>' + tr('Firma', 'Company') +
       '</th><th>' + (finals ? tr('Team für den Firmenpokal / Endplatzierung', 'Company trophy team / final placing') : tr('Team für den Firmenpokal', 'Company trophy team')) + '</th></tr></thead><tbody>' +
-      orgs.map(r => '<tr>' + (finals ? '<td>' + (r.rank || (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) + '</td>' : '') +
+      orgs.map(r => '<tr>' + (finals ? '<td>' + (r.rank ? sharedRank(r.rank, orgs) : (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) + '</td>' : '') +
         '<td>' + esc(orgName(r.id)) + '</td><td>' + teamLink(r.nominee) + ' ' + teamBadge(r.nominee, finals, true) +
         (finals ? ' / ' + (r.teamRank ? placedRank(rows.find(row => row.id === r.nominee)) :
           (missingPlacement ? tr('nicht vergeben', 'not awarded') : tr('offen', 'open'))) : '') +
         '</td></tr>').join('') + '</tbody></table></section>');
   }
-  function poolTable(rows, firstRank) {
-    return '<table class="fc-table fc-pool-table"><thead><tr><th>' + tr('Platz', 'Place') + '</th><th>Team</th>' +
-      '<th><abbr title="' + tr('Spiele', 'Played') + '">' + tr('Sp.', 'P') + '</abbr></th>' +
-      '<th><abbr title="' + tr('Wertungspunkte', 'Standings points') + '">' + tr('Pkt.', 'Pts') + '</abbr></th>' +
-      (F.scoringProfile(event) === 'wins' ? '' : '<th><abbr title="' + tr('Balldifferenz', 'Point difference') + '">' + tr('Diff.', 'Diff') + '</abbr></th>') + '</tr></thead><tbody>' +
-      rows.map(r => '<tr data-team="' + esc(r.id) + '"><td>' + (firstRank + r.rank - 1) + '</td><td>' + teamLink(r.id) + '<br><small>' +
-        esc(orgName(event.teams.find(t => t.id === r.id).orgId)) + '</small></td><td>' + r.played + '</td><td>' + r.points + '</td>' +
+  function poolTable(rows, pool) {
+    return '<table class="fc-table fc-pool-table' + (F.scoringProfile(event) === 'wins' ? '' : ' fc-pool-legacy') + '" aria-labelledby="fc-pool-title-' + pool +
+      '"><thead><tr><th scope="col">' + tr('Platz', 'Place') + '</th><th scope="col">Team</th>' +
+      '<th scope="col">' + tr('Spiele', 'Played') + '</th>' +
+      '<th scope="col">' + (F.scoringProfile(event) === 'wins' ? tr('Siege', 'Wins') : tr('Punkte', 'Points')) + '</th>' +
+      (F.scoringProfile(event) === 'wins' ? '' : '<th scope="col"><abbr title="' + tr('Balldifferenz', 'Point difference') + '" aria-label="' +
+        tr('Balldifferenz', 'Point difference') + '">' + tr('Diff.', 'Diff') + '</abbr></th>') + '</tr></thead><tbody>' +
+      rows.map(r => '<tr data-team="' + esc(r.id) + '"><td>' + sharedRank(r.rank, rows) + '</td><td><a class="fc-results-team" href="#fc-team-overview-title" data-overview-team="' +
+        esc(r.id) + '"><span>' + esc(teamName(r.id)) + '</span><small>' +
+        esc(orgName(event.teams.find(t => t.id === r.id).orgId)) + '</small></a></td><td>' + r.played + '</td><td><strong>' + r.points + '</strong></td>' +
         (F.scoringProfile(event) === 'wins' ? '' : '<td>' + (r.diff > 0 ? '+' : '') + r.diff + '</td>') + '</tr>').join('') + '</tbody></table>';
   }
   function poolsHtml() {
     if (!event.matches.length) return '';
     const frozen = event.status === 'finals';
-    return '<section id="fc-pools" tabindex="-1"><h2>' + tr('Gruppentabellen · Vorrunde', 'Pool tables · group stage') + ' ' + badge(frozen) + '</h2><p class="fc-note">' +
-      scoringExplanation() + ' ' + (frozen ? tr('Abgeschlossen: Mit der Finalauslosung eingefroren. Geteilte Tabellenränge bleiben; nur die Setzung wurde laut Losprotokoll aufgelöst.',
+    return '<section id="fc-pools" tabindex="-1"><h2>' + tr('Gruppentabellen · Vorrunde', 'Pool tables · group stage') + ' ' + badge(frozen) + '</h2><p class="fc-note fc-pools-summary">' +
+      (F.scoringProfile(event) === 'wins' ? tr('Nur Siege zählen. ', 'Only wins count. ') : tr('2/1/0 Punkte · Vergleich je Spiel. ', '2/1/0 points · compared per match. ')) +
+      tr('= bedeutet geteilter Platz, keine Reihenfolge unter Gleichstehenden.', '= means a shared place, with no ordering of tied teams.') + '</p>' +
+      resultsRules(scoringExplanation() + ' ' + (frozen ? tr('Abgeschlossen: Mit der Finalauslosung eingefroren. Geteilte Tabellenränge bleiben; nur die Setzung wurde laut Losprotokoll aufgelöst.',
         'Complete: frozen by the final draw. Shared table ranks remain; only seeding ties were resolved by the draw record.') :
         tr('Vorläufig: aktualisiert sich mit jedem Ergebnis. Restgleichstände entscheidet erst die Finalauslosung per Los.',
-          'Provisional: updates with every result. Remaining ties are only resolved by lottery at the final draw.')) + '</p>' +
-      '<nav class="fc-group-nav noprint" aria-label="' + tr('Direkt zur Gruppentabelle', 'Jump to pool table') + '">' +
-      event.pools.map((p, i) => groupBadge('G' + (i + 1), false, true)).join('') + '</nav><div class="fc-pool-grid">' +
+          'Provisional: updates with every result. Remaining ties are only resolved by lottery at the final draw.'))) +
+      (event.pools.length > 3 ? '<nav class="fc-group-nav noprint" aria-label="' + tr('Direkt zur Gruppentabelle', 'Jump to pool table') + '">' +
+      event.pools.map((p, i) => groupBadge('G' + (i + 1), false, true)).join('') + '</nav>' : '') + '<div class="fc-pool-grid fc-results-grid">' +
       event.pools.map((p, i) => {
         const pool = 'G' + (i + 1), matches = event.matches.filter(m => m.pool === pool);
-        return '<div class="fc-pool" id="fc-pool-' + pool + '" tabindex="-1"><h3>' + groupBadge(pool, false, false) + ' <small>' +
-          matches.filter(decided).length + '/' + matches.length + tr(' Spiele', ' matches') + '</small></h3>' +
+        return '<div class="fc-pool fc-results-pool" id="fc-pool-' + pool + '" tabindex="-1"><div class="fc-pool-heading"><h3 id="fc-pool-title-' + pool + '">' +
+          esc(poolLabel(pool, false)) + '</h3><p>' +
+          matches.filter(decided).length + '/' + matches.length + tr(' gewertet', ' recorded') + '</p></div>' +
           '<a class="fc-pool-matches noprint" href="#fc-schedule" data-pool-matches="' + pool + '">' +
-          tr('Spiele & Punkteeingabe', 'Matches & score entry') + '</a>' + poolTable(F.table(event, p, pool), 1) + '</div>';
+          (readOnly ? tr('Spiele ansehen', 'View matches') : tr('Spiele & Punkteeingabe', 'Matches & score entry')) + '</a>' + poolTable(F.table(event, p, pool), pool) + '</div>';
       }).join('') + '</div></section>';
   }
   let overviewTeam = '';
@@ -1147,7 +1176,9 @@
     const teamDuties = F.refereeMode(event) === 'teams';
     const upcoming = view.upcoming.length + view.duties.filter(d => !d.completed).length;
     const completed = view.completed.length + view.duties.filter(d => d.completed).length;
-    return '<h4 id="fc-team-overview-title" class="fc-team-title" tabindex="-1">' + esc(teamIdentity(id)) + ' ' + teamBadge(id, event.status === 'finals', true) + '</h4>' +
+    return '<h4 id="fc-team-overview-title" class="fc-team-title" tabindex="-1">' + esc(teamIdentity(id)) +
+      ' <a class="fc-team-pool-link" href="#fc-pool-' + view.pool + '" data-focus-target="fc-pool-' + view.pool + '">' +
+      teamBadge(id, event.status === 'finals', false) + '</a></h4>' +
       '<div class="fc-team-agenda"><div><h5>' + tr('Als Nächstes', 'Up next') + ' (' + upcoming + ')</h5>' +
       list(view.upcoming, view.duties.filter(d => !d.completed), tr('Keine feststehenden offenen Spiele oder Dienste.', 'No confirmed pending matches or duties.'),
         (view.finalsPending || view.conditional) ? '<p class="fc-note">' +
@@ -1179,6 +1210,20 @@
     opener.hidden = visible;
     opener.setAttribute('aria-expanded', String(visible));
     if (focus) (visible ? overview.querySelector('.app-close') : opener).focus();
+  }
+  function chooseTeam(id) {
+    setTeamOverviewVisible(true, false);
+    overviewTeam = id;
+    const agenda = document.getElementById('fc-team-agenda');
+    agenda.dataset.team = id;
+    agenda.innerHTML = teamOverviewBody(id);
+    app.querySelectorAll('.fc-team-directory [data-overview-team]').forEach(link => {
+      if (link.dataset.overviewTeam === id) link.setAttribute('aria-current', 'true');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  function navigationTarget(id) {
+    return document.getElementById(id);
   }
   function capacityOverview(plan, c, draft) {
     const labels = {
@@ -1259,44 +1304,33 @@
       !Object.keys(event.results).length && !Object.keys(event.outcomes).length;
   }
   // Only explicit absences block participation.
+  function teamAttendance(id) {
+    if (readOnly || !event.matches.length) return '';
+    const withdrawn = event.withdrawals && event.withdrawals[id];
+    return '<div class="fc-team-attendance noprint"><strong>' +
+      (withdrawn ? tr('Zurückgezogen', 'Withdrawn') : isAbsent(id) ? tr('Abwesend', 'Absent') : tr('Anwesend', 'Present')) +
+      '</strong> ' + (withdrawn ? '<span class="fc-note">' + tr('Rückzug und Spielentscheidungen im Spielplan verwalten.', 'Manage withdrawal and match decisions in the fixtures.') + '</span>' :
+        '<button type="button" id="fc-attendance-team-' + esc(id) + '" data-attendance="' + esc(id) + '">' +
+        (isAbsent(id) ? tr('Wieder da melden', 'Mark back') : tr('Abwesend melden', 'Mark absent')) + '</button>') + '</div>';
+  }
   function checkin() {
     if (readOnly || !event.matches.length) return '';
     const withdrawn = event.teams.filter(t => event.withdrawals && event.withdrawals[t.id]);
     const absent = event.teams.filter(t => isAbsent(t.id) && !(event.withdrawals && event.withdrawals[t.id]));
     const available = event.teams.filter(t => !isAbsent(t.id) && !(event.withdrawals && event.withdrawals[t.id]));
-    const next = nextWave();
-    const blocked = next == null ? [] : F.waveReadiness(event, next).blocked;
-    const picker = event.organizations.map(o => {
-      const teams = available.filter(t => t.orgId === o.id);
-      return teams.length ? '<optgroup label="' + esc(o.name) + '">' + teams.map(t =>
-        '<option value="' + esc(t.id) + '">' + esc(t.name + ' · ' + poolLabel(teamPool(t.id), event.status === 'finals')) + '</option>').join('') + '</optgroup>' : '';
-    }).join('');
-    return '<section id="fc-checkin" class="noprint"><h2>' + tr('Anwesenheit', 'Attendance') + '</h2>' +
-      '<p>' + tr('Alle Teams gelten als anwesend. Nur fehlende Teams melden.', 'All teams count as present. Only report missing teams.') + '</p>' +
+    return '<div id="fc-checkin" class="noprint" tabindex="-1">' +
       '<p id="fc-attendance-count"><strong>' + tr(available.length + ' von ' + teamCount(event.teams.length) + ' anwesend',
-        available.length + ' of ' + teamCount(event.teams.length) + ' present') + '</strong></p>' +
-      '<form id="fc-absent-form" class="fc-absent-form"><label for="fc-absent-select">' + tr('Fehlendes Team', 'Missing team') + '</label>' +
-      '<select id="fc-absent-select" name="team"' + (available.length ? '' : ' disabled') + '><option value="">' + tr('Team wählen', 'Choose team') + '</option>' + picker + '</select>' +
-      '<button type="submit" id="fc-absent-submit"' + (available.length ? '' : ' disabled') + '>' + tr('Als abwesend melden', 'Mark absent') + '</button></form>' +
-      '<h3 id="fc-absent-heading">' + tr('Abwesend', 'Absent') + ' (' + absent.length + ')</h3>' +
-      (absent.length ? '<ul class="fc-absent-list" aria-labelledby="fc-absent-heading">' + absent.map(t => {
-        const item = blocked.find(b => b.team === t.id);
-        return '<li id="fc-absent-row-' + esc(t.id) + '"><span><strong>' + esc(t.name) + '</strong> · ' + esc(orgName(t.orgId)) + ' ' + teamBadge(t.id, event.status === 'finals', true) +
-          (item ? '<br><a href="#fc-outcome-' + esc(item.match) + '" data-focus-target="fc-outcome-' + esc(item.match) + '">' +
-            tr('Spielt in der nächsten Spielrunde (', 'Plays in the next time slot (') + esc(item.match) + tr(') · Nichtantreten entscheiden', ') · decide nonappearance') + '</a>' : '') +
-          '</span><button type="button" class="fc-present" id="fc-absent-team-' + esc(t.id) + '" data-present="' + esc(t.id) + '" aria-label="' +
-          esc(tr('Wieder da: ', 'Back: ') + t.name) + '">' + tr('Wieder da', 'Back') + '</button></li>';
-      }).join('') + '</ul>' : '<p class="fc-empty">' + tr('Keine Abwesenheiten gemeldet.', 'No absences reported.') + '</p>') +
-      (withdrawn.length ? '<p class="fc-note">' + tr('Zurückgezogen (Entscheidung im Spielplan): ', 'Withdrawn (decision in fixtures): ') +
-        withdrawn.map(t => esc(t.name) + ' ' + teamBadge(t.id, event.status === 'finals', true)).join(', ') + '</p>' : '') +
-      '<p class="fc-note">' + tr('Abwesenheit ändert keine Begegnung, kein Ergebnis und keine Wertung. Ein Spiel mit abwesendem Team startet erst, wenn das Team wieder da ist oder im Spielplan ein Nichtantreten entschieden wurde. ',
-        'Absence does not change fixtures, scores or rankings. A match with an absent team starts only once the team is back or a nonappearance is decided in the fixtures. ') +
+        available.length + ' of ' + teamCount(event.teams.length) + ' present') + '</strong> · ' +
+      tr(absent.length + ' abwesend', absent.length + ' absent') +
+      (withdrawn.length ? ' · ' + tr(withdrawn.length + ' zurückgezogen', withdrawn.length + ' withdrawn') : '') + '</p>' +
+      '<p class="fc-note">' + tr('Alle Teams gelten als anwesend. Abwesend- und Wieder-da-Meldungen werden direkt auf der jeweiligen Teamkarte verwaltet. Abwesenheit ändert keine Spiele oder Ergebnisse; Nichtantreten und Rückzug im Spielplan entscheiden. ',
+        'All teams count as present. Marking a team absent or back is managed directly on its team card. Absence does not change fixtures or scores; decide nonappearance and withdrawal in the fixtures. ') +
       tr(binding && binding.id ? 'Wird mit dem Server synchronisiert, bleibt aber privat.' : 'Nur lokal auf diesem Gerät gespeichert; nie öffentlich.',
         binding && binding.id ? 'Synchronized with the server but kept private.' : 'Stored only on this device; never public.') + '</p>' +
       (unstartedPlan() && absent.length ? '<p class="fc-note">' + tr('Noch nichts gestartet: Fehlen Teams ganz, können sie aus der Anmeldung entfernt werden. Der Gruppenplan wird dann neu erstellt.',
         'Nothing has started yet: teams that will not come at all can be removed from registration. The pool schedule is then rebuilt.') + '</p>' +
         button('remove-absent', tr('Abwesende Teams aus Anmeldung entfernen und Plan neu erstellen', 'Remove absent teams from registration and rebuild schedule')) : '') +
-      '</section>';
+      '</div>';
   }
   function nextPlannedWave(after) {
     const waves = Array.from(new Set(event.matches.map(m => m.wave))).sort((a, b) => a - b);
@@ -1315,7 +1349,7 @@
         'Mark present again or replan from this unstarted time slot (even without a court change/delay). No playing forfeit against the referee team.') + '</p>';
     return '<p class="fc-warning fc-resolve">' + (item.withdrawn ? tr('Zurückgezogen: ', 'Withdrawn: ') : tr('Abwesend gemeldet: ', 'Reported absent: ')) +
       '<strong>' + esc(teamName(item.team)) + '</strong> · ' + tr('Spiel ', 'Match ') + esc(item.match) + '<br>' +
-      (item.withdrawn ? '' : '<a class="fc-link" href="#fc-absent-team-' + esc(item.team) + '" data-focus-target="fc-absent-team-' + esc(item.team) + '">' +
+      (item.withdrawn ? '' : '<a class="fc-link" href="#fc-attendance-team-' + esc(item.team) + '" data-focus-target="fc-attendance-team-' + esc(item.team) + '">' +
         tr('Wieder da melden', 'Mark back') + '</a> ') +
       '<a class="fc-link" href="#fc-outcome-' + esc(item.match) + '" data-focus-target="fc-outcome-' + esc(item.match) + '">' +
       tr('Nichtantreten entscheiden', 'Decide nonappearance') + '</a></p>';
@@ -1354,11 +1388,13 @@
       const ready = F.waveReadiness(event, actionWave);
       if (ready.blocked.length) {
         const item = ready.blocked[0];
-        actionLink = tr('Abwesendes Team in Spielrunde ', 'Absent team in time slot ') + (actionWave + 1) + ': <strong>' + esc(teamName(item.team)) + '</strong> · ' +
-          (item.withdrawn ? '' : '<a href="#fc-absent-team-' + esc(item.team) + '" data-focus-target="fc-absent-team-' + esc(item.team) + '">' +
+        actionLink = (item.role === 'referee' ? tr('Abwesendes Schiri-Team in Spielrunde ', 'Absent referee team in time slot ') :
+          tr('Abwesendes Team in Spielrunde ', 'Absent team in time slot ')) + (actionWave + 1) + ': <strong>' + esc(teamName(item.team)) + '</strong> · ' +
+          (item.withdrawn ? '' : '<a href="#fc-attendance-team-' + esc(item.team) + '" data-focus-target="fc-attendance-team-' + esc(item.team) + '">' +
             tr('Wieder da melden', 'Mark back') + '</a> ' + tr('oder ', 'or ')) +
-          '<a href="#fc-outcome-' + esc(item.match) + '" data-focus-target="fc-outcome-' + esc(item.match) + '">' +
-          tr('Nichtantreten für Spiel ', 'decide nonappearance for match ') + esc(item.match) + tr(' entscheiden', '') + '</a>';
+          (item.role === 'referee' ? '<a href="#fc-replan" data-focus-target="fc-replan">' + tr('Schiridienst umplanen', 'Replan referee duty') + '</a>' :
+            '<a href="#fc-outcome-' + esc(item.match) + '" data-focus-target="fc-outcome-' + esc(item.match) + '">' +
+            tr('Nichtantreten für Spiel ', 'decide nonappearance for match ') + esc(item.match) + tr(' entscheiden', '') + '</a>');
       } else if (ready.unresolved.length) {
         const previous = event.matches.find(m => m.wave < actionWave && !event.results[m.id]);
         actionLink = previous ? '<a href="#fc-match-' + esc(previous.id) + '" data-focus-target="fc-match-' + esc(previous.id) + '">' +
@@ -1388,7 +1424,6 @@
       return readiness.blocked.map(blockedResolution).join('') +
         (w === upcoming && readiness.unresolved.length ? '<p class="fc-warning">' + tr('Vorgängerergebnisse offen; Gegner noch nicht festgelegt.', 'Previous results are missing; opponents are not yet determined.') + '</p>' : '');
     }).join('');
-    const absentCount = event.teams.filter(t => isAbsent(t.id) || (event.withdrawals && event.withdrawals[t.id])).length;
     return '<section id="fc-cockpit" class="fc-cockpit noprint" aria-labelledby="fc-cockpit-title"><p class="fc-cockpit-state"><strong id="fc-cockpit-title">' +
       tr('Turniertag', 'Event day') + ':</strong> <strong>' +
       missing.length + tr(' von ', ' of ') + event.matches.length + ' ' + tr('Ergebnissen offen', 'results pending') + '</strong> · ' +
@@ -1401,18 +1436,16 @@
       '<p class="fc-cockpit-links">' +
       (missing.length < event.matches.length ? '<a class="fc-link fc-link-secondary" id="fc-cockpit-results" href="#fc-results-status" data-focus-target="fc-results-status">' +
         (resultsState().final ? tr('Endergebnis ansehen', 'View final results') : tr('Zwischenstand ansehen', 'View current standings')) + '</a>' : '') +
+      '<a class="fc-link fc-link-secondary" id="fc-cockpit-teams" href="#fc-checkin" data-focus-target="fc-checkin">' +
+      tr('Teams & Anwesenheit', 'Teams & attendance') + '</a> ' +
       '<a class="fc-link fc-link-secondary" id="fc-cockpit-org" href="#fc-org" data-focus-target="fc-org-summary">' +
-      tr('Anwesenheit & Umplanung', 'Attendance & replanning') + (absentCount ? ' (' + absentCount + tr(' fehlt', ' missing') + ')' : '') + '</a></p></div></section>';
+      tr('Erweiterte Spielplansteuerung', 'Advanced schedule controls') + '</a></p></div></section>';
   }
   function organization() {
     if (readOnly || !event.matches.length) return '';
-    const absentCount = event.teams.filter(t => isAbsent(t.id) || (event.withdrawals && event.withdrawals[t.id])).length;
     return '<details id="fc-org" class="fc-org noprint"' + (orgOpen ? ' open' : '') + '><summary id="fc-org-summary">' +
-      tr('Organisation', 'Organization') + ' <span class="fc-org-hint">' +
-      tr('Anwesenheit', 'Attendance') + (absentCount ? ' (' + absentCount + tr(' fehlt', ' missing') + ')' : '') + ' · ' +
-      tr('Spielrunde im Überblick', 'time slot overview') + ' · ' +
-      tr('Spielrunde manuell wählen', 'choose time slot manually') + ' · ' + tr('Umplanung', 'replanning') + '</span></summary>' +
-      currentWaveSummary() + checkin() + live() + '</details>';
+      tr('Erweiterte Spielplansteuerung', 'Advanced schedule controls') + '</summary>' +
+      live() + '</details>';
   }
   function matchLabel(m, poolContext, separator) {
     const a = F.resolve(event, m.a), b = F.resolve(event, m.b);
@@ -1471,7 +1504,10 @@
         tr('Zur Gruppentabelle', 'View pool table') + '</a></p>' : '') +
       '<p class="fc-match-mode fc-print-only">' + matchModeSummary(m.phase) + '</p>' +
       (editable && !participant ? (!r && !outcome && absentHere ? '<p class="fc-warning">' + esc(teamName(absentHere)) +
-          tr(' ist abwesend gemeldet: unter „Anwesenheit“ wieder da melden oder hier Nichtantreten entscheiden.', ' is reported absent: mark it back under “Attendance” or decide a nonappearance here.') + '</p>' : '') +
+          tr(' ist abwesend gemeldet. ', ' is reported absent. ') +
+          '<a href="#fc-attendance-team-' + esc(absentHere) + '" data-focus-target="fc-attendance-team-' + esc(absentHere) + '">' +
+          tr('Zur Teamkarte in Firmen & Teams', 'Go to its team card in Companies & teams') + '</a> · ' +
+          tr('oder hier Nichtantreten entscheiden.', 'or decide a nonappearance here.') + '</p>' : '') +
         (!r && !outcome ? '<details class="fc-outcome noprint"><summary id="fc-outcome-' + esc(m.id) + '">' + tr('Nichtantreten oder Rückzug entscheiden', 'Record nonappearance or withdrawal') +
           '</summary><form data-outcome="' + esc(m.id) + '"><label>' + tr('Entscheidungsgrund', 'Decision reason') +
           '<select name="type"><option value="nonappearance">' + tr('Nichtantreten (nur diese Begegnung)', 'Nonappearance (this match only)') +
@@ -1570,7 +1606,7 @@
       event.matches.some(m => m.wave === w && !event.results[m.id] && !event.outcomes[m.id]));
     const canReplan = replanWaves.length > 0;
     return '<section id="fc-live" class="noprint"><h2>' + (readOnly ? tr('Aktuelle Spielrunde', 'Current time slot') : tr('Spielrunde manuell wählen & umplanen', 'Choose time slot manually & replan')) + '</h2>' +
-      (!readOnly ? '<p class="fc-guide">' + tr('2. Alle Teams gelten als anwesend; nur fehlende Teams unter „Anwesenheit“ melden. Die nächste Spielrunde startest du normalerweise direkt im Spielplan; hier kannst du eine Spielrunde gezielt wählen oder den Restplan umplanen.', '2. All teams count as present; only report missing teams under “Attendance”. Usually start the next time slot directly in the fixtures; here you can pick a specific time slot or replan the remaining schedule.') + '</p>' : '') +
+      (!readOnly ? '<p class="fc-guide">' + tr('Die nächste Spielrunde direkt im Spielplan starten. Nur bei Bedarf hier eine Spielrunde gezielt wählen oder den Restplan umplanen.', 'Start the next time slot directly in the fixtures. Use these controls only to choose a specific time slot or replan the remaining schedule.') + '</p>' : '') +
       '<p class="fc-note">' + tr('Eine Spielrunde umfasst die gleichzeitigen Spiele auf allen Feldern. Gemeinsamer Start und reguläres Zeitende; erforderliche Führungsverlängerungen zuerst beenden, dann die nächste Runde starten. Ein optionaler Live-Link überträgt Start und Ergebnisse.', 'A time slot contains the simultaneous matches on all courts. Shared start and regular time limit; complete required first-lead overtime before starting the next slot. An optional live link synchronizes starts and results.') + '</p>' +
       (!readOnly ? '<label>' + tr('Spielrunde', 'Time slot') + '<select id="fc-wave">' + waves.map(w => '<option value="' + w + '"' + (w === selectedWave ? ' selected' : '') + '>' + (w + 1) + ' · ' + F.clock(event.matches.find(m => m.wave === w).startMin) + '</option>').join('') +
         '</select></label><button type="button" id="fc-start-wave" data-action="start-wave"' +
@@ -1656,21 +1692,22 @@
       '<h3>' + tr('Mehrgeräte-Live-Link (Web)', 'Multi-device live link (web)') + '</h3><p id="fc-server-status" role="status">' + esc(status) + '</p>' +
       '<label><input id="fc-share-consent" type="checkbox" style="width:auto;vertical-align:middle"> ' +
       tr('Livefreigabe auf dem Server speichern. Zunächst privat; Zugriff nur über freigegebene Links. Private Spieler:innen-Namen und Anwesenheit bleiben privat. Jede Aktualisierung wird auf dem Server gespeichert.', 'Save live sharing on the server. Initially private; access only through shared links. Private player names and attendance remain private. Each update is stored on the server.') + '</label>' +
-      button('share', published ? tr('Live-Link aktualisieren', 'Update live link') : tr('Live-Teilnehmer:innen-Link veröffentlichen', 'Publish live participant link')) +
+      button('share', published ? tr('Live-Link aktualisieren', 'Update live link') : tr('Private Livefreigabe einrichten', 'Set up private live sharing')) +
+      (!published ? '<p class="fc-note">' + tr('Danach den Teilnehmer:innen-Link separat erzeugen und teilen.', 'Then create and share the participant link separately.') + '</p>' : '') +
       (published ? '<div id="fc-share-output"><label>' + tr('Öffentlicher Nur-Lesen-Link (ohne Bearbeitungsrecht)', 'Public read-only link (no edit permission)') +
         '<textarea id="fc-share-url" readonly>' + esc(publicLink) + '</textarea></label><div id="fc-qr"></div><p id="fc-qr-note" role="status">' +
         tr('Live-Ansicht · aktualisiert sich bei Verbindung automatisch.', 'Live view · refreshes automatically when connected.') + '</p>' +
         '<p>' + tr('Der Nur-Lesen-Link funktioniert nur bei ausdrücklich öffentlicher Freigabe.', 'The read-only link works only when public access is explicitly enabled.') + '</p>' +
         '<form id="fc-participant-share-form"><h3>' + tr('Teilnehmer:innen: nur Ergebnisse und Punkte', 'Participants: results and scores only') +
         '</h3><button type="submit">' + tr('Teilnehmer:innen-Link erzeugen/erneuern', 'Create/rotate participant link') + '</button></form>' +
-        (binding.participantShareToken ? '<textarea id="fc-participant-url" readonly>' +
+        (binding.participantShareToken ? '<textarea id="fc-participant-url" aria-label="' + tr('Teilnehmer:innen-Link', 'Participant link') + '" readonly>' +
           esc(Server.participantUrl(binding.id, binding.participantShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
         button('revoke-participant', tr('Teilnehmer:innen-Link widerrufen', 'Revoke participant link')) +
         '<form id="fc-admin-share-form"><h3>' + tr('Admin: voller Zugriff mit Passwort', 'Admin: full access with password') +
         '</h3><label>' + tr('Neues Adminpasswort (mindestens 10 Zeichen)', 'New admin password (at least 10 characters)') +
         '<input name="password" type="password" minlength="10" required autocomplete="new-password"></label><button type="submit">' +
         tr('Adminlink und Passwort setzen', 'Set admin link and password') + '</button></form>' +
-        (binding.adminShareToken ? '<textarea id="fc-admin-url" readonly>' +
+        (binding.adminShareToken ? '<textarea id="fc-admin-url" aria-label="' + tr('Adminlink', 'Admin link') + '" readonly>' +
           esc(Server.adminUrl(binding.id, binding.adminShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
         button('revoke-admin', tr('Adminzugriff widerrufen', 'Revoke admin access')) + '</div>' : '') +
       (published ? button('toggle-public', binding.access && binding.access.publicRead ?
@@ -1830,6 +1867,7 @@
     const expandedCompanies = Array.from(app.querySelectorAll('.fc-company-teams[open]')).map(node => node.parentElement.dataset.company);
     const expandedRosters = Array.from(app.querySelectorAll('.fc-roster-details[open]')).map(node => node.dataset.rosterTeam);
     orgOpen = !!app.querySelector('#fc-org[open]');
+    if (overviewTeam && !event.teams.some(team => team.id === overviewTeam)) overviewTeam = '';
     identity(event.title);
     if (!phase) phase = (event.matches.length || readOnly) ? 'play' : 'teams';
     const accessState = participant ? tr('Teilnehmer:innen · Ergebnisse ansehen und Punkte eintragen', 'Participants · view results and enter scores') : readOnly ? tr('Teilnehmer:innen-Ansicht · Nur Lesen', 'Participant view · read-only') :
@@ -2002,7 +2040,7 @@
   }
   function followAnchor() {
     if (location.hash === routedHash || location.hash.indexOf('#fc-') !== 0) return;
-    const target = document.getElementById(location.hash.slice(1));
+    const target = navigationTarget(location.hash.slice(1));
     if (!target) return;
     routedHash = location.hash;
     revealTarget(target);
@@ -2152,17 +2190,6 @@
       close.removeAttribute('data-i18n-attr');
       close.setAttribute('aria-controls', 'fc-team-overview');
       document.getElementById('fc-team-overview-open').onclick = () => setTeamOverviewVisible(true, true);
-      const chooseTeam = id => {
-        setTeamOverviewVisible(true, false);
-        overviewTeam = id;
-        const agenda = document.getElementById('fc-team-agenda');
-        agenda.dataset.team = id;
-        agenda.innerHTML = teamOverviewBody(id);
-        app.querySelectorAll('.fc-team-directory [data-overview-team]').forEach(link => {
-          if (link.dataset.overviewTeam === id) link.setAttribute('aria-current', 'true');
-          else link.removeAttribute('aria-current');
-        });
-      };
       document.getElementById('fc-team-agenda').onclick = ev => {
         const link = ev.target.closest('[data-focus-target]');
         if (!link) return;
@@ -2177,6 +2204,15 @@
         };
       });
     }
+    app.querySelectorAll('[data-attendance]').forEach(attendance => {
+      attendance.onclick = () => action(async function () {
+        const id = attendance.dataset.attendance, absent = isAbsent(id);
+        await save(F.checkIn(event, id, absent ? 'unconfirmed' : 'absent'),
+          teamName(id) + (absent ? tr(' ist wieder da.', ' is back.') :
+            tr(' als abwesend gemeldet. Spielplan und Ergebnisse unverändert.', ' reported absent. Fixtures and results unchanged.')));
+        focusStatusTarget(navigationTarget('fc-attendance-team-' + id));
+      });
+    });
     const participantShare = document.getElementById('fc-participant-share-form');
     if (participantShare) participantShare.onsubmit = ev => {
       ev.preventDefault();
@@ -2377,29 +2413,10 @@
         });
       };
     });
-    const absentForm = document.getElementById('fc-absent-form');
-    if (absentForm) absentForm.onsubmit = ev => {
-      ev.preventDefault();
-      action(async function () {
-        const select = document.getElementById('fc-absent-select'), id = select.value;
-        if (!id) { select.focus(); throw new Error(tr('Zuerst das fehlende Team wählen.', 'Choose the missing team first.')); }
-        await save(F.checkIn(event, id, 'absent'), teamName(id) + tr(' als abwesend gemeldet. Spielplan und Ergebnisse unverändert.', ' reported absent. Fixtures and results unchanged.'));
-        const picker = document.getElementById('fc-absent-select');
-        if (picker && !picker.disabled) picker.focus();
-      });
-    };
-    app.querySelectorAll('[data-present]').forEach(node => {
-      node.onclick = () => action(async function () {
-        const id = node.dataset.present;
-        await save(F.checkIn(event, id, 'unconfirmed'), teamName(id) + tr(' ist wieder da.', ' is back.'));
-        const picker = document.getElementById('fc-absent-select');
-        if (picker) picker.focus();
-      });
-    });
     app.querySelectorAll('[data-focus-target]').forEach(link => {
       link.onclick = function (ev) {
         ev.preventDefault();
-        const target = document.getElementById(link.dataset.focusTarget);
+        const target = navigationTarget(link.dataset.focusTarget);
         if (!target) return;
         revealTarget(target);
         target.scrollIntoView({ block: target.matches('section') ? 'start' : 'center' });
@@ -2685,7 +2702,7 @@
       if (!document.getElementById('fc-share-consent').checked) throw new Error(tr('Öffentliches Teilen zuerst bestätigen.', 'Confirm public sharing first.'));
       binding = await Server.publish(event, { publicRead: false });
       render();
-      notify(tr('Dauerhafter Live-Link veröffentlicht. Änderungen werden lokal gesichert und mit Serverrevision synchronisiert.', 'Persistent live link published. Changes are saved locally and synchronized with server revisions.'));
+      notify(tr('Private Livefreigabe eingerichtet. Teilnehmer:innen-Link jetzt unter „Teilen & Sichern“ erzeugen. Änderungen werden lokal und auf dem Server gespeichert.', 'Private live sharing set up. Create a participant link under “Sharing & backup”. Changes are saved locally and on the server.'));
     } else if (name === 'revoke-participant' || name === 'revoke-admin') {
       await Server.sharing(binding, name === 'revoke-participant' ? { revokeParticipant: true } : { revokeAdmin: true });
       render(); notify(tr('Zugriff widerrufen.', 'Access revoked.'));
@@ -2720,6 +2737,9 @@
   async function restore(source) {
     const copy = F.clone(source); copy.id = uid(); copy.revision = 0;
     event = await Store.save(F.validate(copy));
+    binding = null; livePublic = false; liveRevision = null; liveEtag = null;
+    participant = false; readOnly = false; setupSettingsDraft = null;
+    lastScored = null; routedHash = null;
     history.replaceState(null, '', '?local=' + event.id + '&lang=' + (en ? 'en' : 'de'));
     render(); notify(tr('Als neue Veranstaltung auf diesem Gerät wiederhergestellt; keine bestehende Veranstaltung überschrieben.', 'Restored as a new event on this device; no existing event overwritten.'));
   }
