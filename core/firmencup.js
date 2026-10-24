@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const SCHEMA = 1;
-  const CURRENT_FORMAT = 5;
+  const CURRENT_FORMAT = 6;
   const MIN_TEAMS = 2, MAX_TEAMS = 128, MAX_ORGANIZATIONS = 128;
   function check(ok, message) { if (!ok) throw new Error(message); }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -74,7 +74,7 @@
     }
     check(Object.keys(e).every(key => ['schema', 'formatVersion', 'id', 'title', 'config', 'teams', 'organizations',
       'status', 'revision', 'results', 'pools', 'matches', 'drawOrder', 'startedAt', 'checkIns', 'outcomes',
-      'withdrawals', 'replans', 'fieldLimit', 'liveWave', 'transfers'].indexOf(key) >= 0), 'Invalid event fields / Ungültige Veranstaltungsfelder');
+      'withdrawals', 'replans', 'fieldLimit', 'liveWave', 'transfers', 'groupAssignments'].indexOf(key) >= 0), 'Invalid event fields / Ungültige Veranstaltungsfelder');
     const c = e.config;
     check(c && integer(c.minutes, 1, 60) && integer(c.change, 1, 30) && integer(c.fields, 1, 16) &&
       integer(c.rest, 1, 5) && integer(c.referees, 1, 16) && integer(c.window, 30, 1440), 'Invalid capacity or timing / Kapazität oder Zeit');
@@ -118,6 +118,14 @@
       check(identifier(t.id) && text(t.name, 100) && e.organizations.some(o => o.id === t.orgId), 'Invalid team assignment / Teamzuordnung');
       check(Array.isArray(t.roster) && t.roster.length <= 100 && t.roster.every(n => text(n, 100)), 'Invalid player names / Ungültige Spieler:innen-Namen');
     });
+    check(Array.isArray(e.groupAssignments), 'Explicit group assignments required / Explizite Gruppenzuordnung erforderlich');
+    if (e.groupAssignments.length) {
+      const pools = e.groupAssignments, ids = [].concat.apply([], pools);
+      check(pools.length === poolCount && pools.every(p => Array.isArray(p) && p.length >= 2) &&
+        Math.max.apply(null, pools.map(p => p.length)) - Math.min.apply(null, pools.map(p => p.length)) <= 1 &&
+        ids.length === count && unique(ids) && ids.every(id => e.teams.some(t => t.id === id)),
+      'Groups must contain every team once, balanced with at least two teams / Gruppen müssen jedes Team genau einmal enthalten, ausgeglichen mit mindestens zwei Teams');
+    }
     if (e.checkIns !== undefined) {
       check(e.checkIns && typeof e.checkIns === 'object' && !Array.isArray(e.checkIns), 'Invalid check-in data / Ungültige Check-in-Daten');
       Object.keys(e.checkIns).forEach(id => {
@@ -132,7 +140,7 @@
     return validateSetup({ schema: SCHEMA, formatVersion: CURRENT_FORMAT,
       id: id, title: title, config: clone(config), teams: clone(teams),
       organizations: clone(organizations), status: 'draft', revision: 0, results: {}, pools: [], matches: [],
-      drawOrder: [], startedAt: null, checkIns: {}, outcomes: {},
+      drawOrder: [], groupAssignments: [], startedAt: null, checkIns: {}, outcomes: {},
       withdrawals: {}, replans: [], fieldLimit: courtCapacity({ config: config }) });
   }
   function transferTeam(e, teamId, targetOrgId, choices, now) {
@@ -174,6 +182,11 @@
     return validate(next);
   }
   function validateTransition(old, next) {
+    if (old.startedAt || old.liveWave || Object.keys(old.results).length || Object.keys(old.outcomes).length) {
+      check(JSON.stringify(old.groupAssignments) === JSON.stringify(next.groupAssignments) &&
+        JSON.stringify(old.pools) === JSON.stringify(next.pools),
+      'Group allocations frozen after start or result / Gruppenzuordnung nach Start oder Ergebnis gesperrt');
+    }
     Object.keys(old.outcomes).forEach(id => {
       check(JSON.stringify(old.outcomes[id]) === JSON.stringify(next.outcomes[id]),
         'Recorded decision cannot be removed or changed / Erfasste Entscheidung darf nicht entfernt oder geändert werden');
@@ -365,13 +378,13 @@
     const all = e.matches.concat(matches);
     const conflict = routeConflicts(all);
     let wave = startWave;
-    const courts = Math.min(e.fieldLimit || e.config.fields, courtCapacity(e));
     if (refereeMode(e) === 'teams') matches.forEach(m => {
       const playing = new Set(possible(m.a, all).concat(possible(m.b, all)));
       check(dutyCandidates(e, playing).length > 0,
         'Schedule impossible: no available referee team for ' + m.id + ' / Spielplan unmöglich: kein verfügbares Schiri-Team für ' + m.id);
     });
     while (remaining.length) {
+      const courts = e.replans.reduce((limit, r) => wave >= r.fromWave ? r.fields : limit, courtCapacity(e));
       const used = new Set();
       let field = 0;
       for (let i = 0; i < remaining.length && field < courts;) {
@@ -406,11 +419,39 @@
       'Group + bracket with 2–4 teams: choose external or no referees; no team can be safely preassigned outside every possible final / Gruppen + Baum mit 2–4 Teams: externe oder keine Schiris wählen; kein Team ist für alle möglichen Finalpaarungen sicher spielfrei');
     const next = clone(e);
     const poolCount = effectivePoolCount(next.teams.length, next.config);
-    next.pools = balanced(next.teams.map(t => t.id), poolCount);
+    next.pools = next.groupAssignments.length ? clone(next.groupAssignments) : balanced(next.teams.map(t => t.id), poolCount);
     next.matches = [];
     next.matches = schedule(next, interleave(next.pools.map((p, i) => rr(p, 'G' + (i + 1), 'group'))), 0);
     next.status = 'groups';
     return next;
+  }
+  function groupEditLock(e) {
+    if (e.startedAt || e.liveWave || Object.keys(e.results).length || Object.keys(e.outcomes).length) {
+      return 'Groups locked: competition has started or a result/decision exists / Gruppen gesperrt: Veranstaltung gestartet oder Ergebnis/Entscheidung vorhanden';
+    }
+    if (e.status !== 'groups' || !e.pools.length) return 'Build the group schedule first / Zuerst Gruppenplan erstellen';
+    if (e.pools.length < 2) return 'Only one group: no other destination / Nur eine Gruppe: kein anderes Ziel';
+    return '';
+  }
+  function reassignGroup(e, teamId, targetPool, swapTeamId, confirmed) {
+    validate(e);
+    check(!groupEditLock(e), groupEditLock(e));
+    check(confirmed === true, 'Confirm schedule rebuild / Spielplan-Neuerstellung bestätigen');
+    const source = e.pools.findIndex(p => p.indexOf(teamId) >= 0);
+    check(source >= 0 && integer(targetPool, 0, e.pools.length - 1) && source !== targetPool,
+      'Choose a different destination group / Andere Zielgruppe wählen');
+    const next = clone(e), pools = clone(e.pools), slot = pools[source].indexOf(teamId);
+    if (swapTeamId !== null) {
+      const targetSlot = pools[targetPool].indexOf(swapTeamId);
+      check(targetSlot >= 0, 'Choose a team in the destination group / Team der Zielgruppe wählen');
+      pools[source][slot] = swapTeamId; pools[targetPool][targetSlot] = teamId;
+    } else {
+      pools[source].splice(slot, 1); pools[targetPool].push(teamId);
+    }
+    next.groupAssignments = pools;
+    next.status = 'draft'; next.pools = []; next.matches = [];
+    // Build through the canonical scheduler, retaining attendance, delays and court changes.
+    return validate(build(next));
   }
   function resolve(e, ref) {
     if (typeof ref === 'string') return ref;
@@ -891,6 +932,7 @@
       Array.isArray(e.replans) && integer(e.fieldLimit, 1, courtCapacity(e)),
     'Invalid operational state / Ungültiger Veranstaltungsstatus');
     const baseline = create(e.id, e.title, e.config, e.teams, e.organizations);
+    baseline.groupAssignments = clone(e.groupAssignments);
     let expected = baseline;
     if (e.status !== 'draft') expected = build(baseline);
     const groupIds = expected.matches.map(m => m.id);
@@ -903,7 +945,7 @@
     });
     if (e.status === 'finals') expected = finals(expected, e.drawOrder);
     const sameFixtures = e.matches.length === expected.matches.length && e.matches.every((m, i) => {
-      const x = refereeMode(e) === 'teams' ? expected.matches.find(item => item.id === m.id) : expected.matches[i];
+      const x = expected.matches.find(item => item.id === m.id);
       return x && m.id === x.id && JSON.stringify(m.a) === JSON.stringify(x.a) && JSON.stringify(m.b) === JSON.stringify(x.b) &&
         m.phase === x.phase && m.pool === x.pool && m.placement === x.placement &&
         m.winnerPlacement === x.winnerPlacement && m.loserPlacement === x.loserPlacement;
@@ -1048,7 +1090,7 @@
     refereeMode: refereeMode, rankingMode: rankingMode, courtCapacity: courtCapacity,
     scoringProfile: scoringProfile, tiePolicy: tiePolicy, winPoints: winPoints,
     validateReferees: validateReferees, refereeStats: refereeStats,
-    create: create, build: build, finals: finals, score: score, resolve: resolve,
+    create: create, build: build, groupEditLock: groupEditLock, reassignGroup: reassignGroup, finals: finals, score: score, resolve: resolve,
     table: table, standings: standings, placementSlots: placementSlots, organizationStandings: organizationStandings, estimate: estimate,
     gameCounts: gameCounts, teamOverview: teamOverview,
     validate: validate, beginWave: beginWave, checkIn: checkIn,

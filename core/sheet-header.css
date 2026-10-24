@@ -74,6 +74,11 @@
   .app-bar__brand { font-size: 13px; line-height: 1.2; }
   .app-bar__context { font-size: 10px; font-weight: 500; line-height: 1.2; opacity: .82; }
   .app-bar__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .app-bar .cfg-actions-primary {
+    width: auto;
+    margin: 0;
+    flex-wrap: nowrap;
+  }
   .app-bar__btn {
     display: inline-flex;
     align-items: center;
@@ -110,12 +115,38 @@
   @media (max-width: 960px) {
     .app-bar { padding-left: 10px; padding-right: 10px; }
   }
-  @media (max-width: 640px) {
+  @media (max-width: 767px) {
     .app-bar__back, .app-bar__btn { min-width: 44px; }
+    .app-bar .app-bar__actions > .app-bar__btn {
+      width: 38px;
+      min-width: 38px;
+      padding: 0;
+    }
+    .app-bar .cfg-actions-primary > .nbtn.app-bar__btn {
+      width: 38px;
+      min-width: 38px;
+      flex: 0 0 38px;
+      padding: 0;
+    }
+    .app-bar .cfg-actions-primary > .nbtn + .nbtn { margin-left: 6px; }
+    .app-bar__actions .cfg-actions-primary .lbl {
+      display: block;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   }
   @media (max-width: 560px) {
-    .app-bar { gap: 8px; }
+    .app-bar { gap: 6px; }
+    .app-bar__actions { gap: 4px; }
     .app-bar__back { padding: 7px 14px 7px 9px; }
+    .tournament-sheet .app-bar__info { display: none; }
     .app-bar__btn .lbl { display: none; }
     .app-bar__btn { padding: 0; min-width: 44px; }
     .app-bar__title { font-size: 14px; }

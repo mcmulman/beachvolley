@@ -1239,11 +1239,6 @@
         + (lossRounds.length ? ' (Runde ' + lossRounds.join(', ') + ')' : '')
         + '. Ohne feststehende Paarung werden weder Gegner noch Buchholzbeitrag erfunden.');
     }
-    if (c.mode === 'swiss') {
-      notes.push('Die Paarungen einer Runde stehen erst fest, wenn die vorherige Runde '
-        + 'vollständig eingetragen ist. Bis dahin sind sie ein Vorschlag.');
-    }
-
     rounds.forEach(rd => rd.matches.forEach(m => {
       m.name = rd.title + (m.bye != null ? ' – Freilos' : '');
     }));

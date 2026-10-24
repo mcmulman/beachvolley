@@ -171,8 +171,13 @@
 
 @media screen and (max-width: 560px) {
   .no-flexgap .app-bar > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .tournament-sheet .app-bar > *:not(:last-child) { margin-right: 6px; }
   .no-flexgap .app-bar > * { margin-bottom: 8px; }
   .no-flexgap .app-bar { margin-bottom: 6px; }
+  .no-flexgap .tournament-sheet .app-bar,
+  .no-flexgap .tournament-sheet .app-bar__actions { gap: 0; }
+  .no-flexgap .tournament-sheet .app-bar__actions > * + * { margin-left: 6px; }
+  .no-flexgap .tournament-sheet .cfg-actions-primary > .nbtn + .nbtn { margin-left: 6px; }
 }
 
 /* ══ Nur Druck: die Spielkarten nutzen dort mm-Abstaende ════════════════ */

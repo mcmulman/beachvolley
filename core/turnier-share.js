@@ -291,7 +291,7 @@
   function openTransfer(o) {
     return transferUrl(o).then(function (url) {
       openInfoDialog({
-        title: tx('server.transfer', 'Bearbeitungszugang sichern / übertragen'),
+        title: tx('server.transfer', 'Bearbeitungslink anzeigen'),
         bodyHtml: '<p>' + escapeHtml(tx('server.secretWarning', 'Geheimer Link: erlaubt Änderungen in einem anderen Browser. Nur ausdrücklich an Mitorganisatoren geben, niemals öffentlich teilen. Rechte vor Browserdatenlöschung oder dem Schließen einer privaten Sitzung separat sichern; gewöhnliche Sicherungsdateien enthalten sie nicht.'))
           + '</p><input id="tserver-secret" type="text" readonly style="width:100%">'
       }).querySelector('#tserver-secret').value = url;
@@ -332,31 +332,47 @@
     const old = document.getElementById('tserver-status');
     if (old) old.remove();
     if (!b || !b.id) return;
-    const bar = document.createElement('div');
-    bar.id = 'tserver-status'; bar.className = 'noprint';
-    bar.style.cssText = 'padding:12px;border:1px solid #b4bfd0;background:#eef3fa;margin:12px 0;';
-    const dirty = b.published !== snapshotSignature(await readSnapshot(o));
-    bar.textContent = (b.readOnly ? tx('server.readonly', 'Schreibgeschützte Serveransicht')
-      : dirty ? tx('server.dirty', 'Lokaler Entwurf – noch nicht veröffentlicht')
-        : tx('server.bound', 'Dieser Browser kann aktualisieren'));
-    const more = document.createElement('details');
+    const bar = document.createElement('details');
+    bar.id = 'tserver-status'; bar.className = 'noprint tserver-status';
     const summary = document.createElement('summary');
-    summary.textContent = tx('share.moreOptions', 'Weitere Optionen');
-    more.appendChild(summary);
-    bar.appendChild(more);
-    function button(key, de, fn) {
-      const el = document.createElement('button'); el.type = 'button'; el.textContent = tx(key, de);
-      el.style.margin = '4px'; el.addEventListener('click', fn); more.appendChild(el);
+    summary.textContent = tx('server.heading', 'Serververbindung');
+    bar.appendChild(summary);
+    const dirty = b.published !== snapshotSignature(await readSnapshot(o));
+    const status = document.createElement('p');
+    status.className = 'tserver-status-message';
+    status.textContent = (b.readOnly
+      ? tx('server.readonly', 'Schreibgeschützte Serveransicht')
+      : dirty
+        ? tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')
+        : tx('server.bound', 'Verbunden. Änderungen werden lokal gespeichert; über „Teilen“ veröffentlichst du sie auf dem Server.'));
+    bar.appendChild(status);
+    function action(key, hintKey, label, hint, fn) {
+      const item = document.createElement('div');
+      item.className = 'tserver-action';
+      const el = document.createElement('button');
+      el.type = 'button'; el.className = 'nbtn tserver-action-button';
+      el.textContent = tx(key, label);
+      el.addEventListener('click', fn);
+      const description = document.createElement('small');
+      description.textContent = tx(hintKey, hint);
+      item.appendChild(el);
+      item.appendChild(description);
+      bar.appendChild(item);
     }
-    button('server.copy', 'Unabhängige lokale Kopie', function () {
+    action('server.copy', 'server.copyHint', 'Als lokale Kopie weiterarbeiten',
+      'Trennt diesen Browser vom Serverturnier. Der gespeicherte Serverstand bleibt unverändert.', function () {
       if (confirm(tx('server.copyConfirm', 'Serverbindung lösen? Dieser Stand wird eine unabhängige lokale Kopie; der Server bleibt unverändert.'))) independentCopy(o);
     });
-    button('server.load', 'Entwurf sichern + Server laden', function () {
+    action('server.load', 'server.loadHint', 'Serverstand laden',
+      'Sichert deinen lokalen Entwurf und lädt danach die aktuelle Serverversion.', function () {
       location.hash = SERVER_PREFIX + b.id + (b.token ? '&edit=' + b.token : '');
       location.reload();
     });
-    if (!b.readOnly) button('server.transfer', 'Bearbeitungszugang sichern / übertragen', function () { openTransfer(o); });
-    document.body.insertBefore(bar, document.body.firstChild);
+    if (!b.readOnly) action('server.transfer', 'server.transferHint', 'Bearbeitungslink anzeigen',
+      'Zeigt den geheimen Link zur Bearbeitung in einem anderen Browser. Nur mit Mitorganisatoren teilen.',
+      function () { openTransfer(o); });
+    const config = document.getElementById('configSection');
+    (config || document.body).appendChild(bar);
     if (b.readOnly) lockServerView();
   }
 
@@ -773,9 +789,9 @@
       tx('share.result.title', 'Link zum Teilen'),
       '<p class="tshare-hint">' + escapeHtml(code
         ? (o && o.serverUpdated ? tx('server.updated', 'Aktualisiert – Link, Code und QR bleiben gleich. ') : '')
-          + tx('server.result', 'Dieser Browser kann aktualisieren. Öffentlicher Link, Code und QR erlauben nur Lesen.')
+          + tx('server.result', 'Serverlink erstellt. Öffentlicher Link, Code und QR öffnen eine schreibgeschützte Ansicht.')
         : tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
-        (o && o.serverDirty ? ' ' + escapeHtml(tx('server.dirty', 'Lokaler Entwurf – noch nicht veröffentlicht')) : '') +
+        (o && o.serverDirty ? ' ' + escapeHtml(tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')) : '') +
         (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
         (longWarnLen ? '<p class="tshare-error">' + escapeHtml(cloudSharingEnabled() ? tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
           + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
@@ -798,7 +814,7 @@
       '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>' +
       (code ? '<details><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) +
         '</summary><button type="button" class="tshare-btn tshare-btn-ghost" data-act="transfer">' +
-        escapeHtml(tx('server.transfer', 'Bearbeitungszugang sichern / übertragen')) + '</button></details>' : '') +
+        escapeHtml(tx('server.transfer', 'Bearbeitungslink anzeigen')) + '</button></details>' : '') +
       (nativeShare ? '<p class="tshare-error" id="tshare-native-msg" hidden></p>' : ''),
       (nativeShare ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="native-share">'
         + escapeHtml(tx('native.share.button', 'Teilen…')) + '</button>' : '') +
@@ -944,7 +960,7 @@
       '<p>' + escapeHtml(tx('server.conflictHint', 'Ein anderer Bearbeiter hat gespeichert. Dein Entwurf bleibt lokal erhalten. Keine automatische Zusammenführung.'))
         + '</p>',
       '<button type="button" class="tshare-btn" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
-      '<button type="button" class="tshare-btn" data-act="load">' + escapeHtml(tx('server.load', 'Entwurf sichern + Server laden')) + '</button>' +
+      '<button type="button" class="tshare-btn" data-act="load">' + escapeHtml(tx('server.load', 'Serverstand laden')) + '</button>' +
       '<button type="button" class="tshare-btn" data-act="fork">' + escapeHtml(tx('server.fork', 'Als neues unabhängiges Turnier veröffentlichen')) + '</button>');
     root.querySelector('[data-act="cancel"]').onclick = closeShareModal;
     root.querySelector('[data-act="load"]').onclick = function () {

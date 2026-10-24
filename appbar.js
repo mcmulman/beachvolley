@@ -166,7 +166,6 @@
       if (window.TI18n && window.TI18n.active()) window.TI18n.apply(head);
       if (window.TUI && window.TUI.wireSectionToggle) {
         sectionToggles.push(window.TUI.wireSectionToggle(content, reveal, head, {
-          collapsedContent: card.querySelector('.cfg-actions-quick'),
           relatedContent: Array.prototype.slice.call(document.querySelectorAll('#rosterSection, #rosterActions')),
           preferenceId: 'setup-' + index,
           showKey: 'ui.section.configShow',
@@ -250,12 +249,6 @@
       primary.className = 'cfg-actions-primary';
       primary.setAttribute('role', 'group');
       primary.setAttribute('aria-label', 'Teilen und Speichern');
-      var quick = document.createElement('div');
-      quick.className = 'cfg-actions-quick noprint';
-      quick.setAttribute('role', 'group');
-      quick.setAttribute('aria-label', 'Zurücksetzen');
-      quick.setAttribute('data-i18n-attr', 'aria-label:chrome.group.reset');
-      quick.hidden = true;
 
       // Move the existing buttons so their handlers and state stay intact.
       buttons.forEach(function (button) {
@@ -264,17 +257,6 @@
         } else if (button.matches('#btnClearScores, #btnReset, [onclick*="clearScores"], [onclick*="resetTournament"]')) {
           button.classList.add('cfg-reset-action');
           reset.appendChild(button);
-          var shortcut = button.cloneNode(true);
-          shortcut.removeAttribute('id');
-          shortcut.removeAttribute('onclick');
-          shortcut.className = 'nbtn cfg-reset-action cfg-quick-action';
-          shortcut.setAttribute('data-quick-action', button.id);
-          shortcut.addEventListener('click', function () { button.click(); });
-          quick.appendChild(shortcut);
-          if (window.MutationObserver) {
-            new MutationObserver(function () { shortcut.disabled = button.disabled; })
-              .observe(button, { attributes: true, attributeFilter: ['disabled'] });
-          }
         } else if (button.matches('#btnToggleNames, #btnToggleFields, #btnToggleAbsent, #btnToggleDropout, [onclick*="toggleNames"], [onclick*="toggleFields"], [onclick*="toggleAbsent"], [onclick*="toggleDropout"]')) {
           teams.appendChild(button);
         } else {
@@ -286,7 +268,6 @@
       });
       toolbar.querySelectorAll('.spacer').forEach(function (spacer) { spacer.remove(); });
 
-      if (quick.children.length) toolbar.appendChild(quick);
       if (primary.children.length) toolbar.appendChild(primary);
       toolbar.parentNode.insertBefore(content, toolbar.nextSibling);
       document.querySelectorAll('.namepanel, #dropoutpanel').forEach(function (panel) {
@@ -412,7 +393,23 @@
 
     var bar = window.TSheetHeader.create({ title: barTitle(), overviewHref: overviewHref, infoLink: infoLink });
     var title = bar.querySelector('.app-bar__context');
+    var headerActions = bar.querySelector('.app-bar__actions');
+    var primaryActions = document.querySelector('.cfg-actions-primary');
+    if (headerActions && primaryActions) {
+      primaryActions.querySelectorAll('button').forEach(function (button) {
+        button.classList.add('app-bar__btn');
+        button.removeAttribute('style');
+        var label = button.querySelector('[data-i18n]');
+        if (label) {
+          label.classList.add('lbl');
+          var attr = button.getAttribute('data-i18n-attr') || '';
+          button.setAttribute('data-i18n-attr', (attr ? attr + ';' : '') + 'aria-label:' + label.getAttribute('data-i18n'));
+        }
+      });
+      headerActions.insertBefore(primaryActions, headerActions.querySelector('.i18n-switch'));
+    }
     document.body.insertBefore(bar, document.body.firstChild);
+    if (window.TI18n && window.TI18n.active()) window.TI18n.apply(bar);
 
     // Titel live nachziehen, falls die Seite document.title dynamisch aktualisiert
     // (z. B. bei Änderung der Teamanzahl) – sonst zeigt die App-Leiste einen veralteten Stand.

@@ -364,6 +364,8 @@
       position: sticky;
       top: 56px;
       z-index: 110;
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
     }
     .filterbar-desktop {
       display: flex;
@@ -1049,53 +1051,12 @@
   </details>
 </div>
 
-<div class="filterbar">
-  <div class="mobile-filter-grid" aria-label="Mobile Filter" data-i18n-attr="aria-label:home.filter.mobileAria">
-    <label class="mf-field"><span data-i18n="home.filter.format">Format</span>
-      <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
-        <option value="" data-i18n="home.filter.allFormats">Alle Formate</option>
-        <option value="rr" data-i18n="home.format.rr">Jeder gegen Jeden</option>
-        <option value="gruppen" data-i18n="home.format.gruppen">Gruppen</option>
-        <option value="swiss" data-i18n="home.format.swiss">Schweizer System</option>
-        <option value="ko" data-i18n="home.filter.ko">KO-System</option>
-        <option value="de" data-i18n="home.format.de">Doppel-K.-o.</option>
-        <option value="mpp" data-i18n="home.format.mpp">Modified Pool Play</option>
-        <option value="koc" data-i18n="home.format.koc">King/Queen of the Court</option>
-        <option value="kingqueen" data-i18n="home.format.kingqueen">King &amp; Queen</option>
-        <option value="flex" data-i18n="home.format.flex">Flex-Turnier</option>
-        <option value="tandem" data-i18n="home.format.tandem">Tandem</option>
-        <option value="elternkind" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</option>
-        <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</option>
-        <option value="daviscup" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</option>
-      </select>
-    </label>
-    <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
-  </div>
-  <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
-    <button class="filter-btn active" aria-pressed="true" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
-    <div class="filter-sep"></div>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</button>
-    <button class="filter-btn" aria-pressed="false" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</button>
-  </div>
-</div>
-
 <main>
   <div id="sessions-undo-status" role="status" aria-live="polite" hidden style="align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;background:#eef7ee;border:1px solid #b9d8bd;border-radius:8px;font-size:13px">
     <span id="sessions-undo-message"></span>
     <button id="sessions-undo-button" type="button" style="min-height:44px;padding:5px 12px;border:1px solid #55845b;border-radius:6px;background:#fff;color:#245b2d;font:inherit;font-weight:600;cursor:pointer" data-i18n="home.sessions.undo">Rückgängig</button>
   </div>
-  <div class="home-top">
+  <div class="home-top noprint">
   <details class="home-management" id="home-management">
   <summary class="management-summary">
     <span data-i18n="home.management.label">Meine Turniere &amp; Verwaltung</span>
@@ -1179,6 +1140,47 @@
     <strong data-i18n="home.timer.title">Score Counter</strong>
     <span class="timer-tool__sub" data-i18n="home.timer.desc">Punkte · Sätze · Zeit</span>
   </a>
+  </div>
+
+  <div class="filterbar noprint">
+    <div class="mobile-filter-grid" aria-label="Mobile Filter" data-i18n-attr="aria-label:home.filter.mobileAria">
+      <label class="mf-field"><span data-i18n="home.filter.format">Format</span>
+        <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
+          <option value="" data-i18n="home.filter.allFormats">Alle Formate</option>
+          <option value="rr" data-i18n="home.format.rr">Jeder gegen Jeden</option>
+          <option value="gruppen" data-i18n="home.format.gruppen">Gruppen</option>
+          <option value="swiss" data-i18n="home.format.swiss">Schweizer System</option>
+          <option value="ko" data-i18n="home.filter.ko">KO-System</option>
+          <option value="de" data-i18n="home.format.de">Doppel-K.-o.</option>
+          <option value="mpp" data-i18n="home.format.mpp">Modified Pool Play</option>
+          <option value="koc" data-i18n="home.format.koc">King/Queen of the Court</option>
+          <option value="kingqueen" data-i18n="home.format.kingqueen">King &amp; Queen</option>
+          <option value="flex" data-i18n="home.format.flex">Flex-Turnier</option>
+          <option value="tandem" data-i18n="home.format.tandem">Tandem</option>
+          <option value="elternkind" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</option>
+          <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</option>
+          <option value="daviscup" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</option>
+        </select>
+      </label>
+      <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
+    </div>
+    <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
+      <button class="filter-btn active" aria-pressed="true" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
+      <div class="filter-sep"></div>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('daviscup', this)" data-i18n="home.format.daviscup">Davis Cup · Beach-Teamvariante</button>
+    </div>
   </div>
 
   <div class="section-label" data-i18n="home.sheets.label">Turnierformate</div>

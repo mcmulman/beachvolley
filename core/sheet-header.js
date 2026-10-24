@@ -30,6 +30,7 @@
       if (options.infoLink) {
         var info = document.createElement('a');
         info.className = 'app-bar__btn';
+        info.classList.add('app-bar__info');
         info.href = options.infoLink.href;
         info.target = options.infoLink.target;
         info.rel = 'noopener';
@@ -41,6 +42,7 @@
       var print = document.createElement('button');
       print.type = 'button';
       print.className = 'app-bar__btn';
+      print.classList.add('app-bar__print');
       print.innerHTML = '<span class="ic"><span style="display:none">🖨</span><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><span class="lbl">Drucken</span>';
       print.setAttribute('aria-label', 'Drucken');
       print.addEventListener('click', function () { window.print(); });

@@ -274,10 +274,7 @@
     #session-title-display { display: block !important; }
     h1 { font-size:15pt; margin:0 0 1.5mm; }
     .sport-profile-label { margin:0 0 1.5mm; font-size:9pt; }
-    .sport-profile-glossary { margin:0 0 2mm; font-size:8pt; }
-    .sport-profile-glossary summary { display:none; }
-    .sport-profile-glossary:not([open]) > *:not(summary) { display:block !important; }
-    .sport-profile-glossary dl > div { margin-bottom:0; }
+    .sport-profile-glossary { display:none !important; }
     .sub { margin:0 0 2mm; font-size:8.5pt; }
     caption { margin:2mm 0 1mm; font-size:9pt; }
     table {
@@ -359,14 +356,14 @@
         font-size: 12.5px;
         margin: 0 0 14px;
       }
-      body > .noprint:first-of-type:not(.app-bar) {
+      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav) {
         display: flex !important;
         align-items: center;
         gap: 12px !important;
         flex-wrap: wrap;
         font-size: 13px;
       }
-      body > .noprint:first-of-type:not(.app-bar) a {
+      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav) a {
         font-size: 13px !important;
         display: inline-flex;
         align-items: center;

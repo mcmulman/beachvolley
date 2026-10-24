@@ -506,9 +506,6 @@
     margin-left: auto;
   }
   .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
-  .cfg-actions-quick { display: flex; flex-wrap: wrap; }
-  .cfg-actions-quick[hidden] { display: none !important; }
-  .cfg-actions-quick > .nbtn + .nbtn { margin-left: 8px; }
   .nbtn.cfg-reset-action {
     background: #fdecec; color: #c02626; border-color: #f3c9c9;
     box-shadow: none; white-space: normal;
@@ -554,7 +551,7 @@
     font-size: 12px; font-weight: 750;
     color: var(--app-blue-dark);
   }
-  .cfg-action-group--danger .cfg-action-group__label { color: #c02626; }
+  .cfg-action-group--danger > .cfg-action-group__label { color: #a61b1b; }
   .cfg-action-group__buttons {
     display: grid; grid-template-columns: minmax(0, 1fr);
     grid-gap: 8px; gap: 8px;
@@ -583,8 +580,6 @@
     .cfgcard-head { flex-wrap: wrap; }
     .cfgcard-head .section-toggle-open { flex: 1 1 100%; }
     .cfgres-item { flex-basis: calc(50% - 5px); }
-    .cfg-actions-quick { width: 100%; }
-    .cfg-actions-quick > .nbtn { flex: 1 1 0; min-width: 0; }
     .cfg-actions-primary { width: 100%; }
     .cfg-actions-primary > .nbtn { flex: 1 1 0; }
     .cfg-action-groups { grid-template-columns: minmax(0, 1fr); }
@@ -903,14 +898,16 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
+  #tserver-status { margin:12px 0 0; padding:0 12px; border:1px solid var(--app-line); border-radius:var(--app-radius-md); background:var(--app-tint); color:var(--app-ink); }
+  #tserver-status > summary { min-height:44px; padding:12px 0; cursor:pointer; color:var(--app-blue-dark); font-weight:700; }
+  #tserver-status[open] > summary { margin-bottom:8px; border-bottom:1px solid var(--app-line); }
+  #tserver-status .tserver-status-message { margin:0 0 8px; }
+  #tserver-status .tserver-action { display:grid; grid-template-columns:minmax(200px,260px) minmax(0,1fr); align-items:center; gap:12px; padding:5px 0; }
+  #tserver-status .tserver-action small { color:var(--app-muted); line-height:1.4; }
   .tournament-sheet .table-scroll { min-width: 0; max-width: 100%; }
   .tournament-sheet .table-scroll:focus, .tournament-sheet .scrollhint:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
-  #tserver-status summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
-  #tserver-status button {
-    min-height: 44px; max-width: 100%; white-space: normal;
-    font: inherit; padding: 8px 12px;
-  }
   @media (max-width: 960px) {
+    #tserver-status .tserver-action { grid-template-columns:minmax(0,1fr); gap:4px; }
     .tournament-sheet {
       padding-left: 10px; padding-right: 10px;
       padding-left: calc(10px + env(safe-area-inset-left, 0px));

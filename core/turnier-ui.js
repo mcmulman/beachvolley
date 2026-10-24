@@ -42,24 +42,8 @@
           heading.parentNode.insertBefore(label, heading.nextSibling);
         }
         label.textContent = tx(profile.nameKey, id);
-        let glossary = root.document.getElementById('sport-profile-glossary');
-        if (!glossary) {
-          glossary = root.document.createElement('details');
-          glossary.id = 'sport-profile-glossary';
-          glossary.className = 'sport-profile-glossary';
-          heading.parentNode.insertBefore(glossary, label.nextSibling);
-        }
-        const glossaryTitle = tx('sport.glossary.title', 'Sportbegriffe');
-        const glossaryParticipant = tx('sport.glossary.participant', 'Teilnehmende');
-        const glossarySurface = tx('sport.glossary.surface', 'Spielfläche');
-        const glossaryUnit = tx('sport.glossary.unit', 'Wertungseinheit');
-        const glossaryNote = tx('sport.glossary.note',
-          'Die Begriffe beschreiben die App-Felder. Maßgeblich sind die veröffentlichte Ausschreibung und die Regeln dieses Turniers.');
-        glossary.innerHTML = '<summary>' + esc(glossaryTitle) + '</summary>'
-          + '<dl><div><dt>' + esc(glossaryParticipant) + '</dt><dd>' + esc(participantWord()) + '</dd></div>'
-          + '<div><dt>' + esc(glossarySurface) + '</dt><dd>' + esc(surfaceWord()) + '</dd></div>'
-          + '<div><dt>' + esc(glossaryUnit) + '</dt><dd>' + esc(unitWord()) + '</dd></div></dl>'
-          + '<p>' + esc(glossaryNote) + '</p>';
+        const glossary = root.document.getElementById('sport-profile-glossary');
+        if (glossary) glossary.remove();
       }
       const section = root.document.getElementById('configSection');
       if (section && (id === 'volleyball.indoor'
