@@ -73,7 +73,7 @@
   }
   .app-bar__brand { font-size: 13px; line-height: 1.2; }
   .app-bar__context { font-size: 10px; font-weight: 500; line-height: 1.2; opacity: .82; }
-  .app-bar__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .app-bar__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .app-bar .cfg-actions-primary {
     width: auto;
     margin: 0;
@@ -103,6 +103,7 @@
   }
   .app-bar__btn:hover { background: rgba(255, 255, 255, .24); }
   .app-bar__btn:active { transform: scale(.95); }
+  .app-bar .app-bar__btn { min-height: 0; }
   .app-bar__btn .ic { font-size: 16px; line-height: 1; display: inline-flex; align-items: center; }
   .app-bar__btn .ic svg { display: block; width: 20px; height: 20px; flex: 0 0 auto; }
   /* Invisible 44px touch targets preserve the existing bar height. */
@@ -128,7 +129,7 @@
       flex: 0 0 38px;
       padding: 0;
     }
-    .app-bar .cfg-actions-primary > .nbtn + .nbtn { margin-left: 6px; }
+    .app-bar .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
     .app-bar__actions .cfg-actions-primary .lbl {
       display: block;
       position: absolute;
@@ -144,7 +145,6 @@
   }
   @media (max-width: 560px) {
     .app-bar { gap: 6px; }
-    .app-bar__actions { gap: 4px; }
     .app-bar__back { padding: 7px 14px 7px 9px; }
     .tournament-sheet .app-bar__info { display: none; }
     .app-bar__btn .lbl { display: none; }

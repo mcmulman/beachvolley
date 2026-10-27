@@ -15,9 +15,7 @@
   function unique(items) { return new Set(items).size === items.length; }
   function refereeMode(e) { return e.config.refereeMode; }
   function rankingMode(e) { return e.config.rankingMode; }
-  function scoringProfile(e) { return e.config.scoringProfile; }
   function tiePolicy(e) { return e.config.tiePolicy; }
-  function winPoints(e) { return scoringProfile(e) === 'wins' ? 1 : 2; }
   function courtCapacity(e) {
     return refereeMode(e) === 'external' ? Math.min(e.config.fields, e.config.referees) : e.config.fields;
   }
@@ -74,13 +72,23 @@
     }
     check(Object.keys(e).every(key => ['schema', 'formatVersion', 'id', 'title', 'config', 'teams', 'organizations',
       'status', 'revision', 'results', 'pools', 'matches', 'drawOrder', 'startedAt', 'checkIns', 'outcomes',
-      'withdrawals', 'replans', 'fieldLimit', 'liveWave', 'transfers', 'groupAssignments'].indexOf(key) >= 0), 'Invalid event fields / Ungültige Veranstaltungsfelder');
+      'withdrawals', 'replans', 'fieldLimit', 'liveWave', 'transfers', 'groupAssignments', 'groupNames'].indexOf(key) >= 0), 'Invalid event fields / Ungültige Veranstaltungsfelder');
+    if (e.groupNames !== undefined) {
+      check(e.groupNames && typeof e.groupNames === 'object' && !Array.isArray(e.groupNames),
+        'Invalid group names / Ungültige Gruppennamen');
+      Object.keys(e.groupNames).forEach(id => {
+        const name = e.groupNames[id];
+        check(/^G([1-9]|[1-5]\d|6[0-4])$/.test(id) && text(name, 60) && !/[\u0000-\u001f\u007f-\u009f]/.test(name) &&
+          name === name.replace(/\s+/g, ' ').trim(),
+        'Group name: 1–60 characters, single spaces / Gruppenname: 1–60 Zeichen, einfache Leerzeichen');
+      });
+    }
     const c = e.config;
     check(c && integer(c.minutes, 1, 60) && integer(c.change, 1, 30) && integer(c.fields, 1, 16) &&
       integer(c.rest, 1, 5) && integer(c.referees, 1, 16) && integer(c.window, 30, 1440), 'Invalid capacity or timing / Kapazität oder Zeit');
     time(c.start);
     check(Object.keys(c).every(key => ['minutes', 'change', 'fields', 'referees', 'rest', 'window', 'start',
-      'refereeMode', 'rankingMode', 'scoringProfile', 'tiePolicy', 'timingMode', 'treeMinutes', 'groupCount',
+      'refereeMode', 'rankingMode', 'tiePolicy', 'timingMode', 'treeMinutes', 'groupCount',
       'placementMode', 'placementThrough'].indexOf(key) >= 0), 'Invalid configuration fields / Ungültige Konfigurationsfelder');
     check(['uniform', 'separate'].indexOf(c.timingMode) >= 0 && integer(c.treeMinutes, 1, 60),
       'Invalid phase timing / Ungültige Phasenspielzeit');
@@ -96,8 +104,6 @@
       'Invalid referee mode / Ungültiger Schiri-Modus');
     check(['teams', 'mean', 'nominee'].indexOf(c.rankingMode) >= 0,
       'Invalid company ranking / Ungültige Firmenwertung');
-    check(['wins', 'legacy'].indexOf(c.scoringProfile) >= 0,
-      'Invalid scoring profile / Ungültiges Wertungsprofil');
     check(['lead', 'draw'].indexOf(c.tiePolicy) >= 0,
       'Invalid time tie policy / Ungültige Zeitgleichstandsregel');
     const draft = e.status === 'draft';
@@ -142,6 +148,15 @@
       organizations: clone(organizations), status: 'draft', revision: 0, results: {}, pools: [], matches: [],
       drawOrder: [], groupAssignments: [], startedAt: null, checkIns: {}, outcomes: {},
       withdrawals: {}, replans: [], fieldLimit: courtCapacity({ config: config }) });
+  }
+  function renameGroup(e, pool, name) {
+    validate(e);
+    check(e.pools.some((p, i) => pool === 'G' + (i + 1)), 'Unknown group / Unbekannte Gruppe');
+    check(typeof name === 'string', 'Invalid group name / Ungültiger Gruppenname');
+    const next = clone(e);
+    next.groupNames = Object.assign({}, next.groupNames);
+    next.groupNames[pool] = name.replace(/\s+/g, ' ').trim();
+    return validate(next);
   }
   function transferTeam(e, teamId, targetOrgId, choices, now) {
     validate(e);
@@ -425,13 +440,32 @@
     next.status = 'groups';
     return next;
   }
-  function groupEditLock(e) {
+  function reorderCompanyTeam(e, teamId, position) {
+    validate(e);
+    check(!e.startedAt && !e.liveWave && !Object.keys(e.results).length && !Object.keys(e.outcomes).length,
+      'Started event setup frozen / Gestartete Veranstaltung eingefroren');
+    const team = e.teams.find(t => t.id === teamId);
+    check(!!team, 'Unknown team / Unbekanntes Team');
+    const members = e.teams.filter(t => t.orgId === team.orgId);
+    check(integer(position, 0, members.length - 1), 'Invalid company position / Ungültige Firmenposition');
+    if (members[position].id === teamId) return clone(e);
+    const next = clone(e), ordered = next.teams.filter(t => t.orgId === team.orgId);
+    ordered.splice(position, 0, ordered.splice(ordered.findIndex(t => t.id === teamId), 1)[0]);
+    let index = 0;
+    next.teams = next.teams.map(t => t.orgId === team.orgId ? ordered[index++] : t);
+    // Pin an existing automatic allocation so registration order cannot alter the prepared fixtures.
+    if (next.pools.length && !next.groupAssignments.length) next.groupAssignments = clone(next.pools);
+    return validate(next);
+  }
+  function groupPositionLock(e) {
     if (e.startedAt || e.liveWave || Object.keys(e.results).length || Object.keys(e.outcomes).length) {
       return 'Groups locked: competition has started or a result/decision exists / Gruppen gesperrt: Veranstaltung gestartet oder Ergebnis/Entscheidung vorhanden';
     }
     if (e.status !== 'groups' || !e.pools.length) return 'Build the group schedule first / Zuerst Gruppenplan erstellen';
-    if (e.pools.length < 2) return 'Only one group: no other destination / Nur eine Gruppe: kein anderes Ziel';
     return '';
+  }
+  function groupEditLock(e) {
+    return groupPositionLock(e) || (e.pools.length < 2 ? 'Only one group: no other destination / Nur eine Gruppe: kein anderes Ziel' : '');
   }
   function reassignGroup(e, teamId, targetPool, swapTeamId, confirmed) {
     validate(e);
@@ -448,10 +482,24 @@
     } else {
       pools[source].splice(slot, 1); pools[targetPool].push(teamId);
     }
+    return rebuildGroups(next, pools);
+  }
+  function rebuildGroups(next, pools) {
     next.groupAssignments = pools;
     next.status = 'draft'; next.pools = []; next.matches = [];
-    // Build through the canonical scheduler, retaining attendance, delays and court changes.
     return validate(build(next));
+  }
+  function reorderGroup(e, teamId, position, confirmed) {
+    validate(e);
+    check(!groupPositionLock(e), groupPositionLock(e));
+    check(confirmed === true, 'Confirm schedule rebuild / Spielplan-Neuerstellung bestätigen');
+    const pool = e.pools.findIndex(p => p.indexOf(teamId) >= 0);
+    check(pool >= 0 && integer(position, 0, e.pools[pool].length - 1),
+      'Choose a group start position / Gruppen-Startposition wählen');
+    const pools = clone(e.pools), previous = pools[pool].indexOf(teamId);
+    check(previous !== position, 'Position unchanged / Position unverändert');
+    pools[pool].splice(previous, 1); pools[pool].splice(position, 0, teamId);
+    return rebuildGroups(clone(e), pools);
   }
   function resolve(e, ref) {
     if (typeof ref === 'string') return ref;
@@ -472,9 +520,8 @@
     return e.matches.some(x => x.id !== matchId && (e.results[x.id] || (e.outcomes && e.outcomes[x.id]) ||
       (e.liveWave && x.wave <= e.liveWave.wave)) && (depends(x.a) || depends(x.b)));
   }
-  function compare(e, a, b) {
-    if (scoringProfile(e) === 'wins') return b.points - a.points;
-    return b.points * a.played - a.points * b.played || b.diff * a.played - a.diff * b.played || b.for * a.played - a.for * b.played;
+  function compare(a, b) {
+    return b.points - a.points || b.diff - a.diff || b.for - a.for;
   }
   function table(e, ids, pool) {
     const rows = ids.map(id => ({ id: id, played: 0, points: 0, diff: 0, for: 0 }));
@@ -485,14 +532,14 @@
       a.played++; b.played++;
       if (r) {
         a.for += r.a; b.for += r.b; a.diff += r.a - r.b; b.diff += r.b - r.a;
-        a.points += r.a > r.b ? winPoints(e) : r.a === r.b && scoringProfile(e) === 'legacy' ? 1 : 0;
-        b.points += r.b > r.a ? winPoints(e) : r.a === r.b && scoringProfile(e) === 'legacy' ? 1 : 0;
+        a.points += r.a > r.b ? 1 : 0;
+        b.points += r.b > r.a ? 1 : 0;
       } else if (decision.winnerTeam) {
-        (decision.winnerTeam === m.a ? a : b).points += winPoints(e);
+        (decision.winnerTeam === m.a ? a : b).points++;
       }
     });
-    rows.sort((a, b) => compare(e, a, b));
-    rows.forEach((r, i) => { r.rank = i && compare(e, rows[i - 1], r) === 0 ? rows[i - 1].rank : i + 1; });
+    rows.sort(compare);
+    rows.forEach((r, i) => { r.rank = i && compare(rows[i - 1], r) === 0 ? rows[i - 1].rank : i + 1; });
     return rows;
   }
   function finals(e, drawOrder) {
@@ -512,10 +559,10 @@
   function finalSeeds(e) {
     const seeds = [], drawOrder = e.drawOrder;
     e.pools.forEach((p, i) => {
-      const rows = table(e, p, 'G' + (i + 1)).sort((a, b) => compare(e, a, b) || drawOrder.indexOf(a.id) - drawOrder.indexOf(b.id));
+      const rows = table(e, p, 'G' + (i + 1)).sort((a, b) => compare(a, b) || drawOrder.indexOf(a.id) - drawOrder.indexOf(b.id));
       rows.forEach((r, j) => seeds.push(Object.assign({}, r, { poolRank: j + 1 })));
     });
-    return seeds.sort((a, b) => a.poolRank - b.poolRank || compare(e, a, b) || drawOrder.indexOf(a.id) - drawOrder.indexOf(b.id));
+    return seeds.sort((a, b) => a.poolRank - b.poolRank || compare(a, b) || drawOrder.indexOf(a.id) - drawOrder.indexOf(b.id));
   }
   function classification(ids, pools, config) {
     const matches = [];
@@ -611,9 +658,20 @@
     const next = clone(e);
     next.outcomes[matchId] = { type: type, absentTeam: absentTeam, winnerTeam: winnerTeam,
       note: note.trim(), at: now, confirmed: true };
-    if (type === 'withdrawal') next.withdrawals[absentTeam] = { note: note.trim(), at: now };
+    next.withdrawals = withdrawalProofs(next.outcomes);
     if (!next.startedAt) next.startedAt = now;
     return next;
+  }
+  function withdrawalProofs(outcomes) {
+    const proofs = {};
+    // Stable fixture IDs, not device clocks or entry order, choose the representative.
+    Object.keys(outcomes).sort().forEach(id => {
+      const d = outcomes[id];
+      if (d.type === 'withdrawal' && !proofs[d.absentTeam]) {
+        proofs[d.absentTeam] = { note: d.note, at: d.at };
+      }
+    });
+    return proofs;
   }
   function replan(e, fromWave, delayMinutes, fields, reason, now) {
     const lastStarted = e.liveWave ? e.liveWave.wave : -1;
@@ -974,13 +1032,21 @@
       return (d.absentTeam === a || d.absentTeam === b) &&
         (d.winnerTeam === null || d.winnerTeam === (d.absentTeam === a ? b : a));
     }), 'Unknown or invalid match decision / Ungültige Spielentscheidung');
-    check(JSON.stringify(e.outcomes) === JSON.stringify(expected.outcomes), 'Match decision replay mismatch / Spielentscheidungen stimmen nicht');
+    function sameRecords(actual, replayed) {
+      const ids = Object.keys(actual);
+      return ids.length === Object.keys(replayed).length && ids.every(id => {
+        const record = actual[id], normal = replayed[id];
+        return normal && Object.keys(record).length === Object.keys(normal).length &&
+          Object.keys(record).every(key => Object.prototype.hasOwnProperty.call(normal, key) && record[key] === normal[key]);
+      });
+    }
+    check(sameRecords(e.outcomes, expected.outcomes), 'Match decision replay mismatch / Spielentscheidungen stimmen nicht');
     check(Object.keys(e.withdrawals).every(id => {
       const w = e.withdrawals[id];
       return e.teams.some(t => t.id === id) && w && typeof w.note === 'string' && w.note.length <= 300 &&
         typeof w.at === 'string' && Number.isFinite(Date.parse(w.at)) &&
         Object.keys(e.outcomes).some(matchId => e.outcomes[matchId].type === 'withdrawal' && e.outcomes[matchId].absentTeam === id);
-    }) && JSON.stringify(e.withdrawals) === JSON.stringify(expected.withdrawals),
+    }) && sameRecords(e.withdrawals, expected.withdrawals),
     'Invalid withdrawal record / Ungültiger Rückzugsnachweis');
     check(e.replans.every((r, i) => r && integer(r.fromWave, 0, 9999) && integer(r.delayMinutes, 0, 1440) &&
       integer(r.fields, 1, courtCapacity(e)) && text(r.reason, 200) &&
@@ -1088,9 +1154,9 @@
     classificationBands: classificationBands, effectivePoolCount: effectivePoolCount,
     matchMinutes: matchMinutes, waveOffset: waveOffset,
     refereeMode: refereeMode, rankingMode: rankingMode, courtCapacity: courtCapacity,
-    scoringProfile: scoringProfile, tiePolicy: tiePolicy, winPoints: winPoints,
+    tiePolicy: tiePolicy,
     validateReferees: validateReferees, refereeStats: refereeStats,
-    create: create, build: build, groupEditLock: groupEditLock, reassignGroup: reassignGroup, finals: finals, score: score, resolve: resolve,
+    create: create, build: build, reorderCompanyTeam: reorderCompanyTeam, groupEditLock: groupEditLock, groupPositionLock: groupPositionLock, reassignGroup: reassignGroup, reorderGroup: reorderGroup, renameGroup: renameGroup, finals: finals, score: score, resolve: resolve,
     table: table, standings: standings, placementSlots: placementSlots, organizationStandings: organizationStandings, estimate: estimate,
     gameCounts: gameCounts, teamOverview: teamOverview,
     validate: validate, beginWave: beginWave, checkIn: checkIn,

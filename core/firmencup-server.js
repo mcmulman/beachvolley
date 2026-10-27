@@ -3,6 +3,34 @@
   const PREFIX = '__firmencup.server.';
   const API = root.FIRMENCUP_API_BASE || 'https://beachvolley.klickdienst-server.de/api/firmencup.php';
   const adminSessions = Object.create(null);
+  const operations = Object.create(null);
+
+  function serial(localId, run) {
+    const previous = operations[localId] || Promise.resolve();
+    // A failed operation rejects its caller, but must not poison subsequent retries.
+    const result = previous.then(run, run);
+    operations[localId] = result;
+    const release = function () {
+      if (operations[localId] === result) delete operations[localId];
+    };
+    result.then(release, release);
+    return result;
+  }
+  function withEvent(run, event, options) {
+    const snapshot = root.Firmencup.clone(event);
+    const settings = options ? Object.assign({}, options) : options;
+    return serial(snapshot.id, () => run(snapshot, settings));
+  }
+  function withBinding(run, binding, args) {
+    return serial(binding.localId, async function () {
+      const current = await load(binding.localId);
+      if (!current) throw new Error('Server binding was removed / Serverbindung wurde entfernt');
+      const result = await run.apply(null, [current].concat(args || []));
+      Object.keys(binding).forEach(key => { if (!Object.prototype.hasOwnProperty.call(current, key)) delete binding[key]; });
+      Object.assign(binding, current);
+      return result === current ? binding : result;
+    });
+  }
 
   function assertWebCloud() {
     if (root.TReleaseConfig && root.TReleaseConfig.cloudSharing === false) {
@@ -311,12 +339,26 @@
     await persist(binding);
   }
   root.FirmencupServer = {
-    load: load, publish: publish, sync: sync, get: get, adopt: adopt, markConflict: markConflict,
+    load: localId => serial(localId, () => load(localId)),
+    publish: (event, options) => withEvent(publish, event, options),
+    sync: event => withEvent(sync, event), get: get,
+    adopt: function (localId, id, capability, revision, event, role, expiresAt, adminShareToken) {
+      const snapshot = root.Firmencup.clone(event);
+      return serial(localId, () => adopt(localId, id, capability, revision, snapshot, role, expiresAt, adminShareToken));
+    },
+    markConflict: (binding, revision, code) => withBinding(markConflict, binding, [revision, code]),
     publicUrl: publicUrl, editorUrl: editorUrl, capabilityFromHash: capabilityFromHash,
-    fingerprint: fingerprint, token: token, sharing: sharing, unlock: unlock, logout: logout, reauthorize: reauthorize,
-    rememberAccess: async function (binding, access) {
-      binding.access = access;
-      return persist(binding);
+    fingerprint: fingerprint, token: token,
+    sharing: (binding, settings) => withBinding(sharing, binding, [Object.assign({}, settings)]),
+    unlock: unlock,
+    logout: binding => withBinding(logout, binding),
+    reauthorize: (binding, sessionToken, expiresAt) => withBinding(reauthorize, binding, [sessionToken, expiresAt]),
+    rememberAccess: function (binding, access) {
+      const snapshot = access ? root.Firmencup.clone(access) : access;
+      return withBinding(function (current) {
+        current.access = snapshot;
+        return persist(current);
+      }, binding);
     },
     accessFromHash: accessFromHash,
     participantUrl: (id, capability, pageUrl, language) => accessUrl(id, capability, 'participant', pageUrl, language),
