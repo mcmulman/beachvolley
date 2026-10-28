@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="de" data-i18n>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="clubs.title">Beachvolleyball-Vereine im Überblick</title>
+  <meta name="description" content="Beachvolleyball-Vereine in Deutschland, Österreich und der Schweiz im Vergleich: Angebote, Mitgliederangaben und Quellen." data-i18n-attr="content:clubs.description">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    :root {
+      --blue-dark: #1a3a5c;
+      --blue: #1f6fa8;
+      --blue-light: #e8f3fb;
+      --sand: #eef2f7;
+      --sand-dark: #d8e1ec;
+      --text: #1a1a2e;
+      --muted: #5a6375;
+      --border: #ccd8e8;
+      --white: #fff;
+      --radius: 14px;
+      --shadow: 0 1px 2px rgba(16,42,74,.05), 0 2px 10px rgba(16,42,74,.06);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--sand);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.55;
+    }
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 56px;
+      padding: 8px max(16px, env(safe-area-inset-left));
+      background: rgba(255,255,255,.92);
+      border-bottom: 1px solid var(--border);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      backdrop-filter: saturate(180%) blur(12px);
+    }
+    .back-link { color: var(--blue-dark); font-weight: 700; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .page { width: min(100% - 32px, 980px); margin: 24px auto 48px; }
+    .intro, .notice, .method, .club-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .intro { padding: 24px; margin-bottom: 14px; }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    h1 { margin: 0; color: var(--blue-dark); font-size: clamp(24px, 5vw, 34px); line-height: 1.2; }
+    .subtitle { margin: 8px 0 0; color: var(--muted); }
+    .notice, .method { padding: 18px 20px; margin-bottom: 14px; }
+    .notice { border-left: 5px solid #d59a2a; }
+    .method { margin-top: 24px; }
+    h2 { margin: 0 0 6px; color: var(--blue-dark); font-size: 18px; }
+    .notice p, .method p { margin: 0; }
+    .section-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 24px 2px 10px; }
+    .section-heading { margin: 0; }
+    .club-sort {
+      max-width: 46%;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+    }
+    .club-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .club-card { min-width: 0; padding: 17px; }
+    .club-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    h3 { margin: 0; color: var(--blue-dark); font-size: 17px; line-height: 1.3; }
+    .city { margin: 3px 0 12px; color: var(--muted); font-size: 13px; }
+    .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+    .feature-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border: 1px solid #c8dff0;
+      border-radius: 999px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+    .club-data { margin: 0; }
+    .club-data dt { margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--blue); }
+    .club-data dd { margin: 2px 0 0; font-size: 14px; }
+    .club-data dd[data-i18n$=".offers"] {
+      padding: 9px 11px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      background: #f0f7fc;
+      font-weight: 600;
+    }
+    .sources { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .sources a { color: var(--blue-dark); font-size: 12px; font-weight: 700; text-underline-offset: 2px; }
+    a:focus-visible { outline: 3px solid #e0a326; outline-offset: 3px; border-radius: 3px; }
+    footer { padding: 18px 16px max(18px, env(safe-area-inset-bottom)); text-align: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--sand-dark); }
+    @media (max-width: 680px) {
+      .page { width: min(100% - 20px, 560px); margin-top: 12px; }
+      .intro { padding: 19px; }
+      .club-grid { grid-template-columns: 1fr; gap: 9px; }
+      .notice, .method { padding: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+    @media print {
+      body { background: #fff; }
+      .appbar { position: static; }
+      .intro, .notice, .method, .club-card { box-shadow: none; break-inside: avoid; }
+      .club-grid { display: block; }
+      .club-card { margin-bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="appbar" aria-label="Seitennavigation" data-i18n-attr="aria-label:clubs.navigation.label">
+    <a class="back-link" href="index.html" data-i18n="clubs.back">← Zur Startseite</a>
+  </nav>
+
+  <main class="page">
+    <header class="intro">
+      <span class="eyebrow" data-i18n="clubs.estimate.badge">Orientierungswerte</span>
+      <h1 data-i18n="clubs.title">Beachvolleyball-Vereine im Überblick</h1>
+      <p class="subtitle" data-i18n="clubs.subtitle">Deutschland · Österreich · Schweiz · Angebote auf einen Blick</p>
+    </header>
+
+    <section class="notice" aria-labelledby="estimate-title">
+      <h2 id="estimate-title" data-i18n="clubs.estimate.title">Angebote und Zahlen</h2>
+      <p data-i18n="clubs.estimate.body">Finde den passenden Beachvolleyball-Verein: Trainings, Treffs, Turniere und Beachplätze auf einen Blick. Mitgliederzahlen sind teils geschätzt oder nicht separat ausgewiesen.</p>
+    </section>
+
+    <div class="section-heading-row">
+      <h2 class="section-heading" data-i18n="clubs.section.heading">Vereine im Überblick</h2>
+      <select id="club-sort" class="club-sort" aria-label="Vereine sortieren: absteigend, fehlende Angaben zuletzt" data-i18n-attr="aria-label:clubs.sort.label">
+        <option value="" selected data-i18n="clubs.sort.default">Sortieren</option>
+        <option value="members" data-i18n="clubs.sort.members">Mitglieder ↓</option>
+        <option value="courts" data-i18n="clubs.sort.courts">Plätze ↓</option>
+        <option value="trainings" data-i18n="clubs.sort.trainings">Trainings/Jahr ↓</option>
+        <option value="meetups" data-i18n="clubs.sort.meetups">Treffs/Jahr ↓</option>
+        <option value="tournaments" data-i18n="clubs.sort.tournaments">Turniere/Jahr ↓</option>
+        <option value="winter" data-i18n="clubs.sort.winter">Winterangebot ↓</option>
+      </select>
+    </div>
+    <div class="club-grid">
+      <article class="club-card" data-sort-members="800" data-sort-courts="14" data-sort-trainings="100" data-sort-meetups="250" data-sort-tournaments="80" data-sort-winter="2">
+        <div class="club-heading"><h3>BeachL e.V.</h3></div><p class="city">Leipzig · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.800members">800+ Mitglieder</span><span class="feature-tag" data-i18n="clubs.feature.10outdoor">10 Outdoor</span><span class="feature-tag" data-i18n="clubs.feature.4indoor">4 Indoor</span><span class="feature-tag" data-i18n="clubs.feature.100trainings">100+ Trainings/Jahr</span><span class="feature-tag" data-i18n="clubs.feature.250meetups">ca. 250 Treffs/Jahr</span><span class="feature-tag" data-i18n="clubs.feature.80tournaments">80+ Turniere/Jahr</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachl.members">Mehr als 800 Mitglieder.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachl.courts">10 Outdoor · 4 Indoor.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachl.winter">Beachhalle mit vier Indoorfeldern.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.beachl.offers">Über 100 Trainings, ca. 250 Beachtreffs und mehr als 80 Turniere pro Jahr.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachl.popularity">Keine separate Teilnehmer- oder Wartelistenzahl angegeben.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://beachl.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://beachl.de/vereinsanlage/aussenanlage/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.outdoor">Outdoor-Anlage</a>
+          <a href="https://beachl.de/vereinsanlage/beachhalle/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.beachHall">Beachhalle</a>
+          <a href="https://beachl.de/turnier/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-members="650" data-sort-winter="2">
+        <div class="club-heading"><h3>FC St. Pauli · Sand Pauli</h3></div><p class="city">Hamburg · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.yearRound">Ganzjährig</span><span class="feature-tag" data-i18n="clubs.feature.youth">Nachwuchs</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.stpauli.members">Beach-Abteilung: über 650; ältere Seite: über 450.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.stpauli.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.stpauli.winter">Beachvolleyball-Wintertraining in einer externen Sandhalle.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.stpauli.offers">Ganzjähriges Spiel und Training; Jugend- und Turnierangebote.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.stpauli.popularity">Mitgliederangaben der Abteilung sind widersprüchlich.</dd>
+        </dl>
+        <div class="sources"><a href="https://www.fcstpauli.com/verein/abteilungen/beachvolleyball" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a></div>
+      </article>
+
+      <article class="club-card" data-sort-winter="2">
+        <div class="club-heading"><h3>Beach me e.V.</h3></div><p class="city">Hamburg · Köln · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.youth">Nachwuchs</span><span class="feature-tag" data-i18n="clubs.feature.camps">Camps</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachme.members">Keine aktuelle Vereinszahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachme.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachme.winter">Winterkurse in Indoor-Beachhallen; Feldzahl nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.beachme.offers">Erwachsenen- und Jugendtraining, Camps, Liga und Turniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachme.popularity">Keine öffentliche Nachfragezahl gefunden.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://verein.beachme.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://verein.beachme.de/training-erwachsene/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.training">Training</a>
+          <a href="https://verein.beachme.de/tournaments-2026/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-winter="2">
+        <div class="club-heading"><h3>Hauptstadt Beacher e.V.</h3></div><p class="city">Berlin · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.smallGroups">Kleine Gruppen</span><span class="feature-tag" data-i18n="clubs.feature.camps">Camps</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.hauptstadt.members">Keine öffentliche Zahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.hauptstadt.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.hauptstadt.winter">Wintertrainingsgruppen; Spielort und Sandhalle nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.hauptstadt.offers">Trainingsgruppen, Community-Training, Camps und Turniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.hauptstadt.popularity">Nachrücker-Regel belegt; Auslastung nicht veröffentlicht.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://www.hauptstadt-beacher.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.hauptstadt-beacher.de/trainingsgruppen-sommer/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.training">Training</a>
+          <a href="https://www.hauptstadt-beacher.de/offizielle-turniere/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="8">
+        <div class="club-heading"><h3>Dresdner SSV</h3></div><p class="city">Dresden · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.8courts">8 Courts</span><span class="feature-tag" data-i18n="clubs.feature.training">Training</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.dresden.members">Keine Beach-Abteilungszahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.dresden.courts">8 Outdoor · Indoor-Beachplätze nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.dresden.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.dresden.offers">Acht Courts, Training, Camps und Turniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.dresden.popularity">Keine öffentliche Mitglieder- oder Teilnehmerzahl.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://dresdnerssv-beach.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://dresdnerssv-beach.de/beachvolleyballtraining/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.training">Training</a>
+          <a href="https://dresdnerssv-beach.de/beachvolleyballturniere/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="12">
+        <div class="club-heading"><h3>Beachsport BB e.V.</h3></div><p class="city">Velten · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.12courts">12 Courts</span><span class="feature-tag" data-i18n="clubs.feature.camps">Camps</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachsport.members">Keine öffentliche Zahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachsport.courts">12 Outdoor · keine Indoor-Beachplätze ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachsport.winter">Wintertraining in einer Sporthalle; kein Sandfeld ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.beachsport.offers">12 Courts; Termine, Camps sowie Jugend- und Seniorenturniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachsport.popularity">Court-Zahl zeigt Infrastruktur, nicht Auslastung.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://www.beachsport-bb.de/beachvolleyball-brandenburg/buchungskalender/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.beachsport-bb.de/beachvolleyball-brandenburg/termine-2011/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.events">Angebote / Termine</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="6">
+        <div class="club-heading"><h3>ASV Dachau</h3></div><p class="city">Dachau · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.24teams">24 Teams</span><span class="feature-tag" data-i18n="clubs.feature.160players">160 Teilnehmende</span><span class="feature-tag" data-i18n="clubs.feature.youth">Nachwuchs</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.asv.members">Keine belastbare Beach-Zahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.asv.courts">6 Outdoor · keine Indoor-Beachplätze ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.asv.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.asv.offers">Jugendförderung und Firmen-Cup: 24 Teams, rund 160 Teilnehmende (2026).</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.asv.popularity">Cup-Besuchende sind keine Vereinsmitglieder.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://www.asv-dachau.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.asv-dachau.de/fileadmin/user_upload/benutzer/volleyball/Beach/Firmenbeach/2025/Flyer_Beach_Cup_A5_05_14.pdf" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.outdoor">Outdoor-Anlage</a>
+          <a href="https://www.asv-dachau.de/firmen-beach-cup" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.events">Angebote / Termine</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="3">
+        <div class="club-heading"><h3>TSV Georgii-Allianz · Alli-Beach</h3></div><p class="city">Stuttgart · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.3courts">3 Courts</span><span class="feature-tag" data-i18n="clubs.feature.openPlay">Offenes Spiel</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.allianz.members">Keine Beach-Zahl veröffentlicht.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.allianz.courts">3 Beachfelder · Indoor-Zahl nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.allianz.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.allianz.offers">Drei Courts, wöchentliches „Grill & Chill“, Turniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.allianz.popularity">Keine vergleichbare Teilnehmerzahl veröffentlicht.</dd>
+        </dl>
+        <div class="sources"><a href="https://allianz-volleyball.de/verein/beach/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a></div>
+      </article>
+
+      <article class="club-card" data-sort-courts="2" data-sort-winter="1">
+        <div class="club-heading"><h3>Lufthansa Sportverein Hamburg</h3></div><p class="city">Hamburg · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.2courts">2 Courts</span><span class="feature-tag" data-i18n="clubs.feature.training">Training</span><span class="feature-tag" data-i18n="clubs.feature.waitlist">Warteliste</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.lsv.members">Gesamtverein: ca. 4.500; Beach-Zahl fehlt.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.lsv.courts">2 Beachfelder · Indoor-Zahl nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.lsv.winter">Hallenvolleyball im Winter (ohne Beachsand).</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.lsv.offers">Zwei Courts, feste Trainingszeiten und eigene Turniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.lsv.popularity">Aufnahmestopp mit Warteliste (Vereinsangabe).</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://www.lsvham.de/ueber-uns/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.lsvham.de/sparte/beachvolleyball-volleyball/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.events">Angebote / Termine</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="4">
+        <div class="club-heading"><h3>DJK TuSA 06</h3></div><p class="city">Düsseldorf · DE</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.4courts">4 Courts</span><span class="feature-tag" data-i18n="clubs.feature.youth">Nachwuchs</span><span class="feature-tag" data-i18n="clubs.feature.camps">Camps</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.tusa.members">Gesamtverein: ca. 2.300; Beach-Zahl fehlt.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.tusa.courts">4 Outdoor · Indoor-Beachplätze nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.tusa.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.tusa.offers">Vier Courts, Jugendförderung und Sommercamps.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.tusa.popularity">Keine Beach-Mitglieder- oder Wartelistenzahl.</dd>
+        </dl>
+        <div class="sources">
+          <a href="https://www.tusa06.de/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.tusa06.de/unser-sportangebot/volleyball/2-herren-bezirksliga.php" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.outdoor">Outdoor-Anlage</a>
+          <a href="https://www.tusa06.de/schulferien-sportcamps/beach-volleyball/index.html" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.events">Angebote / Termine</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="40" data-sort-tournaments="100" data-sort-winter="2">
+        <div class="club-heading"><h3 data-i18n="clubs.vienna.name">Beachvolley Wien · SportZ Ziegler GmbH</h3></div><p class="city">Wien · AT</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.100tournaments">100+ Turniere/Jahr</span><span class="feature-tag" data-i18n="clubs.feature.youth">Nachwuchs</span><span class="feature-tag" data-i18n="clubs.feature.yearRound">Ganzjährig</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.vienna.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.vienna.courts">40+ insgesamt; darunter 14 Outdoor (Schmelz) und 8 saisonal Indoor/Outdoor (Spielmanngasse). Gesamtaufteilung nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.vienna.winter">8 Beachfelder indoor an der Spielmanngasse (Wintersaison 2026/27).</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.vienna.offers">Über 100 Hobbyturniere jährlich; Jugendtraining bis zu dreimal pro Woche.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.vienna.popularity">Turnierhäufigkeit ist belegt; Teilnehmerzahlen fehlen.</dd>
+        </dl>
+        <div class="sources" aria-label="Quellen" data-i18n-attr="aria-label:clubs.sources.label">
+          <a href="https://www.beachvolleywien.at/service/impressum/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.operator">Betreiber</a>
+          <a href="https://www.beachvolleywien.at/beachplaetze/1150-schmelz/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.outdoor">Outdoor-Anlage</a>
+          <a href="https://www.beachvolleywien.at/beachplaetze/1200-spielmanngasse/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.winterHall">Winterhalle</a>
+          <a href="https://www.beachvolleywien.at/turniere/turniere/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="5">
+        <div class="club-heading"><h3>Beachvolley Club Alte Donau</h3></div><p class="city">Wien · AT</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.5courts">5 Courts</span><span class="feature-tag" data-i18n="clubs.feature.2v2">2 gegen 2</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.alteDonau.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.alteDonau.courts">5 Plätze an der Alten Donau · Indoor-Anteil nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.alteDonau.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.alteDonau.offers">Fünf Courts, selbstorganisierte Trainings und ÖVV-Ranglistenturniere.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.alteDonau.popularity">Turniere sind öffentlich; Mitgliederzahl fehlt.</dd>
+        </dl>
+        <div class="sources" aria-label="Quellen" data-i18n-attr="aria-label:clubs.sources.label">
+          <a href="https://www.beachvolleyclub.at/der-club/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.beachvolleyclub.at/turniere/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
+        </div>
+      </article>
+
+      <article class="club-card" data-sort-courts="9" data-sort-winter="2">
+        <div class="club-heading"><h3>ZUZU Beach</h3></div><p class="city">Kloten / Bassersdorf · CH</p>
+        <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
+          <span class="feature-tag" data-i18n="clubs.feature.6outdoor">6 Outdoor</span><span class="feature-tag" data-i18n="clubs.feature.3indoor">3 Indoor</span><span class="feature-tag" data-i18n="clubs.feature.allLevels">Alle Spielniveaus</span>
+        </div>
+        <dl class="club-data">
+          <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.zuzu.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.zuzu.courts">6 Outdoor · 3 Indoor.</dd>
+          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.zuzu.winter">Wintertraining in der Indoor-Beachhalle mit drei Feldern.</dd>
+          <dt data-i18n="clubs.offers.label">Angebot</dt><dd data-i18n="clubs.zuzu.offers">Neun Courts (sechs Outdoor, drei Indoor); Training und Turniere ganzjährig.</dd>
+          <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.zuzu.popularity">Angebote für Nachwuchs, Breitensport und Leistungssport.</dd>
+        </dl>
+        <div class="sources" aria-label="Quellen" data-i18n-attr="aria-label:clubs.sources.label">
+          <a href="https://www.zuzubeach.ch/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.club">Verein</a>
+          <a href="https://www.zuzubeach.ch/trainingsgruppensommer" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.training">Training</a>
+          <a href="https://www.zuzubeach.ch/events" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.events">Angebote / Termine</a>
+        </div>
+      </article>
+    </div>
+
+    <section class="method">
+      <h2 data-i18n="clubs.method.title">Hinweise zur Datenbasis</h2>
+      <p data-i18n="clubs.method.body">Keine Mitgliederzahl gefunden? Dann war sie öffentlich nicht belegt. Nachfragewerte sind keine Mitgliederzahlen. Stand: 28. Oktober 2026.</p>
+    </section>
+  </main>
+
+  <footer>© <span id="year"></span> · CompetitionPilot</footer>
+
+  <script src="core/turnier-i18n.js"></script>
+  <script src="core/i18n/de.js"></script>
+  <script src="core/i18n/en.js"></script>
+  <script>
+    var year = document.getElementById('year');
+    if (year) year.textContent = new Date().getFullYear();
+    var clubGrid = document.querySelector('.club-grid');
+    var clubSort = document.getElementById('club-sort');
+    if (clubGrid && clubSort) {
+      var clubCards = Array.prototype.slice.call(clubGrid.querySelectorAll('.club-card'));
+      var sortClubCards = function () {
+        if (!clubSort.value) {
+          clubCards.forEach(function (card) { clubGrid.appendChild(card); });
+          return;
+        }
+        var attribute = 'data-sort-' + clubSort.value;
+        var sortedCards = clubCards.slice().sort(function (a, b) {
+          var aValue = a.hasAttribute(attribute) ? Number(a.getAttribute(attribute)) : null;
+          var bValue = b.hasAttribute(attribute) ? Number(b.getAttribute(attribute)) : null;
+          if (aValue === null) return bValue === null ? 0 : 1;
+          if (bValue === null) return -1;
+          return bValue - aValue;
+        });
+        sortedCards.forEach(function (card) { clubGrid.appendChild(card); });
+      };
+      clubSort.addEventListener('change', sortClubCards);
+    }
+    if (!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) && 'serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
