@@ -122,11 +122,12 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <h3>Feld-Leiter und Rundenprinzip</h3>
   <p>Alle Teams werden zu Beginn auf die konfigurierten Felder verteilt (Feld 1 = King-&amp;-Queen-Court,
   absteigend bis zum untersten Feld). Auf jedem Feld stehen im Regelfall <strong>vier Teams</strong> und
-  spielen <strong>zwei parallele Spiele</strong> nach dem gleichen Setzprinzip wie bei Modified Pool Play:
+  spielen <strong>zwei Begegnungen je Feld und Runde</strong> nach dem gleichen Setzprinzip wie bei Modified Pool Play:
   Setzplatz 1 gegen 4, Setzplatz 2 gegen 3. Gespielt wird nicht bis zu einer Zielpunktzahl, sondern
   <strong>innerhalb eines festen Zeitlimits</strong> (informativ auf dem Bogen vermerkt, meist 10–20 Minuten);
   am Ende zählt die erzielte Punktzahl. Die Feld-Leiter ist dabei kein Partner-Rotationssystem: Die Paarungen
   bleiben nicht permanent fixiert, aber es gibt keine eigenständige Einzelwertungslogik wie beim custom King &amp; Queen Event.</p>
+  <p>Unterstützt werden höchstens fünf Teams je Feld. Bei mehr Teams sind entsprechend mehr Felder erforderlich; ein zusätzlicher Round-Robin-Ersatzplan wird nicht erzeugt. Eine ungültige Belegung wird ausdrücklich zurückgewiesen.</p>
   <h3>Aufsteiger und Absteiger</h3>
   <p>Nach jeder vollständig eingetragenen Runde bewegen sich die Teams:</p>
   <ul>
@@ -146,8 +147,12 @@ tr:nth-child(even) td { background: #f0f4f9; }
   <h3>Rundenzahl</h3>
   <p>Die Rundenzahl ist frei wählbar oder wird automatisch vorgeschlagen (angelehnt an die Feldzahl, damit ein
   Team rechnerisch einmal komplett von unten nach oben aufsteigen könnte). Da nur eine Zeitangabe pro Runde
-  existiert (kein Zeitfenster mit variabler Spieldauer wie bei den satzbasierten Formaten), ist die
-  Gesamtdauer einfach Rundenzahl × Minuten pro Runde.</p>
+  existiert, ist dies eine <strong>Rundenvorgabe, kein minutengenauer Belegungsplan</strong>.
+  Zwei Begegnungen auf demselben physischen Feld müssen nacheinander stattfinden. Die Turnierleitung
+  muss dafür genügend Zeit einschließlich Wechsel einplanen: Entweder umfasst die Rundenvorgabe
+  beide Begegnungen, oder die jeweilige Spielzeit ist je Begegnung anzusetzen.
+  Rundenzahl × Spielminuten allein ist dann keine verlässliche Gesamtdauer.</p>
+  <p><strong>Ergebnisbindung:</strong> Bereits die erste Punkteingabe fixiert die Begegnungen der Runde. Strukturelle Änderungen dürfen gespeicherte Ergebnisse nicht anderen Teams zuordnen. Ein späterer Ausfall ändert keine historische Feldbesetzung oder Begegnung; die Auswirkung betrifft nur noch nicht gestartete Folgerunden. Löschen und grundlegende Umplanung sind nach Ergebniseingaben gesperrt.</p>
 </section>
 <section id="wertung">
   <h2>Wertung / Platzierung</h2>
@@ -157,6 +162,7 @@ tr:nth-child(even) td { background: #f0f4f9; }
   umgerechnet. Bei weiterhin gleichem Wert entscheidet das <strong>höchste je erreichte Feld</strong>
   (niedrigere Feldnummer = höher). Verbleibende Gleichstände teilen sich den Platz;
   die Teamnummer bestimmt nur die Anzeigereihenfolge. Die App lost nicht.</p>
+  <p>Ein Feld-Freilos in einer begonnenen Runde zählt für das erreichte Feld, nicht als gespieltes Match und nicht als Punktgutschrift. Solange geplante Spiele fehlen, bleibt die Rangliste vorläufig; diese Kennzeichnung bleibt im Druck erhalten.</p>
   <p><strong>Unentschieden in einer Runde:</strong> Da auf Zeit statt auf eine Zielpunktzahl gespielt wird,
   ist ein echtes Unentschieden möglich (beide Teams erzielen bei Zeitablauf gleich viele Punkte). Für die
   <strong>Punktwertung</strong> bleibt es ein echtes Remis – beide Teams behalten ihre erzielten Punkte. Für

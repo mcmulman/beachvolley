@@ -47,6 +47,15 @@
   .teams td { text-align:left; }
   .teams .num { width:24px; font-weight:bold; background:var(--bg); text-align:center; }
   .teams .name { height:26px; }
+  @media screen {
+    /* Intrinsic widths of long custom names must not widen the page on tablets. */
+    .teams { table-layout:fixed; }
+    .row > .grow { min-width:0; }
+  }
+  @media screen and (max-width:960px) {
+    /* The inline guide remains available; leave room for the primary header actions. */
+    .tournament-sheet .app-bar__info { display:none; }
+  }
 
   /* Standings */
   .stand td { height:40px; }
@@ -692,7 +701,10 @@
   html body table.kq-cards > tbody > tr > td.match { display:block; width:100%; min-width:0; margin:0; }
   html body .kq-courts { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); grid-gap:8px; gap:8px; }
   html body .kqcourt { min-width:0; }
+  html body .kqmatch { align-items:stretch; }
   html body .kqmatch .kqside { flex-direction:column; align-items:stretch; gap:0; }
+  html body .kqmatch > .score-ok { align-self:flex-end; }
+  html body .kqmatch > .kqvs { align-self:flex-end; display:flex; align-items:center; min-height:44px; }
   html body .kqmatch .kqside .n {
     white-space:normal; overflow:visible; word-wrap:break-word;
     margin-bottom:4px; text-align:center; order:-1;

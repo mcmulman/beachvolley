@@ -59,7 +59,7 @@
   let activeRankingProfile = 'beach-house';
   let activeModeMinutes = {};
   const RANKING_PROFILES = Object.freeze({
-    'beach-house': Object.freeze({ sport: 'volleyball.beach', criteria: ['pts', 'bd', 'ballsFor', 'h2h'] }),
+    'beach-house': Object.freeze({ sport: 'volleyball.beach', criteria: ['pts', 'bd', 'h2h', 'ballsFor'] }),
     'indoor-3-2-1-0': Object.freeze({ sport: 'volleyball.indoor', criteria: ['pts', 'sd', 'bd', 'h2h'] }),
     'indoor-fivb-2026': Object.freeze({
       sport: 'volleyball.indoor',
@@ -746,12 +746,14 @@
     // Rangliste der Qualifikations-Slots in Platzierungs-Reihenfolge:
     // A1,B1,A2,B2,A3,B3,… (bei 2 Gruppen). Bei ungleichen Größen laufen die
     // kürzeren Gruppen einfach aus.
-    const slots = [];
-    const maxPlace = Math.max.apply(null, groupNames.map(n => groupSizes[n]));
-    for (let p = 1; p <= maxPlace; p++) {
-      groupNames.forEach(n => {
-        if (groupSizes[n] >= p) slots.push({ k: 'rank', phase: o.phase || 'grp', group: n, place: p });
-      });
+    const slots = o.slots ? o.slots.slice() : [];
+    if (!o.slots) {
+      const maxPlace = Math.max.apply(null, groupNames.map(n => groupSizes[n]));
+      for (let p = 1; p <= maxPlace; p++) {
+        groupNames.forEach(n => {
+          if (groupSizes[n] >= p) slots.push({ k: 'rank', phase: o.phase || 'grp', group: n, place: p });
+        });
+      }
     }
 
     const blocks = [];
@@ -761,8 +763,21 @@
       if (rest >= blockSize) {
         const s = slots.slice(i, i + blockSize);
         const bid = prefix + '_b' + (blocks.length + 1);
-        const m1 = { id: bid + '_x1', a: s[0], b: s[3], stage: 'cross' };
-        const m2 = { id: bid + '_x2', a: s[1], b: s[2], stage: 'cross' };
+        const pairings = [
+          [[0, 3], [1, 2]],
+          [[0, 2], [1, 3]],
+          [[0, 1], [2, 3]]
+        ];
+        const poolsOf = slot => Array.isArray(slot.groups) ? slot.groups
+          : slot.group ? [slot.group] : [];
+        const matching = pairings.find(pairs => pairs.every(pair => {
+          const a = s[pair[0]], b = s[pair[1]];
+          const poolsA = poolsOf(a), poolsB = poolsOf(b);
+          return !poolsA.length || !poolsB.length
+            || poolsA.every(pool => poolsB.indexOf(pool) < 0);
+        })) || pairings[0];
+        const m1 = { id: bid + '_x1', a: s[matching[0][0]], b: s[matching[0][1]], stage: 'cross' };
+        const m2 = { id: bid + '_x2', a: s[matching[1][0]], b: s[matching[1][1]], stage: 'cross' };
         const mw = { id: bid + '_w', a: { k: 'win', match: m1.id }, b: { k: 'win', match: m2.id }, stage: 'final', places: [placeNo, placeNo + 1] };
         const ml = { id: bid + '_l', a: { k: 'lose', match: m1.id }, b: { k: 'lose', match: m2.id }, stage: 'final', places: [placeNo + 2, placeNo + 3] };
         blocks.push({ places: [placeNo, placeNo + 3], matches: [m1, m2, mw, ml] });
@@ -912,17 +927,15 @@
 
      Nicht durch 4 teilbare Teamzahlen (z.B. weil die Gesamtzahl kein glattes
      Vielfaches von 4×Feldzahl ist) werden NICHT abgelehnt, sondern fallen
-     auf ein "Feld-Freilos" zurück, damit nie ein Turnier abstürzt:
+     auf ein "Feld-Freilos" zurück:
        - 3 Teams auf einem Feld: 2 spielen gegeneinander (Sieger/Verlierer
          nach obiger Regel), das dritte Team hat in dieser Runde Feld-Freilos
          und bleibt unverändert auf seinem Feld stehen (zählt weder als Sieg
          noch als Niederlage, keine Punkte).
        - 5 Teams auf einem Feld: 4 spielen im MPP-Muster, das fünfte Team hat
          analog Feld-Freilos.
-       - jede andere Größe (praktisch nur bei sehr ungewöhnlicher Konfigura-
-         tion/mehreren Ausfällen möglich): volles Rundenspiel aller Paare auf
-         diesem Feld, Bewegregel nutzt dann die Feld-interne Tabelle (obere
-         Hälfte = "Sieger", untere Hälfte = "Verlierer").
+       - Mehr als 5 Teams pro Feld werden abgelehnt. Sie würden auf keine der
+         beschriebenen Spiel- und Bewegregeln passen.
      ========================================================================== */
   function kqValidScore(a, b) {
     return Number.isInteger(a) && Number.isInteger(b) && a >= 0 && b >= 0;
@@ -934,10 +947,12 @@
 
   /* Baut die Spiele EINES Feldes für eine Runde aus der aktuellen Setzung
      (order = Teams auf diesem Feld, beste Setzung zuerst). Liefert
-     { matches:[{id,a,b}], byeTeam } - byeTeam nur bei 3/5 (oder ungerader
-     Restgröße) besetzt.                                                     */
+     { matches:[{id,a,b}], byeTeam } - byeTeam nur bei 1/3/5 Teams besetzt.   */
   function kqCourtMatches(order, idPrefix) {
     const list = (order || []).slice();
+    if (list.length > 5) {
+      throw new RangeError('King/Queen of the Court supports at most 5 teams per court.');
+    }
     const matches = [];
     let byeTeam = null;
     if (list.length === 2) {
@@ -954,11 +969,6 @@
       matches.push({ id: idPrefix + '_m2', a: list[1], b: list[2] });
     } else if (list.length === 1) {
       byeTeam = list[0];
-    } else if (list.length > 0) {
-      /* Sonderfall (siehe Kommentar oben): volles Rundenspiel auf dem Feld. */
-      for (let i = 0; i < list.length; i++)
-        for (let j = i + 1; j < list.length; j++)
-          matches.push({ id: idPrefix + '_m' + (matches.length + 1), a: list[i], b: list[j] });
     }
     return { matches, byeTeam };
   }
@@ -1004,6 +1014,9 @@
   function kqInitialCourts(teams, courtCount) {
     const list = normalizeTeamList(teams);
     const n = Math.max(1, courtCount | 0);
+    if (list.length > n * 5) {
+      throw new RangeError('King/Queen of the Court supports at most 5 teams per court.');
+    }
     const base = Math.floor(list.length / n);
     const extra = list.length % n;
     const courts = [];
@@ -1027,6 +1040,7 @@
     switch (ref.k) {
       case 'team': return (ctx && ctx.teamLabel) ? ctx.teamLabel(ref.n) : ('Team ' + ref.n);
       case 'rank': return ref.group ? (ref.group + '-' + ref.place) : ('Platz ' + ref.place);
+      case 'seed': return 'Qualifikation ' + ref.n;
       case 'win': return 'Sieger ' + ((ctx && ctx.matchLabel) ? ctx.matchLabel(ref.match) : ref.match);
       case 'lose': return 'Verlierer ' + ((ctx && ctx.matchLabel) ? ctx.matchLabel(ref.match) : ref.match);
       case 'bye': return 'Freilos';
@@ -1036,6 +1050,7 @@
 
   /* Löst eine Referenz zu einer Teamnummer auf. resolvers:
        rank(phase, group, place) → teamNo|null
+       seed(seedNo) → teamNo|null
        winner(matchId) → teamNo|null
        loser(matchId)  → teamNo|null                                           */
   function resolveRef(ref, resolvers) {
@@ -1044,6 +1059,7 @@
     switch (ref.k) {
       case 'team': return ref.n || null;
       case 'rank': return resolvers.rank ? resolvers.rank(ref.phase, ref.group, ref.place) : null;
+      case 'seed': return resolvers.seed ? resolvers.seed(ref.n) : null;
       case 'win': return resolvers.winner ? resolvers.winner(ref.match) : null;
       case 'lose': return resolvers.loser ? resolvers.loser(ref.match) : null;
       case 'bye': return null;
@@ -1129,10 +1145,11 @@
      Rückgabe null, solange das Spiel unvollständig ist.
 
      Der Entscheidungssatz (Satz 3) zählt bewusst NUR für Sieg/Niederlage und
-     fließt NICHT in die Ballwertung ein: sonst würde ein knapper 2:1-Sieg die
-     Ball-Differenz stärker aufblähen als ein souveräner 2:0-Sieg.
+     fließt standardmäßig NICHT in die Ballwertung ein: sonst würde ein knapper
+     2:1-Sieg die Ball-Differenz stärker aufblähen als ein souveräner 2:0-Sieg.
+     includeDecidingBalls zählt ihn für den gruppenübergreifenden Quotienten mit.
      ======================================================================== */
-  function computeResult(sets, modeId) {
+  function computeResult(sets, modeId, opts) {
     const def = modeDef(modeId);
     const s = sets || [];
     if (activeProfileId !== 'volleyball.beach') {
@@ -1186,13 +1203,16 @@
 
     let aSets = (a1 > b1 ? 1 : 0) + (a2 > b2 ? 1 : 0);
     let bSets = (b1 > a1 ? 1 : 0) + (b2 > a2 ? 1 : 0);
-    const aBalls = a1 + a2, bBalls = b1 + b2;
+    let aBalls = a1 + a2, bBalls = b1 + b2;
 
     if (def.decidingSet && aSets === bSets) {
       const [a3, b3] = g(2);
       if (!setValid(a3, b3, targetForSet(def.id, 3))) return null;
       aSets += a3 > b3 ? 1 : 0;
       bSets += b3 > a3 ? 1 : 0;
+      if (opts && opts.includeDecidingBalls) {
+        aBalls += a3; bBalls += b3;
+      }
     }
 
     let winner = null, draw = false;
@@ -1357,26 +1377,14 @@
   /* ==========================================================================
      8. TIE-BREAKER
 
-     GRUNDLAGE: offizielle FIVB-Beach-Pool-Wertung (siehe AGENTS.md §4).
-     Beachvolleyball wertet - anders als HALLEN-Volleyball - OHNE Satzverhältnis:
-     Matchpunkte → Ballwertung → direkter Vergleich.
+     Beach: Punkte → Ball-Differenz → direkter Vergleich → erzielte Ballpunkte.
+     Die verbindliche Hausregel steht in turniere/AGENTS.md §4. Sie ist getrennt
+     von den Hallen- und Tischtennisprofilen; insbesondere werden dortige
+     Quotienten-Kriterien nicht in die Beach-Kriterienkette übernommen.
 
-     Zwei bewusste, dokumentierte Abweichungen für den Papier-Betrieb:
-      a) FIVB nutzt den Ball-QUOTIENTEN (erzielte ÷ erhaltene). Wir nutzen die
-         Ball-DIFFERENZ, weil sie auf dem gedruckten Bogen ohne Taschenrechner
-         rechenbar ist und in der laufenden Tabelle ohnehin kumuliert mitläuft.
-         Bei gleicher Spielzahl führen beide praktisch immer zur selben Reihung.
-      b) FIVB vergibt 2 Punkte für den Sieg und 1 für die Niederlage. Wir nutzen
-         2 / 1 / 0 (Sieg / Remis / Niederlage): bei gleicher Spielzahl ist die
-         Reihenfolge identisch (FIVB = 2·S + N = S + Spiele, also ebenfalls
-         monoton in den Siegen), das Remis der Modi ohne Entscheidungssatz wird
-         aber sauber abbildbar und bei ungleicher Spielzahl entsteht kein
-         Vorteil fürs bloße Mehr-Spielen.
-
-     'h2h' (direkter Vergleich) wird als MINI-TABELLE über die noch gleich-
-     stehenden Teams ausgewertet - so schreibt es die FIVB für 3+ punktgleiche
-     Teams vor. Das behebt zugleich die Nicht-Transitivität des bisherigen
-     paarweisen Vergleichs (Ringschluss A>B>C>A).
+     'h2h' (direkter Vergleich) wird als Mini-Tabelle über die noch
+     gleichstehenden Teams ausgewertet. Das behebt zugleich die
+     Nicht-Transitivität eines paarweisen Vergleichs (Ringschluss A>B>C>A).
      ======================================================================== */
   const CRITERIA = {
     pts:         { label: 'Punkte',            get: s => s.pts,         dir: -1 },
@@ -1428,8 +1436,10 @@
         : rankingDef.matchWinsSupported && matches.some(m => m.result
           && rankingDef.matchWinsSupported.indexOf(m.matchWins) < 0) ? 'mode' : null);
     if (unsupportedReason) {
-      return list.map(t => ({ team: t, place: 1, shared: true,
+      const blocked = list.map(t => ({ team: t, place: 1, shared: true,
         unsupported: unsupportedReason, stat: st[t] }));
+      Object.defineProperty(blocked, 'rankingOptions', { value: Object.assign({}, o), enumerable: false });
+      return blocked;
     }
 
     /* Ein Kriterium auf eine Gruppe anwenden → Liste von Untergruppen. */
@@ -1459,30 +1469,37 @@
       if (rankingId === 'tt-dttb-swiss-ranking-2026'
           && (o.interim || group.length !== 2)) return [group];
       if (rankingId === 'tt-ittf-individual-groups-2026') {
-        let parts = [group];
-        ['pts', 'setRatio', 'pointRatio'].forEach(crit => {
-          const next = [];
-          parts.forEach(part => {
-            if (part.length < 2) { next.push(part); return; }
-            const tied = new Set(part);
-            const direct = matches.filter(m => m.bye == null && tied.has(m.a)
-              && tied.has(m.b) && m.result);
-            const directStats = standings(part, direct, { rankingProfile: rankingId });
+        function rankIttfMiniTable(part) {
+          if (part.length < 2) return [part];
+          const tied = new Set(part);
+          const direct = matches.filter(m => m.bye == null && tied.has(m.a)
+            && tied.has(m.b) && m.result);
+          const directStats = standings(part, direct, { rankingProfile: rankingId });
+          for (const crit of ['pts', 'setRatio', 'pointRatio']) {
             const buckets = new Map();
             part.forEach(t => {
-              const criterion = CRITERIA[crit];
-              const value = criterion.get(directStats[t]);
+              const value = CRITERIA[crit].get(directStats[t]);
               const key = value == null || Number.isNaN(value) ? '∅' : String(value);
               if (!buckets.has(key)) buckets.set(key, { value, teams: [] });
               buckets.get(key).teams.push(t);
             });
-            Array.from(buckets.values())
-              .sort((a, b) => CRITERIA[crit].dir * (a.value - b.value))
-              .forEach(bucket => next.push(bucket.teams));
-          });
-          parts = next;
-        });
-        return parts;
+            if (buckets.size > 1) {
+              const resolved = [];
+              Array.from(buckets.values())
+                .sort((a, b) => CRITERIA[crit].dir * (a.value - b.value))
+                .forEach(bucket => {
+                  if (bucket.teams.length > 1) {
+                    rankIttfMiniTable(bucket.teams).forEach(group => resolved.push(group));
+                  } else {
+                    resolved.push(bucket.teams);
+                  }
+                });
+              return resolved;
+            }
+          }
+          return [part];
+        }
+        return rankIttfMiniTable(group);
       }
       const set = new Set(group);
       const sub = (matches || []).filter(m =>
@@ -1539,7 +1556,111 @@
       });
       place += g.length;
     });
+    Object.defineProperty(out, 'rankingOptions', { value: Object.assign({}, o), enumerable: false });
     return out;
+  }
+
+  function manualDelta(value) {
+    if (value == null || value === '') return 0;
+    const delta = Number(value);
+    return Number.isFinite(delta) && delta !== 0 ? delta : 0;
+  }
+
+  const STRICT_RANKING_PROFILES = new Set([
+    'indoor-fivb-2026', 'indoor-dvv-bso-2026',
+    'tt-dttb-individual-round-robin-2026', 'tt-ittf-individual-groups-2026',
+    'tt-dttb-swiss-ranking-2026'
+  ]);
+
+  /* Apply stored correction deltas before ranking and retain manual places as
+     explicit display overrides. Supports raw engine inputs and already-ranked
+     rows, so tables, round formats, and exports share exactly one path. */
+  function rankWithCorrections(teams, stats, manual, opts) {
+    let teamList, originalStats, corrections, options;
+    const isRankedInput = Array.isArray(teams)
+      && teams.every(row => row && typeof row === 'object' && row.team != null && row.stat);
+    if (isRankedInput) {
+      const rankedInput = teams;
+      teamList = rankedInput.map(row => row.team);
+      originalStats = {};
+      rankedInput.forEach(row => { originalStats[row.team] = row.stat; });
+      corrections = Object.assign({}, stats || {});
+      if (!Object.keys(corrections).length) {
+        rankedInput.forEach(row => {
+          if (!row.correctionsApplied) return;
+          corrections[row.team] = {
+            dPts: row.dPts,
+            dBd: row.dBd,
+            place: row.hasPlace ? row.place : null
+          };
+        });
+      }
+      options = Object.assign({}, rankedInput.rankingOptions || {}, manual || {});
+    } else {
+      teamList = normalizeTeamList(teams);
+      originalStats = stats || {};
+      corrections = manual || {};
+      options = opts || {};
+    }
+
+    const rankingProfile = options.rankingProfile || activeRankingProfile;
+    const complete = options.complete === true;
+    const rankingOptions = Object.assign({}, options);
+    delete rankingOptions.complete;
+    if (STRICT_RANKING_PROFILES.has(rankingProfile) && !complete) {
+      rankingOptions.unsupportedReason = rankingOptions.unsupportedReason || 'incomplete';
+    }
+
+    const adjustedStats = {};
+    teamList.forEach(team => {
+      const source = originalStats[team] || emptyStat();
+      const stat = Object.assign({}, source);
+      const correction = corrections[team] || {};
+      const dPts = manualDelta(correction.dPts);
+      const dBd = manualDelta(correction.dBd);
+      stat.pts = (Number(stat.pts) || 0) + dPts;
+      stat.bd = (Number(stat.bd) || 0) + dBd;
+      if (stat.ptsPer != null) stat.ptsPer = (Number(stat.ptsPer) || 0) + dPts;
+      if (stat.bdPer != null) stat.bdPer = (Number(stat.bdPer) || 0) + dBd;
+      adjustedStats[team] = stat;
+    });
+
+    const reranked = rank(teamList, adjustedStats, rankingOptions);
+    const blocked = reranked.some(row => !!row.unsupported);
+    const rows = reranked.map(row => {
+      const correction = corrections[row.team] || {};
+      const dPts = manualDelta(correction.dPts);
+      const dBd = manualDelta(correction.dBd);
+      const source = originalStats[row.team] || emptyStat();
+      const displayedPts = options.perGame && source.ptsPer != null ? source.ptsPer : source.pts;
+      const displayedBd = options.perGame && source.bdPer != null ? source.bdPer : source.bd;
+      const placeValue = Number(correction.place);
+      const hasPlace = !blocked && correction.place != null
+        && Number.isInteger(placeValue) && placeValue >= 1 && placeValue <= teamList.length;
+      return Object.assign({}, row, {
+        stat: source,
+        dPts,
+        dBd,
+        effPts: (Number(displayedPts) || 0) + dPts,
+        effBd: (Number(displayedBd) || 0) + dBd,
+        hasPlace,
+        correctionsApplied: true,
+        complete,
+        supported: !row.unsupported,
+        unresolved: !!row.unresolved && !hasPlace,
+        place: hasPlace ? placeValue : row.place
+      });
+    });
+    rows.sort((a, b) => (a.place - b.place) || (teamList.indexOf(a.team) - teamList.indexOf(b.team)));
+    rows.forEach((row, i) => {
+      row.shared = !!((rows[i - 1] && rows[i - 1].place === row.place)
+        || (rows[i + 1] && rows[i + 1].place === row.place));
+      row.resolved = row.supported && !row.shared && !row.unresolved;
+      row.status = !row.supported ? 'unsupported'
+        : !row.complete ? 'provisional' : row.resolved ? 'resolved' : 'unresolved';
+    });
+    Object.defineProperty(rows, 'rankingOptions', { value: Object.assign({}, options), enumerable: false });
+    return rows;
   }
 
   /* Erzeugt die Kriterienkette für eine Wertungsgruppe.
@@ -1574,13 +1695,11 @@
       if (rankingId !== 'beach-house') return ['wonPer', 'sdPer', 'bdPer', 'h2h'];
     }
     return o.unequalGames
-      ? ['ptsPer', 'bdPer', 'ballsForPer', 'h2h']
-      : ['pts', 'bd', 'ballsFor', 'h2h'];
+      ? ['ptsPer', 'bdPer', 'h2h', 'ballsForPer']
+      : ['pts', 'bd', 'h2h', 'ballsFor'];
   }
 
-  /* Reihenfolge nach FIVB-Beach-Praxis: erst die Zahlen aus allen Spielen,
-     der direkte Vergleich entscheidet zuletzt vor dem Los. */
-  const DEFAULT_CRITERIA = ['pts', 'bd', 'ballsFor', 'h2h'];
+  const DEFAULT_CRITERIA = ['pts', 'bd', 'h2h', 'ballsFor'];
 
   /* ==========================================================================
      9. HILFSFUNKTIONEN
@@ -1615,7 +1734,7 @@
     bracketSeedOrder, pairKey, roundLabel,
     refLabel, resolveRef,
     assignSlots, computeSchedule, neededFields,
-    standings, normalizePerGame, equalGames, rank, criteriaFor, CRITERIA, DEFAULT_CRITERIA,
+    standings, normalizePerGame, equalGames, rank, rankWithCorrections, manualDelta, criteriaFor, CRITERIA, DEFAULT_CRITERIA,
     normalizeTeamList, toMin, fromMin
   };
 });

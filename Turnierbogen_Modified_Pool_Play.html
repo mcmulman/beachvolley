@@ -131,7 +131,7 @@
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</span></li>
     <li><span class="hi" data-i18n="mpp.guide.groupPlaceLabel">Platzierung in der Gruppe:</span> <span data-i18n="mpp.guide.groupPlaceText">In 4er-Gruppen steht der Platz direkt durch das Bracket fest (kein Gleichstand möglich).
-      In 3er-Gruppen wie gewohnt: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand Ball-Differenz, dann Ballpunkte, dann direkter Vergleich, zuletzt das Los.</span></li>
+      In 3er-Gruppen: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand Ball-Differenz, dann direkter Vergleich, dann erzielte Ballpunkte. Verbleibende Gleichstände teilen den Platz; nötige Losentscheide werden gesondert erfasst.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span id="g-final">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="mpp.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
@@ -223,6 +223,7 @@
 </div>
 
 <div id="noticeBox"></div>
+<div id="qualificationBox" class="notebox noprint" hidden></div>
 
 <div class="row" id="livebox">
   <div style="flex:0 0 46%">
@@ -294,7 +295,7 @@
 <div id="mainTables"></div>
 
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
-  <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
+  <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
@@ -363,18 +364,18 @@
   let S = await TStore.load(SHEET, DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => rebuild(), outcomes: true });
   if(typeof TArchive !== 'undefined' && await TArchive.applyPendingRestore(archiveOpts()))
     S = await TStore.load(SHEET, DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
-  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint(), outcomes: true });
+  TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => rebuild(), outcomes: true });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
-    save: t => TStore.save(t),
-    repaint: () => paint()
+    save: t => { if (!TUI.finalsStarted(B, t)) delete t.config.qualificationOrder; return TStore.save(t); },
+    repaint: () => rebuild()
   });
   if(S.config.finalSetMode === undefined) S.config.finalSetMode = '';
   /* Voreinstellung aus der URL – Modified Pool Play ist nur für 3er-/4er-
@@ -389,6 +390,10 @@
   })) TStore.save(S);
   let B = null;                 // aktueller Aufbau (TFormat.build)
   let structureKey = '';
+  const qualification = TUI.mountFinalQualification($('qualificationBox'), {
+    get: () => S, plan: () => B, label: t => 'Team ' + t + ' · ' + labeler()(t),
+    save: () => save(), rebuild: () => rebuild()
+  });
   let roundFilter = 'all';
 
   /* ------------------------------------------------------------ Kontext */
@@ -453,8 +458,10 @@
     return TPlanning.apply(TFormat.build({
       teams: c.teams, groups: c.groups, fields: c.fields,
       setMode: c.setMode, finalSetMode: c.finalSetMode || null,
-      finalMode: c.finalMode, poolMode: 'mpp', startTime: c.startTime,
-      absent: s.absent, results: s.results, outcomes: s.outcomes
+      finalMode: c.finalMode, thirdPlace: c.thirdPlace, poolMode: 'mpp', startTime: c.startTime,
+      absent: s.absent, results: s.results, outcomes: s.outcomes,
+      rankingProfile: c.rankingProfile, qualificationOrder: c.qualificationOrder,
+      manualStandings: s.manualStandings
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
@@ -463,7 +470,7 @@
   }
   function keyOf(){
     const c = S.config;
-    return [c.teams,c.groups,c.fields,c.setMode,c.finalSetMode,c.finalMode,c.startTime].join('|');
+    return [c.teams,c.groups,c.fields,c.setMode,c.finalSetMode,c.finalMode,c.thirdPlace,c.startTime].join('|');
   }
 
   /* Vollständiger Neuaufbau nur, wenn sich die STRUKTUR geändert hat.
@@ -570,6 +577,7 @@
     paintPlacements();
     paintTrack();
     paintNotices();
+    qualification.paint();
     paintSummary();
     paintGuide();
     applyDocTitle();
@@ -593,7 +601,7 @@
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
       td.querySelectorAll('input.score').forEach(inp => {
-        inp.disabled = open || bye;
+        inp.disabled = open || bye || (body.id === 'schedGrpBody' && TUI.finalsStarted(B, S));
         const set = +inp.getAttribute('data-set');
         const side = inp.getAttribute('data-side');
         const v = (S.results[id] && S.results[id][set-1]) ? S.results[id][set-1][side==='a'?0:1] : null;
@@ -677,11 +685,12 @@
       html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>'
         + TUI.esc(T('mpp.group.rrCaption', { group: g }))
         + (t.perGame ? ' <span style="font-weight:normal;font-size:11px">' + TUI.esc(T('mpp.group.perGame')) + '</span>' : '')
-        + (hasResult ? MSTD.toolbarHtml(key) : '')
+        + (hasResult && !TUI.finalsStarted(B, S) ? MSTD.toolbarHtml(key) : '')
         + '</caption>'
         + (hasResult
             ? TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw: showDraw,
-                editable, manual: TStore.getManualStandings(S, key) })
+                editable, manual: TStore.getManualStandings(S, key),
+                rankBadge: true, isFinal: !!t.complete })
             : emptyGroupTableHtml(B.groups[g] || []))
         + '</table></div>';
     });
@@ -716,7 +725,8 @@
       const editable = MSTD.isEditing(key);
       html += '<div class="grpbox"><table class="stand" data-mstd-key="' + key + '"><caption>' + TUI.esc(T('mpp.main.caption', { name: term(n) })) + MSTD.toolbarHtml(key) + '</caption>'
         + TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw:true,
-            editable, manual: TStore.getManualStandings(S, key) })
+            editable, manual: TStore.getManualStandings(S, key),
+            rankBadge: true, isFinal: !!t.complete })
         + '</table></div>';
     });
     $('mainTables').innerHTML = html + '</div>';
@@ -726,8 +736,10 @@
     const key = 'final';
     const editable = MSTD.isEditing(key);
     const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S, S.absent.includes(n)) };
+    $('rankingStatus').textContent = T(B.complete ? 'ranking.status.final' : 'ranking.status.provisional');
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
-    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
+    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key),
+      rankBadge: true, isFinal: !!B.complete });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('mpp.place.empty')) + '</td></tr>';
   }
 
@@ -782,6 +794,9 @@
 
   function paintNotices(){
     const items = [];
+    if (B.groupNames.length === 1 && S.config.finalMode === 'placement') {
+      items.push({ txt: T('qualification.singlePool'), warn:true });
+    }
     B.notes.forEach(n => items.push({ txt:term(n), warn:false }));
     B.warnings.forEach(w => items.push({ txt:term(w), warn:true }));
     if(S.absent.length){
@@ -945,6 +960,10 @@
       txt = T('mpp.guide.finalMain', { mode: fmLabel });
     }
     $('g-final').textContent = txt;
+    if (B.groupNames.length > 2 && (S.config.rankingProfile || TC.activeRanking()) === 'beach-house'
+        && ['placement', 'ko', 'main'].includes(S.config.finalMode)) {
+      $('g-final').textContent += ' ' + T('qualification.rule');
+    }
     $('g-games').textContent = perTeamGames().body;
   }
 
@@ -955,6 +974,8 @@
      für die neue Teamzahl neu gebildet. Ergebnisse von Begegnungen, die es
      in derselben Phase weiterhin gibt, bleiben erhalten.                  */
   function removeTeam(t){
+    if (TUI.finalsStarted(B, S)) { alert(T('qualification.started')); return; }
+    delete S.config.qualificationOrder;
     const n = S.config.teams;
     if(n - 1 < MIN_TEAMS){ alert(T('sheet.alert.minTeams', { n: MIN_TEAMS })); return; }
     if(!TUI.confirmRemoveTeam(ctxFor(S.config.setMode).teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
@@ -970,8 +991,25 @@
     save(); fillSelects(); structureKey = ''; rebuild();
   }
   function onChange(){
+    const previousConfig = Object.assign({}, S.config);
     const prevTeams = S.config.teams;
+    const previousQualification = [S.config.teams, S.config.groups, S.config.finalMode, S.config.setMode].join('|');
     readConfig();
+    if (TUI.finalsStarted(B, S) && previousConfig.finalSetMode !== S.config.finalSetMode) {
+      S.config = previousConfig;
+      fillSelects();
+      alert(T('qualification.started'));
+      return;
+    }
+    if (previousQualification !== [S.config.teams, S.config.groups, S.config.finalMode, S.config.setMode].join('|')) {
+      if (TUI.finalsStarted(B, S)) {
+        S.config = previousConfig;
+        fillSelects();
+        alert(T('qualification.started'));
+        return;
+      }
+      delete S.config.qualificationOrder;
+    }
     /* Feldauswahl an die neue Teamzahl anpassen (max. Teams/2 Spiele parallel). */
     if(S.config.teams !== prevTeams){
       S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
@@ -1019,6 +1057,12 @@
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;
       const t = +n;
+      if (TUI.finalsStarted(B, S)) {
+        e.target.checked = S.absent.includes(t);
+        alert(T('qualification.started'));
+        return;
+      }
+      delete S.config.qualificationOrder;
       const i = S.absent.indexOf(t);
       if(e.target.checked && i < 0) S.absent.push(t);
       if(!e.target.checked && i >= 0) S.absent.splice(i,1);
@@ -1034,7 +1078,11 @@
       S.teamNames = {}; S.pairMembers = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
-    $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
+    $('btnClearAbsent').addEventListener('click', () => {
+      if (TUI.finalsStarted(B, S)) { alert(T('qualification.started')); return; }
+      delete S.config.qualificationOrder;
+      S.absent = []; save(); structureKey=''; rebuild();
+    });
 
     $('btnClearScores').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearScores'))) return;
@@ -1056,9 +1104,7 @@
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
-      const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
-      setTimeout(()=>{ b.textContent = old; }, 1500);
+      TUI.buttonFeedback($('btnSave'), ok ? T('sheet.save.ok') : T('sheet.save.failed'));
     });
 
     $('btnTimefit').addEventListener('click', () => TUI.timefit());
@@ -1077,6 +1123,10 @@
 
     // Score-Eingabe (beide Spielpläne)
     const onScore = (mid, set, side, val) => {
+      if (B.groupMatches && Object.keys(B.groupMatches).some(g => B.groupMatches[g].some(m => m.id === mid))) {
+        if (TUI.finalsStarted(B, S)) { alert(T('qualification.started')); paint(); return; }
+        delete S.config.qualificationOrder;
+      }
       TStore.setScore(S, mid, set, side, val);
       save();
       compute();
@@ -1087,7 +1137,10 @@
     onScoreFin.setMode = () => B.finalSetMode;
     TUI.wireScoreInputs($('schedGrpBody'), onScore);
     TUI.wireScoreInputs($('schedFinBody'), onScoreFin);
-    TUI.wireOutcomes($('schedGrpBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
+    TUI.wireOutcomes($('schedGrpBody'), { state: () => S, buildPlan: (s, changedMatchId) => {
+      if (changedMatchId) delete s.config.qualificationOrder;
+      return planFor(s.config, s);
+    }, changed: () => { delete S.config.qualificationOrder; save(); compute(); paint(); } });
     TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
   }
 

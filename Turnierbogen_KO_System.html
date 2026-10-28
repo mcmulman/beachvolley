@@ -225,7 +225,7 @@
 <h2 data-i18n="ko.eval.title">Auswertung</h2>
 
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
-  <caption><span class="cap-title" data-i18n="ko.place.caption">Endstand</span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
+  <caption><span class="cap-title" data-i18n="ko.place.caption">Endstand</span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl" data-i18n="ko.place.colPlace">Pl.</th><th class="nm" data-i18n="ko.place.colTeam">Team</th><th data-i18n="ko.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
@@ -525,8 +525,10 @@
     const key = 'final';
     const editable = MSTD.isEditing(key);
     const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S, S.absent.includes(n)) };
+    $('rankingStatus').textContent = T(B.complete ? 'ranking.status.final' : 'ranking.status.provisional');
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
-    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key) });
+    const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key),
+      rankBadge: true, isFinal: !!B.complete });
     $('placeBody').innerHTML = html || '<tr><td colspan="3" class="final-empty">' + TUI.esc(T('ko.place.empty')) + '</td></tr>';
     const placeRule = T('ko.place.rule')
       + (S.config.thirdPlace ? T('ko.place.ruleThird') : T('ko.place.ruleShared'));
@@ -750,9 +752,7 @@
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
-      const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? T('ko.save.ok') : T('ko.save.failed');
-      setTimeout(()=>{ b.textContent = old; }, 1500);
+      TUI.buttonFeedback($('btnSave'), ok ? T('ko.save.ok') : T('ko.save.failed'));
     });
 
     $('btnTimefit').addEventListener('click', () => TUI.timefit());

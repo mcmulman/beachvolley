@@ -339,17 +339,6 @@
 
     /* ── Filter bar ── */
     .filterbar {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 8px rgba(0,0,0,.05);
-      padding: 12px 24px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .filterbar {
       display: flex;
       flex-wrap: wrap;
       gap: 6px 8px;
@@ -359,6 +348,7 @@
       -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
       align-items: center;
       position: -webkit-sticky; /* Safari < 13 */
       position: sticky;
@@ -370,9 +360,11 @@
     .filterbar-desktop {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 8px;
-      justify-content: center;
+      gap: 8px;
+      justify-content: flex-start;
       align-items: center;
+      width: 100%;
+      max-width: 1032px;
     }
     .mobile-filter-grid { display: none; }
     .mobile-filter-grid .mf-field {
@@ -415,12 +407,6 @@
         align-items: end;
       }
     }
-    .filter-sep {
-      width: 1px;
-      height: 22px;
-      background: var(--border);
-      margin: 0 4px;
-    }
     .filter-label {
       font-size: 11px;
       color: #999;
@@ -430,13 +416,17 @@
       margin-right: 2px;
     }
     .filter-btn {
-      padding: 6px 14px;
+      min-height: 44px;
+      padding: 9px 14px;
       font-size: 12.5px;
+      line-height: 1.3;
+      font-weight: 600;
       color: var(--muted);
       border-radius: 20px;
       cursor: pointer;
-      transition: all .18s;
+      transition: background-color .18s, border-color .18s, color .18s;
     }
+    .filter-btn:focus-visible { outline: 2px solid var(--blue-dark); outline-offset: 3px; }
 
     .filter-btn:hover,
     .filter-btn.active {
@@ -1152,14 +1142,15 @@
         <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
           <option value="" data-i18n="home.filter.allFormats">Alle Formate</option>
           <option value="rr" data-i18n="home.format.rr">Jeder gegen Jeden</option>
-          <option value="gruppen" data-i18n="home.format.gruppen">Gruppen</option>
           <option value="swiss" data-i18n="home.format.swiss">Schweizer System</option>
+          <option value="gruppen" data-i18n="home.format.gruppen">Gruppen</option>
+          <option value="mpp" data-i18n="home.format.mpp">Modified Pool Play</option>
           <option value="ko" data-i18n="home.filter.ko">KO-System</option>
           <option value="de" data-i18n="home.format.de">Doppel-K.-o.</option>
-          <option value="mpp" data-i18n="home.format.mpp">Modified Pool Play</option>
-          <option value="koc" data-i18n="home.format.koc">King/Queen of the Court</option>
-          <option value="kingqueen" data-i18n="home.format.kingqueen">King &amp; Queen</option>
           <option value="flex" data-i18n="home.format.flex">Flex-Turnier</option>
+          <option value="kingqueen" data-i18n="home.format.kingqueen">King &amp; Queen</option>
+          <option value="koc" data-i18n="home.format.koc">King/Queen of the Court</option>
+          <option value="firmencup" data-i18n="home.firmencup.title">Firmencup</option>
           <option value="tandem" data-i18n="home.format.tandem">Tandem</option>
           <option value="elternkind" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</option>
           <option value="meisterschaften" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</option>
@@ -1170,16 +1161,16 @@
     </div>
     <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
       <button class="filter-btn active" aria-pressed="true" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
-      <div class="filter-sep"></div>
       <button class="filter-btn" aria-pressed="false" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
-      <button class="filter-btn" aria-pressed="false" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('gruppen', this)" data-i18n="home.format.gruppen">Gruppen</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('ko', this)" data-i18n="home.filter.ko">KO-System</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('de', this)" data-i18n="home.format.de">Doppel-K.-o.</button>
-      <button class="filter-btn" aria-pressed="false" onclick="filter('mpp', this)" data-i18n="home.format.mpp">Modified Pool Play</button>
-      <button class="filter-btn" aria-pressed="false" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
-      <button class="filter-btn" aria-pressed="false" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('flex', this)" data-i18n="home.format.flex">Flex-Turnier</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('kingqueen', this)" data-i18n="home.format.kingqueen">King &amp; Queen</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('koc', this)" data-i18n="home.format.koc">King/Queen of the Court</button>
+      <button class="filter-btn" aria-pressed="false" onclick="filter('firmencup', this)" data-i18n="home.firmencup.title">Firmencup</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('tandem', this)" data-i18n="home.format.tandem">Tandem</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('elternkind', this)" data-i18n="home.format.elternkind">Eltern-Kind-Turnier</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('meisterschaften', this)" data-i18n="home.format.meisterschaften">Meisterschaften · Mehrdisziplinen-Event</button>
@@ -1755,7 +1746,9 @@
 
   /* aria-pressed spiegelt den aktiven Filter (sonst nur per Farbe erkennbar). */
   function syncFilterPressed() {
+    const format = document.getElementById('mobileFormatFilter').value || 'all';
     document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('onclick') === "filter('" + format + "', this)");
       b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false');
     });
   }
@@ -1764,11 +1757,11 @@
     if (btn) {
       document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      syncFilterPressed();
     }
     /* Mobile Auswahl mitführen, sonst stellt ein Sportwechsel einen alten Filter wieder her. */
     const mobileFormat = document.getElementById('mobileFormatFilter');
     if (mobileFormat) mobileFormat.value = tag === 'all' ? '' : tag;
+    syncFilterPressed();
     if (tag === 'all') {
       applyCardFilters('', '');
     } else {
@@ -1788,6 +1781,7 @@
     const format = document.getElementById('mobileFormatFilter');
     if (format) format.value = '';
     applyCardFilters('', '');
+    syncFilterPressed();
   }
 
   function initCardDetails() {

@@ -99,6 +99,7 @@
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
+  <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
     <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
@@ -110,7 +111,7 @@
     <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
   </button>
   <div class="format-info-content format-info-text" id="scoringTables" hidden>
-    <p><strong data-i18n="kq.guide.scoringLabel">Wertung je Person:</strong> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0 (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei Gleichstand entscheidet die Ball-Differenz. Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></p>
+    <p><strong data-i18n="kq.guide.scoringLabel">Wertung je Person:</strong> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0 (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei ungleichen Spielzahlen zählen Punkte und Ball-Differenz je Spiel. Verbleibende Gleichstände teilen den Platz. Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></p>
   </div>
 </div>
 
@@ -196,7 +197,7 @@
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
-<h1 id="standingsSection" data-i18n="kq.standings.title">Endwertung</h1>
+<h1 id="standingsSection" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</h1>
 <p class="sub" data-i18n="kq.standings.sub">King (Herren) und Queen (Damen) werden getrennt gewertet – es gibt keine gemeinsame Mixed-Rangliste.</p>
 
 <div class="row" id="standingsTables">
@@ -213,12 +214,6 @@
       <tbody></tbody>
     </table>
     <p class="input-hint" id="hintWomen"></p>
-  </div>
-  <div class="table-scroll" style="flex:0 0 200px; max-width:200px;">
-    <table class="stand" id="overallStandTable" style="font-size:11px; width:100%; min-width:0;">
-      <caption><span class="cap-title" data-i18n="kq.standings.overall">Gesamtwertung</span></caption>
-      <tbody></tbody>
-    </table>
   </div>
 </div>
 
@@ -289,7 +284,7 @@
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
     save: t => TStore.save(t),
-    repaint: () => paint()
+    repaint: () => { compute(false); paint(); }
   });
 
   function applyDocTitle(){
@@ -308,6 +303,26 @@
 
   let B = null;
   let structureKey = '';
+  const configControls = ['menCount', 'womenCount', 'roundCount', 'fieldCount', 'setMode', 'startTime', 'endTime'];
+  function readOnly(){ return !!TStore.initialUiState().readOnly; }
+  function structureLocked(){ return TStore.anyResults(S); }
+  function guardStructure(){
+    if(!readOnly() && !structureLocked()) return false;
+    fillSelects();
+    if(!readOnly()) alert(T('king.structureLocked'));
+    return true;
+  }
+  function paintLocks(){
+    const locked = structureLocked();
+    $('structureLockHint').hidden = !locked;
+    $('structureLockHint').textContent = T('king.structureLocked');
+    configControls.forEach(id => { $(id).disabled = locked || readOnly(); });
+    document.querySelectorAll('[data-level-input], [data-remove-player]').forEach(el => {
+      el.disabled = locked || readOnly() || (el.hasAttribute('data-remove-player') && S.config.men + S.config.women <= MIN_PLAYERS);
+      if(locked) el.title = T('king.structureLocked');
+    });
+    $('btnTimefit').disabled = locked || readOnly();
+  }
 
   function getMenCount(){ return +$('menCount').value; }
   function getWomenCount(){ return +$('womenCount').value; }
@@ -352,6 +367,8 @@
   }
 
   function readConfig(){
+    if(guardStructure()) return false;
+    S.frozen = {};
     S.config.men = getMenCount();
     S.config.women = getWomenCount();
     S.config.rounds = +$('roundCount').value;
@@ -360,6 +377,7 @@
     S.config.startTime = $('startTime').value || '10:00';
     S.config.endTime = $('endTime').value || '14:00';
     syncAutoTitle();
+    return true;
   }
 
   function planFor(c){
@@ -368,10 +386,12 @@
       rounds: c.rounds, fields: c.fields,
       startTime: c.startTime, setMode: c.setMode,
       levels: c.levels, absent: S.absent, results: S.results,
+      manualStandings: S.manualStandings,
       fixedRounds: S.frozen || {}
     }), c, S.results);
   }
-  function compute(){
+  function compute(persist){
+    if(!structureLocked()) S.frozen = {};
     B = planFor(S.config);
     /* Runden mit Ergebnis einfrieren, damit spätere Änderungen (Ausfall,
        Niveau, Rundenzahl) gespielte Paarungen nicht neu auslosen und die
@@ -387,50 +407,21 @@
         delete S.frozen[rd.round]; changed = true;
       }
     });
-    if(changed) TStore.save(S);
+    if(changed && persist !== false) TStore.save(S);
     return B;
   }
 
-  /* Person endgültig löschen: alle IDs dahinter rücken nach (Herren 1..M,
-     Damen M+1..M+W). Bereits gespielte (eingefrorene) Runden bleiben
-     erhalten; Spiele mit der gelöschten Person entfallen, die übrigen drei
-     pausieren in dieser Runde. Noch nicht gespielte Runden werden neu
-     ausgelost.                                                           */
+  /* IDs dürfen nach der ersten Eingabe nicht mehr verschoben werden. */
   const MIN_PLAYERS = 4;
   function removePlayer(id){
+    if(guardStructure()) return;
     const men = getMenCount(), women = getWomenCount();
     if(men + women - 1 < MIN_PLAYERS){ alert(T('kq.alert.minPlayers', { n: MIN_PLAYERS })); return; }
     const label = playerName(id);
     if(!TUI.confirmRemoveTeam(label, { hasResults: TStore.anyResults(S) })) return;
     const map = TStore.teamRemap(id);
-    const newResults = {};
-    const fz = {};
-    Object.keys(S.frozen || {}).forEach(r => {
-      const fx = S.frozen[r];
-      if(!fx || !Array.isArray(fx.matches)) return;
-      const idle = [];
-      const kept = [];
-      fx.matches.forEach((p, i) => {
-        const a = TStore.remapList(p[0], map), b = TStore.remapList(p[1], map);
-        if(a.length === 2 && b.length === 2){
-          const oldId = 'kq_r' + r + '_m' + (i + 1);
-          if(S.results[oldId]) newResults['kq_r' + r + '_m' + (kept.length + 1)] = S.results[oldId];
-          kept.push([a, b]);
-        } else {
-          idle.push(...a, ...b);
-        }
-      });
-      let byePlayer = fx.byePlayer != null ? map(fx.byePlayer) : null;
-      let byeTeam = null;
-      if(Array.isArray(fx.byeTeam)){
-        const bt = TStore.remapList(fx.byeTeam, map);
-        if(bt.length === 2) byeTeam = bt; else idle.push(...bt);
-      }
-      idle.push(...TStore.remapList(fx.idle, map));
-      if(kept.length) fz[r] = { matches: kept, byePlayer, byeTeam, idle };
-    });
-    S.results = newResults;
-    S.frozen = fz;
+    S.results = {};
+    S.frozen = {};
     TStore.remapCommon(S, map);
     S.config.levels = TStore.remapKeys(S.config.levels, map);
     if(id <= men) S.config.men = men - 1; else S.config.women = women - 1;
@@ -581,42 +572,18 @@
       const manual = TStore.getManualStandings(S, tableKey);
       const editable = MSTD.isEditing(tableKey);
       tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span></caption>'
-        + TUI.standingsTableHtml(ranked, ctx, { manual, editable });
+        + TUI.standingsTableHtml(ranked, ctx, { manual, editable,
+          perGame: tableKey === 'kq-men' ? !!B.menPerGame : !!B.womenPerGame });
       const hint = $(hintId);
       if(hint) hint.innerHTML = MSTD.toolbarHtml(tableKey);
     };
     paintOne('kq-men', B.men, 'menStandTable', esc(T('kq.standings.men')), 'hintMen');
     paintOne('kq-women', B.women, 'womenStandTable', esc(T('kq.standings.women')), 'hintWomen');
 
-    const all = [...(B.men || []), ...(B.women || [])]
-      .filter(item => item && item.team != null)
-      .map(item => ({
-        team: item.team,
-        gender: item.gender || (item.team <= getMenCount() ? 'm' : 'f'),
-        stat: item.stat || { games:0, pts:0, ballsFor:0, ballsAgainst:0, bd:0 }
-      }))
-      .sort((a, b) => (b.stat.pts || 0) - (a.stat.pts || 0)
-        || (b.stat.bd || 0) - (a.stat.bd || 0)
-        || (a.team - b.team));
-
-    const overallTable = $('overallStandTable');
-    if(overallTable){
-      overallTable.innerHTML = '<caption><span class="cap-title">' + esc(T('kq.standings.overall')) + '</span></caption>'
-        + '<thead><tr><th class="pl">' + esc(T('sheet.place.colPlace')) + '</th><th class="nm">' + esc(T('kq.col.name')) + '</th><th>'
-        + esc(T('kq.col.pts')) + '</th><th>' + esc(T('kq.col.diff')) + '</th></tr></thead><tbody>'
-        + all.map((row, idx) => {
-            const diff = Number(row.stat.bd || 0);
-            const diffHtml = diff > 0 ? '+' + diff : String(diff);
-            const badge = row.gender === 'm' ? T('kq.badge.man') : row.gender === 'f' ? T('kq.badge.woman') : '—';
-            return '<tr data-team="' + row.team + '">'
-              + '<td class="pl">' + (idx + 1) + '.</td>'
-              + '<td class="nm"><span class="t-line">' + esc(playerName(row.team)) + '</span><span class="tnm"> ' + esc(badge) + '</span></td>'
-              + '<td><b>' + (row.stat.pts || 0) + '</b></td>'
-              + '<td class="' + (diff > 0 ? 'pos' : diff < 0 ? 'neg' : '') + '">' + diffHtml + '</td>'
-              + '</tr>';
-          }).join('')
-        + '</tbody>';
-    }
+    const complete = B.complete && B.rankingComplete;
+    const statusKey = complete ? 'ranking.status.final' : 'ranking.status.provisional';
+    $('standingsSection').setAttribute('data-i18n', statusKey);
+    $('standingsSection').textContent = T(statusKey);
   }
 
   function paintGuide(){
@@ -671,6 +638,7 @@
   }
 
   function paint(){
+    paintLocks();
     if(planningActions) planningActions.refresh();
     ['menRosterBody', 'womenRosterBody'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -683,6 +651,7 @@
     paintNotices();
     paintLegend();
     paintCfgResult();
+    paintLocks();
     if($('session-title-input').value !== (S.title || '')) $('session-title-input').value = S.title || '';
     applyDocTitle();
   }
@@ -699,7 +668,7 @@
     });
     ['menCount','womenCount'].forEach(id => {
       $(id).addEventListener('change', () => {
-        readConfig();
+        if(!readConfig()) return;
         /* Feldauswahl an die neue Teilnehmerzahl anpassen (max. Teams/2 Spiele parallel). */
         const teamsForFields = Math.floor((getMenCount() + getWomenCount()) / 2);
         S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
@@ -708,7 +677,7 @@
       });
     });
     ['roundCount','fieldCount','setMode','startTime','endTime'].forEach(id => {
-      $(id).addEventListener('change', () => { readConfig(); save(); structureKey=''; rebuild(); });
+      $(id).addEventListener('change', () => { if(!readConfig()) return; save(); structureKey=''; rebuild(); });
     });
 
     function setRosterVisible(visible){
@@ -730,7 +699,7 @@
         if(first) first.focus();
       }
     });
-    $('btnTimefit').addEventListener('click', () => TUI.timefit());
+    $('btnTimefit').addEventListener('click', () => { if(!guardStructure()) TUI.timefit(); });
     $('btnClearNames').addEventListener('click', () => {
       if(!confirm(T('kq.confirm.clearNames'))) return;
       S.teamNames = {};
@@ -761,9 +730,7 @@
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
-      const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
-      setTimeout(()=>{ b.textContent = old; }, 1500);
+      TUI.buttonFeedback($('btnSave'), ok ? T('sheet.save.ok') : T('sheet.save.failed'));
     });
 
     document.addEventListener('input', e => {
@@ -781,6 +748,7 @@
     });
     document.addEventListener('change', e => {
       if(e.target.matches('[data-level-input]')){
+        if(guardStructure()){ e.target.value = String(playerLevel(+e.target.getAttribute('data-level-input'))); return; }
         const id = +e.target.getAttribute('data-level-input');
         S.config.levels = S.config.levels || {};
         S.config.levels[id] = +e.target.value;
@@ -797,7 +765,9 @@
     });
 
     const onScore = (mid, set, side, val) => {
+      if(readOnly()) return;
       TStore.setScore(S, mid, set, side, val);
+      compute(false);
       save();
       rebuild();
     };

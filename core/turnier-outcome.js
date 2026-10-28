@@ -273,14 +273,16 @@
 
   /* Build both plans on copies: no entered downstream score or decision may
      move to different (or unresolved) participants. Partial scores count too.
-     Comparing resolved plans also covers group ranking, loser paths and byes. */
+     Comparing resolved plans also covers group ranking, loser paths and byes.
+     The candidate callback receives matchId so it can invalidate derived
+     decisions before rebuilding, while the original plan retains its bindings. */
   function validateChange(state, matchId, outcome, buildPlan) {
     const before = JSON.parse(JSON.stringify(state));
     const after = JSON.parse(JSON.stringify(state));
     after.outcomes = after.outcomes || {};
     if (outcome == null) delete after.outcomes[matchId];
     else after.outcomes[matchId] = outcome;
-    const oldPlan = buildPlan(before), newPlan = buildPlan(after);
+    const oldPlan = buildPlan(before), newPlan = buildPlan(after, matchId);
     const inputs = withInputs(state);
     const affected = Object.keys(inputs).filter(id => {
       if (id === matchId) return false;

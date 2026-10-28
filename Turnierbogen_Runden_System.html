@@ -111,7 +111,7 @@
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.scoringLabel">Wertung:</span> <span data-i18n="rs.guide.scoringText">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0.
-      Bei Gleichstand entscheidet die Ball-Differenz, dann die erzielten Ballpunkte, dann der direkte Vergleich, zuletzt das Los.
+      Bei Gleichstand entscheidet die Ball-Differenz, dann der direkte Vergleich, dann die erzielten Ballpunkte. Verbleibende Gleichstände teilen den Platz; Teamnummern entscheiden keine Plätze.
       Der Entscheidungssatz zählt nur für Sieg/Niederlage, nicht für die Ball-Differenz.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="rs.guide.trackText">Nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren – so ist der Zwischenstand ohne Gerät ablesbar.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
@@ -221,6 +221,7 @@
 <div class="page-break"></div>
 
 <h1 id="standingsSection" data-i18n="rs.standings.title">Laufende Tabelle &amp; Endstand</h1>
+<p class="input-hint" id="rankingStatus" role="status"></p>
 <p class="sub" id="standingsSub"><span class="only-screen" data-i18n="rs.standings.subScreen">Punkte, Ball-Differenz und Platz werden automatisch berechnet.</span><span class="only-print" data-i18n="rs.standings.printHint">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
 
 <p class="input-hint hint-top" id="hintRank"></p>
@@ -235,7 +236,7 @@
 </div>
 
 <div class="noprint" style="text-align:center;margin:14px 0 22px;">
-  <button type="button" class="nbtn" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden" data-i18n-attr="title:rs.export.title"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="rs.export.btn">Finalrunde spielen</span></button>
+  <button type="button" class="nbtn" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden" data-i18n-attr="title:rs.export.title"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="rs.export.btn">Platzierungsrunde aus Rangliste erstellen</span></button>
 </div>
 
 <div class="legend" id="h-legend"></div>
@@ -662,6 +663,10 @@
 
     paintStandings();
     paintTrack();
+    const ranked = correctedRanking();
+    const final = rrFinished(ranked);
+    $('rankingStatus').textContent = T(final ? 'ranking.status.final' : 'ranking.status.provisional');
+    $('rankingStatus').setAttribute('data-ranking-status', final ? 'final' : 'provisional');
     paintNotices();
     paintSummary();
     paintGuide();
@@ -752,6 +757,8 @@
     const dttbRanking = S.config.rankingProfile === 'tt-dttb-individual-round-robin-2026';
     const editing = !dttbRanking && MSTD.isEditing('final');
     const manual = TStore.getManualStandings(S, 'final');
+    const corrected = {};
+    correctedRanking().forEach(e => { corrected[e.team] = e; });
     /* Korrektur-Spalten nur zeigen, wenn sie etwas enthalten: "Korr." bei
        vorhandenen Δ-Werten oder im Bearbeiten-Modus, die Rücksetz-Spalte
        nur im Bearbeiten-Modus (siehe .mstd-rowact in spielplan.css). */
@@ -759,7 +766,7 @@
     if (trackEl) {
       const hasCorr = Object.keys(manual || {}).some(function (k) {
         const ov = manual[k] || {};
-        return !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
+        return !!(TC.manualDelta(ov.dPts) || TC.manualDelta(ov.dBd) || ov.place != null);
       }) && !dttbRanking;
       trackEl.classList.toggle('is-editing', !!editing);
       trackEl.classList.toggle('has-corr', hasCorr);
@@ -831,8 +838,7 @@
       const field = tr.getAttribute('data-line') === 'pts' ? 'dPts' : 'dBd';
       const td = tr.querySelector('td[data-corr]');
       if (!td) return;
-      const ov = manual[t] || {};
-      const delta = Number(ov[field]) || 0;
+      const delta = corrected[t] ? corrected[t][field] : 0;
       td.classList.toggle('is-manual', !!delta);
       if (dttbRanking) {
         td.textContent = '';
@@ -849,7 +855,7 @@
       if (!actTd) return;
       if (dttbRanking) { actTd.textContent = ''; return; }
       const ov = manual[t] || {};
-      const hasAny = !!((Number(ov.dPts) || 0) || (Number(ov.dBd) || 0));
+      const hasAny = !!(TC.manualDelta(ov.dPts) || TC.manualDelta(ov.dBd) || ov.place != null);
       actTd.innerHTML = (editing && hasAny)
         ? '<button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + TUI.esc(T('rs.mstd.resetRowTitle')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'
         : '';
@@ -857,9 +863,8 @@
 
     /* Platz-Spalten – ohne Ergebnisse bleibt die Spalte leer, damit der
        ausgedruckte Bogen nicht mit einem Schein-Platz "1.=" startet.
-       Die Δ-Korrekturen fließen direkt in Rang & Sortierung ein (analog zur
-       Endtabelle / zum Schweizer System), ein zusätzlicher Platz-Override
-       wird hier nicht gebraucht (siehe Rücksprache mit dem Nutzer). */
+       Korrekturen und ausdrücklich erfasste Platzentscheidungen verwenden
+       dieselbe profilgerechte Rangfolge wie die Übergabe. */
     const anyResult = doneRounds.size > 0 || !!B.withdrawal;
     const rows = rrRankedRows();
     const place = {};
@@ -868,8 +873,11 @@
     const finished = rrFinished();
     document.querySelectorAll('#trackBody td[data-pos]').forEach(td => {
       const t = +td.closest('tr').getAttribute('data-team');
-      const e = anyResult ? place[t] : null;
-      if (e) td.innerHTML = TUI.rankBadgeHtml(e.place, { shared: e.shared, final: finished });
+      const e = anyResult || (place[t] && place[t].hasPlace) ? place[t] : null;
+      if (editing) td.innerHTML = '<input type="number" min="1" max="' + rows.length
+        + '" step="1" class="mstd-in" data-field="place" value="'
+        + TUI.esc(manual[t] && manual[t].place != null ? manual[t].place : '') + '">';
+      else if (e) td.innerHTML = TUI.rankBadgeHtml(e.place, { shared: e.shared, final: finished, manual: e.hasPlace });
       else td.textContent = S.absent.includes(t) ? '–' : '';
       td.classList.toggle('pz-tie', !!(e && e.shared));
     });
@@ -881,37 +889,36 @@
     if (!editing) TUI.sortTrackRows(tbody, rows.map(r => r.team));
   }
 
-  /* Jeder-gegen-Jeden: Rangfolge inkl. Δ-Korrekturen – dieselbe Reihenfolge
-     für die Platz-Spalte der laufenden Tabelle UND für "Finalrunde spielen". */
+  /* Anzeige und Übergabe teilen dieselbe profilgerechte Rangberechnung. */
   function rrRankedRows(){
-    if (S.config.rankingProfile === 'tt-dttb-individual-round-robin-2026') {
-      return B.placements.map((entry, i) => ({
-        team: entry.team, place: entry.place, shared: entry.shared, i
+    return correctedRanking();
+  }
+  function correctedRanking(){
+    const table = B.table;
+    const unsupported = table.ranked.find(e => e.unsupported);
+    const manual = /^tt-dttb-/.test(S.config.rankingProfile) ? {}
+      : TStore.getManualStandings(S, isSwiss() ? 'final-swiss' : 'final');
+    const ranked = TC.rankWithCorrections(table.ranked.map(e => e.team), table.stat,
+      manual, {
+      criteria: table.criteria, matches: table.played, rankingProfile: S.config.rankingProfile,
+      perGame: table.perGame, swiss: isSwiss(), complete: table.complete,
+      interim: !table.complete,
+      unsupportedReason: unsupported ? unsupported.unsupported : null
+    });
+    if (!isSwiss() && B.withdrawal) {
+      const fixed = B.placements.find(e => e.team === B.withdrawal.participant && e.source === 'DTTB WO D7.9');
+      if (fixed) ranked.push(Object.assign({}, fixed, {
+        supported: true, resolved: true, complete: false, hasPlace: false, dPts: 0, dBd: 0
       }));
     }
-    const manual = TStore.getManualStandings(S, 'final');
-    const rows = B.table.ranked.map((e, i) => {
-      const ov = manual[e.team] || {};
-      const dPts = Number(ov.dPts) || 0;
-      const dBd = Number(ov.dBd) || 0;
-      return { team: e.team, i, effPts: e.stat.pts + dPts, effBd: e.stat.bd + dBd };
-    });
-    rows.slice().sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i))
-      .forEach((row, i, sorted) => {
-        const prev = sorted[i - 1];
-        row.place = prev && row.effPts === prev.effPts && row.effBd === prev.effBd
-          ? prev.place : i + 1;
-      });
-    rows.sort((a, b) => (a.place - b.place) || (a.i - b.i));
-    rows.forEach((row, i) => {
-      const prev = rows[i - 1], next = rows[i + 1];
-      row.shared = !!((prev && prev.place === row.place) || (next && next.place === row.place));
-    });
-    return rows;
+    return ranked;
   }
-  function rrFinished(){
-    return (B.rounds || []).length > 0 && B.rounds.every(rd =>
-      rd.matches.every(m => m.result || m.bye != null || m.dead));
+  function rrFinished(ranked){
+    // Shared Swiss house places finish the table, not a unique qualification order.
+    const sharedAllowed = isSwiss() && ['beach-house', 'indoor-3-2-1-0', 'indoor-hobby', 'table-tennis-hobby']
+      .includes(S.config.rankingProfile || TC.activeRanking());
+    return !!B.table.complete && (ranked || correctedRanking()).every(e =>
+      e.supported && !e.unresolved && (!e.shared || sharedAllowed));
   }
 
   function renderSwissCentralTable(standEl) {
@@ -972,26 +979,14 @@
       return last;
     };
 
-    const order = B.table && B.table.ranked ? B.table.ranked.map(e => e.team) : allTeams();
+    const ranked = correctedRanking();
     const placeMap = {};
-    (B.table && B.table.ranked ? B.table.ranked : []).forEach(e => { placeMap[e.team] = e; });
+    ranked.forEach(e => { placeMap[e.team] = e; });
     const manualSwiss = TStore.getManualStandings(S, 'final-swiss');
     const editableSwiss = MSTD.isEditing('final-swiss');
-    /* Die Zeilenreihenfolge richtet sich nach den korrigierten Werten: eine
-       Δ-Korrektur bei Punkte/Diff sortiert die Zeile automatisch mit neu ein
-       (Punkte, dann Ball-Differenz). Ohne jede Korrektur bleibt exakt die
-       ursprüngliche Berechnung erhalten (stabiler Index i als Tie-Break). */
-    const effOrder = order.map((t, i) => {
-      const e = placeMap[t];
-      const ov = manualSwiss[t] || {};
-      const dPts = Number(ov.dPts) || 0;
-      const dBd = Number(ov.dBd) || 0;
-      const effPts = (e ? e.stat.pts : -Infinity) + dPts;
-      const effBd = (e ? e.stat.bd : 0) + dBd;
-      return { team: t, effPts, effBd, i };
-    }).sort((a, b) => (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i)).map(e => e.team);
+    const effOrder = ranked.map(e => e.team);
     const effPlaceMap = {};
-    effOrder.forEach((t, i) => { effPlaceMap[t] = i + 1; });
+    ranked.forEach(e => { effPlaceMap[e.team] = e.place; });
 
     for (let r = 1; r <= rounds; r++) {
       const table = B.tableUpto(r);
@@ -1004,7 +999,7 @@
         ? '<br><span>Σ ' + stRaw[t].pts + '/' + fmt(stRaw[t].bd) + '/' + stRaw[t].ballsFor + '</span>'
         : '';
       const place = {};
-      table.ranked.forEach((e, idx) => { place[e.team] = idx + 1; });
+      table.ranked.forEach(e => { place[e.team] = e.place == null ? '' : e.place + (e.shared ? '=' : ''); });
       for (let t = 1; t <= S.config.teams; t++) {
         const m = findMatch(r, t);
         let cell = '';
@@ -1041,35 +1036,28 @@
        leeren Bogen bei jedem Team "1." mit Medaille. */
     const anyResult = B.rounds.some(rd => rd.matches.some(m => m.result));
     allTeams().forEach(t => {
-      const e = anyResult ? placeMap[t] : null;
+      const e = anyResult || (placeMap[t] && placeMap[t].hasPlace) ? placeMap[t] : null;
       const effPlace = e ? effPlaceMap[t] : null;
       let badge;
       if (effPlace == null) {
         badge = '<span class="rank-badge rank-none">–</span>';
       } else {
         /* Medaille für Platz 1–3 schon laufend (einheitlich, TUI.rankBadgeHtml). */
-        const isFinal = B.rounds.length > 0 && B.rounds.every(rd =>
-          rd.matches.every(m => m.result || m.bye != null || m.dead));
-        const topCls = effPlace <= 3 ? ' rank-top rank-' + effPlace : '';
-        const medal = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' }[effPlace] || '';
-        badge = '<span class="rank-badge ' + (isFinal ? 'rank-final' : 'rank-live') + topCls + '" title="'
-          + TUI.esc(isFinal ? T('ui.rank.final') : T('ui.rank.live')) + ': ' + effPlace + '.">'
-          + (medal ? medal + ' ' : '') + effPlace + '.</span>';
+        badge = TUI.rankBadgeHtml(effPlace, { shared: e.shared, manual: e.hasPlace, final: rrFinished() });
       }
       const nm = document.getElementById('cteam_' + t);
       if (nm) nm.innerHTML = TUI.teamNameHtml(t, S, S.absent.includes(t));
       const rb = document.getElementById('crank_' + t);
-      if (rb) rb.innerHTML = badge;
+      if (rb) rb.innerHTML = editableSwiss
+        ? '<input type="number" min="1" max="' + ranked.length
+          + '" step="1" class="mstd-in" data-field="place" value="'
+          + TUI.esc(manualSwiss[t] && manualSwiss[t].place != null ? manualSwiss[t].place : '') + '">'
+        : badge;
 
-      /* Δ-Korrektur Punkte/Diff – wie im Rundensystem: wird dauerhaft auf
-         den berechneten Endwert addiert, bleibt also auch bei neuen
-         Ergebnissen gültig. Wirkt NICHT auf die Zeilenreihenfolge (die
-         richtet sich immer nach dem berechneten Platz, siehe effOrder). */
-      const ov = manualSwiss[t] || {};
-      const dPts = Number(ov.dPts) || 0;
-      const dBd = Number(ov.dBd) || 0;
-      const basePts = e ? e.stat.pts : 0;
-      const baseBd = e ? e.stat.bd : 0;
+      const dPts = placeMap[t] ? placeMap[t].dPts : 0;
+      const dBd = placeMap[t] ? placeMap[t].dBd : 0;
+      const basePts = placeMap[t] ? placeMap[t].effPts - dPts : 0;
+      const baseBd = placeMap[t] ? placeMap[t].effBd - dBd : 0;
       const ptsCell = document.getElementById('cpts_' + t);
       const diffCell = document.getElementById('cdiff_' + t);
       if (ptsCell) {
@@ -1087,7 +1075,7 @@
           ? fmtd + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (dBd || '') + '" placeholder="±0" title="' + E('rs.mstd.deltaTitle') + '">'
           : fmtd + TUI.manualDeltaBadge(T('rs.delta.bd'), dBd);
       }
-      if (editableSwiss && ptsCell && (dPts || dBd)) {
+      if (editableSwiss && ptsCell && (dPts || dBd || (manualSwiss[t] && manualSwiss[t].place != null))) {
         ptsCell.innerHTML += ' <button type="button" class="mstd-reset-row" data-team="' + t + '" title="' + E('rs.mstd.resetRowTitle') + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
       }
     });
@@ -1342,24 +1330,23 @@
       const teams = allTeams().filter(t => !S.absent.includes(t));
       if(teams.length < 2){ alert(T('rs.alert.exportMin')); return; }
       const table = B.table;
-      if (S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
-          && (!table.complete || table.ranked.some(e => e.shared || e.unsupported))) {
-        alert(T('sport.ranking.swissExportBlocked')); return;
+      const ranked = correctedRanking();
+      const house = ['beach-house', 'indoor-3-2-1-0', 'indoor-hobby', 'table-tennis-hobby']
+        .includes(S.config.rankingProfile);
+      const complete = !!table.complete;
+      const valid = ranked.length === teams.length && ranked.every(e =>
+        e.supported && e.resolved && !e.shared && Number.isInteger(e.place) && e.place >= 1
+        && e.place <= teams.length && teams.includes(e.team))
+        && new Set(ranked.map(e => e.place)).size === teams.length
+        && new Set(ranked.map(e => e.team)).size === teams.length;
+      if (!valid || (!house && !complete)) {
+        alert(T(S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
+          ? 'sport.ranking.swissExportBlocked' : 'ranking.export.unresolved'));
+        return;
       }
-      /* B.table hat kein eigenes "complete"-Flag (TFormat.buildRounds liefert
-         nur ranked/stat/criteria/played) - vollständig ist der Stand, wenn
-         KEIN Spiel mehr offen ist (kein Ergebnis, kein Freilos, nicht tot). */
-      const openMatches = (B.rounds || []).reduce((sum, rd) =>
-        sum + rd.matches.filter(m => !m.result && m.bye == null && !m.dead).length, 0);
-      const complete = openMatches === 0 && table && table.ranked && table.ranked.length === teams.length;
       const doExport = () => {
         if(!complete && !confirm(T('rs.confirm.exportIncomplete'))) return;
-        /* Im Schweizer System ist B.table bereits die angezeigte Reihung;
-           bei Jeder-gegen-Jeden zählen die Δ-Korrekturen der laufenden
-           Tabelle mit (sonst wiche die Übergabe vom angezeigten Platz ab). */
-        const rankedOrder = (table && table.ranked && table.ranked.length)
-          ? (isSwiss() ? table.ranked.map(e => e.team) : rrRankedRows().map(r => r.team))
-          : teams;
+        const rankedOrder = ranked.map(e => e.team);
         const names = rankedOrder.map(t => TSport.teamLabel(S, t, 'Team ' + t));
         const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(names)))));
         window.open('Turnierbogen_Gruppen_Finalrunde.html#rankimport=' + encoded, '_blank');
@@ -1395,9 +1382,7 @@
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
-      const b = $('btnSave'); const old = b.textContent;
-      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
-      setTimeout(()=>{ b.textContent = old; }, 1500);
+      TUI.buttonFeedback($('btnSave'), ok ? T('sheet.save.ok') : T('sheet.save.failed'));
     });
 
     $('btnTimefit').addEventListener('click', () => TUI.timefit());

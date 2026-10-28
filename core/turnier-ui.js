@@ -104,12 +104,26 @@
               const state = opts.getTournament && opts.getTournament();
               if (!state || !state.config || profile.rankingProfiles.indexOf(select.value) < 0) return;
               const previous = state.config.rankingProfile || profile.rankingProfiles[0];
+              if (select.hasAttribute('data-qualification-disabled')) {
+                select.value = previous;
+                showRankingLimit(limitation, previous);
+                root.alert(tx('qualification.started', 'Die Finalrunde hat bereits Eingaben. Bitte zuerst die Finalrunde zurücksetzen, bevor du die Qualifikation änderst.'));
+                return;
+              }
+              const previousOrder = state.config.qualificationOrder;
+              delete state.config.qualificationOrder;
               state.config.rankingProfile = select.value;
               try { TC.configureProfile(id, state.config.customSetTarget, select.value, state.config.modeMinutes); }
-              catch (e) { state.config.rankingProfile = previous; select.value = previous; throw e; }
+              catch (e) {
+                state.config.rankingProfile = previous;
+                if (previousOrder !== undefined) state.config.qualificationOrder = previousOrder;
+                select.value = previous;
+                throw e;
+              }
               Promise.resolve(opts.save ? opts.save(state) : TStore.save(state)).then(function (saved) {
                 if (!saved) {
                   state.config.rankingProfile = previous;
+                  if (previousOrder !== undefined) state.config.qualificationOrder = previousOrder;
                   TC.configureProfile(id, state.config.customSetTarget, previous, state.config.modeMinutes);
                   select.value = previous;
                   return;
@@ -117,6 +131,7 @@
                 opts.repaint();
               }).catch(function (error) {
                 state.config.rankingProfile = previous;
+                if (previousOrder !== undefined) state.config.qualificationOrder = previousOrder;
                 TC.configureProfile(id, state.config.customSetTarget, previous, state.config.modeMinutes);
                 select.value = previous;
                 root.console.error('Ranking profile could not be saved', error);
@@ -960,7 +975,10 @@
   }
 
   /* ============================================================ 5. TABELLE
-     ranked: Ergebnis aus TC.rank(). "shared" wird als "=" markiert, damit auf
+     ranked: Ergebnis aus TC.rank() oder TC.rankWithCorrections().
+     Bereits korrigierte Engine-Ränge bleiben maßgeblich; insbesondere dürfen
+     verworfene manuelle Plätze nicht von der Darstellung reaktiviert werden.
+     "shared" wird als "=" markiert, damit auf
      dem Papier sichtbar ist, dass hier das Los entscheiden muss.
 
      Manuelle Korrektur ("Tabelle korrigieren"): opts.manual ist die Map
@@ -977,34 +995,27 @@
     const per = !!o.perGame;
     const editable = !!o.editable;
     const manual = o.manual || {};
-    let rows = ranked.map((r, i) => {
-      const ov = manual[r.team] || {};
-      const dPts = Number(ov.dPts) || 0;
-      const dBd = Number(ov.dBd) || 0;
-      const hasPlace = ov.place != null && Number.isFinite(Number(ov.place));
-      const overridePlace = hasPlace ? Number(ov.place) : null;
-      const effPts = (per ? r.stat.ptsPer : r.stat.pts) + dPts;
-      const effBd = (per ? r.stat.bdPer : r.stat.bd) + dBd;
-      return { orig: r, i, team: r.team, dPts, dBd, hasPlace, overridePlace, effPts, effBd };
-    });
-    /* The displayed place shares ties on points and ball difference while
-       preserving the ranking engine's order as the stable tie-breaker. */
-    const recalculated = rows.slice().sort((a, b) =>
-      (b.effPts - a.effPts) || (b.effBd - a.effBd) || (a.i - b.i));
-    let place = 1;
-    recalculated.forEach((row, i) => {
-      if (i && (row.effPts !== recalculated[i - 1].effPts || row.effBd !== recalculated[i - 1].effBd)) {
-        place = i + 1;
-      }
-      row.calcPlace = place;
-    });
-    rows.forEach(row => { row.place = row.hasPlace ? row.overridePlace : row.calcPlace; });
-    const sortedRows = rows.slice().sort((a, b) => (a.place - b.place) || (a.i - b.i));
-    sortedRows.forEach((row, i) => {
-      const prev = sortedRows[i - 1], next = sortedRows[i + 1];
-      row.shared = !!((prev && prev.place === row.place) || (next && next.place === row.place));
-    });
-    if (!editable) rows = sortedRows;
+    const correctionOptions = {};
+    if (o.perGame != null) correctionOptions.perGame = per;
+    if (o.rankingProfile != null) correctionOptions.rankingProfile = o.rankingProfile;
+    if (o.complete != null) correctionOptions.complete = o.complete === true;
+    const corrected = ranked.every(row => row.correctionsApplied)
+      ? ranked : TC.rankWithCorrections(ranked, manual, correctionOptions);
+    let rows = corrected.map((r, i) => ({
+      orig: r,
+      i: ranked.findIndex(source => source.team === r.team),
+      team: r.team,
+      dPts: r.dPts,
+      dBd: r.dBd,
+      hasPlace: r.hasPlace,
+      place: r.place,
+      shared: r.shared,
+      effPts: r.effPts,
+      effBd: r.effBd
+    }));
+    if (editable) {
+      rows.sort((a, b) => (a.i - b.i));
+    }
 
     const perSfx = per ? tx('ui.stand.perGame', '/Sp') : '';
     const deltaTitle = esc(tx('ui.manual.deltaTitle', 'Korrektur Δ – wird dauerhaft auf den berechneten Wert addiert'));
@@ -1111,7 +1122,7 @@
     const p = Number(place);
     const fin = o.final === true;
     const topCls = p >= 1 && p <= 3 ? ' rank-top rank-' + p : '';
-    const medal = RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
+    const medal = !o.shared && RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
     const label = (o.prefix || '') + p + '.' + (o.shared ? '=' : '');
     const kind = o.title || (fin ? tx('ui.rank.final', 'Endplatzierung')
       : o.final === false ? tx('ui.rank.live', 'Aktueller Platz (laufend)') : tx('ui.rank.place', 'Platz'));
@@ -1143,22 +1154,31 @@
     const manual = o.manual || {};
     let rows = (placements || []).map((p, i) => {
       const ov = (p.team != null && manual[p.team]) || {};
-      const hasPlace = ov.place != null && Number.isFinite(Number(ov.place));
+      const hasPlace = ov.place != null && Number.isInteger(Number(ov.place)) && Number(ov.place) >= 1;
       const place = hasPlace ? Number(ov.place) : p.place;
       const hasSource = ov.source != null && ov.source !== '';
       const source = hasSource ? ov.source : term(p.source || '');
-      return { p, i, place, hasPlace, hasSource, source };
+      return {
+        p, i, place, hasPlace, hasSource, source,
+        unresolved: !!p.unresolved && !hasPlace,
+        shared: !hasPlace && !!(p.shared || p.unresolved || p.placeTo != null || p.rangeLabel)
+      };
     });
     /* Im Bearbeiten-Modus bleibt die Zeilenreihenfolge stehen (nur der Platz-
        Wert im Feld aktualisiert sich schon) – erst nach "Fertig" wird nach
        dem (ggf. korrigierten) Platz neu sortiert, damit Zeilen nicht schon
        waehrend der Eingabe springen. */
     if (!editable) rows.sort((a, b) => (a.place - b.place) || (a.i - b.i));
+    rows.forEach(row => {
+      if (rows.filter(other => other.place === row.place).length > 1) row.shared = true;
+    });
 
     let html = '';
     rows.forEach(row => {
       const p = row.p;
-      const placeLabel = row.hasPlace ? (row.place + '.') : (p.rangeLabel ? term(p.rangeLabel) : (p.place + '.'));
+      const placeLabel = row.hasPlace ? (row.place + '.') : (p.rangeLabel ? term(p.rangeLabel)
+        : p.placeTo != null ? (p.place + '–' + p.placeTo + '.')
+          : (p.place + '.' + (row.shared ? '=' : '')));
       const teamHtml = p.team != null
         ? (ctx && ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : esc(ctx ? ctx.teamLabel(p.team) : String(p.team)))
         : '&nbsp;';
@@ -1175,10 +1195,10 @@
               : '')
           + '</td>';
       } else {
-        const plHtml = o.rankBadge !== false && p.team != null && !p.rangeLabel
+        const plHtml = o.rankBadge !== false && p.team != null && !p.rangeLabel && p.placeTo == null && !row.shared
           ? rankBadgeHtml(row.place, { final: o.isFinal, manual: row.hasPlace })
           : esc(placeLabel);
-        html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + '">' + plHtml + '</td>'
+        html += '<td class="pl' + (row.hasPlace ? ' is-manual' : '') + (row.shared ? ' pz-tie' : '') + '">' + plHtml + '</td>'
           + '<td class="nm">' + teamHtml + '</td>'
           + '<td class="src' + (row.hasSource ? ' is-manual' : '') + '">' + esc(row.source) + '</td>';
       }
@@ -1261,6 +1281,128 @@
       store.repaint();
     });
     return { isEditing, toolbarHtml };
+  }
+
+  function finalsStarted(plan, state) {
+    return plan.finalRounds.some(round => round.matches.some(match => {
+      const score = state.results[match.id];
+      return !!(state.outcomes && state.outcomes[match.id])
+        || !!(score && score.some(set => set.some(value => value != null && value !== '')));
+    }));
+  }
+
+  function mountFinalQualification(container, options) {
+    let signature = '';
+    function paint() {
+      const plan = options.plan();
+      const state = options.get();
+      const started = finalsStarted(plan, state);
+      const uiState = TStore.initialUiState();
+      const readOnly = !!(uiState && uiState.readOnly);
+      container.ownerDocument.querySelectorAll('#teamCount, #groupCount, #finalMode, #setMode, #finalSetMode, '
+        + '#ranking-profile-select, #outcome-profile-select, #btnToggleRankImport, #btnRankImportApply, '
+        + '#btnClearAbsent, #absentGrid input, #absentGrid button, #nameGrid [data-remove-team], '
+        + '#schedGrpBody [data-outcome-btn], #groupTables .mstd-toggle, #groupTables .mstd-in')
+        .forEach(control => {
+          if (started) {
+            if (!control.hasAttribute('data-qualification-disabled')) {
+              control.setAttribute('data-qualification-disabled', control.disabled ? '1' : '0');
+            }
+            control.disabled = true;
+          } else if (control.hasAttribute('data-qualification-disabled')) {
+            control.disabled = control.getAttribute('data-qualification-disabled') === '1';
+            control.removeAttribute('data-qualification-disabled');
+          }
+        });
+      const resolution = plan.placementResolution;
+      const ties = resolution && resolution.ties ? resolution.ties : [];
+      const next = JSON.stringify([ties, started, ties.map(teams => teams.map(options.label))]);
+      container.hidden = readOnly || (!ties.length && !started);
+      if (next === signature) return;
+      signature = next;
+      container.innerHTML = started
+        ? '<p>' + esc(tx('qualification.started', 'Die Finalrunde hat bereits Eingaben. Bitte zuerst die Finalrunde zurücksetzen, bevor du die Qualifikation änderst.'))
+          + '</p><button type="button" class="nbtn" data-qualification-reset>'
+          + esc(tx('qualification.reset', 'Finalrunde zurücksetzen')) + '</button>'
+        : ties.length
+        ? '<h2>' + esc(tx('qualification.title', 'Losentscheid für die Finalsetzung')) + '</h2>'
+          + '<p>' + esc(tx('qualification.hint', 'Nur gleichplatzierte Teams mit gleicher Vergleichswertung werden hier geordnet. Den Losentscheid außerhalb der App durchführen und die gezogene Reihenfolge vollständig eintragen.')) + '</p>'
+          + ties.map((teams, index) => '<fieldset data-qualification-tie="' + index + '"><legend>'
+            + esc(teams.map(options.label).join(' / ')) + '</legend>'
+            + teams.map((team, position) => '<label class="cfgfield"><span>'
+              + esc(tx('qualification.position', 'Losplatz {n}', { n: position + 1 }))
+              + '</span><select data-qualification-position="' + position + '">'
+              + '<option value="">' + esc(tx('qualification.choose', 'Team wählen')) + '</option>'
+              + teams.map(t => '<option value="' + t + '">' + esc(options.label(t)) + '</option>').join('')
+              + '</select></label>').join('') + '</fieldset>').join('')
+          + '<button type="button" class="nbtn" data-qualification-confirm>'
+          + esc(tx('qualification.confirm', 'Losentscheid übernehmen')) + '</button>'
+        : '';
+    }
+    container.addEventListener('click', async event => {
+      const uiState = TStore.initialUiState();
+      if (uiState && uiState.readOnly) return;
+      const reset = event.target.closest('[data-qualification-reset]');
+      if (reset) {
+        if (!root.confirm(tx('qualification.resetConfirm', 'Alle Ergebnisse und Sonderwertungen der Finalrunde sowie den Losentscheid löschen? Die Vorrundenergebnisse bleiben erhalten.'))) return;
+        const state = options.get();
+        const previous = {
+          results: state.results, outcomes: state.outcomes, config: state.config,
+          manualPlacements: state.manualPlacements, manualStandings: state.manualStandings
+        };
+        const finalIds = new Set(options.plan().finalRounds.flatMap(round => round.matches.map(match => match.id)));
+        state.results = Object.assign({}, state.results);
+        state.outcomes = Object.assign({}, state.outcomes);
+        finalIds.forEach(id => { delete state.results[id]; delete state.outcomes[id]; });
+        state.config = Object.assign({}, state.config);
+        delete state.config.qualificationOrder;
+        if (state.config.planning && state.config.planning.locked) {
+          const locked = Object.assign({}, state.config.planning.locked);
+          finalIds.forEach(id => { delete locked[id]; });
+          state.config.planning = Object.assign({}, state.config.planning, { locked });
+        }
+        state.manualPlacements = {};
+        state.manualStandings = Object.assign({}, state.manualStandings);
+        Object.keys(state.manualStandings).filter(key => key.indexOf('main-') === 0)
+          .forEach(key => { delete state.manualStandings[key]; });
+        reset.disabled = true;
+        if (await options.save() === false) {
+          Object.assign(state, previous);
+          reset.disabled = false;
+          return;
+        }
+        options.rebuild();
+        return;
+      }
+      const button = event.target.closest('[data-qualification-confirm]');
+      if (!button) return;
+      if (finalsStarted(options.plan(), options.get())) {
+        root.alert(tx('qualification.started', 'Die Finalrunde hat bereits Eingaben. Bitte zuerst die Finalrunde zurücksetzen, bevor du die Qualifikation änderst.'));
+        return;
+      }
+      const order = [];
+      for (const fieldset of container.querySelectorAll('[data-qualification-tie]')) {
+        const values = Array.from(fieldset.querySelectorAll('select')).map(select => Number(select.value));
+        if (values.some(value => !Number.isInteger(value) || value < 1)
+            || new Set(values).size !== values.length) {
+          root.alert(tx('qualification.invalid', 'Bitte jedes Team des Gleichstands genau einmal auswählen.'));
+          return;
+        }
+        order.push.apply(order, values);
+      }
+      const state = options.get();
+      const previous = state.config.qualificationOrder;
+      state.config.qualificationOrder = order;
+      button.disabled = true;
+      if (await options.save() === false) {
+        if (previous === undefined) delete state.config.qualificationOrder;
+        else state.config.qualificationOrder = previous;
+        button.disabled = false;
+        return;
+      }
+      options.rebuild();
+    });
+    return { paint };
   }
 
   /* ====================================================== 5b. ANLEITUNGEN
@@ -2231,7 +2373,7 @@
     rootEl.setAttribute('data-outcome-wired', '1');
     rootEl.addEventListener('click', function (e) {
       const btn = e.target && e.target.closest ? e.target.closest('[data-outcome-btn]') : null;
-      if (!btn) return;
+      if (!btn || btn.disabled) return;
       const td = btn.closest('td.match');
       if (!td) return;
       const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
@@ -2283,6 +2425,11 @@
       const state = opts.getTournament && opts.getTournament();
       if (!state || !state.config) return;
       const previous = state.config.outcomeProfile || null;
+      if (select.hasAttribute('data-qualification-disabled')) {
+        select.value = previous || '';
+        root.alert(tx('qualification.started', 'Die Finalrunde hat bereits Eingaben. Bitte zuerst die Finalrunde zurücksetzen, bevor du die Qualifikation änderst.'));
+        return;
+      }
       state.config.outcomeProfile = select.value || null;
       Promise.resolve(opts.save ? opts.save(state) : TStore.save(state)).then(function (saved) {
         if (!saved) { state.config.outcomeProfile = previous; select.value = previous || ''; return; }
@@ -2711,20 +2858,51 @@
     if (item) item.classList.toggle('is-warn', !!warn);
   }
 
+  function buttonFeedback(button, message) {
+    // Keep the SVG and responsive label wrapper intact during transient feedback.
+    const label = button.querySelector('.lbl,[data-i18n]');
+    if (!label) return;
+    if (!button._feedbackOriginal) button._feedbackOriginal = {
+      label: label.textContent, aria: button.getAttribute('aria-label')
+    };
+    clearTimeout(button._feedbackTimer);
+    label.textContent = message;
+    button.setAttribute('aria-label', message);
+    button._feedbackTimer = setTimeout(() => {
+      const original = button._feedbackOriginal;
+      label.textContent = original.label;
+      if (original.aria == null) button.removeAttribute('aria-label');
+      else button.setAttribute('aria-label', original.aria);
+      button._feedbackOriginal = null;
+    }, 1500);
+  }
+
   function planningRounds(plan, setMode) {
     const phases = plan.groupRounds
-      ? [{ rounds: plan.groupRounds, mode: setMode },
-        { rounds: plan.finalRounds, mode: plan.finalSetMode }]
-      : [{ rounds: plan.finalRounds || plan.rounds || [], mode: plan.finalSetMode || setMode }];
+      ? [{ rounds: plan.groupRounds, mode: setMode, group: true },
+        { rounds: plan.finalRounds, mode: plan.finalSetMode, group: false }]
+      : [{ rounds: plan.finalRounds || plan.rounds || [], mode: plan.finalSetMode || setMode, group: false }];
     const rounds = [];
-    phases.forEach(phase => (phase.rounds || []).forEach(round => {
+    phases.forEach(phase => (phase.rounds || []).forEach(sourceRound => {
+      const round = Object.assign({}, sourceRound, {
+        matches: (sourceRound.matches || []).filter(match => {
+          if (!match || match.bye != null) return false;
+          if (phase.group) return !match.dead;
+          if (match.dead) return false;
+          const fullyDeadMpp = match.mppLoserAware
+            && match.a && match.a.k === 'bye' && match.b && match.b.k === 'bye';
+          return !fullyDeadMpp;
+        })
+      });
+      if (!round.matches.length) return;
       const mode = round.setMode || phase.mode;
       rounds.push({ round, mode, minutes: TC.modeMinutes(mode) });
     }));
     return rounds;
   }
 
-  /* Use the effective round/phase modes, not a new selection for frozen rounds. */
+  /* Match the format scheduler's phase-specific fixture filters: resolved
+     byes are omitted, while only fully dead MPP final matches are skipped. */
   function neededFieldsForPlan(plan, windowMin, setMode, maxFields) {
     if (plan.planning && typeof TPlanning !== 'undefined') return TPlanning.neededFields(plan, windowMin, maxFields);
     const rounds = planningRounds(plan, setMode);
@@ -2802,7 +2980,7 @@
     const availPerGame = playableSlots ? Math.max(0, Math.floor(availableMin / playableSlots)) : 0;
     const setCounts = (mode, games) => {
       const def = TC.modeDef(mode);
-      const min = def.matchWins || def.sets;
+      const min = def.matchWins || (def.decidingSet ? def.sets - 1 : def.sets);
       const max = def.sets;
       return [games * min, games * max];
     };
@@ -3123,11 +3301,11 @@
     esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
-    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
-    maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, neededFieldsForPlan, fillPlanFixes, timefit,
+    maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };
 });

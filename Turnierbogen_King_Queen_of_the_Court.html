@@ -103,6 +103,7 @@
 <div class="guide" id="guideContainer">
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
+  <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Bei vier Teams auf einer Feldstufe entstehen die Paarungen Setzplatz 1 gegen 4 und 2 gegen 3. Die praktische Abwicklung dieser Spiele organisiert die Turnierleitung.</span></li>
     <li><span class="hi" data-i18n="kotc.guide.timeLabel">Zeitlimit statt Zielpunktzahl:</span> <span data-i18n="kotc.guide.timePre">Jede Runde dauert</span> <span id="g-roundmin">–</span> <span data-i18n="kotc.guide.timePost">Min.
@@ -185,7 +186,7 @@
     <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
     <p class="nhint" data-i18n="kotc.hint.absent">Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
       betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.</p>
-    <p class="nhint" data-i18n-html="kotc.hint.delete"><b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, bereits gespielte Runden behalten ihre Feldbesetzung (ohne das gelöschte Team), die weiteren Runden werden neu eingeteilt. Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <p class="nhint" data-i18n-html="kotc.hint.delete"><b>Team löschen</b> ist nur vor der ersten Punkteingabe möglich. Danach bleiben Teams und Begegnungen fest gebunden; Abwesende werden nur in noch nicht begonnenen Runden berücksichtigt.</p>
   </div>
 </div>
 
@@ -206,12 +207,12 @@
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
-<h1 id="standingsSection" data-i18n="kotc.standings.title">Endwertung</h1>
+<h1 id="standingsSection" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</h1>
 <p class="sub" data-i18n="kotc.standings.sub">Nach jeder Runde: Ergebnisse auf Seite 1 eintragen, hier die kumulierten Punkte kontrollieren.</p>
 
 <div class="kq-final-table-wrap">
   <table class="stand kq-final-table" id="placeTable">
-    <caption><span class="cap-title" data-i18n="kotc.place.caption">Endstand – kumulierte Punkte je Team</span><span class="cap-hint" id="hintFinal"></span></caption>
+    <caption><span class="cap-title" id="placeCaption" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</span><span class="cap-hint" id="hintFinal"></span></caption>
     <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
     <tbody id="placeBody"></tbody>
   </table>
@@ -293,6 +294,31 @@
     return { teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, (S.absent||[]).includes(n)) };
   }
   function activeTeams(){ const out=[]; for(let i=1;i<=S.config.teams;i++) out.push(i); return out; }
+  const configControls = ['teamCount', 'courtCount', 'roundCount', 'roundMinutes', 'startTime'];
+  function readOnly(){ return !!TStore.initialUiState().readOnly; }
+  function structureLocked(){ return TStore.anyResults(S); }
+  function guardStructure(){
+    if(!readOnly() && !structureLocked()) return false;
+    fillSelects();
+    if(!readOnly()) alert(T('king.structureLocked'));
+    return true;
+  }
+  function paintLocks(){
+    const locked = structureLocked();
+    $('structureLockHint').hidden = !locked;
+    $('structureLockHint').textContent = T('king.structureLocked');
+    configControls.forEach(id => { $(id).disabled = locked || readOnly(); });
+    document.querySelectorAll('[data-remove-team]').forEach(btn => {
+      btn.disabled = locked || readOnly() || S.config.teams <= MIN_TEAMS;
+      if(locked) btn.title = T('king.structureLocked');
+    });
+    $('btnShuffle').disabled = locked || readOnly();
+  }
+  function courtCapacity(){
+    const minimum = Math.ceil(+$('teamCount').value / 5);
+    Array.from($('courtCount').options).forEach(o => { o.disabled = +o.value < minimum; });
+    return minimum;
+  }
 
   /* Die Feld-Leiter besteht aus <div data-round> statt Tabellenzeilen, daher
      ein eigener Rundenfilter statt TUI.applyRoundFilter (das gezielt
@@ -326,17 +352,27 @@
     $('roundMinutes').value = String(S.config.roundMinutes || 15);
     $('startTime').value = S.config.startTime || '10:00';
     $('session-title-input').value = S.title || '';
+    courtCapacity();
   }
 
   function readConfig(){
+    if(guardStructure()) return false;
+    S.frozen = {};
+    const minimum = courtCapacity();
+    if(+$('courtCount').value < minimum){
+      $('courtCount').value = String(minimum);
+      alert(T('king.courtCapacity', { count: minimum }));
+    }
     S.config.teams = +$('teamCount').value;
     S.config.courts = +$('courtCount').value;
     S.config.rounds = $('roundCount').value ? +$('roundCount').value : null;
     S.config.roundMinutes = +$('roundMinutes').value;
     S.config.startTime = $('startTime').value || '10:00';
+    return true;
   }
 
-  function compute(){
+  function compute(persist){
+    if(!structureLocked()) S.frozen = {};
     B = TFormat.buildKingOfCourt({
       teams: S.config.teams, courts: S.config.courts, rounds: S.config.rounds,
       roundMinutes: S.config.roundMinutes, startTime: S.config.startTime,
@@ -353,48 +389,51 @@
         changed = true;
       }
     });
-    if(changed) TStore.save(S);
+    if(changed && persist !== false) TStore.save(S);
     return B;
   }
-  /* Team endgültig löschen: Nummern dahinter rücken nach. Festgeschriebene
-     Runden behalten ihre Feldbesetzung ohne das gelöschte Team; Ergebnisse
-     bleiben erhalten, sofern dieselbe Begegnung in derselben Runde weiter
-     existiert. Hinten liegende Runden ohne Ergebnis werden neu eingeteilt. */
+  /* IDs dürfen nach der ersten Eingabe nicht mehr verschoben werden. */
   function removeTeam(t){
+    if(guardStructure()) return;
     const n = S.config.teams;
     if(n - 1 < MIN_TEAMS){ alert(T('sheet.alert.minTeams', { n: MIN_TEAMS })); return; }
     if(!TUI.confirmRemoveTeam(ctxFor().teamLabel(t), { hasResults: TStore.anyResults(S) })) return;
-    const listMatches = () => B.rounds.reduce((acc, rd) => {
-      rd.courts.forEach(cd => cd.matches.forEach(m => acc.push({ id: m.id, a: m.a, b: m.b })));
-      return acc;
-    }, []);
     const map = TStore.teamRemap(t);
-    const snap = TStore.snapshotResults(S, listMatches(), map);
     S.config.teams = n - 1;
     TStore.remapCommon(S, map);
-    const fz = {};
-    Object.keys(S.frozen || {}).forEach(r => {
-      fz[r] = (S.frozen[r] || []).map(list => TStore.remapList(list, map));
-    });
-    S.frozen = fz;
-    TStore.restoreResults(S, snap, () => { compute(); return listMatches(); });
-    const rs = Object.keys(S.frozen).map(Number).sort((a, b) => b - a);
-    for(const r of rs){
-      const has = Object.keys(S.results).some(id => id.indexOf('koc_r' + r + '_') === 0 && TStore.hasInput(S.results[id]));
-      if(has) break;
-      delete S.frozen[r];
-    }
+    S.results = {};
+    S.frozen = {};
     TStore.save(S); fillSelects(); structureKey = ''; rebuild();
   }
   function keyOf(){
     const c = S.config;
-    return [c.teams, c.courts, c.rounds, c.roundMinutes, c.startTime].join('|');
+    return [c.teams, c.courts, c.rounds, c.roundMinutes, c.startTime].join('|')
+      + '#' + B.rounds.map(rd => rd.courts.map(cd => cd.matches.map(m => m.id + ':' + m.a + '-' + m.b).join(',')
+        + '/' + cd.bye).join(';')).join('|');
   }
 
   function rebuild(){
+    if(+S.config.teams > +S.config.courts * 5){
+      const minimum = Math.ceil(+S.config.teams / 5);
+      $('noticeBox').textContent = T('king.courtCapacity', { count: minimum });
+      $('ladderSection').innerHTML = '';
+      $('placeBody').innerHTML = '';
+      B = null;
+      paintLocks();
+      return;
+    }
     compute();
     const k = keyOf();
-    if(k !== structureKey){ structureKey = k; buildStructure(); }
+    if(k !== structureKey){
+      const active = document.activeElement;
+      const keep = active && active.classList && active.classList.contains('kqscore')
+        ? { mid: active.getAttribute('data-mid'), side: active.getAttribute('data-side') } : null;
+      structureKey = k; buildStructure();
+      if(keep){
+        const input = document.querySelector('.kqscore[data-mid="' + keep.mid + '"][data-side="' + keep.side + '"]');
+        if(input && !readOnly()) input.focus();
+      }
+    }
     paint();
   }
 
@@ -443,6 +482,7 @@
   }
 
   function paint(){
+    paintLocks();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => TStore.save(S),
       rebuild: () => { structureKey = ''; rebuild(); }
@@ -484,7 +524,13 @@
         rounds: B.rounds.length,
         minutes: B.perRound
       }));
-    // Endstand
+    const complete = B.complete && B.rankingComplete;
+    const statusKey = complete ? 'ranking.status.final' : 'ranking.status.provisional';
+    $('standingsSection').setAttribute('data-i18n', statusKey);
+    $('standingsSection').textContent = T(statusKey);
+    const captionKey = complete ? 'kotc.place.caption' : statusKey;
+    $('placeCaption').setAttribute('data-i18n', captionKey);
+    $('placeCaption').textContent = T(captionKey);
     const rows = B.placements.map(p => {
       return '<tr' + (p.team!=null?' data-team="'+TUI.esc(p.team)+'"':'') + '>'
         + '<td class="pl">' + p.place + (p.shared?'=':'') + '.</td>'
@@ -492,7 +538,7 @@
         + '<td class="pts">' + p.points + '</td>'
         + '<td class="sub">' + p.roundsPlayed + '</td>'
         + '<td class="sub">' + p.pointsPerRound.toFixed(1) + '</td>'
-        + '<td class="sub">' + TUI.esc(T('ui.field.n', { n: p.bestCourt })) + '</td>'
+        + '<td class="sub">' + (p.bestCourt == null ? '–' : TUI.esc(T('ui.field.n', { n: p.bestCourt }))) + '</td>'
         + '</tr>';
     });
     $('placeBody').innerHTML = rows.join('');
@@ -506,11 +552,10 @@
 
   /* -------------------------------------------------------------- Eingabe */
   function wire(){
-    $('teamCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
-    $('courtCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
-    $('roundCount').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
-    $('roundMinutes').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
-    $('startTime').addEventListener('change', () => { readConfig(); TStore.save(S); rebuild(); });
+    configControls.forEach(id => $(id).addEventListener('change', () => {
+      if(!readConfig()) return;
+      TStore.save(S); rebuild();
+    }));
     $('session-title-input').addEventListener('input', e => {
       S.title = e.target.value; TStore.save(S);
       applyDocTitle();
@@ -538,29 +583,30 @@
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await TStore.save(S); applyDocTitle();
-      const b = $('btnSave'); const old = b.innerHTML;
-      b.textContent = ok ? T('sheet.save.ok') : T('sheet.save.failed');
-      setTimeout(()=>{ b.innerHTML = old; }, 1500);
+      TUI.buttonFeedback($('btnSave'), ok ? T('sheet.save.ok') : T('sheet.save.failed'));
     });
 
     document.addEventListener('input', e => {
       const el = e.target;
       if(!el.classList || !el.classList.contains('kqscore')) return;
+      if(readOnly() || !B) return;
       const mid = el.getAttribute('data-mid'), side = el.getAttribute('data-side');
       const v = el.value.trim();
       const n = v === '' ? null : parseInt(v, 10);
       const cur = S.results[mid] || [null, null];
       const next = side === 'a' ? [n, cur[1]] : [cur[0], n];
       S.results[mid] = next;
+      // Capture the displayed teams even when only one score side is entered.
+      compute(false);
       TStore.save(S);
-      // Nur neu rechnen, wenn beide Seiten ausgefuellt sind (Bewegregel braucht volle Runde).
-      if(next[0] != null && next[1] != null) rebuild();
+      rebuild();
     });
 
     TUI.wireParticipantNames($('nameGrid'), () => S, () => {
       TStore.save(S); paint();
     });
     $('btnShuffle').addEventListener('click', () => {
+      if(guardStructure()) return;
       TUI.shuffleParticipantNames(S, activeTeams());
       TStore.save(S); $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS }); paint();
     });

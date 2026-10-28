@@ -134,7 +134,8 @@
     const c = Object.assign({
       teams: 8, groups: 'auto', fields: 2, setMode: '21',
       finalSetMode: null, finalMode: 'placement', thirdPlace: true,
-      bracketMode: 'single', poolMode: 'rr', startTime: '10:00', absent: [], results: {}
+      bracketMode: 'single', poolMode: 'rr', startTime: '10:00', absent: [], results: {},
+      qualificationOrder: [], manualStandings: {}
     }, cfg || {});
 
     const warnings = [];
@@ -202,28 +203,40 @@
       resCache.set(key, r);
       return r;
     }
+    function matchHasInput(match) {
+      const raw = c.results && c.results[match.id];
+      return !!(Array.isArray(raw) && raw.some(set =>
+        Array.isArray(set) && set.some(value => value != null && value !== '')))
+        || TOutcome.hasOutcome(c, match.id);
+    }
 
     /* --- Gruppentabellen -------------------------------------------------- */
     const groupMatches = {};
     names.forEach(n => groupMatches[n] = []);
     grpRounds.forEach(rd => rd.matches.forEach(m => groupMatches[m.group].push(m)));
 
-    function playedFrom(matches, modeId) {
+    function playedFrom(matches, modeId, includeDecidingBalls) {
       const out = [];
       matches.forEach(m => {
         const a = m.ta != null ? m.ta : m.a, b = m.tb != null ? m.tb : m.b;
         if (a == null || b == null) return;
         const aAbs = absent.has(a), bAbs = absent.has(b);
-        if (aAbs && bAbs) return;
-        if (aAbs) { out.push({ bye: b }); return; }
-        if (bAbs) { out.push({ bye: a }); return; }
-        const r = resultOf(m.id, m.setMode || modeId);
+        if (!matchHasInput(m)) {
+          if (aAbs && bAbs) return;
+          if (aAbs) { out.push({ bye: b }); return; }
+          if (bAbs) { out.push({ bye: a }); return; }
+        }
+        let r = resultOf(m.id, m.setMode || modeId);
+        // Sonderentscheidungen behalten ihre bereits zugesprochene Ballwertung.
+        if (r && includeDecidingBalls && !r.administrative) {
+          r = TC.computeResult(c.results[m.id], m.setMode || modeId, { includeDecidingBalls: true });
+        }
         if (r) out.push({ a, b, result: r, matchWins: matchWinsOf(m.setMode || modeId) });
       });
       return out;
     }
 
-    function tableFor(teamList, matches, modeId) {
+    function tableFor(teamList, matches, modeId, manualMap, allowSingleton) {
       const active = teamList.filter(t => !absent.has(t));
       const played = playedFrom(matches, modeId);
       const st = TC.standings(active, played, { perGame: true, rankingProfile: c.rankingProfile });
@@ -231,9 +244,11 @@
       const criteria = TC.criteriaFor(modeId, { unequalGames: unequal, rankingProfile: c.rankingProfile });
       const total = matches.filter(m => {
         const a = m.ta != null ? m.ta : m.a, b = m.tb != null ? m.tb : m.b;
-        return a != null && b != null && !absent.has(a) && !absent.has(b);
+        return a != null && b != null
+          && ((!absent.has(a) && !absent.has(b)) || matchHasInput(m));
       }).length;
-      const complete = total > 0 && played.filter(p => p.result).length === total;
+      const complete = total > 0 ? played.filter(p => p.result).length === total
+        : !!allowSingleton && active.length === 1;
       const dttbUnsupported = isDttbRanking(c.rankingProfile)
         ? koOnly || mppMode ? 'mode'
           : Object.keys(c.outcomes || {}).length || absent.size ? 'outcome'
@@ -246,15 +261,59 @@
           : teamList.length % 2 || played.some(p => p.bye != null) ? 'bye'
           : complete && unequal ? 'unequal-games' : null
         : null;
-      const ranked = TC.rank(active, st, {
+      const dvvUnsupported = c.rankingProfile === 'indoor-dvv-bso-2026'
+        && played.some(match => match.result && match.result.administrative) ? 'outcome' : null;
+      const rankingOptions = {
         criteria, matches: played, rankingProfile: c.rankingProfile,
-        unsupportedReason: dttbUnsupported || ittfUnsupported || (isStrictProfile(c.rankingProfile) && complete && unequal
+        unsupportedReason: dvvUnsupported || dttbUnsupported || ittfUnsupported
+          || (isStrictProfile(c.rankingProfile) && complete && unequal
           ? 'unequal-games' : null)
+      };
+      const requestedPlaces = manualMap || {};
+      const corrections = {};
+      Object.keys(requestedPlaces).forEach(team => {
+        corrections[team] = Object.assign({}, requestedPlaces[team]);
+        delete corrections[team].place;
       });
+      const provisionalRows = TC.rankWithCorrections(active, st, corrections, Object.assign({}, rankingOptions, { complete }));
+      const validPlaces = {};
+      if (complete) {
+        const byPlace = new Map();
+        provisionalRows.forEach(entry => {
+          if (!byPlace.has(entry.place)) byPlace.set(entry.place, []);
+          byPlace.get(entry.place).push(entry);
+        });
+        byPlace.forEach(entries => {
+          if (entries.length < 2 || entries.some(entry => entry.unsupported)) return;
+          const first = entries[0].place;
+          const wanted = entries.map((_, i) => first + i);
+          const values = entries.map(entry => {
+            const row = requestedPlaces[entry.team];
+            return row && row.place != null ? Number(row.place) : NaN;
+          });
+          if (!values.every(Number.isInteger) || new Set(values).size !== entries.length
+              || values.some(value => wanted.indexOf(value) < 0)) return;
+          entries.forEach((entry, i) => {
+            validPlaces[entry.team] = Object.assign({}, corrections[entry.team], { place: values[i] });
+          });
+        });
+      }
+      Object.keys(corrections).forEach(team => {
+        if (!Object.prototype.hasOwnProperty.call(validPlaces, team)) {
+          validPlaces[team] = Object.assign({}, corrections[team]);
+          delete validPlaces[team].place;
+        }
+      });
+      const ranked = TC.rankWithCorrections(active, st, validPlaces,
+        Object.assign({}, rankingOptions, { complete }));
       return {
         teams: active, ranked, stat: st, criteria, perGame: unequal,
         rankingUnsupported: ranked.some(e => e.unsupported),
         complete,
+        rankingComplete: complete && ranked.length === active.length
+          && ranked.every(e => !e.unsupported && !e.unresolved),
+        provisional: !(complete && ranked.length === active.length
+          && ranked.every(e => !e.unsupported && !e.unresolved)),
         matchCount: total
       };
     }
@@ -265,8 +324,232 @@
          Auflösung (weiter unten) befüllt - die Platzierung hängt hier direkt
          an der Bracket-Position (winnerOf/loserOf), nicht an einer Tabelle. */
       if (mppMeta && mppMeta[n] && mppMeta[n].mode === 'bracket') return;
-      groupTables[n] = tableFor(groups[n], groupMatches[n], c.setMode);
+      groupTables[n] = tableFor(groups[n], groupMatches[n], c.setMode,
+        c.manualStandings && c.manualStandings['group-' + n]);
     });
+
+    function buildQualification() {
+      const qualification = { ranked: [], complete: true, ties: [] };
+      const seedTeams = [], seedSlots = [];
+      const resolution = { pending: false, reason: null, ties: [], groupTies: [] };
+      if (koOnly || !names.length) return { qualification, resolution, seedTeams, seedSlots };
+
+      const groupsComplete = names.every(n => groupTables[n].complete);
+      const order = c.qualificationOrder || [];
+      if (!Array.isArray(order) || order.some(team => !Number.isInteger(team)
+          || !all.includes(team) || absent.has(team)) || new Set(order).size !== order.length) {
+        throw new Error('Qualifikationslos muss eine eindeutige Liste aktiver Teamnummern enthalten.');
+      }
+      const orderIndex = new Map(order.map((team, index) => [team, index]));
+      const profile = c.rankingProfile || TC.activeRanking();
+      const comparisonStats = {};
+      if (groupsComplete && names.length > 2 && profile === 'beach-house') {
+        names.forEach(group => {
+          if (!Object.keys(groupTables[group].stat).length) return;
+          comparisonStats[group] = TC.standings(groupTables[group].teams,
+            playedFrom(groupMatches[group], c.setMode, true), { perGame: true, rankingProfile: profile });
+        });
+      }
+      const crossTies = [];
+      const tiers = [];
+      const maxPlace = Math.max.apply(null, names.map(n => groupSizes[n]));
+      let seedNo = 1;
+
+      function stableSlot(group, place, entries, ties) {
+        const tie = ties.find(item => place >= item.place && place < item.place + item.entries.length);
+        const unsupported = entries.some(entry => entry.unsupported);
+        if (tie) return {
+          group, place, team: null, stat: null, possibleGroups: [group],
+          groupTie: tie.entries.map(row => row.team), missing: false
+        };
+        const entry = entries.length === 1 && !entries[0].shared && !entries[0].unsupported
+          ? entries[0] : null;
+        return {
+          group, place, team: entry ? entry.team : null,
+          stat: entry ? comparisonStats[group] ? comparisonStats[group][entry.team] : entry.stat : null,
+          possibleGroups: [group],
+          groupTie: null, unsupported: unsupported,
+          missing: entries.length === 0
+        };
+      }
+
+      for (let place = 1; place <= maxPlace; place++) {
+        const slots = names.filter(n => groupSizes[n] >= place).map(group => {
+          const table = groupTables[group];
+          const byPlace = new Map();
+          table.ranked.forEach(entry => {
+            if (!byPlace.has(entry.place)) byPlace.set(entry.place, []);
+            byPlace.get(entry.place).push(entry);
+          });
+          const ties = Array.from(byPlace.entries())
+            .filter(([, entries]) => entries.length > 1 || entries.some(entry => entry.shared))
+            .map(([tiePlace, entries]) => ({ place: tiePlace, entries }));
+          const tied = ties.find(item => place >= item.place && place < item.place + item.entries.length);
+          if (groupsComplete && tied && place === tied.place
+              && !resolution.groupTies.some(item => item.group === group && item.place === tied.place)) {
+            resolution.groupTies.push({
+              group, place: tied.place, teams: tied.entries.map(entry => entry.team)
+            });
+          }
+          return stableSlot(group, place, table.ranked.filter(entry => entry.place === place), ties);
+        });
+        tiers.push({ place, slots });
+      }
+
+      if (names.length <= 2) {
+        tiers.forEach(tier => tier.slots.forEach(slot => {
+          const team = groupsComplete && !slot.groupTie && !slot.missing ? slot.team : null;
+          qualification.ranked.push({
+            team, group: slot.group, place: slot.place, shared: !!slot.groupTie,
+            seed: slot.groupTie || (!team && !slot.missing) ? null : seedNo,
+            bye: slot.missing || undefined
+          });
+          seedTeams[seedNo - 1] = team;
+          seedSlots.push(slot.missing
+            ? { k: 'bye', groups: [slot.group] }
+            : { k: 'rank', phase: 'grp', group: slot.group, place: slot.place });
+          seedNo++;
+        }));
+      } else {
+        tiers.forEach(tier => {
+          const hasGroupTie = tier.slots.some(slot => slot.groupTie);
+          const hasUnsupported = tier.slots.some(slot => slot.unsupported);
+          if (!groupsComplete || hasGroupTie || hasUnsupported) {
+            tier.slots.forEach(slot => {
+              const isBye = groupsComplete && slot.missing;
+              const team = groupsComplete && !slot.groupTie && !slot.missing ? slot.team : null;
+              qualification.ranked.push({
+                team, group: slot.group, place: slot.place, shared: !!slot.groupTie,
+                seed: isBye ? seedNo : null,
+                bye: isBye || undefined
+              });
+              seedTeams[seedNo - 1] = null;
+              seedSlots.push(isBye
+                ? { k: 'bye', groups: [slot.group] }
+                : { k: 'seed', n: seedNo, groups: slot.groupTie ? [slot.group] : [slot.group] });
+              seedNo++;
+            });
+            if (hasUnsupported) resolution.reason = resolution.reason || 'ranking-unsupported';
+            return;
+          }
+
+          let criteria = TC.criteriaFor(c.setMode, { unequalGames: true, rankingProfile: profile });
+          const stats = {};
+          const activeSlots = tier.slots.filter(slot => !slot.missing);
+          activeSlots.forEach(slot => { stats[slot.team] = slot.stat || {}; });
+          if (profile === 'beach-house') {
+            // Eventregel nur für den Poolvergleich, nicht für die Tabellen im Pool.
+            // Ohne vergleichbare Statistik (insbesondere MPP) bleibt die Stufe beim Los.
+            const comparable = activeSlots.every(slot => slot.stat && slot.stat.games > 0
+              && ['games', 'pts', 'setsFor', 'setsAgainst', 'ballsFor', 'ballsAgainst']
+                .every(key => Number.isFinite(slot.stat[key]) && slot.stat[key] >= 0));
+            criteria = comparable ? ['ptsPer', 'setRatio', 'pointRatio'] : [];
+          }
+          const ranked = TC.rank(activeSlots.map(slot => slot.team), stats, {
+            criteria, matches: [], rankingProfile: profile
+          });
+          const unsupported = ranked.some(entry => entry.unsupported);
+          const rankingGroups = [];
+          ranked.forEach(entry => {
+            let group = rankingGroups[rankingGroups.length - 1];
+            if (!group || group.place !== entry.place) {
+              group = { place: entry.place, entries: [] };
+              rankingGroups.push(group);
+            }
+            group.entries.push(entry);
+          });
+          if (unsupported) {
+            activeSlots.forEach(slot => {
+              qualification.ranked.push({
+                team: slot.team, group: slot.group, place: slot.place, shared: true,
+                seed: null, unsupported: true
+              });
+              seedTeams[seedNo - 1] = null;
+              seedSlots.push({ k: 'seed', n: seedNo, groups: [slot.group] });
+              seedNo++;
+            });
+            resolution.reason = resolution.reason || 'ranking-unsupported';
+            tier.slots.filter(slot => slot.missing).forEach(slot => {
+              qualification.ranked.push({
+                team: null, group: slot.group, place: slot.place, shared: false,
+                seed: seedNo, bye: true
+              });
+              seedTeams[seedNo - 1] = null;
+              seedSlots.push({ k: 'bye', groups: [slot.group] });
+              seedNo++;
+            });
+            return;
+          }
+
+          let missingSlots = tier.slots.filter(slot => slot.missing);
+          rankingGroups.forEach(rankGroup => {
+            const candidates = rankGroup.entries.map(entry =>
+              activeSlots.find(slot => slot.team === entry.team));
+            const tied = candidates.length > 1;
+            if (tied) {
+              const teamIds = candidates.map(slot => slot.team);
+              crossTies.push(teamIds);
+              qualification.ties.push(teamIds.slice());
+              const allSelected = teamIds.every(team => orderIndex.has(team));
+              if (!allSelected) resolution.ties.push(teamIds.slice());
+              if (allSelected) candidates.sort((a, b) => orderIndex.get(a.team) - orderIndex.get(b.team));
+            }
+            candidates.forEach(slot => {
+              const resolvedTie = tied && candidates.every(candidate => orderIndex.has(candidate.team));
+              const seed = seedNo;
+              qualification.ranked.push({
+                team: slot.team, group: slot.group, place: slot.place,
+                shared: tied, seed: resolvedTie || !tied ? seed : null,
+                manualTieBreak: resolvedTie
+              });
+              seedTeams[seed - 1] = resolvedTie || !tied ? slot.team : null;
+              seedSlots.push({
+                k: 'seed', n: seed,
+                groups: tied && !resolvedTie
+                  ? candidates.map(candidate => candidate.group)
+                  : [slot.group]
+              });
+              seedNo++;
+            });
+          });
+          missingSlots.forEach(slot => {
+            qualification.ranked.push({
+              team: null, group: slot.group, place: slot.place, shared: false,
+              seed: seedNo, bye: true
+            });
+            seedTeams[seedNo - 1] = null;
+            seedSlots.push({ k: 'bye', groups: [slot.group] });
+            seedNo++;
+          });
+        });
+      }
+
+      if (order.length) {
+        const validTieTeams = new Set(crossTies.reduce((allTied, tie) => allTied.concat(tie), []));
+        if (groupsComplete && order.some(team => !validTieTeams.has(team))) {
+          throw new Error('Qualifikationslos enthält ein Team, das nicht zu einem offenen übergreifenden Gleichstand gehört.');
+        }
+        crossTies.forEach(tie => {
+          const selected = tie.filter(team => orderIndex.has(team));
+          if (selected.length && selected.length !== tie.length) {
+            throw new Error('Qualifikationslos muss alle Teams eines Gleichstands enthalten.');
+          }
+        });
+      }
+
+      qualification.complete = groupsComplete
+        && qualification.ranked.every(entry => entry.seed != null);
+      if (names.some(n => groupTables[n].rankingUnsupported)) resolution.reason = 'ranking-unsupported';
+      else if (!groupsComplete) resolution.reason = 'group-results';
+      else if (resolution.groupTies.length) resolution.reason = 'group-tie';
+      else if (resolution.ties.length) resolution.reason = 'qualification-tie';
+      else if (resolution.reason === 'ranking-unsupported') resolution.reason = 'ranking-unsupported';
+      resolution.pending = !qualification.complete;
+      return { qualification, resolution, seedTeams, seedSlots };
+    }
+    let qualification = { ranked: [], complete: koOnly, ties: [] };
+    let qualificationSeedTeams = [], qualificationSeedSlots = [];
+    let placementResolution = { pending: false, reason: null, ties: [], groupTies: [] };
 
     /* --- Auflösung von Referenzen ----------------------------------------
        Ein Gruppenplatz steht erst fest, wenn ALLE Spiele der Gruppe gewertet
@@ -308,6 +591,7 @@
     }
     const resolvers = {
       rank: rankResolver,
+      seed: seed => qualificationSeedTeams[seed - 1] || null,
       winner: id => (id in winnerOf) ? winnerOf[id] : null,
       loser: id => (id in loserOf) ? loserOf[id] : null
     };
@@ -333,7 +617,7 @@
     /* Löst die Seiten eines Spiels auf und trägt Sieger/Verlierer nach, damit
        Folgespiele (KO-Baum, Über-Kreuz) direkt weiterverdrahtet werden. */
     function resolveMatch(m, modeId) {
-      if (m.mppLoserAware) {
+      if (m.mppLoserAware || (finalMode === 'placement' && m.places)) {
         const deadA = isDeadLoserRef(m.a), deadB = isDeadLoserRef(m.b);
         if (deadA) m.a = { k: 'bye' };
         if (deadB) m.b = { k: 'bye' };
@@ -344,8 +628,17 @@
       // Freilos: ein Platzhalter oder ein ausgefallener Gegner
       const aBye = (m.a && m.a.k === 'bye') || (ta != null && absent.has(ta));
       const bBye = (m.b && m.b.k === 'bye') || (tb != null && absent.has(tb));
-      if (aBye && !bBye && tb != null) { m.bye = tb; winnerOf[m.id] = tb; loserOf[m.id] = null; return m; }
-      if (bBye && !aBye && ta != null) { m.bye = ta; winnerOf[m.id] = ta; loserOf[m.id] = null; return m; }
+      if (aBye && bBye && (!matchHasInput(m) || ta == null || tb == null)) {
+        m.dead = true;
+        mppFullyDead.add(m.id);
+        winnerOf[m.id] = null;
+        loserOf[m.id] = null;
+        return m;
+      }
+      if (!matchHasInput(m)) {
+        if (aBye && !bBye && tb != null) { m.bye = tb; winnerOf[m.id] = tb; loserOf[m.id] = null; return m; }
+        if (bBye && !aBye && ta != null) { m.bye = ta; winnerOf[m.id] = ta; loserOf[m.id] = null; return m; }
+      }
       if (ta == null || tb == null) return m;
       const r = resultOf(m.id, m.setMode || modeId);
       m.result = r;
@@ -384,13 +677,16 @@
       const matches = groupMatches[n];
       const matchCount = matches.filter(m => m.ta != null && m.tb != null).length;
       const complete = mwSettled && mlSettled;
+      const activeTeams = groups[n].filter(t => !absent.has(t));
+      const rankingComplete = complete && ranked.length === activeTeams.length
+        && ranked.every(entry => !entry.unsupported && !entry.unresolved);
       if (complete && ranked.length < groups[n].filter(t => !absent.has(t)).length) {
         warnings.push('Gruppe ' + n + ': ein Ausfall lässt mindestens einen Platz im '
           + 'Gewinner-/Verliererspiel offen.');
       }
       return {
-        teams: groups[n].filter(t => !absent.has(t)), ranked, stat: {}, criteria: [],
-        perGame: false, complete, matchCount
+        teams: activeTeams, ranked, stat: {}, criteria: [],
+        perGame: false, complete, rankingComplete, provisional: !rankingComplete, matchCount
       };
     }
     if (mppMeta) {
@@ -398,6 +694,12 @@
         if (mppMeta[n] && mppMeta[n].mode === 'bracket') groupTables[n] = mppBracketTable(n);
       });
     }
+
+    const qualificationResult = buildQualification();
+    qualification = qualificationResult.qualification;
+    placementResolution = qualificationResult.resolution;
+    qualificationSeedTeams = qualificationResult.seedTeams;
+    qualificationSeedSlots = qualificationResult.seedSlots;
 
     /* --- Finalrunde ------------------------------------------------------- */
     let finalRounds = [];
@@ -411,19 +713,57 @@
        Ohne Gruppenphase ist die Setzliste einfach die Teamnummer. */
     function seedSlots() {
       if (koOnly) return all.map(n => ({ k: 'team', n }));
-      const slots = [];
-      const maxPlace = Math.max.apply(null, names.map(n => groupSizes[n]));
-      for (let p = 1; p <= maxPlace; p++) {
-        names.forEach(n => {
-          if (groupSizes[n] >= p) slots.push({ k: 'rank', phase: 'grp', group: n, place: p });
-        });
+      return qualificationSeedSlots.slice();
+    }
+
+    /* KO-Erstrunde ohne Gruppen-Wiedersehen: obere Setzhälfte bleibt fest,
+       nur die untere Hälfte wird minimal verschoben (nächstgelegener Gegner zuerst). */
+    function slotPools(slot) {
+      if (!slot || slot.k === 'bye') return [];
+      return slot.groups || (slot.group ? [slot.group] : []);
+    }
+    function avoidFirstRoundPoolRematches(list) {
+      const half = list.length / 2;
+      const upper = list.slice(0, half), lower = list.slice(half);
+      const definite = (a, b) => {
+        const x = slotPools(a), y = slotPools(b);
+        return x.length === 1 && y.length === 1 && x[0] === y[0];
+      };
+      const possible = (a, b) => slotPools(a).some(g => slotPools(b).includes(g));
+      function search(conflicts) {
+        const used = new Array(half).fill(false), pick = new Array(half);
+        function step(i) {
+          if (i === half) return true;
+          const natural = half - 1 - i;
+          const order = lower.map((_, j) => j)
+            .sort((a, b) => Math.abs(a - natural) - Math.abs(b - natural) || b - a);
+          for (const j of order) {
+            if (used[j] || conflicts(upper[i], lower[j])) continue;
+            used[j] = true; pick[i] = j;
+            if (step(i + 1)) return true;
+            used[j] = false;
+          }
+          return false;
+        }
+        if (!step(0)) return null;
+        const newLower = new Array(half);
+        pick.forEach((j, i) => { newLower[half - 1 - i] = lower[j]; });
+        return upper.concat(newLower);
       }
-      return slots;
+      const strict = search(possible);
+      if (strict) return { slots: strict, remaining: false };
+      const safe = search(definite);
+      if (safe) return { slots: safe, remaining: !safe.every((slot, i) => i >= half
+        || !possible(slot, safe[list.length - 1 - i])) };
+      return { slots: list.slice(), remaining: true };
     }
 
     if (finalMode === 'placement') {
       finalTitle = 'Platzierungsrunde (über Kreuz)';
-      const pl = TC.genPlacement(names, groupSizes, { idPrefix: 'pl', phase: 'grp' });
+      const pl = TC.genPlacement(names, groupSizes, {
+        idPrefix: 'pl', phase: 'grp',
+        slots: qualificationSeedSlots
+      });
       placementBlocks = pl.blocks;
       finalRounds = pl.rounds || blocksToRounds(pl.blocks);
     } else if (finalMode === 'ko') {
@@ -437,7 +777,15 @@
         warnings.push('KO-Runde mit ' + koTeams + ' von ' + slots.length
           + ' Teams – die übrigen sind nach der Gruppenphase platziert.');
       }
-      bracket = TC.genBracket(slots.slice(0, koTeams), {
+      const koSlots = slots.slice(0, koTeams);
+      if (!koOnly && names.length > 2 && koTeams >= 4) {
+        const avoided = avoidFirstRoundPoolRematches(koSlots);
+        koSlots.splice(0, koSlots.length, ...avoided.slots);
+        if (avoided.remaining) {
+          warnings.push('KO-Runde: Mindestens eine Erstrundenpaarung kann ein Wiedersehen aus derselben Gruppe sein.');
+        }
+      }
+      bracket = TC.genBracket(koSlots, {
         idPrefix: 'ko', thirdPlace: c.thirdPlace !== false
       });
       if (koOnly && bracket.byes > 0) {
@@ -455,6 +803,9 @@
          Setzliste (Teamnummer) speist Gewinner- UND Verlierer-Runde. */
       finalTitle = 'Doppel-K.-o.-System';
       const slots = seedSlots();
+      if (slots.length < 3) {
+        throw new RangeError('Doppel-K.-o. benötigt mindestens 3 Teams.');
+      }
       const volleyballPreset = c.sportId && c.sportId.indexOf('volleyball.') === 0
         && (c.volleyballPreset === 'a' || c.volleyballPreset === 'a-plus');
       bracket = TC.genDoubleBracket(slots, { idPrefix: 'de', refereeBeforeLb: volleyballPreset });
@@ -619,22 +970,28 @@
       Object.keys(mainGroups).forEach(n => {
         const ms = [];
         finalRounds.forEach(rd => rd.matches.forEach(m => { if (m.group === n) ms.push(m); }));
-        const teamList = ms.reduce((acc, m) => {
-          if (m.ta != null && acc.indexOf(m.ta) < 0) acc.push(m.ta);
-          if (m.tb != null && acc.indexOf(m.tb) < 0) acc.push(m.tb);
+        const teamList = mainGroups[n].reduce((acc, slot) => {
+          const team = resolve(slot);
+          if (team != null && acc.indexOf(team) < 0) acc.push(team);
           return acc;
         }, []);
-        mainTables[n] = tableFor(teamList, ms, finMode);
+        mainTables[n] = tableFor(teamList, ms, finMode, null, mainGroups[n].length === 1);
       });
     }
 
     /* --- Zeitplan --------------------------------------------------------- */
     const startMin = TC.toMin(c.startTime) != null ? TC.toMin(c.startTime) : TC.toMin('10:00');
     const teamOf = ref => resolve(ref);
+    const timedGroupRounds = grpRounds.map(rd => Object.assign({}, rd, {
+      matches: rd.matches.filter(m => m.bye == null && !m.dead)
+    })).filter(rd => rd.matches.length);
     const grpSlots = TC.computeSchedule(
-      TC.assignSlots(grpRounds, c.fields, { teamOf }), startMin, c.setMode);
+      TC.assignSlots(timedGroupRounds, c.fields, { teamOf }), startMin, c.setMode);
     const grpEnd = grpSlots.length ? grpSlots[grpSlots.length - 1].endMin : startMin;
-    const finSlotsRaw = TC.assignSlots(finalRounds, c.fields, { teamOf });
+    const timedFinalRounds = finalRounds.map(rd => Object.assign({}, rd, {
+      matches: rd.matches.filter(m => m.bye == null && !m.dead && !mppFullyDead.has(m.id))
+    })).filter(rd => rd.matches.length);
+    const finSlotsRaw = TC.assignSlots(timedFinalRounds, c.fields, { teamOf });
     let scheduleCursor = grpEnd;
     const finSlots = finSlotsRaw.map(s => {
       const mode = (s.matches || []).filter(Boolean).map(m => m.setMode).find(Boolean) || finMode;
@@ -653,13 +1010,55 @@
 
     /* --- Endstand --------------------------------------------------------- */
     const placements = computePlacements();
+    const activeTeams = all.filter(team => !absent.has(team));
+    const groupComplete = koOnly || names.every(n => groupTables[n] && groupTables[n].complete);
+    const groupRankingComplete = koOnly || names.every(n => groupTables[n]
+      && groupTables[n].rankingComplete);
+    const finalComplete = finalRounds.every(rd => rd.matches.every(m =>
+      (finalMode === 'doubleko' && bracket && bracket.grandFinal
+        && m.id === bracket.grandFinal.m2.id && !deResetNeeded)
+        || m.bye != null || mppFullyDead.has(m.id)
+        || m.dead
+        || !!(m.result && !m.needsDecision)));
+    const finalRankingComplete = !mainTables || Object.keys(mainTables).every(n =>
+      mainTables[n].rankingComplete);
+    const qualificationRequired = !koOnly
+      && ['placement', 'ko', 'main'].indexOf(finalMode) >= 0;
+    const qualificationComplete = !qualificationRequired
+      || (qualification.complete && !placementResolution.pending);
+    const placedTeams = placements.map(entry => entry.team).filter(team => team != null);
+    const everyActiveTeamPlaced = placedTeams.length === activeTeams.length
+      && new Set(placedTeams).size === activeTeams.length
+      && activeTeams.every(team => placedTeams.indexOf(team) >= 0);
+    const hasUnresolvedPlacement = placements.some(entry => entry.unsupported || entry.unresolved);
+    const rankingComplete = groupRankingComplete && finalRankingComplete
+      && qualificationComplete && everyActiveTeamPlaced && !hasUnresolvedPlacement;
+    const complete = groupComplete && finalComplete && rankingComplete;
+    placements.forEach(entry => { entry.provisional = !complete; });
 
     function computePlacements() {
       const out = [];
+      function addRanked(entries, offset, source) {
+        entries.forEach(entry => {
+          const tied = entries.filter(row => row.place === entry.place);
+          const place = offset + entry.place;
+          const placeTo = tied.length > 1 ? place + tied.length - 1 : place;
+          const row = {
+            place, team: entry.team, shared: !!entry.shared,
+            source, unsupported: entry.unsupported, unresolved: entry.unresolved
+          };
+          if (placeTo > place) {
+            row.placeTo = placeTo;
+            row.rangeLabel = place + '.–' + placeTo + '.';
+          }
+          out.push(row);
+        });
+      }
       if (finalMode === 'placement' && placementBlocks) {
         placementBlocks.forEach(bl => {
           if (bl.direct) {
-            out.push({ place: bl.places[0], team: resolve(bl.direct),
+            const team = resolve(bl.direct);
+            if (team != null) out.push({ place: bl.places[0], team,
               source: 'ohne Finalspiel (' + TC.refLabel(bl.direct) + ')' });
             return;
           }
@@ -670,18 +1069,15 @@
               return acc;
             }, []);
             const tb = tableFor(teamList, ms, finMode);
-            for (let i = 0; i < bl.places[1] - bl.places[0] + 1; i++) {
-              const e = tb.ranked[i];
-              out.push({ place: bl.places[0] + i, team: e ? e.team : null,
-                source: '3er-Runde um Platz ' + bl.places[0] + '–' + bl.places[1] });
-            }
+            addRanked(tb.ranked, bl.places[0] - 1,
+              '3er-Runde um Platz ' + bl.places[0] + '–' + bl.places[1]);
             return;
           }
           bl.matches.forEach(m => {
             if (!m.places) return;
             const src = 'Spiel um Platz ' + m.places.join('/');
-            out.push({ place: m.places[0], team: winnerOf[m.id] != null ? winnerOf[m.id] : null, source: src });
-            out.push({ place: m.places[1], team: loserOf[m.id] != null ? loserOf[m.id] : null, source: src });
+            if (winnerOf[m.id] != null) out.push({ place: m.places[0], team: winnerOf[m.id], source: src });
+            if (loserOf[m.id] != null) out.push({ place: m.places[1], team: loserOf[m.id], source: src });
           });
         });
       } else if (finalMode === 'ko' && bracket) {
@@ -689,24 +1085,24 @@
         const last = bracket.rounds[rc - 1];
         const fin = last.matches.find(m => !m.places);
         if (fin) {
-          out.push({ place: 1, team: winnerOf[fin.id] != null ? winnerOf[fin.id] : null, source: 'Finale' });
-          out.push({ place: 2, team: loserOf[fin.id] != null ? loserOf[fin.id] : null, source: 'Finale' });
+          if (winnerOf[fin.id] != null) out.push({ place: 1, team: winnerOf[fin.id], source: 'Finale' });
+          if (loserOf[fin.id] != null) out.push({ place: 2, team: loserOf[fin.id], source: 'Finale' });
         }
         const p3 = last.matches.find(m => m.places);
         if (p3) {
-          out.push({ place: 3, team: winnerOf[p3.id] != null ? winnerOf[p3.id] : null, source: 'Spiel um Platz 3' });
-          out.push({ place: 4, team: loserOf[p3.id] != null ? loserOf[p3.id] : null, source: 'Spiel um Platz 3' });
+          if (winnerOf[p3.id] != null) out.push({ place: 3, team: winnerOf[p3.id], source: 'Spiel um Platz 3' });
+          if (loserOf[p3.id] != null) out.push({ place: 4, team: loserOf[p3.id], source: 'Spiel um Platz 3' });
         }
         const placed = new Set(out.map(o => o.team).filter(t => t != null));
-        if (koOnly) {
-          /* Ohne Gruppenphase gibt es für die ausgeschiedenen Teams keine
-             Rangliste. Im KO-System teilen sich alle Verlierer derselben
+        {
+          /* Im KO-System teilen sich alle Verlierer derselben
              Runde denselben Platzbereich (5.–8., 9.–16. …). Wer eine feste
              Reihenfolge braucht, spielt Platzierungsspiele. */
           for (let ri = rc - 2; ri >= 0; ri--) {
             const rd = bracket.rounds[ri];
             const from = Math.pow(2, rc - 1 - ri) + 1;
-            const to = Math.pow(2, rc - ri);
+            const titleFieldSize = bracket.size - bracket.byes;
+            const to = Math.min(titleFieldSize, Math.pow(2, rc - ri));
             const range = (from === to) ? String(from) + '.' : from + '.–' + to + '.';
             const src = (ri === rc - 2 && p3) ? null : rd.label;
             if (src === null) continue;     // Halbfinale ist über Platz 3 geregelt
@@ -718,10 +1114,11 @@
                 shared: from !== to, source: 'ausgeschieden im ' + rd.label });
             });
           }
-        } else {
-          // Restliche Plätze aus der Gruppenphase, in Setz-Reihenfolge
-          let p = out.length + 1;
-          seedSlots().forEach(s => {
+        }
+        if (!koOnly) {
+          // Nur Nichtqualifizierte folgen dem KO-Feld in Setz-Reihenfolge.
+          let p = bracket.size + 1;
+          seedSlots().slice(bracket.size).forEach(s => {
             const t = resolve(s);
             if (t == null || placed.has(t)) return;
             placed.add(t);
@@ -767,9 +1164,13 @@
           nextPlace = to + 1;
         }
       } else if (finalMode === 'main' && mainTables) {
-        let p = 1;
+        let offset = 0;
         Object.keys(mainTables).forEach(n => {
-          mainTables[n].ranked.forEach(e => out.push({ place: p++, team: e.team, source: 'Hauptrunde ' + n }));
+          addRanked(mainTables[n].ranked, offset, 'Hauptrunde ' + n);
+          offset += mainGroups[n].filter(slot => {
+            const team = resolve(slot);
+            return team != null && !absent.has(team);
+          }).length;
         });
       } else if (finalMode === 'blocks') {
         /* Platzierungsblöcke: anders als bei 'none' (Gesamtreihung über Kreuz,
@@ -777,17 +1178,34 @@
            (Block A komplett, dann Block B, …). Das passt zu einer bereits
            importierten Rangliste: Block A enthält die Plätze 1..n, Block B
            die Plätze n+1..2n usw. – jeder Block spielt nur um SEINE Plätze. */
-        let p = 1;
+        let offset = 0;
         names.forEach(n => {
-          groupTables[n].ranked.forEach(e => out.push({
-            place: p++, team: e.team, shared: e.shared,
-            source: 'Platzierungsblock ' + n
-          }));
+          addRanked(groupTables[n].ranked, offset, 'Platzierungsblock ' + n);
+          offset += groupTables[n].teams.length;
         });
       } else {
-        // Nur Gruppenphase: A1,B1,A2,B2 … als Gesamtreihung
+        // Nur Gruppenphase: Rangstufen werden über Kreuz angeordnet. Geteilte
+        // Ränge bleiben geteilt und verbrauchen entsprechend mehrere Plätze.
         let p = 1;
-        seedSlots().forEach(s => out.push({ place: p++, team: resolve(s), source: 'Gruppenphase' }));
+        const maxPlace = names.reduce((max, n) =>
+          Math.max(max, groupTables[n] ? groupTables[n].ranked.length : 0), 0);
+        for (let rank = 1; rank <= maxPlace; rank++) {
+          names.forEach(n => {
+            const entries = (groupTables[n] ? groupTables[n].ranked : [])
+              .filter(entry => entry.place === rank);
+            const tieCount = entries.length;
+            entries.forEach(entry => {
+              const placeTo = tieCount > 1 ? p + tieCount - 1 : p;
+              out.push({
+                place: p, team: entry.team, shared: !!entry.shared,
+                source: 'Gruppenphase ' + n,
+                unsupported: entry.unsupported, unresolved: entry.unresolved,
+                ...(placeTo > p ? { placeTo, rangeLabel: p + '.–' + placeTo + '.' } : {})
+              });
+            });
+            p += tieCount;
+          });
+        }
       }
       return out.sort((x, y) => x.place - y.place);
     }
@@ -802,6 +1220,16 @@
     }
     if (finalMode !== 'none' && finalMode !== 'blocks' && names.some(n => !groupTables[n].complete)) {
       warnings.push('Die Finalpaarungen stehen erst fest, wenn alle Gruppenspiele eingetragen sind.');
+    }
+    if (finalMode === 'placement' && names.length > 4) {
+      warnings.push('Platzierungsrunde: Der feste Titelblock umfasst vier Qualifikationsplätze. Bei mehr als vier Gruppen sind die übrigen Gruppensieger nicht titelberechtigt; für eine andere Titelregel die KO-Runde wählen.');
+    }
+    if (placementResolution.pending && placementResolution.reason === 'qualification-tie') {
+      warnings.push('Gleichstand zwischen Gruppen auf demselben Rang: Die Qualifikationsreihenfolge muss ausdrücklich ausgelost werden.');
+    } else if (placementResolution.pending && placementResolution.reason === 'group-tie') {
+      warnings.push('Ein Gruppen-Gleichstand muss zuerst in der Gruppentabelle ausdrücklich korrigiert werden.');
+    } else if (placementResolution.pending && placementResolution.reason === 'ranking-unsupported') {
+      warnings.push('Die ausgewählte Wertung erlaubt keine automatische gruppenübergreifende Setzung; Qualifikation bleibt offen.');
     }
     names.forEach(n => {
       const t = groupTables[n];
@@ -827,7 +1255,8 @@
       finalMode, finalTitle, finalRounds, finalSetMode: finMode,
       placementBlocks, bracket, mainGroups, mainTables, deResetNeeded,
       grpSlots, finSlots, startMin, grpEndMin: grpEnd, endMin,
-      placements, warnings, notes, absent: Array.from(absent),
+      placements, qualification, placementResolution, complete, rankingComplete,
+      provisional: !complete, warnings, notes, absent: Array.from(absent),
       resolve, resultOf, winnerOf, loserOf, allMatches, matchLabel,
       matchById: allMatches.reduce((a, m) => (a[m.id] = m, a), {})
     };
@@ -914,6 +1343,12 @@
       resCache.set(k, r);
       return r;
     }
+    function matchHasInput(match) {
+      const raw = c.results && c.results[match.id];
+      return !!(Array.isArray(raw) && raw.some(set =>
+        Array.isArray(set) && set.some(value => value != null && value !== '')))
+        || TOutcome.hasOutcome(c, match.id);
+    }
     const idOf = (r, i) => (c.mode === 'swiss' ? 'sw_' : 'rr_') + r + '_' + i;
     function roundHasInput(r, count) {
       for (let i = 0; i < count + 4; i++) {
@@ -965,9 +1400,11 @@
           return;
         }
         const aAbs = absent.has(m.a), bAbs = absent.has(m.b);
-        if (aAbs && bAbs) { m.dead = true; return; }
-        if (aAbs) { m.bye = m.b; return; }
-        if (bAbs) { m.bye = m.a; return; }
+        if (!matchHasInput(m)) {
+          if (aAbs && bAbs) { m.dead = true; return; }
+          if (aAbs) { m.bye = m.b; return; }
+          if (bAbs) { m.bye = m.a; return; }
+        }
         m.result = resultOf(m.id, mode);
       });
       rd.frozen = roundHasInput(rd.round, rd.matches.length);
@@ -1060,7 +1497,12 @@
         unsupportedReason: (!stageCheck.ok ? 'stage-decision' : null) || dttbUnsupported || ittfUnsupported || (isStrictProfile(c.rankingProfile) && complete && unequal
           ? 'unequal-games' : null)
       });
-      const t = { ranked, stat: st, criteria, perGame: unequal && !swissRanking, played, complete };
+      const rankingComplete = complete && ranked.length === active.length
+        && ranked.every(entry => !entry.unsupported && !entry.unresolved);
+      const t = {
+        ranked, stat: st, criteria, perGame: unequal && !swissRanking, played, complete,
+        rankingComplete, provisional: !rankingComplete
+      };
       tableCache.set(upto, t);
       return t;
     }
@@ -1195,20 +1637,28 @@
     const slots = [];
     let cursor = startMin;
     rounds.forEach(rd => {
+      const schedulable = rd.matches.filter(m => m.bye == null && !m.dead);
       const per = TC.modeMinutes(rd.setMode);
-      TC.assignSlots([rd], c.fields).forEach(s => {
+      TC.assignSlots(schedulable.length ? [Object.assign({}, rd, { matches: schedulable })] : [], c.fields).forEach(s => {
         slots.push(Object.assign({}, s, {
           slot: slots.length + 1, title: rd.title,
           startMin: cursor, endMin: cursor + per, minutes: per
         }));
         cursor += per;
       });
+      const annulledCards = rd.matches.filter(m => m.bye == null && m.dead && m.annulled);
+      TC.assignSlots(annulledCards.length ? [Object.assign({}, rd, { matches: annulledCards })] : [], c.fields)
+        .forEach(s => slots.push(Object.assign({}, s, {
+          slot: slots.length + 1, title: rd.title,
+          startMin: cursor, endMin: cursor, minutes: 0, displayOnly: true
+        })));
     });
     const endMin = cursor;
 
     /* --- Endstand & Hinweise ---------------------------------------------- */
     const placements = table.ranked.map(e => ({
       place: e.place, team: e.team, shared: e.shared,
+      unsupported: e.unsupported, unresolved: e.unresolved,
       source: c.mode === 'swiss' ? 'Schweizer Tabelle' : 'Gesamttabelle'
     }));
     if (withdrawal && c.mode === 'rr') placements.push({ place: all.length, team: withdrawal.participant,
@@ -1242,12 +1692,18 @@
     rounds.forEach(rd => rd.matches.forEach(m => {
       m.name = rd.title + (m.bye != null ? ' – Freilos' : '');
     }));
+    const rankingComplete = table.rankingComplete
+      && placements.length >= active.length
+      && active.every(team => placements.some(entry => entry.team === team));
+    const complete = table.complete && rankingComplete;
+    placements.forEach(entry => { entry.provisional = !complete; });
     const matchById = {};
     rounds.forEach(rd => rd.matches.forEach(m => matchById[m.id] = m));
 
     return {
       config: c, mode: c.mode, rounds, slots, startMin, endMin,
       table, tableUpto, rankUpto, placements, pairs: pairsOut,
+      complete, rankingComplete, provisional: !complete, perGame: table.perGame,
       warnings, notes, withdrawal, absent: Array.from(absent), activeTeams: active,
       matchById, resultOf, modeOfRound,
       matchLabel: id => (matchById[id] && matchById[id].name) ? matchById[id].name : id,
@@ -1316,7 +1772,10 @@
 
     const want = Math.max(1, c.rounds ? (c.rounds | 0) : defaultKqRounds(courtCount));
     const cumPts = {}, roundsPlayed = {}, bestCourt = {}, fieldByeCount = {};
-    active.forEach(t => { cumPts[t] = 0; roundsPlayed[t] = 0; bestCourt[t] = courtCount; fieldByeCount[t] = 0; });
+    all.forEach(t => { cumPts[t] = 0; roundsPlayed[t] = 0; bestCourt[t] = courtCount; fieldByeCount[t] = 0; });
+    function hasScoreInput(raw) {
+      return Array.isArray(raw) && raw.some(value => value != null && value !== '');
+    }
 
     /* Feld-Freilos-Fairness: bei 3/5 Teams auf einem Feld sitzt normalerweise
        stur der (Setz-)Letzte der Liste aus. Ohne Zählung würde bei stabiler
@@ -1342,7 +1801,7 @@
     for (let r = 1; r <= want; r++) {
       let order;
       if (c.fixedCourts && c.fixedCourts[r] && c.fixedCourts[r].length) {
-        order = c.fixedCourts[r].map(list => (list || []).filter(t => active.indexOf(t) >= 0));
+        order = c.fixedCourts[r].map(list => (list || []).filter(t => all.indexOf(t) >= 0));
       } else if (r === 1) {
         order = TC.kqInitialCourts(active, courtCount);
       } else {
@@ -1372,14 +1831,19 @@
         };
       });
 
-      const hasInput = courtsData.some(cd => cd.matches.some(m => m.result));
-      const complete = courtsData.every(cd => cd.matches.every(m => m.result));
+      const hasInput = courtsData.some(cd => cd.matches.some(m => hasScoreInput(c.results[m.id])));
+      const complete = courtsData.length > 0
+        && courtsData.some(cd => cd.matches.length > 0)
+        && courtsData.every(cd => cd.matches.every(m => m.result));
 
       /* Punkte/Runden-Zähler nur für VOLLSTÄNDIG gewertete Felder fortschreiben,
          sonst würde ein halb eingetragenes Feld die Bewegregel der Folgerunde
          verfälschen (dieselbe „erst nach vollständigem Stand"-Regel wie beim
          Schweizer System, AGENTS.md §7a). */
       courtsData.forEach(cd => {
+        const courtStarted = cd.matches.some(m => hasScoreInput(c.results[m.id]));
+        if (courtStarted && cd.bye != null && bestCourt[cd.bye] != null
+            && cd.level < bestCourt[cd.bye]) bestCourt[cd.bye] = cd.level;
         cd.matches.forEach(m => {
           if (!m.result) return;
           cumPts[m.a] = (cumPts[m.a] || 0) + m.result.aPts;
@@ -1462,6 +1926,11 @@
         pointsPerRound: cumPts[t] / Math.max(1, roundsPlayed[t])
       };
     });
+    const scheduleComplete = rounds.length > 0 && rounds.every(rd => rd.complete);
+    const rankingComplete = scheduleComplete && placements.length === active.length
+      && active.every(team => placements.some(entry => entry.team === team));
+    const complete = scheduleComplete && rankingComplete;
+    placements.forEach(entry => { entry.provisional = !complete; });
 
     if (unequalRounds) {
       notes.push('Nicht alle Teams haben gleich viele Runden gespielt (Feld-Freilos) - '
@@ -1478,14 +1947,16 @@
        Feldanzahl-Konfiguration wie bei den anderen Formaten).               */
     const startMin = TC.toMin(c.startTime) != null ? TC.toMin(c.startTime) : TC.toMin('10:00');
     const perRound = Math.max(5, c.roundMinutes | 0 || KQ_ROUND_MIN_DEFAULT);
-    const slots = rounds.map((rd, i) => ({
+    const timedRounds = rounds.filter(rd => rd.courts.some(cd => cd.matches.length > 0));
+    const slots = timedRounds.map((rd, i) => ({
       slot: i + 1, round: rd.round, title: rd.title,
       startMin: startMin + i * perRound, endMin: startMin + (i + 1) * perRound, minutes: perRound
     }));
-    const endMin = startMin + rounds.length * perRound;
+    const endMin = startMin + slots.length * perRound;
 
     return {
       config: c, courtCount, rounds, slots, startMin, endMin, perRound,
+      complete, rankingComplete, provisional: !complete, perGame: unequalRounds,
       placements, warnings, notes, absent: Array.from(absent), activeTeams: active
     };
   }
@@ -1596,8 +2067,25 @@
         ballsFor: 0, ballsAgainst: 0, bd: 0, bdPer: 0
       });
     }
-    function tablePtsOf(p) { return ensureStat(p).pts; }
-    function bdOf(p) { return ensureStat(p).bd; }
+    function perGameFor(list) {
+      return list.some(p => (played[p] || 0) !== (played[list[0]] || 0));
+    }
+    function sortKeyFor(list) {
+      return (a, b) => {
+        const perGame = list.length > 1 && perGameFor(list);
+        const sa = ensureStat(a), sb = ensureStat(b);
+        const gamesA = Math.max(1, played[a] || 0), gamesB = Math.max(1, played[b] || 0);
+        const ptsA = perGame ? sa.pts / gamesA : sa.pts;
+        const ptsB = perGame ? sb.pts / gamesB : sb.pts;
+        if (ptsB !== ptsA) return ptsB - ptsA;
+        const bdA = perGame ? sa.bd / gamesA : sa.bd;
+        const bdB = perGame ? sb.bd / gamesB : sb.bd;
+        if (bdB !== bdA) return bdB - bdA;
+        const la = levelOf(a), lb = levelOf(b);
+        if (lb !== la) return lb - la;
+        return a - b;
+      };
+    }
 
     /* Sortierkriterium fuer die Ausgleichs-Team-Bildung (staerkste+schwaechste
        Person je Team): Tabellenpunkte, dann Ball-Differenz, dann Niveau
@@ -1605,15 +2093,7 @@
        der ersten Runde sind Punkte/Differenz fuer alle 0 - dann entscheidet
        direkt das Niveau, wodurch Runde 1 bereits niveau-ausgeglichene Teams
        bekommt (z.B. bei je 2x N2/N3/N4/N5: N5+N2 und N4+N3, beide Ø3,5).   */
-    function sortKey(a, b) {
-      const pa = tablePtsOf(a), pb = tablePtsOf(b);
-      if (pb !== pa) return pb - pa;
-      const ba = bdOf(a), bb = bdOf(b);
-      if (bb !== ba) return bb - ba;
-      const la = levelOf(a), lb = levelOf(b);
-      if (lb !== la) return lb - la;
-      return a - b;
-    }
+    const sortKey = sortKeyFor(active);
 
     /* Ranking-basierte Sitzordnung. Geschlecht spielt bei der TEAM-Bildung
        keine Rolle - "King & Queen" ist als Mixed-Event gedacht: Teams duerfen
@@ -1809,7 +2289,7 @@
         }
       });
 
-      const roundComplete = matches.every(m => !!m.result);
+      const roundComplete = active.length >= 4 && matches.length > 0 && matches.every(m => !!m.result);
       const byeList = [];
       if (byePlayer != null) byeList.push(byePlayer);
       if (byeTeam) byeList.push(byeTeam[0], byeTeam[1]);
@@ -1834,24 +2314,36 @@
        eigenstaendige Titel je Geschlecht vergibt. "stat" entspricht dem
        Format, das TUI.standingsTableHtml erwartet (siehe ensureStat oben). */
     function buildRanking(genderList) {
-      const ranked = genderList.filter(p => !absentSet.has(p)).sort(sortKey);
-      return ranked.map((player, index) => {
-        const s = ensureStat(player);
-        return {
-          place: index + 1,
+      const eligible = genderList.filter(p => !absentSet.has(p));
+      const perGame = eligible.length > 1 && perGameFor(eligible);
+      const stats = {};
+      eligible.forEach(player => { stats[player] = ensureStat(player); });
+      const tableKey = genderList === men ? 'kq-men' : 'kq-women';
+      const ranked = TC.rankWithCorrections(eligible, stats,
+        c.manualStandings && c.manualStandings[tableKey], {
+          criteria: perGame ? ['ptsPer', 'bdPer'] : ['pts', 'bd'],
+          perGame, rankingProfile: 'beach-house',
+          complete: rounds.length > 0 && rounds.every(rd => rd.complete)
+        });
+      ranked.forEach(entry => {
+        const player = entry.team, s = entry.stat;
+        Object.assign(entry, {
           player, team: player,
           gender: genders[player],
           level: levelOf(player),
-          stat: s,
           points: s.pts,
           roundsPlayed: played[player] || 0,
-          pointsPerRound: s.ptsPer
-        };
+          pointsPerRound: s.ptsPer,
+          perGame
+        });
       });
+      return ranked;
     }
 
     const menRanked = buildRanking(men);
     const womenRanked = buildRanking(women);
+    const menPerGame = menRanked.some(entry => entry.perGame);
+    const womenPerGame = womenRanked.some(entry => entry.perGame);
 
     /* --- Zeitplan -----------------------------------------------------------
        Wie bei buildRounds(): Min./Spiel ergibt sich aus dem Satzmodus
@@ -1864,23 +2356,30 @@
        je Runde ohnehin nur in genau einem Match steckt).                    */
     const startMin = TC.toMin(c.startTime) != null ? TC.toMin(c.startTime) : TC.toMin('10:00');
     const fields = Math.max(1, c.fields | 0 || 2);
-    const perGame = TC.modeMinutes(c.setMode);
+    const gameMinutes = TC.modeMinutes(c.setMode);
     const slots = [];
     let cursor = startMin;
     rounds.forEach(rd => {
       TC.assignSlots([rd], fields).forEach(s => {
         slots.push(Object.assign({}, s, {
           slot: slots.length + 1, title: rd.title,
-          startMin: cursor, endMin: cursor + perGame, minutes: perGame
+          startMin: cursor, endMin: cursor + gameMinutes, minutes: gameMinutes
         }));
-        cursor += perGame;
+        cursor += gameMinutes;
       });
     });
     const endMin = cursor;
+    const scheduleComplete = rounds.length > 0 && rounds.every(rd => rd.complete);
+    const rankingComplete = scheduleComplete
+      && menRanked.length + womenRanked.length === active.length
+      && menRanked.concat(womenRanked).every(entry => entry.resolved);
+    const complete = scheduleComplete && rankingComplete;
+    const perGame = active.length > 1 && perGameFor(active);
 
     return {
-      config: c, rounds, slots, startMin, endMin, perGame, fields,
+      config: c, rounds, slots, startMin, endMin, perGame, gameMinutes, fields,
       men: menRanked, women: womenRanked,
+      menPerGame, womenPerGame, complete, rankingComplete, provisional: !complete,
       warnings, notes, playerCount: total, menCount, womenCount,
       genders, levels, allPlayers: all, activePlayers: active,
       matchesPerRound: rounds.length ? Math.max.apply(null, rounds.map(rd => rd.matches.length)) : 0,
