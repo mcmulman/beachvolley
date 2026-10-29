@@ -239,3 +239,31 @@
 /* Rundentitel-Pille (King & Queen / King of the Court) vor Freilos-/Zeit-Hinweis. */
 .no-flexgap .kq-round-title > .kq-rlabel,
 .no-flexgap .kq-round-head > .kq-rlabel { margin-right: 6px; }
+
+/* Firmencup: Ergebniszeilen umbrechen auch auf schmalen Bildschirmen. */
+.no-flexgap .fc-standings-titles > *:not(:last-child) { margin-right: 12px; }
+.no-flexgap .fc-standings-titles > * { margin-bottom: 6px; }
+.no-flexgap .fc-standings-titles { margin-bottom: 2px; } /* eigene 8px */
+.no-flexgap .fc-standings-titles > p > *:not(:last-child),
+.no-flexgap .fc-place-entry > *:not(:last-child),
+.no-flexgap .fc-place-teamline > *:not(:last-child) { margin-right: 8px; }
+.no-flexgap .fc-standings-titles > p > * { margin-bottom: 4px; }
+.no-flexgap .fc-place-entry > *,
+.no-flexgap .fc-place-teamline > *,
+.no-flexgap .fc-open-side > * { margin-bottom: 2px; }
+.no-flexgap .fc-place-entry,
+.no-flexgap .fc-place-teamline { margin-bottom: -2px; }
+.no-flexgap .fc-place-entry > .fc-place-teamline { margin-bottom: 2px; }
+.no-flexgap .fc-open-placement-sides > *:not(:last-child) { margin-right: 6px; }
+.no-flexgap .fc-open-side > *:not(:last-child) { margin-right: 4px; }
+
+@media screen {
+  .no-flexgap .fc-toolbar .fc-search-label > * + *,
+  .no-flexgap .fc-toolbar .fc-group-filter > * + * { margin-top: 4px; }
+  .no-flexgap #fc-search-panel > *:not(:last-child),
+  .no-flexgap #fc-results-filter-card > *:not(:last-child) { margin-right: 12px; }
+  .no-flexgap #fc-search-panel > *,
+  .no-flexgap #fc-results-filter-card > * { margin-bottom: 8px; }
+  .no-flexgap #fc-search-panel,
+  .no-flexgap #fc-results-filter-card { margin-bottom: 6px; } /* eigene 14px */
+}

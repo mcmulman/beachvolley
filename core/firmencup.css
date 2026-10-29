@@ -544,6 +544,16 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
   .fc-fixture { border: 0; border-top: 1px solid #ccd8e8; border-radius: 0; padding: 2mm 0; background: none; }
   .fc-fixture { break-inside: avoid; }
   .fc-pool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Safari 12 has no beforeprint event: undo only result-filter visibility. */
+  #fc-pools .fc-results-pool[data-results-pool][hidden] { display: block !important; }
+  #fc-pools .fc-pool-table tbody tr[data-team][hidden],
+  #fc-standings .fc-place-table tbody tr[data-result-slot][hidden],
+  #fc-standings tr[data-company-row][hidden] { display: table-row !important; }
+  #fc-results-filter-card, .fc-results-filter-empty { display: none !important; }
+  .fc-pool-table tr.fc-results-filter-match > td,
+  .fc-place-table tr.fc-results-filter-match > td { background: none; }
+  .fc-pool-table tr.fc-results-filter-match > td:first-child,
+  .fc-place-table tr.fc-results-filter-match > td:first-child { border-left: 0; }
   .fc-results-pool { padding: 6px; background: none; border-color: #ccd8e8; }
   .fc-results-rules > summary, .fc-results-progress { display: none; }
   .fc-team-agenda { grid-template-columns: minmax(0, 1fr); }

@@ -2258,19 +2258,7 @@
         header.parentNode.insertBefore(bar, header.nextSibling);
       }
       syncLayoutClass();
-    }
-    if (document.readyState === 'loading') {
-      if (!bar.__jumpBarPlacementPending) {
-        bar.__jumpBarPlacementPending = true;
-        document.addEventListener('DOMContentLoaded', function () {
-          setTimeout(function () {
-            bar.__jumpBarPlacementPending = false;
-            placeAfterHeader();
-          }, 0);
-        }, false);
-      }
-    } else {
-      placeAfterHeader();
+      return !!(header && header.parentNode);
     }
     function updateCurrent() {
       const buttons = Array.from(bar.querySelectorAll('[data-jump]'));
@@ -2278,7 +2266,7 @@
         const target = document.getElementById(button.getAttribute('data-jump'));
         if (!target || !target.getClientRects().length) return null;
         return { button, top: target.getBoundingClientRect().top };
-      }).filter(Boolean);
+      }).filter(Boolean).sort((a, b) => a.top - b.top);
       if (!targets.length) {
         buttons.forEach(button => button.removeAttribute('aria-current'));
         return;
@@ -2339,6 +2327,18 @@
       }
       document.addEventListener('focusin', editing);
       document.addEventListener('focusout', function () { setTimeout(editing, 0); });
+    }
+    /* appbar.build wires the King sheets before inserting their header.
+       Observe that insertion once, rather than guessing when build finishes. */
+    if (!placeAfterHeader() && !bar.__jumpBarPlacementPending) {
+      bar.__jumpBarPlacementPending = true;
+      const placementObserver = new MutationObserver(function () {
+        if (!placeAfterHeader()) return;
+        placementObserver.disconnect();
+        bar.__jumpBarPlacementPending = false;
+        updateCurrent();
+      });
+      placementObserver.observe(document.body, { childList: true });
     }
     updateCurrent();
   }

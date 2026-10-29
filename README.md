@@ -33,6 +33,8 @@
 
 ### Kompakte Feature-Übersicht
 
+- **Alt-iPad-Darstellung und vollständiger Ergebnisdruck:** Firmencup-Ergebnisse werden auch ohne Druckereignis vollständig gedruckt, unabhängig von Such- und Gruppenfiltern. Filterkarten, Teamherkunft und Platzierungsduelle behalten ihre Abstände auch in Browsern ohne Flex-Gap-Unterstützung.
+
 - **Team-Herkunftsgruppen bis ins Finale:** Gruppen + Finalrunde und Modified Pool Play zeigen die tatsächliche Vorrundengruppe direkt bei spielenden Teams – auch in Überkreuz-Platzierung, K.-o., Hauptrunde und Endplatzierungen sowie im Druck. Die Zuordnung stammt aus der ursprünglichen Gruppeneinteilung, nicht aus dem aktuellen Spiel-/Finalkontext. Offene Quellen erhalten keine erfundene Gruppe; Namen, Namensfelder und Sicherungsdaten bleiben unverändert. Firmencup zeigt dieselbe Herkunft in seinen Gruppen- und Klassifikationsphasen. Formate ohne Vorrundengruppen (auch Flex RR/Swiss) und importierte Ranglisten-/Platzierungsblöcke werden nicht künstlich gruppiert.
 
 - **Firmencup-Suchkarte:** Suche und Gruppenfilter stehen am Anfang des Turnierablaufs in einer einheitlich eingerahmten Karte mit den Rundungen und Innenabständen der übrigen Bereiche. Das Suchfeld ist durch einen kräftigeren blauen Rahmen und hellblauen Hintergrund hervorgehoben. Beide Felder sind sichtbar beschriftet und brechen auf kleinen Displays untereinander um.
@@ -168,6 +170,8 @@
 - **Company cup – reliable live persistence and withdrawal proofs:** Concurrent synchronization and permission changes run sequentially per local event, retaining distinct queued snapshots and failed requests' retry keys. For multiple withdrawal decisions concerning the same team, the lexicographically smallest fixture ID supplies the representative event-wide proof (note and original timestamp), independent of input order, device clocks or equal timestamps. Every individual note remains in its match decision. Correction/removal requires the correspondingly re-derived proof; live changes to recorded decisions remain blocked. Withdrawal still applies event-wide while at least one such decision exists. Local and server text limits count UTF-16 code units (non-BMP emoji count twice), not UTF-8 bytes.
 
 ### Compact Feature Highlights
+
+- **Older-iPad layout and complete result printing:** Company-cup results print in full even without print events, independently of search and pool filters. Filter cards, team origins and placement duels retain their spacing in browsers without flex-gap support.
 
 - **Team group origins through the final:** Groups + Finals and Modified Pool Play display each playing team's actual preliminary group, including cross-over placement, knockout, main-round and final-ranking views and print. Origins come from the original group allocation, never the current match/final context. Unresolved sources receive no invented group; names, name editors and backup data remain unchanged. Firmencup displays the same origins in its group and classification stages. Formats without preliminary groups (including Flex RR/Swiss) and imported ranking/placement blocks are not artificially grouped.
 

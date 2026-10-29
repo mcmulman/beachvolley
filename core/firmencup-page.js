@@ -1328,7 +1328,8 @@
       '<p id="fc-results-filter-help" class="fc-note">' +
       tr('Die Suche hebt passende Teams in vollständigen Gruppentabellen hervor und filtert Endplatzierungen und Firmen. Der Gruppenfilter zeigt ganze Vorrundengruppen. Firmenränge bleiben immer aus allen Teams berechnet und werden durch den Gruppenfilter nicht beschnitten.',
         'Search highlights matching teams in complete pool tables and filters final places and companies. The pool filter shows whole group-stage pools. Company ranks always use all teams and are never narrowed by the pool filter.') +
-      '</p><p id="fc-results-filter-status" role="status" aria-live="polite" aria-atomic="true"></p></section>';
+      '</p><p id="fc-results-filter-status" role="status" aria-live="polite" aria-atomic="true">' +
+      esc(resultsFilterMessage()) + '</p></section>';
   }
   function resultsStatus() {
     const state = resultsState();
@@ -1358,6 +1359,18 @@
       tr('Gewertete Spiele', 'Matches recorded') + '">' + state.played + '/' + state.total + '</progress>' + back + '</section>';
   }
   function slotLabel(slot) {
+    if (slot.from === slot.to) {
+      const source = event.matches.find(match => match.id === slot.id);
+      const winner = source && source.winnerPlacement === slot.from;
+      const origin = source ? '<a href="#fc-match-' + esc(source.id) +
+        '" data-focus-target="fc-match-' + esc(source.id) + '">' +
+        (winner ? tr('Siegreiches Team aus ', 'Winner of ') : tr('Unterlegenes Team aus ', 'Loser of ')) +
+        esc(source.id) + '</a>' : tr('Team noch offen', 'Team pending');
+      return '<div class="fc-open-placement"><strong class="fc-open-placement-title">' +
+        tr('Platz ', 'Place ') + slot.from + tr(' noch offen', ' pending') +
+        '</strong><div class="fc-open-placement-sides"><span class="fc-open-side">' +
+        origin + '</span></div></div>';
+    }
     const name = slot.from === 1 ? tr('Finale offen', 'Final pending') : slot.from === 3 ?
       tr('Spiel um Platz 3 offen', '3rd-place match pending') : tr('Spiel um Platz ', 'Match for place ') + slot.from + tr(' offen', ' pending');
     const sides = slot.teams.slice(0, 2);
@@ -1414,9 +1427,9 @@
           (orgWinners.length ? orgWinners.map(r => esc(orgName(r.id))).join(' / ') : tr('noch offen', 'pending')) + '</span></p>' : '') +
         '</div><p class="fc-note fc-standings-note">' + (complete ?
           tr('Alle Spiele und Platzierungen entschieden; geteilte Ränge bleiben geteilt.', 'All matches and places decided; shared ranks stay shared.') :
-          tr('Offene Duelle behalten hier ihren Originalrang und bekannten Gegnerkontext.', 'Open duels below retain their original rank and known opponent context.')) + '</p>' +
+          tr('Offene Platzierungen behalten ihren Originalrang sowie den bekannten Gegner- oder Begegnungskontext.', 'Open placements retain their original rank and known opponent or source-match context.')) + '</p>' +
         '<h3>' + tr('Endplatzierungen aller Teams', 'Final places of all teams') + '</h3><table class="fc-table fc-place-table"><thead><tr><th scope="col">' + tr('Platz', 'Place') +
-        '</th><th scope="col">' + tr('Team / Platzierungsduell', 'Team / placement duel') +
+        '</th><th scope="col">' + tr('Team / offene Platzierung', 'Team / pending placement') +
         '</th></tr></thead><tbody>' + placements + '</tbody></table>' :
         '<p class="fc-note">' + tr('Endplatzierungen und Firmenwertung stehen erst nach der Endrunde fest. Bis dahin zählt der Zwischenstand der Gruppentabellen oben.',
           'Final places and the company ranking are decided only after the finals. Until then, the pool tables above show the current standings.') + '</p>') +
@@ -2373,6 +2386,23 @@
       document.getElementById('fc-group-filter').value = '';
       search();
     }
+    const resultPool = target.closest('.fc-results-pool');
+    if (resultPool) {
+      const poolId = resultPool.dataset.resultsPool;
+      const query = resultsQuery.trim().toLocaleLowerCase();
+      const pool = event.pools[Number(poolId.slice(1)) - 1] || [];
+      let changed = false;
+      if (resultsGroupFilter && resultsGroupFilter !== poolId) {
+        document.getElementById('fc-results-group-filter').value = '';
+        changed = true;
+      }
+      if (query && !event.teams.some(team => pool.includes(team.id) &&
+          (team.name + ' ' + orgName(team.orgId)).toLocaleLowerCase().indexOf(query) >= 0)) {
+        document.getElementById('fc-results-filter').value = '';
+        changed = true;
+      }
+      if (changed) resultsFilter();
+    }
     let ancestor = target.parentElement;
     while (ancestor && ancestor !== app) {
       if (ancestor.tagName === 'DETAILS' && !ancestor.open) {
@@ -2901,7 +2931,7 @@
         resultsFilter();
         resultsSearch.focus();
       };
-      resultsFilter(false);
+      resultsFilter();
     }
     app.querySelectorAll('[data-action]').forEach(node => {
       node.onclick = function () {
@@ -2954,7 +2984,7 @@
       (groupFilter ? ' · ' + (groupFilter === 'cup' ? tr('Baumphase', 'Bracket stage') : poolLabel(groupFilter, false)) : '') +
       tr('; gedruckt wird immer der Gesamtplan.', '; print always includes the full schedule.') : '';
   }
-  function resultsFilter(announce) {
+  function resultsFilter() {
     const searchInput = document.getElementById('fc-results-filter');
     const groupInput = document.getElementById('fc-results-group-filter');
     if (!searchInput || !groupInput) return;
@@ -2965,10 +2995,6 @@
     const matchingTeams = event.teams.filter(team =>
       (team.name + ' ' + orgName(team.orgId)).toLocaleLowerCase().indexOf(q) >= 0);
     const matchingIds = new Set(matchingTeams.map(team => team.id));
-    const groupNumber = /^G([1-9]\d*)$/.exec(resultsGroupFilter);
-    const selectedGroup = groupNumber ? event.pools[Number(groupNumber[1]) - 1] || [] : null;
-    const eligibleTeams = (q ? matchingTeams : event.teams).filter(team =>
-      !selectedGroup || selectedGroup.indexOf(team.id) >= 0);
     const printingResults = printing;
     const reset = document.getElementById('fc-results-filter-reset');
     if (reset) reset.hidden = !active;
@@ -3002,7 +3028,18 @@
       row.hidden = !printingResults && !!q && !companyMatch && !teamMatch;
     });
     const status = document.getElementById('fc-results-filter-status');
-    if (!status || announce === false) return;
+    if (!status) return;
+    const message = resultsFilterMessage();
+    if (status.textContent !== message) status.textContent = message;
+  }
+  function resultsFilterMessage() {
+    const q = resultsQuery.trim().toLocaleLowerCase();
+    const active = !!q || !!resultsGroupFilter;
+    const groupNumber = /^G([1-9]\d*)$/.exec(resultsGroupFilter);
+    const selectedGroup = groupNumber ? event.pools[Number(groupNumber[1]) - 1] || [] : null;
+    const eligibleTeams = event.teams.filter(team =>
+      (!q || (team.name + ' ' + orgName(team.orgId)).toLocaleLowerCase().indexOf(q) >= 0) &&
+      (!selectedGroup || selectedGroup.indexOf(team.id) >= 0));
     let message;
     if (q && !eligibleTeams.length) {
       message = resultsGroupFilter ?
@@ -3019,7 +3056,7 @@
     if (resultsGroupFilter) message += ' ' + tr('Der Gruppenfilter wirkt nur auf die Gruppentabellen.', 'The pool filter applies only to the pool tables.');
     message += ' ' + tr('Die Firmenwertung bleibt vollständig und wird aus allen Teams berechnet.', 'Company standings remain complete and are calculated from all teams.');
     if (!resultsState().played) message += ' ' + tr('Noch keine Ergebnisse erfasst.', 'No results have been recorded yet.');
-    status.textContent = message;
+    return message;
   }
   function shuffle(ids) {
     const out = ids.slice();
@@ -3287,14 +3324,14 @@
     printing = true;
     app.querySelectorAll('details').forEach(node => { node.dataset.printOpen = node.open ? '1' : '0'; node.open = true; });
     app.querySelectorAll('.fc-fixture, .fc-wave-group, .fc-wave-pool').forEach(node => { node.hidden = false; });
-    resultsFilter(false);
+    resultsFilter();
   });
   window.addEventListener('hashchange', followAnchor);
   window.addEventListener('afterprint', function () {
     app.querySelectorAll('details[data-print-open]').forEach(node => { node.open = node.dataset.printOpen === '1'; });
     printing = false;
     if (document.getElementById('fc-search')) search();
-    resultsFilter(false);
+    resultsFilter();
   });
   window.addEventListener('focus', function () {
     if (!readOnly && event && !busy) Store.load(event.id).then(function (disk) {
