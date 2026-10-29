@@ -918,6 +918,15 @@
   #tserver-status .tserver-action small { color:var(--app-muted); line-height:1.4; }
   .tournament-sheet .table-scroll { min-width: 0; max-width: 100%; }
   .tournament-sheet .table-scroll:focus, .tournament-sheet .scrollhint:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  .mobile-jumpbar .nbtn[aria-current="location"] {
+    color: var(--app-blue-dark);
+    background: var(--app-tonal);
+    box-shadow: inset 0 -2px 0 var(--app-blue);
+  }
+  .mobile-jumpbar .nbtn:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
+  body.has-section-jumpbar .schedule-roundbar {
+    top: calc(var(--app-bar-h, 54px) + 8px + 53px);
+  }
   @media (max-width: 960px) {
     #tserver-status .tserver-action { grid-template-columns:minmax(0,1fr); gap:4px; }
     .tournament-sheet {
@@ -972,7 +981,7 @@
     .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; font-size: 16px; color: var(--app-blue-dark); }
     .tournament-sheet .format-info-toggle { width: 100%; }
     .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
-    .mobile-jumpbar { grid-template-columns: repeat(5, minmax(0, 1fr));
+    .mobile-jumpbar { grid-template-columns: repeat(4, minmax(0, 1fr));
       padding-left: 8px; padding-right: 8px;
       padding-left: calc(8px + env(safe-area-inset-left, 0px));
       padding-right: calc(8px + env(safe-area-inset-right, 0px)); }

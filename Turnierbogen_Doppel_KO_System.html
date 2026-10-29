@@ -207,7 +207,7 @@
 <div class="row">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
-      <caption data-i18n="dko.teams.caption">Teams</caption>
+      <caption data-team-caption-key="dko.teams.caption"><span class="cap-title" data-i18n="dko.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span><span class="cap-hint only-print" data-i18n="sheet.teams.seedHint">Nr. 1 = Favorit.</span></caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -218,7 +218,7 @@
 <div class="table-scroll is-wide" id="scheduleSection">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="schedFin">
-    <caption><span class="cap-title" id="capFin" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span></caption>
+    <caption><span class="cap-title" id="capFin" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
     <thead id="schedFinHead"></thead>
     <tbody id="schedFinBody"></tbody>
   </table>
@@ -649,7 +649,8 @@
     $('hintFin').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('dko.schedule.screenAdd'),
       printAdd: T('dko.schedule.printAdd')
-    });
+    }) + ($('roundbar').querySelectorAll('[data-round-select] option').length > 2
+      ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
 
     const E = k => TUI.esc(T(k));
     $('scoringTables').innerHTML =

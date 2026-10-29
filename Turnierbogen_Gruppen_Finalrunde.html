@@ -214,7 +214,7 @@
 <div class="row" id="livebox">
   <div style="flex:0 0 46%">
     <table class="teams">
-      <caption data-i18n="sheet.teams.caption">Teams</caption>
+      <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span></caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -231,7 +231,7 @@
 <div class="table-scroll is-wide" id="scheduleSection">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="schedGrp">
-    <caption><span class="cap-title" id="capGrp" data-i18n="gf.schedule.grpTitle">Spielplan &amp; Ergebnisse – Vorrunde</span><span class="cap-hint" id="hintGrp"></span></caption>
+    <caption><span class="cap-title" id="capGrp" data-i18n="gf.schedule.grpTitle">Spielplan &amp; Ergebnisse – Vorrunde</span><span class="cap-hint" id="hintGrp"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
     <thead id="schedGrpHead"></thead>
     <tbody id="schedGrpBody"></tbody>
   </table>
@@ -384,7 +384,7 @@
   function labeler(){ return TUI.makeLabeler(S); }
   function fieldLabel(i){ return S.fieldNames[i] || TUI.surfaceLabel(i + 1); }
   function ctxFor(mode){
-    return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, S.absent.includes(n)), fieldLabel: fieldLabel,
+    return { setMode: mode, teamLabel: labeler(), teamNameHtml: (n) => TUI.teamNameHtml(n, S, S.absent.includes(n), B), fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
              fields: S.config.fields, modeLabel: modeLabel(mode) };
@@ -754,7 +754,7 @@
   function paintPlacements(){
     const key = 'final';
     const editable = MSTD.isEditing(key);
-    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S, S.absent.includes(n)) };
+    const ctx = { teamNameHtml: n => TUI.teamNameHtml(n, S, S.absent.includes(n), B) };
     $('rankingStatus').textContent = T(B.complete ? 'ranking.status.final' : 'ranking.status.provisional');
     $('placeToolbar').innerHTML = MSTD.toolbarHtml(key);
     const html = TUI.placeListHtml(B.placements, ctx, { editable, manual: TStore.getManualPlacements(S, key),
@@ -949,7 +949,8 @@
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
       screenAdd: T('gf.schedule.grpScreenAdd'),
       printAdd: T('gf.schedule.grpPrintAdd')
-    });
+    }) + ($('roundbarGrp').querySelectorAll('[data-round-select] option').length > 2
+      ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
     $('hintFin').innerHTML = B.finSlots.length
       ? TUI.scoreHintHtml({
           screenAdd: T('gf.schedule.finScreenAdd'),

@@ -197,6 +197,8 @@
 </div>
 
 <h2 class="mobile-section-heading" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
+<p class="legend mode-summary noprint ux-entry-mode-summary" data-entry-mode-summary></p>
+<p class="input-hint only-screen ux-score-controls-hint" data-i18n="ui.hint.scoreControls">Beide Werte eintragen. Mit dem sichtbaren OK oder Enter auf der Tastatur geht es zum nächsten Ergebnis.</p>
 <div id="roundsContainer"></div>
 
 <!-- ======================= SEITE 2 ======================= -->
@@ -588,7 +590,10 @@
       const tbl = $(tblId);
       const manual = TStore.getManualStandings(S, tableKey);
       const editable = MSTD.isEditing(tableKey);
-      tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span></caption>'
+      const nameHint = tableKey === 'kq-men'
+        ? '<span class="cap-hint only-screen ux-name-edit-hint">' + TUI.esc(T('ui.hint.captionNames')) + '</span>'
+        : '';
+      tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span>' + nameHint + '</caption>'
         + TUI.standingsTableHtml(ranked, ctx, { manual, editable,
           perGame: tableKey === 'kq-men' ? !!B.menPerGame : !!B.womenPerGame });
       const hint = $(hintId);
@@ -627,6 +632,7 @@
         count: getMenCount() + getWomenCount(),
         mode: modeLabel(S.config.setMode)
       }));
+    TUI.syncEntryModeSummary(document);
   }
 
   function paintCfgResult(){

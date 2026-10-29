@@ -365,14 +365,14 @@
         font-size: 12.5px;
         margin: 0 0 14px;
       }
-      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav) {
+      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav):not(.mobile-jumpbar) {
         display: flex !important;
         align-items: center;
         gap: 12px !important;
         flex-wrap: wrap;
         font-size: 13px;
       }
-      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav) a {
+      body > .noprint:first-of-type:not(.app-bar):not(.legacy-nav):not(.mobile-jumpbar) a {
         font-size: 13px !important;
         display: inline-flex;
         align-items: center;
@@ -520,8 +520,8 @@
         bottom: 0;
         z-index: 999;
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 6px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-gap: 8px;
         padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
         background: rgba(255,255,255,.96);
         border-top: 1px solid #c9d6e6;
@@ -529,7 +529,7 @@
         backdrop-filter: blur(8px);
       }
       /* Ruhige Tab-Leiste: Icon + Label in Akzentfarbe auf heller Fläche
-         statt fünf dunkler Vollton-Buttons (weniger Gewicht am Bildschirmrand). */
+         statt dunkler Vollton-Buttons (weniger Gewicht am Bildschirmrand). */
       .mobile-jumpbar .nbtn svg { display: block; flex: 0 0 auto; width: 20px; height: 20px; margin-bottom: 2px; }
       .mobile-jumpbar .nbtn {
         min-height: 48px;
@@ -784,6 +784,40 @@
   html body.score-short-viewport .app-bar,
   html body.score-short-viewport .schedule-roundbar { position:static; }
   html body.score-editing .mobile-jumpbar { display:none; }
+}
+@media screen and (min-width: 641px) {
+  .mobile-jumpbar {
+    position:sticky;
+    top:calc(var(--app-bar-h, 54px) + 2px);
+    z-index:20;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-gap:8px;
+    padding:4px 8px;
+    margin:0 0 12px;
+    background:rgba(255,255,255,.96);
+    border-bottom:1px solid #c9d6e6;
+  }
+  .mobile-jumpbar .nbtn {
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    padding:6px 8px;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap;
+    box-sizing:border-box;
+  }
+  .mobile-jumpbar .nbtn svg {
+    display:block;
+    flex:0 0 auto;
+    width:18px;
+    height:18px;
+    margin:0 6px 0 0;
+  }
+  .mobile-jumpbar.is-editing { display:none; }
 }
 @media screen and (pointer: coarse) and (min-width: 961px) {
   html body .psets .score-ok { width:32px; height:32px; }

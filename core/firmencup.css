@@ -184,8 +184,10 @@ label input, label select { margin-top: 5px; }
 .fc-org { padding: 0 14px; }
 .fc-org > section { margin: 0 0 12px; padding: 10px 0 0; border: 0; border-top: 1px solid #ccd8e8; border-radius: 0; }
 .fc-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 12px; padding: 8px 14px; }
-.fc-toolbar .fc-search-label { flex: 1 1 220px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 0; font-size: .92rem; }
+.fc-toolbar .fc-search-label, .fc-toolbar .fc-group-filter { flex: 1 1 220px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 0; font-size: .92rem; }
 .fc-toolbar .fc-search-label input { flex: 1 1 auto; min-width: 0; margin: 0; }
+#fc-search-panel .fc-search-label, #fc-results-filter-card .fc-search-label { color: #1a3a5c; font-weight: 700; }
+#fc-search-panel #fc-search, #fc-results-filter-card #fc-results-filter { border: 2px solid #175981; background: #edf4fa; }
 .fc-toolbar .fc-score-nav { flex: 0 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; margin: 0; padding: 0; border: 0; }
 .fc-toolbar .fc-score-nav .fc-link { margin: 0; }
 .fc-toolbar #fc-next { flex: 1 1 100%; }
@@ -193,9 +195,15 @@ label input, label select { margin-top: 5px; }
 .fc-toolbar #fc-next:empty, #fc-search-summary:empty { display: none; }
 .fc-toolbar .fc-group-filter { flex: 1 1 15rem; min-width: 0; margin: 0; }
 .fc-toolbar .fc-group-filter select { margin-top: 0; }
-#fc-search-panel { margin: 12px 0; padding: 10px 0; border: 0; border-top: 1px solid #ccd8e8; border-bottom: 1px solid #ccd8e8; border-radius: 0; }
+#fc-search-panel, #fc-results-filter-card { margin: 14px 0; padding: 14px; gap: 8px 12px; border: 1px solid #ccd8e8; border-radius: 10px; }
 .fc-score-nav .fc-link { font-size: .85rem; padding-left: 8px; padding-right: 8px; }
 .fc-toolbar #fc-filter-reset { background: #fff; color: #1a3a5c; margin: 0; }
+.fc-toolbar #fc-results-filter-reset { background: #fff; color: #1a3a5c; margin: 0; }
+.fc-results-filter-card #fc-results-filter-help { flex: 1 1 100%; margin: 4px 0; font-size: .86rem; }
+.fc-results-filter-card #fc-results-filter-status { flex: 1 1 100%; margin: 0; font-size: .9rem; }
+.fc-results-filter-card #fc-results-filter-status:empty { display: none; }
+.fc-pool-table tr.fc-results-filter-match > td, .fc-place-table tr.fc-results-filter-match > td { background: #e6f3fb; }
+.fc-pool-table tr.fc-results-filter-match > td:first-child, .fc-place-table tr.fc-results-filter-match > td:first-child { border-left: 3px solid #175981; }
 .fc-group-badge, .fc-bracket-badge { display: inline-block; max-width: 100%; padding: 3px 8px; border: 1px solid #175981; border-left-width: 4px; border-radius: 5px; background: #edf4fa; color: #1a3a5c; font-size: .85rem; font-weight: 700; line-height: 1.35; overflow-wrap: break-word; vertical-align: middle; }
 a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underline; }
 .fc-bracket-badge { background: #fff4dc; color: #664200; border-color: #b07818; }
@@ -406,8 +414,27 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
 .fc-results-team > span { font-weight: 600; }
 .fc-results-team > small { display: block; margin-top: 2px; font-size: .78rem; text-decoration: none; }
 .fc-pool-table abbr { text-decoration: none; }
+.fc-standings-titles { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 8px 0; padding: 8px 10px; border-left: 4px solid #175981; border-radius: 4px; background: #edf4fa; }
+.fc-standings-titles > p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0; min-width: 0; }
+.fc-standings-titles > p > strong { color: #1a3a5c; }
+.fc-standings-note { margin: 6px 0 10px; }
+.fc-place-table th:first-child, .fc-place-table td:first-child { width: 4.5rem; }
+.fc-place-table td { vertical-align: middle; }
+.fc-place-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.fc-place-teamline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
+.fc-place-team-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; overflow-wrap: anywhere; }
+.fc-place-company { color: #46576b; font-size: .85rem; overflow-wrap: anywhere; }
+.fc-placement-context-link { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; min-height: 44px; padding: 2px 4px; }
+.fc-placement-context-link .fc-group-badge { max-width: 100%; padding: 2px 6px; border-left-width: 3px; font-size: .75rem; line-height: 1.25; white-space: normal; }
+.fc-open-row th, .fc-open-row td { vertical-align: top; background: #fffaf0; color: #664200; }
+.fc-open-row th { border-left: 4px solid #b07818; }
+.fc-open-placement { min-width: 0; }
+.fc-open-placement-title { display: block; margin: 2px 0 4px; color: #664200; }
+.fc-open-placement-sides { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; min-width: 0; }
+.fc-open-side { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-width: 0; }
+.fc-open-versus { color: #46576b; font-size: .85rem; }
+.fc-open-pending { display: inline-flex; align-items: center; min-height: 44px; color: #664200; font-style: italic; }
 .fc-plain-table th:first-child, .fc-plain-table td:first-child { width: auto; }
-.fc-open-row td { background: #fffaf0; color: #664200; }
 #fc-share-url { height: 100px; }
 #fc-qr { margin: 12px 0; }
 #fc-qr img { max-width: 100%; height: auto; }
@@ -524,7 +551,10 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
   .fc-badge { border-color: black; color: black; background: none; }
   .fc-group-badge, .fc-bracket-badge { color: black; background: none; border-color: black; font-size: inherit; }
   a.fc-group-badge, .fc-pool-matches, .fc-table [data-overview-team] { min-height: 0; padding: 2px 4px; }
-  .fc-open-row td { background: none; color: black; }
+  .fc-open-row th, .fc-open-row td { background: none; color: black; }
+  .fc-open-row th { border-left: 0; }
+  .fc-placement-context-link, .fc-place-team-link, .fc-open-pending { min-height: 0; padding-top: 1px; padding-bottom: 1px; }
+  .fc-standings-titles { border-left-color: #555; background: none; }
   .fc-table tr { break-inside: avoid; }
   .fc-table thead { display: table-header-group; }
   h2, h3, h4 { break-after: avoid; }

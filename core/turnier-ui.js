@@ -583,7 +583,7 @@
     return (n > 0 ? '+' : '') + n;
   }
 
-  function teamNameHtml(team, teamNames, absent) {
+  function teamNameHtml(team, teamNames, absent, originPlan) {
     const n = team == null ? '' : String(team).trim();
     const absentHtml = '<span class="abt">' + esc(tx('ui.absent', 'ausgefallen')) + '</span>';
     if (!n) return absent ? absentHtml : '';
@@ -593,7 +593,20 @@
       ? ' data-player-one="' + esc(members[0]) + '" data-player-two="' + esc(members[1]) + '"' : '';
     const label = '<span class="t-line"' + metadata + '>' + esc(participantWord()) + ' ' + esc(n) + '</span>'
       + (nm ? '<span class="tnm t-nm">(' + esc(nm) + ')</span>' : '');
-    return absent ? label + ' ' + absentHtml : label;
+    let origin = '';
+    // Imported ranking blocks are placement stages, not preliminary origins.
+    if (originPlan && originPlan.finalMode !== 'blocks' && originPlan.groups && originPlan.groupNames) {
+      const groups = originPlan.groupNames.filter(function (group) {
+        return (originPlan.groups[group] || []).some(function (member) {
+          return String(member) === n;
+        });
+      });
+      if (groups.length === 1) {
+        origin = '<span class="team-origin-group" data-origin-group="' + esc(groups[0]) + '">'
+          + esc(tx('ui.team.originGroup', 'Vorrundengruppe {group}', { group: groups[0] })) + '</span>';
+      }
+    }
+    return label + origin + (absent ? ' ' + absentHtml : '');
   }
 
   /* ================================================================ 1. NAMEN
@@ -1465,8 +1478,8 @@
     const add = t => (t ? ' ' + t : '');
     const screen = tx('ui.hint.screen', 'So trägst du ein: {sets}'
       + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
-      + 'Nur Zahlen; mit „:“ oder Enter springst du ins nächste Kästchen. '
-      + 'Der Sieger wird hervorgehoben.', { sets: sets })
+      + 'Ein niedriger Einzelwert (mindestens 2 unter dem Satzziel) ergänzt das Gegenfeld bis zum Ziel; '
+      + 'manuell gesetzte Werte bleiben. Weiter mit „:“/Enter oder dem OK-Knopf.', { sets: sets })
       + add(o.screenAdd);
     const print = tx('ui.hint.print', 'So ausfüllen: {sets}'
       + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
@@ -2139,6 +2152,16 @@
     const legend = doc.getElementById('h-legend');
     const summary = doc.getElementById('modeSummary');
     if (legend && summary) summary.innerHTML = legend.innerHTML;
+    syncEntryModeSummary(doc);
+  }
+
+  function syncEntryModeSummary(doc) {
+    if (!doc) return;
+    const summary = doc.getElementById('modeSummary');
+    if (!summary) return;
+    doc.querySelectorAll('[data-entry-mode-summary]').forEach(target => {
+      target.innerHTML = summary.innerHTML;
+    });
   }
 
   /* ============================================ 8b. WERTUNG UND TIE-BREAKER
@@ -2209,8 +2232,7 @@
       setup: '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/>',
       guide: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
       schedule: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
-      standings: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
-      print: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'
+      standings: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>'
     };
     const btn = (id, key, label) => id
       ? '<button type="button" class="nbtn" data-jump="' + esc(id) + '">' + ico(icons[key]) + '<span>' + esc(label) + '</span></button>'
@@ -2218,33 +2240,107 @@
     return btn(t.setup || 'configSection', 'setup', tx('ui.jump.setup', 'Setup'))
       + btn(t.guide || 'guideContainer', 'guide', tx('ui.jump.guide', 'Anleitung'))
       + btn(t.schedule || 'scheduleSection', 'schedule', tx('ui.jump.schedule', 'Spielplan'))
-      + btn(t.standings || 'standingsSection', 'standings', tx('ui.jump.standings', 'Tabelle'))
-      + '<button type="button" class="nbtn" data-jump-print>' + ico(icons.print) + '<span>' + esc(tx('ui.jump.print', 'Drucken')) + '</span></button>';
+      + btn(t.standings || 'standingsSection', 'standings', tx('ui.jump.standings', 'Tabelle'));
   }
 
   /* Ein delegierter Listener genuegt fuer die ganze Leiste. */
   function wireJumpBar(bar) {
     if (!bar) return;
-    function editing() {
-      const el = document.activeElement;
-      const active = el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
-        && !el.disabled && !el.readOnly && !/^(checkbox|radio|button)$/.test(el.type);
-      bar.classList.toggle('is-editing', !!active);
+    function syncLayoutClass() {
+      if (!document.body) return;
+      /* Width only: focus changes must not move the sticky round bar
+         between mousedown and mouseup. */
+      document.body.classList.toggle('has-section-jumpbar', window.innerWidth > 640);
     }
-    document.addEventListener('focusin', editing);
-    document.addEventListener('focusout', function () { setTimeout(editing, 0); });
-    bar.addEventListener('click', e => {
-      const el = e.target.closest ? e.target.closest('[data-jump],[data-jump-print]') : null;
-      if (!el) return;
-      if (el.hasAttribute('data-jump-print')) { window.print(); return; }
-      const target = document.getElementById(el.getAttribute('data-jump'));
-      if (target) {
-        const header = document.querySelector('.app-bar');
-        const sticky = header && /sticky|fixed/.test(getComputedStyle(header).position);
-        const offset = sticky ? header.getBoundingClientRect().height + 12 : 12;
-        window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
+    function placeAfterHeader() {
+      const header = document.querySelector('.app-bar');
+      if (header && header.parentNode && header.nextSibling !== bar) {
+        header.parentNode.insertBefore(bar, header.nextSibling);
       }
-    });
+      syncLayoutClass();
+    }
+    if (document.readyState === 'loading') {
+      if (!bar.__jumpBarPlacementPending) {
+        bar.__jumpBarPlacementPending = true;
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(function () {
+            bar.__jumpBarPlacementPending = false;
+            placeAfterHeader();
+          }, 0);
+        }, false);
+      }
+    } else {
+      placeAfterHeader();
+    }
+    function updateCurrent() {
+      const buttons = Array.from(bar.querySelectorAll('[data-jump]'));
+      const targets = buttons.map(button => {
+        const target = document.getElementById(button.getAttribute('data-jump'));
+        if (!target || !target.getClientRects().length) return null;
+        return { button, top: target.getBoundingClientRect().top };
+      }).filter(Boolean);
+      if (!targets.length) {
+        buttons.forEach(button => button.removeAttribute('aria-current'));
+        return;
+      }
+
+      const header = document.querySelector('.app-bar');
+      const headerBottom = header && /sticky|fixed/.test(getComputedStyle(header).position)
+        ? header.getBoundingClientRect().bottom : 0;
+      const barBottom = window.innerWidth > 640 && /sticky|fixed/.test(getComputedStyle(bar).position)
+        ? bar.getBoundingClientRect().bottom : 0;
+      const activationLine = Math.max(headerBottom, barBottom) + 32;
+      let active = targets[0];
+      if (window.pageYOffset + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+        active = targets[targets.length - 1];
+      } else {
+        targets.forEach(item => { if (item.top <= activationLine) active = item; });
+      }
+      buttons.forEach(button => {
+        if (button === active.button) button.setAttribute('aria-current', 'location');
+        else button.removeAttribute('aria-current');
+      });
+    }
+
+    if (!bar.__jumpBarWired) {
+      bar.__jumpBarWired = true;
+      let framePending = false;
+      const scheduleUpdate = () => {
+        syncLayoutClass();
+        if (framePending) return;
+        framePending = true;
+        window.requestAnimationFrame(() => {
+          framePending = false;
+          updateCurrent();
+        });
+      };
+      window.addEventListener('scroll', scheduleUpdate, false);
+      window.addEventListener('resize', scheduleUpdate, false);
+      bar.addEventListener('click', e => {
+        const el = e.target.closest ? e.target.closest('[data-jump]') : null;
+        if (!el) return;
+        const target = document.getElementById(el.getAttribute('data-jump'));
+        if (target) {
+          const header = document.querySelector('.app-bar');
+          const headerSticky = header && /sticky|fixed/.test(getComputedStyle(header).position);
+          const barSticky = window.innerWidth > 640 && /sticky|fixed/.test(getComputedStyle(bar).position);
+          const offset = (headerSticky ? header.getBoundingClientRect().height : 0)
+            + (barSticky ? bar.getBoundingClientRect().height : 0) + 24;
+          window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
+          updateCurrent();
+        }
+      });
+      function editing() {
+        const el = document.activeElement;
+        const active = el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
+          && !el.disabled && !el.readOnly && !/^(checkbox|radio|button)$/.test(el.type);
+        bar.classList.toggle('is-editing', !!active);
+        syncLayoutClass();
+      }
+      document.addEventListener('focusin', editing);
+      document.addEventListener('focusout', function () { setTimeout(editing, 0); });
+    }
+    updateCurrent();
   }
 
   /* ============================================ 8b. SPIELENTSCHEIDUNGEN
@@ -3389,7 +3485,7 @@
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
+    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };

@@ -354,6 +354,7 @@
 
     /* ── core/turnier-ui.js ── */
     'ui.absent': 'ausgefallen',
+    'ui.team.originGroup': 'Vorrundengruppe {group}',
     'ui.score.okAria': 'Eingabe bestätigen und weiter',
     'ui.score.points': 'Punkte',
     'ui.score.setN': 'Satz {n}',
@@ -389,7 +390,9 @@
     'ui.manual.done': 'Fertig',
     'ui.manual.edit': 'Tabelle korrigieren',
     'ui.manual.resetAll': 'Korrekturen zurücksetzen',
-    'ui.hint.screen': 'So trägst du ein: {sets}linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Nur Zahlen; mit „:“ oder Enter springst du ins nächste Kästchen. Der Sieger wird hervorgehoben.',
+    'ui.hint.screen': 'So trägst du ein: {sets}linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Ein niedriger Einzelwert (mindestens 2 unter dem Satzziel) ergänzt das Gegenfeld bis zum Ziel; manuell gesetzte Werte bleiben. Weiter mit „:“/Enter oder dem OK-Knopf.',
+    'ui.hint.scoreControls': 'Beide Werte eintragen. Mit dem sichtbaren OK oder Enter auf der Tastatur geht es zum nächsten Ergebnis.',
+    'ui.hint.captionNames': 'Namen über den Stift neben dieser Überschrift bearbeiten.',
     'ui.hint.print': 'So ausfüllen: {sets}linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. Satzergebnis direkt nach dem Spiel mit dem Stift eintragen und den Namen des Siegers einkreisen.',
     'ui.team.deleteTitle': 'Team endgültig löschen',
     'ui.team.deleteMin': 'Mindestanzahl an Teams erreicht',
@@ -409,6 +412,7 @@
     'ui.roundbar.next': 'Weiter',
     'ui.roundbar.allTitle': 'Alle Runden gleichzeitig anzeigen',
     'ui.roundbar.single': 'Einzelne Runde',
+    'ui.roundbar.hint': 'Eine Runde auswählen, um den Spielplan zu fokussieren; „Alle Runden“ zeigt ihn wieder vollständig.',
     'ui.jump.setup': 'Setup',
     'ui.jump.guide': 'Anleitung',
     'ui.jump.schedule': 'Spielplan',

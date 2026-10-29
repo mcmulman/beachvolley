@@ -1129,6 +1129,20 @@ input.score {
    Regeln: links ausgerichtet, "Team 12" bricht nie um, ein zusätzlich
    eingetragener Teamname steht darunter und wird bei Platzmangel gekürzt.
    ========================================================================== */
+.team-origin-group {
+  display: block;
+  max-width: 100%;
+  margin-top: 2px;
+  color: #355875;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+@media print {
+  .team-origin-group { color: #000; font-size: 6.5pt; }
+}
 .track .tname,
 .stand .nm,
 .central-table .teamcol,

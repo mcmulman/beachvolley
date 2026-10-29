@@ -353,6 +353,7 @@
 
     /* ── core/turnier-ui.js ── */
     'ui.absent': 'withdrawn',
+    'ui.team.originGroup': 'Preliminary group {group}',
     'ui.score.okAria': 'Confirm entry and continue',
     'ui.score.points': 'Points',
     'ui.score.setN': 'Set {n}',
@@ -388,7 +389,9 @@
     'ui.manual.done': 'Done',
     'ui.manual.edit': 'Correct table',
     'ui.manual.resetAll': 'Reset corrections',
-    'ui.hint.screen': 'How to enter: {sets}left box = left team, right box = right team. Numbers only; “:” or Enter jumps to the next box. The winner is highlighted.',
+    'ui.hint.screen': 'How to enter: {sets}left box = left team, right box = right team. A low single score (at least 2 below the set target) completes the other box to the target; manually entered values stay. Move on with “:”/Enter or the OK button.',
+    'ui.hint.scoreControls': 'Enter both values. Use the visible OK button or press Enter on a keyboard to move to the next score.',
+    'ui.hint.captionNames': 'Edit names with the pencil beside this heading.',
     'ui.hint.print': 'How to fill in: {sets}left box = left team, right box = right team. Write the set score with a pen right after the match and circle the winner’s name.',
     'ui.team.deleteTitle': 'Delete team permanently',
     'ui.team.deleteMin': 'Minimum number of teams reached',
@@ -408,6 +411,7 @@
     'ui.roundbar.next': 'Next',
     'ui.roundbar.allTitle': 'Show all rounds at once',
     'ui.roundbar.single': 'Single round',
+    'ui.roundbar.hint': 'Choose one round to focus the schedule; “All rounds” restores the full view.',
     'ui.jump.setup': 'Setup',
     'ui.jump.guide': 'Guide',
     'ui.jump.schedule': 'Schedule',

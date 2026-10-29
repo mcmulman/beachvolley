@@ -229,7 +229,7 @@
 <div class="row">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
-      <caption id="capTeams" data-i18n="sheet.teams.caption">Teams</caption>
+      <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" id="capTeams" data-i18n="sheet.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span></caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -240,7 +240,7 @@
 <div class="table-scroll is-wide" id="scheduleSection">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="sched">
-    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span></caption>
+    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
     <thead id="schedHead"></thead>
     <tbody id="schedBody"></tbody>
   </table>
@@ -1236,7 +1236,8 @@
       printAdd: isSwiss()
         ? T('flex.schedule.printAddSwiss')
         : ''
-    });
+    }) + ($('roundbar').querySelectorAll('[data-round-select] option').length > 2
+      ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
     $('formatDoc').href = 'docs/format-flex-turnier.html';
     $('absentHint').textContent = isSwiss()
       ? T('flex.absent.hintSwiss')

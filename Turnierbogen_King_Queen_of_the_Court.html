@@ -193,12 +193,15 @@
 <div id="noticeBox"></div>
 
 <table class="teams">
-  <caption data-i18n="sheet.teams.caption">Teams</caption>
+  <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span></caption>
   <tbody id="teamsBody"></tbody>
 </table>
 
 <div class="noprint schedule-roundbar" id="roundbarKq"></div>
 <h2 class="mobile-section-heading noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
+<p class="legend mode-summary noprint ux-entry-mode-summary" data-entry-mode-summary></p>
+<p class="input-hint only-screen ux-round-filter-hint" id="roundFilterHint" data-i18n="ui.roundbar.hint" hidden>Eine Runde auswählen, um den Spielplan zu fokussieren; „Alle Runden“ zeigt ihn wieder vollständig.</p>
+<p class="input-hint only-screen ux-score-controls-hint" data-i18n="ui.hint.scoreControls">Beide Werte eintragen. Mit dem sichtbaren OK oder Enter auf der Tastatur geht es zum nächsten Ergebnis.</p>
 <div id="ladderSection"></div>
 
 <p class="input-hint" id="inputHint" data-i18n="kotc.inputHint">Ergebnis = Punkte, die in der Rundenzeit erzielt wurden (kein
@@ -480,6 +483,7 @@
     $('ladderSection').innerHTML = html;
     const slotsLike = B.rounds.map(rd => ({ round: rd.round, title: T('ui.round.n', { n: rd.round }) }));
     $('roundbarKq').innerHTML = TUI.roundBarHtml(slotsLike, roundFilter);
+    $('roundFilterHint').hidden = $('roundbarKq').querySelectorAll('[data-round-select] option').length <= 2;
     applyKqRoundFilter(roundFilter);
   }
 
@@ -526,6 +530,7 @@
         rounds: B.rounds.length,
         minutes: B.perRound
       }));
+    TUI.syncEntryModeSummary(document);
     const complete = B.complete && B.rankingComplete;
     const statusKey = complete ? 'ranking.status.final' : 'ranking.status.provisional';
     $('standingsSection').setAttribute('data-i18n', statusKey);

@@ -110,7 +110,6 @@
     .pill--primary { background: var(--blue-dark); border-color: var(--blue-dark); color: #fff; }
     @media (max-width: 560px) {
       .appbar .brand-title { display: none; }
-      .sport-choice { margin-top: 12px; }
       .pill .lbl { display: none; }
       .pill { padding: 8px; }
       /* Status-Text (z. B. „Offline-Modus nicht verfügbar“) darf auf sehr
@@ -916,6 +915,18 @@
     }
     .info-box .format-toggle {
       margin-top: 8px;
+    }
+    /* One outer rhythm; keep panel interiors and printed spacing independent. */
+    @media screen {
+      :root { --home-section-space: 24px; }
+      .sport-choice { margin-top: var(--home-section-space); }
+      .wizard-wrap { margin-top: var(--home-section-space); margin-bottom: 0; }
+      main { padding-top: var(--home-section-space); }
+      .home-top { margin-bottom: var(--home-section-space); }
+      .section-label { margin-top: var(--home-section-space); }
+    }
+    @media screen and (max-width: 640px) {
+      :root { --home-section-space: 16px; }
     }
     @media print { .noprint { display: none !important; } }
   </style>
