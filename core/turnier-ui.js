@@ -83,7 +83,8 @@
           controls.appendChild(field);
           controls.appendChild(note);
           controls.appendChild(limitation);
-          const setup = section.querySelector('.cfg-action-groups')
+          const setup = section.querySelector('[data-cfg-options]')
+            || section.querySelector('.cfg-action-groups')
             || section.querySelector('.cfg-setup-content') || section;
           setup.appendChild(controls);
           controls._rankingLimitation = limitation;
@@ -218,7 +219,7 @@
         el.removeAttribute('data-stage-locked');
       }
     });
-    if (locked) doc.querySelectorAll('[data-remove-team], [data-absent-input]').forEach(el => { el.disabled = true; });
+    if (locked) doc.querySelectorAll('[data-remove-team], [data-absent-input], [data-team-status]').forEach(el => { el.disabled = true; });
     const absenceButton = doc.getElementById('btnToggleAbsent');
     if (absenceButton && isSwissProfile && !locked) {
       if (!absenceButton.hasAttribute('data-stage-absence-disabled')) {
@@ -233,14 +234,14 @@
       absenceButton.title = '';
     }
     if (isSwissProfile && !locked) {
-      doc.querySelectorAll('[data-absent-input]').forEach(el => {
+      doc.querySelectorAll('[data-absent-input], [data-team-status]').forEach(el => {
         if (!el.hasAttribute('data-stage-absence-disabled')) {
           el.setAttribute('data-stage-absence-disabled', String(el.disabled));
         }
         el.disabled = true;
       });
     } else {
-      doc.querySelectorAll('[data-absent-input][data-stage-absence-disabled]').forEach(el => {
+      doc.querySelectorAll('[data-absent-input][data-stage-absence-disabled], [data-team-status][data-stage-absence-disabled]').forEach(el => {
         el.disabled = el.getAttribute('data-stage-absence-disabled') === 'true';
         el.removeAttribute('data-stage-absence-disabled');
       });
@@ -361,6 +362,7 @@
     overlay.querySelector('.outcome-dialog').focus();
   }
   function mountModeEstimateControls(section, profile, opts) {
+    refreshSetModeOptionLabels(section);
     let box = root.document.getElementById('sport-mode-estimate-controls');
     if (!box) {
       box = root.document.createElement('div');
@@ -375,7 +377,7 @@
       profile.modeIds.forEach(function (modeId) {
         const option = root.document.createElement('option');
         option.value = modeId;
-        option.textContent = tx('setMode.' + modeId, modeId);
+        option.textContent = tx('setMode.option.' + TC.modeDef(modeId).id, modeId);
         mode.appendChild(option);
       });
       modeLabel.appendChild(modeCaption);
@@ -416,7 +418,8 @@
       box.appendChild(minutesLabel);
       box.appendChild(customLabel);
       box.appendChild(note);
-      const setup = section.querySelector('.cfg-action-groups')
+      const setup = section.querySelector('[data-cfg-options]')
+        || section.querySelector('.cfg-action-groups')
         || section.querySelector('.cfg-setup-content') || section;
       setup.appendChild(box);
 
@@ -518,6 +521,19 @@
   function participantWord() {
     const key = activeSport && activeSport.participantKey;
     return key ? tx(key, 'Team') : 'Team';
+  }
+  function modeOptionLabel(modeId) {
+    const label = tx('setMode.option.' + TC.modeDef(modeId).id, modeId);
+    return label + tx('setMode.option.estimate', ' · ca. {minutes} Min.', { minutes: TC.modeMinutes(modeId) });
+  }
+  function refreshSetModeOptionLabels(section) {
+    const scope = section || root.document;
+    if (!scope) return;
+    scope.querySelectorAll('select#setMode, select#finalSetMode').forEach(select => {
+      Array.from(select.options).forEach(option => {
+        if (option.value) option.textContent = modeOptionLabel(option.value);
+      });
+    });
   }
   function surfaceWord() {
     const key = activeSport && activeSport.surfaceKey;
@@ -692,7 +708,7 @@
     const def = TC.modeDef(setMode);
     const setCnt = def.sets;
     const ta = ctx.resolve(m.a), tb = ctx.resolve(m.b);
-    const isBye = (m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye');
+    const isBye = m.bye != null || (m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye');
 
     const inputNames = { a: sideLabel(m.a, ta, ctx), b: sideLabel(m.b, tb, ctx) };
     const tgt = n => TC.targetForSet(setMode, n);
@@ -725,13 +741,15 @@
       ? '<span class="mnote-slot">' + esc(tx('ui.match.places', 'um Platz {places}', { places: m.places.join('/') }))
         + '</span>' : '';
 
-    return '<td class="match' + (isBye ? ' is-bye' : '') + '"'
+    return '<td class="match' + (isBye ? ' is-bye' : '') + (m.displayOnly ? ' is-display-only' : '') + '"'
+      + (m.displayOnly ? ' colspan="' + ctx.fields + '"' : '')
       + ' data-mid="' + esc(m.id) + '"'
       + (setMode != null ? ' data-set-mode="' + esc(setMode) + '"' : '')
       + (m.round != null ? ' data-round="' + m.round + '"' : '')
       + ' data-col="' + (m.field != null ? m.field : 0) + '"'
       + (m.slot != null ? ' data-slot="' + m.slot + '"' : '')
-      + ' data-field-label="' + esc(ctx.fieldLabel(m.field != null ? m.field : 0)) + '"'
+      + ' data-field-label="' + esc(m.displayOnly ? tx('ui.round.displayOnlyField', 'Kampfloses Ergebnis')
+        : ctx.fieldLabel(m.field != null ? m.field : 0)) + '"'
       + (m.group ? ' data-group="' + esc(m.group) + '"' : '')
       + '>'
       + '<span class="pair">'
@@ -755,7 +773,7 @@
       + '</span>'
       /* Platzhalter fuer die Freilos-Ansicht – wird erst bei einem Ausfall
          gefuellt (siehe paintByeCard).                                       */
-      + '<span class="bye" hidden></span></td>';
+      + '<span class="bye" hidden><button type="button" class="outcome-btn noprint" data-outcome-btn hidden></button></span></td>';
   }
 
   /* Freilos-/Ausfall-Ansicht einer Spielkarte – Darstellung wie im Bogen
@@ -766,6 +784,7 @@
     if (!td) return;
     const pair = td.querySelector('.pair');
     const byeEl = td.querySelector('.bye');
+    const outcomeBtn = byeEl && byeEl.querySelector('[data-outcome-btn]');
     const note = td.querySelector('[data-note]');
     const dead = !!(info && info.dead);
     const winner = info ? info.winner : null;
@@ -775,6 +794,7 @@
     if (!active) {
       if (pair) pair.hidden = false;
       if (byeEl) { byeEl.hidden = true; byeEl.innerHTML = ''; }
+      if (byeEl && outcomeBtn) byeEl.appendChild(outcomeBtn);
       return;
     }
     if (pair) pair.hidden = true;
@@ -792,7 +812,10 @@
       const sideEl = td.querySelector(onLeft ? '.pside-a' : '.pside-b');
       if (sideEl) sideEl.classList.add('is-winner');
     }
-    if (byeEl) { byeEl.hidden = false; byeEl.innerHTML = html; }
+    if (byeEl) {
+      byeEl.hidden = false; byeEl.innerHTML = html;
+      if (outcomeBtn) byeEl.appendChild(outcomeBtn);
+    }
   }
 
   /* ====================================================== 3. SPIELPLAN-BODY
@@ -829,7 +852,8 @@
       let meta = '<span class="rhead-meta">'
         + '<span class="rlabel">' + esc(title) + '</span>'
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
-        + (s.startMin != null ? esc(fmtTime(s.startMin) + '–' + fmtTime(s.endMin)) : '')
+        + (s.displayOnly ? esc(tx('ui.round.displayOnly', 'Wertung · keine Spielzeit'))
+          : s.startMin != null ? esc(fmtTime(s.startMin) + '–' + fmtTime(s.endMin)) : '')
         + '</span>'
         + '<span class="rmode">' + esc(tx('setMode.' + (s.setMode || ctx.setMode), ctx.modeLabel || '')) + '</span>';
       if (byes.length) {
@@ -845,13 +869,23 @@
         + (withNav ? '<span class="rnav-group">' + navBtn('prev', s.round, ri <= 0)
           + '<span class="rnav-count">' + (ri + 1) + '/' + roundList.length + '</span>'
           + navBtn('next', s.round, ri >= roundList.length - 1) + '</span>' : '')
-        + confirmBtn
+        + (s.displayOnly ? '' : confirmBtn)
         + '</span>'
         + '</span></td>';
       html += '<tr class="rgap" data-round="' + s.round + '" data-slot="' + s.slot + '" aria-hidden="true">'
         + '<td class="rgap-cell" colspan="' + nf + '"></td></tr>';
       html += '<tr class="rhead" data-round="' + s.round + '" data-slot="' + s.slot + '">' + head + '</tr>';
 
+      if (s.displayOnly) {
+        const m = (s.matches || []).filter(Boolean)[0];
+        html += '<tr class="fhead" data-round="' + s.round + '" data-slot="' + s.slot + '">'
+          + '<th scope="col" colspan="' + nf + '">' + esc(tx('ui.round.displayOnlyField', 'Kampfloses Ergebnis')) + '</th></tr>'
+          + '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">'
+          + (m ? matchCellHtml(Object.assign({}, m, { field: 0, round: s.round, slot: s.slot, displayOnly: true }), ctx)
+            : '<td class="empty" colspan="' + nf + '"></td>')
+          + '</tr>';
+        return;
+      }
       let fhead = '<tr class="fhead" data-round="' + s.round + '" data-slot="' + s.slot + '">';
       for (let f = 0; f < nf; f++) {
         const fl = esc(ctx.fieldLabel(f));
@@ -1301,7 +1335,7 @@
       const readOnly = !!(uiState && uiState.readOnly);
       container.ownerDocument.querySelectorAll('#teamCount, #groupCount, #finalMode, #setMode, #finalSetMode, '
         + '#ranking-profile-select, #outcome-profile-select, #btnToggleRankImport, #btnRankImportApply, '
-        + '#btnClearAbsent, #absentGrid input, #absentGrid button, #nameGrid [data-remove-team], '
+        + '#btnClearAbsent, #absentGrid input, #absentGrid select, #absentGrid button, #nameGrid [data-remove-team], '
         + '#schedGrpBody [data-outcome-btn], #groupTables .mstd-toggle, #groupTables .mstd-in')
         .forEach(control => {
           if (started) {
@@ -1609,13 +1643,15 @@
   function pairPanelHtml(record, team) {
     if (!TSport || !TSport.supportsPairMembers(record) || !record) return '';
     const members = TSport.pairMembers(record, team);
+    const hasMembers = members.some(Boolean);
     return '<div class="pair-editor">' + [0, 1].map(index =>
       '<label><span>' + esc(tx('ui.pair.player', 'Spieler:in {n}', { n: index + 1 })) + '</span>'
       + '<input type="text" maxlength="100" data-pair-team="' + esc(team)
       + '" data-pair-index="' + index + '" value="' + esc(members[index])
       + '" placeholder="' + esc(tx('ui.pair.optional', 'Name (optional)'))
       + '" autocomplete="off" spellcheck="false"></label>').join('')
-      + '<output data-pair-label="' + esc(team) + '">' + esc(TSport.teamLabel(record, team, participantWord() + ' ' + team))
+      + '<output data-pair-label="' + esc(team) + '"' + (hasMembers ? '' : ' hidden') + '>'
+      + esc(TSport.teamLabel(record, team, participantWord() + ' ' + team))
       + '</output></div>';
   }
   function editParticipantName(record, input) {
@@ -1636,6 +1672,7 @@
     if (root.document) {
       root.document.querySelectorAll('[data-pair-label]').forEach(output => {
         const id = output.getAttribute('data-pair-label');
+        output.hidden = !TSport.pairMembers(record, id).some(Boolean);
         output.textContent = TSport.teamLabel(record, id, participantWord() + ' ' + id);
       });
     }
@@ -1675,14 +1712,56 @@
   function absentPanelHtml(teams, absent, ctx, opts) {
     const set = new Set(absent || []);
     const o = opts || {};
+    const delays = o.teamDelays || {};
     const canRemove = o.removable && (o.minTeams == null || teams.length > o.minTeams);
     return teams.map(t => {
-      const chk = '<label class="chk"><input type="checkbox" data-absent-input="' + esc(t) + '"'
-        + (set.has(t) ? ' checked' : '') + '> ' + esc(ctx.teamLabel(t)) + '</label>';
-      if (!o.removable) return chk;
-      return '<div class="absent-row">' + chk
-        + teamDelBtnHtml(t, ctx.teamLabel(t), canRemove) + '</div>';
+      const label = ctx.teamLabel(t);
+      const delay = delays[t] && delays[t].time ? String(delays[t].time) : '';
+      const isAbsent = set.has(t);
+      const status = isAbsent ? 'absent' : delay ? 'late' : 'available';
+      const allowDelay = o.teamDelay !== false;
+      const arrivalActions = allowDelay && status === 'late'
+        ? '<div class="team-arrival-actions" data-team-arrival-actions>'
+          + '<div class="team-arrival-buttons">'
+          + '<button type="button" class="nbtn" data-team-arrival-confirm>' + esc(tx('ui.team.arrival.confirm', 'Ankunft bestätigen')) + '</button>'
+          + '</div><p>' + esc(tx('ui.team.arrival.hint',
+            'Setzt das Team auf „Dabei“ und plant offene Spiele ab jetzt neu.')) + '</p></div>'
+        : '';
+      const card = '<div class="absent-row team-status-card" data-team-status-card="' + esc(t) + '">'
+        + '<strong class="team-status-name">' + esc(label) + '</strong>'
+        + '<label class="team-status-select cfgfield"><select data-team-status="' + esc(t) + '" aria-label="'
+        + esc(tx('ui.team.status.label', 'Teamstatus für {label}', { label: label })) + '"' + (allowDelay ? '' : ' data-no-delay')
+        + '><option value="available"' + (status === 'available' ? ' selected' : '') + '>'
+        + esc(tx('ui.team.status.available', 'Dabei')) + '</option>'
+        + (allowDelay ? '<option value="late"' + (status === 'late' ? ' selected' : '') + '>'
+          + esc(tx('ui.team.status.lateOption', 'Verspätet')) + '</option>' : '')
+        + '<option value="absent"' + (status === 'absent' ? ' selected' : '') + '>'
+        + esc(tx('ui.team.status.absent', 'Ausgefallen')) + '</option></select></label>'
+        + '<span class="team-status-badge is-' + status + '" data-team-status-badge>'
+        + esc(tx('ui.team.status.' + status, status === 'late' ? 'Verspätet · {time}' : status === 'absent' ? 'Ausgefallen' : 'Dabei',
+          status === 'late' ? { time: delay } : undefined)) + '</span>'
+        + (o.removable ? teamDelBtnHtml(t, label, canRemove) : '')
+        + arrivalActions
+        + (allowDelay ? teamDelayEditorHtml(delay, status === 'late') : '')
+        + '</div>';
+      return card;
     }).join('');
+  }
+  function clearTeamAbsences(state) {
+    if (!state || typeof state !== 'object') return;
+    state.absent = [];
+    const planning = state.config && state.config.planning;
+    if (!planning || typeof planning !== 'object') return;
+    delete planning.teamDelays;
+    if (!Object.keys(planning).length) delete state.config.planning;
+  }
+  function teamDelayEditorHtml(time, open) {
+    return '<div class="team-delay-editor" data-team-delay-editor' + (open ? '' : ' hidden') + '>'
+      + '<label class="cfgfield"><span class="cfg-lbl">' + esc(tx('ui.team.delay.readyAt', 'Spielbereit ab')) + '</span>'
+      + '<input type="time" step="300" data-team-delay-time value="' + esc(time || '') + '" required></label>'
+      + '<button type="button" class="nbtn" data-team-delay-save>' + esc(tx('planning.apply', 'Übernehmen')) + '</button>'
+      + '<button type="button" class="nbtn" data-team-delay-cancel>' + esc(tx('planning.cancel', 'Abbrechen')) + '</button>'
+      + '<p class="planning-error" role="alert" data-team-delay-error></p></div>';
   }
   /* Rückfrage vor dem endgültigen Löschen eines Teams. */
   function confirmRemoveTeam(label, o) {
@@ -2197,14 +2276,16 @@
   function paintOutcome(td, state, id, modeId) {
     const O = outcomeApi();
     if (!td || !O) return;
-    const btn = td.querySelector('[data-outcome-btn]');
+    const btn = td.classList.contains('is-bye')
+      ? td.querySelector('.bye [data-outcome-btn]') : td.querySelector('.pair [data-outcome-btn]');
     if (!btn) return;
     const policy = state && state.config && state.config.outcomeProfile;
     const st = O.statusFor(state, id, modeId);
+    const policySupportsMode = !!(policy && O.supportsMode(policy, modeId));
     const inputs = Array.prototype.slice.call(td.querySelectorAll('input.score'));
     const open = inputs.some(function (i) { return !i.disabled; });
     td.removeAttribute('data-outcome');
-    btn.hidden = !(st.state !== 'none' || (policy && open));
+    btn.hidden = !(st.state !== 'none' || (policySupportsMode && (open || td.classList.contains('is-bye'))));
     if (btn.hidden) return;
     btn.textContent = st.state === 'none'
       ? tx('outcome.btn.add', 'Entscheidung …') : tx('outcome.btn.edit', 'Entscheidung ändern');
@@ -2402,7 +2483,9 @@
       box.className = 'sport-profile-controls';
       box.innerHTML = '<label class="cfgfield"><span data-cap></span><select id="outcome-profile-select"></select></label>'
         + '<p class="sport-profile-note" data-note1></p>';
-      const setup = section.querySelector('.cfg-action-groups') || section.querySelector('.cfg-setup-content') || section;
+      const setup = section.querySelector('[data-cfg-options]')
+        || section.querySelector('.cfg-action-groups')
+        || section.querySelector('.cfg-setup-content') || section;
       setup.appendChild(box);
     }
     const select = box.querySelector('select');
@@ -2823,7 +2906,8 @@
   /* Kompakte Zeitplan-Uebersicht (zweispaltig): auf dem Ausdruck sieht die
      Turnierleitung auf einen Blick, wann welche Runde startet.              */
   function timeTableHtml(slots, endLabel, pauses) {
-    const rows = (slots || []).map(s => ({ min: s.startMin, t: fmtTime(s.startMin), n: slotTitle(s) }));
+    const rows = (slots || []).filter(s => !s.displayOnly)
+      .map(s => ({ min: s.startMin, t: fmtTime(s.startMin), n: slotTitle(s) }));
     (pauses || []).forEach(p => rows.push({ min: p.startMin, pause: true,
       t: fmtTime(p.startMin) + '–' + fmtTime(p.endMin),
       n: tx('planning.pauseRow', 'Pause') }));
@@ -3295,6 +3379,7 @@
     configureProfile,
     paintStage, paintStageMatch,
     participantWord,
+    modeOptionLabel, refreshSetModeOptionLabels,
     surfaceWord,
     surfaceLabel,
     unitWord,
@@ -3302,7 +3387,7 @@
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamDelBtnHtml, confirmRemoveTeam,
+    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,

@@ -98,7 +98,8 @@
     })
   });
 
-  /* Empfohlene Mindestdauer je Spiel in Minuten (inkl. Wechselzeit). */
+  /* Grobe Plan-Slotwerte je ganzem Spiel (inkl. Wechselzeit), keine Summe
+     einzeln kalkulierter Satzzeiten. Im UI deshalb nur als ca.-Wert zeigen. */
   const MODE_MIN = { '15': 17, '21': 25, '2x15': 30, '2x21': 36, '2x15tb': 40, '2x21tb': 45,
     'indoor-a': 60, 'indoor-a21': 75 };
   INDOOR_MODES.forEach(mode => { MODE_MIN[mode.id] = mode.minMinutes; });

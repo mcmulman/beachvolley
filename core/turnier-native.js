@@ -568,7 +568,18 @@
   }
   function handlePause() {
     commitFocusedField();
-    dispatchLifecycleEvent('pause');
+    try {
+      dispatchLifecycleEvent('pause');
+    } catch (err) {
+      if (root.console) root.console.error('[TNative] pause lifecycle event failed', err);
+    }
+    return wait(0).then(settleSaves).then(function (saved) {
+      if (!saved && root.console) root.console.warn('[TNative] changes may not be saved after app pause');
+      return saved;
+    }, function (err) {
+      if (root.console) root.console.error('[TNative] pause save check failed', err);
+      return false;
+    });
   }
   function handleResume() {
     dispatchLifecycleEvent('resume');

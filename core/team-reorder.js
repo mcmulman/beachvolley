@@ -22,6 +22,9 @@
     swapKeys(state.pairMembers, a, b);
     swapKeys(state.teamGender, a, b);
     swapKeys(state.config.levels, a, b);
+    if (state.config.planning && state.config.planning.teamDelays) {
+      swapKeys(state.config.planning.teamDelays, a, b);
+    }
     state.absent = (state.absent || []).map(function (id) { return id === a ? b : id === b ? a : id; });
   }
   function enhance(container, options) {
@@ -110,7 +113,7 @@
         [['.rlevel', 'kq.col.level', 'Niveau'], ['.rabsent', 'kq.btn.absent', 'Person ausgefallen']].forEach(function (item) {
           var cell = playerRow.querySelector(item[0]);
           var field = cell.querySelector('input, select');
-          if (!cell.querySelector('.team-editor-field-label')) {
+          if (field && !cell.querySelector('.team-editor-field-label')) {
             var label = document.createElement('label');
             label.className = 'team-editor-field-label';
             var caption = document.createElement('span');

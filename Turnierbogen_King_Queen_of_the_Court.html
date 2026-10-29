@@ -166,7 +166,7 @@
 
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Team / Namen</span></button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen/verspätet</span></button>
     <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
     <span class="spacer"></span>
@@ -183,7 +183,7 @@
   </div>
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle und Verspätungen zurücksetzen</button></div>
     <p class="nhint" data-i18n="kotc.hint.absent">Ausgefallene Teams werden aus der Feld-Leiter entfernt; die übrigen Teams auf dem
       betroffenen Feld rücken nach der Feld-Freilos-Regel zusammen.</p>
     <p class="nhint" data-i18n-html="kotc.hint.delete"><b>Team löschen</b> ist nur vor der ersten Punkteingabe möglich. Danach bleiben Teams und Begegnungen fest gebunden; Abwesende werden nur in noch nicht begonnenen Runden berücksichtigt.</p>
@@ -440,7 +440,9 @@
   function buildStructure(){
     buildTeamsTable();
     $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS });
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor(), { removable: true, minTeams: MIN_TEAMS });
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent || [], ctxFor(), {
+      removable: true, minTeams: MIN_TEAMS, teamDelay: false
+    });
     buildLadder();
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -619,15 +621,15 @@
       if(btn && !btn.disabled) removeTeam(+btn.getAttribute('data-remove-team'));
     }));
     document.getElementById('absentGrid').addEventListener('change', e => {
-      const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
+      const n = e.target.getAttribute && e.target.getAttribute('data-team-status');
       if(!n) return;
       const t = +n;
       const idx = S.absent.indexOf(t);
-      if(e.target.checked && idx < 0) S.absent.push(t);
-      if(!e.target.checked && idx >= 0) S.absent.splice(idx, 1);
+      if(e.target.value === 'absent' && idx < 0) S.absent.push(t);
+      if(e.target.value !== 'absent' && idx >= 0) S.absent.splice(idx, 1);
       TStore.save(S); rebuild();
     });
-    $('btnClearAbsent').addEventListener('click', () => { S.absent = []; TStore.save(S); rebuild(); });
+    $('btnClearAbsent').addEventListener('click', () => { TUI.clearTeamAbsences(S); TStore.save(S); rebuild(); });
 
     // Rundennavigator (mobil): identisches Verhalten wie in den anderen
     // Universalboegen (roundBarHtml/roundBarValue). Die Feld-Leiter besteht

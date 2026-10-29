@@ -256,7 +256,8 @@
     button.textContent = t('button');
     status.textContent = t('hint');
     function place() {
-      const setup = section.querySelector('.cfg-action-groups') || section.querySelector('.cfg-setup-content') || section;
+      const setup = section.querySelector('[data-cfg-options]') || section.querySelector('.cfg-action-groups')
+        || section.querySelector('.cfg-setup-content') || section;
       if (box.parentNode !== setup) setup.appendChild(box);
     }
     place();

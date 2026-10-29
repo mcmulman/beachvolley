@@ -1587,6 +1587,10 @@
     t.teamNames = remapKeys(t.teamNames, map);
     if (t.pairMembers) t.pairMembers = remapKeys(t.pairMembers, map);
     t.absent = remapList(t.absent, map);
+    if (t.config && t.config.planning && t.config.planning.teamDelays) {
+      t.config.planning.teamDelays = remapKeys(t.config.planning.teamDelays, map);
+      if (!Object.keys(t.config.planning.teamDelays).length) delete t.config.planning.teamDelays;
+    }
     ['manualStandings', 'manualPlacements'].forEach(f => {
       const o = t[f] || {};
       Object.keys(o).forEach(k => {

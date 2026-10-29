@@ -850,7 +850,44 @@
   html body #rosterSection .rname .team-del:focus { color:#b42318; border-color:#e3b4b4; background:#fdecec; }
   html body #nameGrid .team-reorder-row .team-del:disabled,
   html body #rosterSection .rname .team-del:disabled { color:#65748a; }
-  html body #nameGrid .team-editor-card { min-width:0; }
+  html body #nameGrid .team-editor-card {
+    min-width:0; padding:6px; border:1px solid var(--app-line, #cdd8e6);
+    border-radius:10px; background:#fff;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  html body #nameGrid .team-editor-card:focus-within,
+  html body #nameGrid .team-reorder-row:focus-within {
+    border-color:#8ba8c7; box-shadow:0 0 0 2px rgba(31,78,121,.08);
+  }
+  html body #nameGrid .team-editor-card > .team-reorder-row {
+    padding:0; border:0; border-radius:0; background:transparent;
+  }
+  html body #nameGrid .team-editor-card .pair-editor,
+  html body #nameGrid .team-reorder-row .pair-editor {
+    padding-top:7px; margin-top:6px; border-top:1px solid var(--app-line-soft, #e5ebf2);
+    column-gap:8px; row-gap:6px;
+  }
+  html body #nameGrid .pair-editor label {
+    display:flex; flex-direction:column; gap:4px; color:#40536b;
+    font-size:11px; font-weight:650;
+  }
+  html body #nameGrid .pair-editor label span { line-height:1.2; }
+  html body #nameGrid .pair-editor input {
+    height:40px; min-height:40px; padding:6px 9px;
+    border:1px solid var(--app-line-strong, #aab8cc);
+    border-radius:var(--app-radius-sm, 8px); background:#fff; font-size:14px;
+  }
+  html body #nameGrid .pair-editor output {
+    min-height:28px; box-sizing:border-box; padding:5px 8px;
+    border-radius:6px; background:#f2f6fb; color:#40536b;
+    font-size:12px; line-height:18px; overflow:hidden; text-overflow:ellipsis;
+  }
+  html body #nameGrid .team-reorder-row .nnum {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; min-width:22px; flex-basis:22px;
+    margin-right:6px; border-radius:50%; background:#eef4fa;
+    color:#1f4e79; font-size:11px; font-weight:750;
+  }
   html body #nameGrid .team-editor-extra {
     display:flex; flex-direction:row; align-items:center; justify-content:flex-end;
     gap:0; margin-top:4px; color:#40536b; font-size:12px;
@@ -899,6 +936,7 @@
 @media screen and (max-width:900px), screen and (pointer:coarse) {
   html body #nameGrid .team-reorder-row input[data-name-input],
   html body #rosterSection input[data-name-input] { height:44px !important; min-height:44px !important; }
+  html body #nameGrid .pair-editor input { height:44px; min-height:44px; }
   html body .team-reorder { height:44px; }
   html body .team-reorder .team-move { height:44px; min-height:44px; width:44px; min-width:44px; }
   html body #nameGrid .team-reorder-row .team-del, html body #rosterSection .rname .team-del { height:44px; min-height:44px; width:44px; min-width:44px; }
@@ -907,18 +945,184 @@
 }
 @media print { .team-reorder, .team-reorder-hint { display:none !important; } }
 
+@media screen {
+  .section-panel-heading {
+    margin:0 56px 12px 0;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--app-line-soft, #dbe4ee);
+    color:var(--app-blue-dark, #1f4e79);
+    font-size:18px;
+    font-weight:800;
+    line-height:1.25;
+  }
+  html body .section-panel-labelled.app-close-panel {
+    padding-top:12px !important;
+  }
+  html body #rosterSection.section-roster-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  html body #rosterSection.section-roster-grid > .section-panel-heading { grid-column:1 / -1; }
+}
+@media screen and (max-width:560px) {
+  html body #rosterSection.section-roster-grid { grid-template-columns:minmax(0,1fr); }
+}
+
 /* Inline planning editors use margin spacing, including Safari 12. */
 @media screen {
   .planning-controls, .planning-summary { max-width:100%; margin:10px 0; }
-  .planning-panel { padding:12px; }
-  .planning-fields, .planning-setting { display:flex; flex-wrap:wrap; align-items:center; }
-  .planning-field { display:flex; flex-direction:column; flex:1 1 130px; min-width:0; margin:8px 12px 8px 0; }
-  .planning-field input, .planning-field select { box-sizing:border-box; width:100%; min-width:0; min-height:44px; font:inherit; }
-  .planning-setting { padding:6px 0; }
-  .planning-setting > span { flex:1 1 170px; overflow-wrap:break-word; }
+  .planning-panel { padding:10px 12px; }
+  html body #absentpanel {
+    display:flex; flex-direction:column; align-items:stretch; gap:12px;
+  }
+  html body #absentpanel[hidden] { display:none !important; }
+  html body #absentpanel > .section-panel-heading { margin-bottom:0; }
+  /* Ausfall-Panel: Teamkacheln (Ausfall + Löschen), Aktion, kurze Hinweise, dann verspätete Spiele. */
+  html body #absentpanel .panel-checks {
+    grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;
+    margin:0; padding:0; border:0; background:none;
+  }
+  html body #absentpanel .panel-checks > label, html body #absentpanel .absent-row {
+    box-sizing:border-box; min-width:0; min-height:40px; padding:3px 4px 3px 10px;
+    border:1px solid #d7e1ee; border-radius:8px; background:#fff;
+  }
+  html body #absentpanel .panel-checks label { font-size:13px; line-height:1.25; overflow-wrap:anywhere; cursor:pointer; }
+  html body #absentpanel .panel-checks input[type=checkbox] { flex:0 0 auto; width:18px; height:18px; margin:0; }
+  html body #absentpanel .absent-row .team-del { width:32px; height:32px; }
+  html body #absentpanel .team-status-card, html body #rosterActions .team-status-card {
+    display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name delete" "status badge" "arrival arrival" "editor editor";
+    align-items:center; justify-content:stretch; gap:4px; padding:7px; min-height:0;
+  }
+  html body #absentpanel .team-status-name, html body #rosterActions .team-status-name { grid-area:name; min-width:0; overflow-wrap:anywhere; font-size:13px; }
+  html body #absentpanel .team-status-select, html body #rosterActions .team-status-select { grid-area:status; min-width:0; }
+  html body #absentpanel .team-status-select select, html body #rosterActions .team-status-select select { box-sizing:border-box; width:100%; min-width:0; min-height:36px; font:inherit; }
+  html body #absentpanel .team-status-badge, html body #rosterActions .team-status-badge { grid-area:badge; justify-self:end; padding:3px 7px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  html body #absentpanel .team-status-badge.is-available, html body #rosterActions .team-status-badge.is-available { color:#17633a; background:#e9f7ee; }
+  html body #absentpanel .team-status-badge.is-late, html body #rosterActions .team-status-badge.is-late { color:#805300; background:#fff3d4; }
+  html body #absentpanel .team-status-badge.is-absent, html body #rosterActions .team-status-badge.is-absent { color:#9b1c1c; background:#fdeaea; }
+  html body #absentpanel .team-status-card > .team-del, html body #rosterActions .team-status-card > .team-del { grid-area:delete; width:30px; height:30px; }
+  html body #absentpanel .team-delay-editor, html body #rosterActions .team-delay-editor { grid-area:editor; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-top:6px; border-top:1px solid #e5eaf1; }
+  html body #absentpanel .team-arrival-actions, html body #rosterActions .team-arrival-actions {
+    grid-area:arrival; min-width:0; padding-top:6px; border-top:1px solid #e5eaf1;
+  }
+  html body #absentpanel .team-arrival-buttons, html body #rosterActions .team-arrival-buttons {
+    display:flex; flex-wrap:wrap; gap:6px;
+  }
+  html body #absentpanel .team-arrival-actions .nbtn, html body #rosterActions .team-arrival-actions .nbtn {
+    flex:1 1 125px; min-height:44px; margin:0; padding:6px 9px; white-space:normal;
+  }
+  html body #absentpanel .team-arrival-actions p, html body #rosterActions .team-arrival-actions p {
+    margin:5px 0 0; color:#526174; font-size:11px; line-height:1.35;
+  }
+  html body #absentpanel .team-delay-editor[hidden], html body #rosterActions .team-delay-editor[hidden] { display:none !important; }
+  html body #absentpanel .team-delay-editor label, html body #rosterActions .team-delay-editor label { display:flex; flex:1 1 125px; flex-direction:column; gap:3px; min-width:0; color:#334155; font-size:12px; }
+  html body #absentpanel .team-delay-editor input, html body #rosterActions .team-delay-editor input { box-sizing:border-box; width:100%; min-height:40px; font:inherit; }
+  html body #absentpanel .team-delay-editor .nbtn, html body #rosterActions .team-delay-editor .nbtn { min-height:40px; margin:0; padding:6px 9px; white-space:normal; }
+  html body #absentpanel .team-delay-editor .planning-error, html body #rosterActions .team-delay-editor .planning-error { flex-basis:100%; }
+  html body #rosterActions > .panel-checks { flex:1 1 100%; }
+  html body #absentpanel > .nactions {
+    display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 12px; align-self:stretch; margin:0;
+  }
+  html body #absentpanel > .nactions .nbtn { min-height:44px; margin:0; }
+  html body #absentpanel > .nhint, html body .planning-reschedule > .nhint {
+    max-width:72ch; margin:0; font-size:12px; line-height:1.35;
+  }
+  html body #absentpanel > .nhint + .nhint { margin-top:-8px; }
+  .planning-reschedule {
+    min-width:0; max-width:100%; margin:0; padding:10px 12px;
+    border:1px solid #d7e1ee; border-radius:8px; background:#fff;
+  }
+  .planning-reschedule[hidden] { display:none; }
+  html body #absentpanel > .planning-forward-fill, html body #rosterActions > .planning-forward-fill {
+    min-width:0; margin:0; padding:10px 12px; border:1px solid #d7e1ee; border-radius:8px; background:#f7faff;
+  }
+  .planning-forward-fill label { display:flex; align-items:flex-start; gap:8px; font-size:13px; font-weight:700; line-height:1.35; cursor:pointer; }
+  .planning-forward-fill input[type=checkbox] { flex:0 0 auto; width:18px; height:18px; margin:0; }
+  .planning-forward-fill .nhint { max-width:72ch; margin:4px 0 0 26px; font-size:12px; line-height:1.35; }
+  #rosterActions > .planning-reschedule { flex:1 1 100%; }
+  .planning-reschedule-title { margin:0; font-size:13px; font-weight:700; color:#1f4e79; }
+  html body .planning-reschedule > .nbtn {
+    box-sizing:border-box; max-width:100%; min-width:44px; min-height:44px; margin:5px 0 0;
+    white-space:normal; text-align:left; background:#fff; color:#1f4e79; border-color:#cdd8e6;
+  }
+  html body .planning-reschedule > .nbtn:hover { background:#f0f5fb; border-color:#1f4e79; }
+  html body #rosterActions .planning-reschedule .nbtn { min-height:44px; }
+  html body #rosterActions .planning-reschedule > .nbtn { margin:8px 0 0; }
+  .planning-fields { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
+  .planning-summary {
+    box-sizing:border-box; width:100%; min-width:0; margin:10px 0 0; padding:12px;
+    border:1px solid #d7e1ee; border-radius:10px; background:#f7faff;
+  }
+  .planning-summary[hidden] { display:none !important; }
+  .planning-summary-heading h3 { margin:0; color:#1f3b5b; font-size:14px; line-height:1.3; }
+  .planning-summary-heading p { max-width:72ch; margin:4px 0 0; color:#526174; font-size:12px; line-height:1.4; }
+  .planning-summary-list { display:grid; gap:7px; margin-top:9px; }
+  .planning-summary .planning-setting {
+    display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:8px;
+    min-width:0; padding:8px 10px; border:1px solid #d7e1ee; border-radius:8px; background:#fff;
+  }
+  .planning-setting-label { min-width:0; color:#26384d; font-size:13px; font-weight:650; line-height:1.4; overflow-wrap:anywhere; }
+  .planning-setting-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+  .planning-summary .planning-setting-actions .nbtn { min-height:40px; margin:0; padding:6px 10px; white-space:normal; }
+  .planning-court-fieldset { grid-column:1 / -1; min-width:0; margin:0; padding:0; border:0; }
+  .planning-court-fieldset > legend { padding:0; }
+  .planning-court-options { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:5px; margin-top:4px; }
+  .planning-court-row {
+    display:grid; grid-template-columns:minmax(0, 1fr); align-items:start; gap:4px;
+    box-sizing:border-box; min-width:0; padding:5px; border:1px solid #d7e1ee;
+    border-radius:8px; background:#fff;
+  }
+  .planning-court-status {
+    display:grid; grid-template-columns:minmax(0, 1fr) minmax(110px, .85fr);
+    align-items:center; gap:6px; min-width:0;
+  }
+  .planning-court-status > .cfg-lbl { margin:0; }
+  .planning-court-details { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:5px; min-width:0; }
+  .planning-court-details[hidden] { display:none !important; }
+  .planning-court-row .planning-field > input,
+  .planning-court-row .planning-field > select { min-height:44px; padding:6px 8px; }
+  .planning-court-time[hidden] { display:none !important; }
+  .planning-court-row .cfg-lbl { overflow-wrap:anywhere; }
+  /* Match the compact status cards while retaining a full-size touch target. */
+  .planning-court-row select {
+    box-sizing:border-box; width:100%; min-width:0; min-height:44px; padding:6px 8px;
+    border:1px solid var(--app-line, #aab8cc); border-radius:var(--app-radius-sm, 4px);
+    background:#fff; color:var(--app-ink, #263238); font-family:inherit; font-size:14px;
+    font-weight:600; line-height:1.2;
+  }
+  .planning-field { min-width:0; max-width:none; margin:0; }
+  .planning-field > input, .planning-field > select {
+    box-sizing:border-box; width:100%; min-width:0; min-height:44px; padding:7px 10px;
+    border:1px solid var(--app-line, #aab8cc); border-radius:var(--app-radius-sm, 4px);
+    background:#fff; color:var(--app-ink, #263238); font-family:inherit; font-size:14px; font-weight:600;
+  }
+  .planning-panel-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; }
+  .planning-panel-actions .nbtn { min-height:44px; margin:0; }
   .planning-setting .nbtn, .planning-panel .nbtn { min-width:44px; min-height:44px; margin:4px; }
+  .planning-summary .planning-setting-actions .nbtn { margin:0; }
   .planning-error { color:#9b1c1c; margin:6px 0 0; }
   .planning-match-meta { display:block; font-size:12px; color:#334155; margin-bottom:6px; }
+  @media screen and (max-width:560px) {
+    html body #absentpanel .panel-checks { grid-template-columns:minmax(0, 1fr); }
+    .planning-summary .planning-setting { grid-template-columns:minmax(0, 1fr); }
+    .planning-summary .planning-setting-actions { justify-content:flex-start; }
+  }
+}
+@media screen and (max-width:1100px) {
+  html body #absentpanel .panel-checks { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+}
+@media screen and (max-width:760px) {
+  html body #absentpanel .panel-checks { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media screen and (max-width:900px), screen and (pointer:coarse) {
+  html body #absentpanel .panel-checks > label, html body #absentpanel .absent-row { min-height:44px; padding-top:0; padding-bottom:0; }
+  html body #absentpanel .absent-row .team-del { width:44px; min-width:44px; height:44px; min-height:44px; }
+  html body #absentpanel .panel-checks input[type=checkbox] { width:22px; height:22px; }
+  html body #absentpanel .team-status-select select, html body #rosterActions .team-status-select select,
+  html body #absentpanel .team-delay-editor input, html body #rosterActions .team-delay-editor input,
+  html body #absentpanel .team-delay-editor .nbtn, html body #rosterActions .team-delay-editor .nbtn { min-height:44px; }
+  html body #absentpanel .nactions .nbtn { min-height:44px; }
 }
 .planning-match-meta { display:block; font-size:10px; }
 .timeplan .planning-pause { color:#334155; font-style:italic; }

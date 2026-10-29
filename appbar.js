@@ -22,12 +22,13 @@
     [
       { panel: namesPanel(), button: document.getElementById('btnToggleNames'), preference: namesPreference },
       { panel: document.getElementById('fieldpanel'), button: document.getElementById('btnToggleFields'),
-        preference: 'BEACHL.uiSection.v1:' + location.pathname + ':fields' }
+        preference: 'BEACHL.uiSection.v1:' + location.pathname + ':fields' },
+      { panel: document.getElementById('absentpanel'), button: document.getElementById('btnToggleAbsent'),
+        preference: 'BEACHL.uiSection.v1:' + location.pathname + ':absent' }
     ].forEach(function (entry) {
       var panel = entry.panel, button = entry.button;
       if (!panel || !button || panel.__namingCloseWired || !initialUiApplied) return;
       panel.__namingCloseWired = true;
-      panel.classList.add('naming-close-panel');
       button.setAttribute('aria-controls', panel.id);
       var close = window.TNative.mountClose(panel, 'Schließen', function () {
         // Use the sheet's own toggle, including its active state and related roster actions.
@@ -134,6 +135,10 @@
       content.id = 'configSetup' + index;
       grid.parentNode.insertBefore(content, grid);
       content.appendChild(grid);
+      var result = card.querySelector('.cfgresult');
+      if (result) content.appendChild(result);
+      var summary = document.getElementById('modeSummary');
+      if (summary) content.appendChild(summary);
       var actions = card.querySelector('.cfg-action-content');
       if (actions) content.appendChild(actions);
 
@@ -245,6 +250,12 @@
       var teams = makeGroup('Teams & Felder');
       var planning = makeGroup('Spielplanung');
       var reset = makeGroup('Zurücksetzen', true);
+      var optionLabel = window.TI18n && window.TI18n.t
+        ? window.TI18n.t('ui.section.options') : 'Weitere Optionen';
+      var options = makeGroup(optionLabel);
+      options.parentElement.classList.add('cfg-action-group--options');
+      options.parentElement.setAttribute('data-cfg-options-group', '');
+      options.setAttribute('data-cfg-options', '');
       var primary = document.createElement('div');
       primary.className = 'cfg-actions-primary';
       primary.setAttribute('role', 'group');
@@ -263,9 +274,20 @@
           planning.appendChild(button);
         }
       });
+      Array.prototype.slice.call(card.querySelectorAll(
+        '.format-switch, #sport-profile-controls, #sport-mode-estimate-controls, #outcome-profile-controls'
+      ))
+        .forEach(function (control) { options.appendChild(control); });
       [teams, planning, reset].forEach(function (actions) {
         if (!actions.children.length) groups.removeChild(actions.parentElement);
       });
+      function syncOptionsVisibility() {
+        options.parentElement.hidden = options.children.length === 0;
+      }
+      syncOptionsVisibility();
+      if (window.MutationObserver) {
+        new MutationObserver(syncOptionsVisibility).observe(options, { childList: true });
+      }
       toolbar.querySelectorAll('.spacer').forEach(function (spacer) { spacer.remove(); });
 
       if (primary.children.length) toolbar.appendChild(primary);
@@ -337,30 +359,101 @@
     var input = document.querySelector(inputSelector);
     if (!input || input.disabled || input.readOnly) return false;
     var content = document.querySelector('.cfg-setup-content');
+    var deferScroll = !!(content && content.hidden) || !!(original && !input.offsetHeight);
     if (content && content.hidden) document.querySelector('.cfg-setup-toggle').click();
     if (original && !input.offsetHeight) original.click();
     input = document.querySelector(inputSelector);
     input.focus();
-    var top = 12, bottom = window.innerHeight - 12;
-    document.querySelectorAll('.app-bar, .mobile-jumpbar').forEach(function (bar) {
-      var style = window.getComputedStyle(bar), box = bar.getBoundingClientRect();
-      if (!box.height || (style.position !== 'fixed' && style.position !== 'sticky')) return;
-      if (box.top < window.innerHeight / 2) top = Math.max(top, box.bottom + 12);
-      else bottom = Math.min(bottom, box.top - 12);
-    });
-    var box = input.getBoundingClientRect();
-    window.scrollTo(0, Math.max(0, window.pageYOffset + box.top - top - Math.max(0, (bottom - top - box.height) / 2)));
+    function scrollFocusedInput() {
+      input = document.querySelector(inputSelector);
+      if (!input || input.disabled || input.readOnly) return;
+      var top = 12, bottom = window.innerHeight - 12;
+      document.querySelectorAll('.app-bar, .mobile-jumpbar').forEach(function (bar) {
+        var style = window.getComputedStyle(bar), box = bar.getBoundingClientRect();
+        if (!box.height || (style.position !== 'fixed' && style.position !== 'sticky')) return;
+        if (box.top < window.innerHeight / 2) top = Math.max(top, box.bottom + 12);
+        else bottom = Math.min(bottom, box.top - 12);
+      });
+      var box = input.getBoundingClientRect();
+      window.scrollTo(0, Math.max(0, window.pageYOffset + box.top - top - Math.max(0, (bottom - top - box.height) / 2)));
+    }
+    if (deferScroll) {
+      window.requestAnimationFrame(function () { window.requestAnimationFrame(scrollFocusedInput); });
+    } else {
+      scrollFocusedInput();
+    }
     return true;
+  }
+
+  function scrollToPanel(panel) {
+    if (!panel) return;
+    window.requestAnimationFrame(function () {
+      if (panel.hidden || panel.classList.contains('section-content-collapsed')) return;
+      var focused = document.activeElement;
+      if (focused && panel.contains(focused) && /^(INPUT|SELECT|TEXTAREA)$/.test(focused.tagName)) return;
+      var top = 12;
+      document.querySelectorAll('.app-bar, .mobile-jumpbar').forEach(function (bar) {
+        var style = window.getComputedStyle(bar), box = bar.getBoundingClientRect();
+        if (!box.height || (style.position !== 'fixed' && style.position !== 'sticky')) return;
+        if (box.top < window.innerHeight / 2) top = Math.max(top, box.bottom + 12);
+      });
+      var box = panel.getBoundingClientRect();
+      window.scrollTo(0, Math.max(0, window.pageYOffset + box.top - top));
+    });
+  }
+
+  function ensurePanelHeading(panel, button) {
+    if (!panel || !button) return panel;
+    panel.classList.add('section-panel-labelled');
+    if (panel.id === 'rosterSection') panel.classList.add('section-roster-grid');
+    var heading = panel.querySelector('.section-panel-heading');
+    if (!heading || heading.parentNode !== panel) {
+      heading = document.createElement('h2');
+      heading.className = 'section-panel-heading';
+      heading.id = 'section-panel-title-' + (panel.id || 'content');
+      panel.insertBefore(heading, panel.firstChild);
+    }
+    var label = button.querySelector('span');
+    heading.textContent = (label ? label.textContent : button.textContent).trim();
+    panel.setAttribute('aria-labelledby', heading.id);
+    return panel;
+  }
+
+  function wirePanelAutoScroll() {
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest
+        && event.target.closest('.section-toggle-open, #btnToggleNames, #btnToggleFields, #btnToggleAbsent, #btnToggleDropout');
+      if (!button) return;
+      var panel = null;
+      if (button.classList.contains('section-toggle-open')) {
+        var panelId = (button.getAttribute('aria-controls') || '').split(/\s+/)[0];
+        panel = panelId && document.getElementById(panelId);
+      } else if (button.id === 'btnToggleNames') {
+        panel = namesPanel() || document.getElementById('rosterSection');
+      } else if (button.id === 'btnToggleFields') {
+        panel = document.getElementById('fieldpanel');
+      } else if (button.id === 'btnToggleAbsent') {
+        panel = document.getElementById('absentpanel') || document.getElementById('rosterSection');
+      } else {
+        panel = document.getElementById('dropoutpanel');
+      }
+      if (panel && !panel.hidden && !panel.classList.contains('section-content-collapsed')) {
+        ensurePanelHeading(panel, button);
+        scrollToPanel(panel);
+      }
+    });
   }
 
   window.TSheetEditors = window.TSheetEditors || {};
   window.TSheetEditors.openTimeEditor = function () {
     return openConfigEditor('.cfg-setup-content input[type="time"]');
   };
+  window.TSheetEditors.scrollToPanel = scrollToPanel;
 
 
   function build() {
     document.body.classList.add('tournament-sheet');
+    wirePanelAutoScroll();
     var alternateSchedule = document.getElementById('roundsContainer') || document.getElementById('ladderSection');
     if (alternateSchedule && typeof TUI !== 'undefined') {
       var jumpbar = document.getElementById('jumpbar');

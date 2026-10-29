@@ -194,7 +194,7 @@
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Team / Namen</span></button>
     <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen/verspätet</span></button>
     <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
     <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
     <button type="button" class="nbtn" id="btnReset"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> <span data-i18n="sheet.btn.reset">Neues Turnier</span></button>
@@ -216,9 +216,9 @@
   </div>
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
-    <p class="nhint" data-i18n-html="mpp.hint.absent">Ausfälle ändern den einmal gedruckten Spielplan <b>nicht</b>. Die Gegner erhalten stattdessen ein Freilos (Sieg ohne Ball-Differenz), und die Wertung rechnet automatisch „pro Spiel“.</p>
-    <p class="nhint" data-i18n-html="sheet.hint.delete"><b>Team löschen</b> entfernt ein Team endgültig: Alle nachfolgenden Teams rücken eine Nummer nach vorn, der Spielplan wird für die neue Teamzahl neu erstellt (Freilos nur noch bei ungerader Teamzahl). Ergebnisse von Begegnungen, die es weiterhin gibt, bleiben erhalten.</p>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle und Verspätungen zurücksetzen</button></div>
+    <p class="nhint" data-i18n-html="mpp.hint.absent">Ausfall: Die Gegner erhalten ein Freilos, gewertet wird „pro Spiel“. Der gedruckte Spielplan bleibt <b>unverändert</b>.</p>
+    <p class="nhint" data-i18n-html="sheet.hint.delete"><b>Team löschen</b> ist endgültig: Der Spielplan wird neu erstellt, Ergebnisse weiter bestehender Begegnungen bleiben erhalten.</p>
   </div>
 </div>
 
@@ -424,9 +424,9 @@
       for(let n=2;n<=6;n++) g.add(new Option(T('mpp.groupsN', { n: n }), n));
 
       TFormat.FINAL_MODES.forEach(m => $('finalMode').add(new Option(term(m.label), m.id)));
-      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(modeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(TUI.modeOptionLabel(m.id), m.id)));
       $('finalSetMode').add(new Option(T('mpp.cfg.finalSetModeSame'), ''));
-      TC.modesForProfile(S.sport.id).forEach(m => $('finalSetMode').add(new Option(modeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('finalSetMode').add(new Option(TUI.modeOptionLabel(m.id), m.id)));
     }
     t.value = S.config.teams;
     $('groupCount').value = String(S.config.groups);
@@ -506,7 +506,7 @@
     $('trackBody').innerHTML = TUI.trackTableHtml(activeTeams(), B.groupRounds.length, cg);
     $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, cg, { removable: true, minTeams: MIN_TEAMS });
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(activeTeams(), S.absent, cg, { removable: true, minTeams: MIN_TEAMS, teamDelays: S.config.planning && S.config.planning.teamDelays });
     TUI.applyRoundFilter($('schedGrpBody'), roundFilter);
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -969,7 +969,13 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked); return TStore.save(S); }
+    if(S.config.planning && B) {
+      const locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked);
+      if(Object.keys(locked).length) S.config.planning.locked = locked;
+      else delete S.config.planning.locked;
+    }
+    return TStore.save(S);
+  }
   /* Team endgültig löschen: Nummern dahinter rücken nach, der Plan wird
      für die neue Teamzahl neu gebildet. Ergebnisse von Begegnungen, die es
      in derselben Phase weiterhin gibt, bleiben erhalten.                  */
@@ -1081,7 +1087,7 @@
     $('btnClearAbsent').addEventListener('click', () => {
       if (TUI.finalsStarted(B, S)) { alert(T('qualification.started')); return; }
       delete S.config.qualificationOrder;
-      S.absent = []; save(); structureKey=''; rebuild();
+      TUI.clearTeamAbsences(S); save(); structureKey=''; rebuild();
     });
 
     $('btnClearScores').addEventListener('click', () => {

@@ -982,14 +982,42 @@
     /* --- Zeitplan --------------------------------------------------------- */
     const startMin = TC.toMin(c.startTime) != null ? TC.toMin(c.startTime) : TC.toMin('10:00');
     const teamOf = ref => resolve(ref);
+    const isDefaultDecision = m => !!(m.result && m.result.administrative
+      && m.result.outcome && m.result.outcome.kind === 'default');
+    const canOfferDefault = mode => !!(c.outcomeProfile && TOutcome
+      && TOutcome.supportsMode(c.outcomeProfile, mode));
+    const displayOnlyMatches = (rounds, fallbackMode) => {
+      const out = [];
+      rounds.forEach(rd => {
+        const mode = rd.setMode || fallbackMode;
+        const matches = rd.matches.filter(m => isDefaultDecision(m)
+          || (m.bye != null && canOfferDefault(m.setMode || mode)));
+        if (matches.length) out.push({ round: rd.round, title: rd.title, setMode: mode, matches: matches });
+      });
+      return out;
+    };
+    const appendDisplayOnly = (target, rounds, at, fallbackMode, titleForRound) => {
+      displayOnlyMatches(rounds, fallbackMode).forEach(rd => {
+        TC.assignSlots([rd], c.fields, { teamOf }).forEach(s => {
+          const mode = (s.matches || []).filter(Boolean).map(m => m.setMode).find(Boolean) || rd.setMode;
+          target.push(Object.assign({}, s, {
+            slot: target.length + 1,
+            title: titleForRound ? titleForRound(rd.round) : rd.title,
+            setMode: mode, displayOnly: true, startMin: at, endMin: at, minutes: 0,
+            matches: s.matches.map(m => Object.assign({}, m, { displayOnly: true }))
+          }));
+        });
+      });
+    };
     const timedGroupRounds = grpRounds.map(rd => Object.assign({}, rd, {
-      matches: rd.matches.filter(m => m.bye == null && !m.dead)
+      matches: rd.matches.filter(m => m.bye == null && !m.dead && !isDefaultDecision(m))
     })).filter(rd => rd.matches.length);
     const grpSlots = TC.computeSchedule(
       TC.assignSlots(timedGroupRounds, c.fields, { teamOf }), startMin, c.setMode);
     const grpEnd = grpSlots.length ? grpSlots[grpSlots.length - 1].endMin : startMin;
+    appendDisplayOnly(grpSlots, grpRounds, grpEnd, c.setMode);
     const timedFinalRounds = finalRounds.map(rd => Object.assign({}, rd, {
-      matches: rd.matches.filter(m => m.bye == null && !m.dead && !mppFullyDead.has(m.id))
+      matches: rd.matches.filter(m => m.bye == null && !m.dead && !mppFullyDead.has(m.id) && !isDefaultDecision(m))
     })).filter(rd => rd.matches.length);
     const finSlotsRaw = TC.assignSlots(timedFinalRounds, c.fields, { teamOf });
     let scheduleCursor = grpEnd;
@@ -1002,6 +1030,7 @@
       return scheduled;
     });
     const endMin = finSlots.length ? finSlots[finSlots.length - 1].endMin : grpEnd;
+    appendDisplayOnly(finSlots, finalRounds, scheduleCursor, finMode, round => titleOfRound(finalRounds, round));
 
     function titleOfRound(rounds, r) {
       const rd = rounds.find(x => x.round === r);
@@ -1637,7 +1666,8 @@
     const slots = [];
     let cursor = startMin;
     rounds.forEach(rd => {
-      const schedulable = rd.matches.filter(m => m.bye == null && !m.dead);
+      const schedulable = rd.matches.filter(m => m.bye == null && !m.dead
+        && !(m.result && m.result.administrative && m.result.outcome && m.result.outcome.kind === 'default'));
       const per = TC.modeMinutes(rd.setMode);
       TC.assignSlots(schedulable.length ? [Object.assign({}, rd, { matches: schedulable })] : [], c.fields).forEach(s => {
         slots.push(Object.assign({}, s, {
@@ -1646,6 +1676,18 @@
         }));
         cursor += per;
       });
+      const awarded = rd.matches.filter(m => m.bye == null && m.result && m.result.administrative
+        && m.result.outcome && m.result.outcome.kind === 'default');
+      const byesWithOutcome = c.outcomeProfile && TOutcome
+        && TOutcome.supportsMode(c.outcomeProfile, rd.setMode)
+        ? rd.matches.filter(m => m.bye != null) : [];
+      const displayOnly = awarded.concat(byesWithOutcome);
+      TC.assignSlots(displayOnly.length ? [Object.assign({}, rd, { matches: displayOnly })] : [], c.fields)
+        .forEach(s => slots.push(Object.assign({}, s, {
+          slot: slots.length + 1, title: rd.title, displayOnly: true,
+          startMin: cursor, endMin: cursor, minutes: 0,
+          matches: s.matches.map(m => Object.assign({}, m, { displayOnly: true }))
+        })));
       const annulledCards = rd.matches.filter(m => m.bye == null && m.dead && m.annulled);
       TC.assignSlots(annulledCards.length ? [Object.assign({}, rd, { matches: annulledCards })] : [], c.fields)
         .forEach(s => slots.push(Object.assign({}, s, {
@@ -2383,7 +2425,10 @@
       warnings, notes, playerCount: total, menCount, womenCount,
       genders, levels, allPlayers: all, activePlayers: active,
       matchesPerRound: rounds.length ? Math.max.apply(null, rounds.map(rd => rd.matches.length)) : 0,
-      matchById: rounds.flatMap(r => r.matches).reduce((acc, m) => (acc[m.id] = m, acc), {}),
+      matchById: rounds.reduce((acc, r) => {
+        r.matches.forEach(m => { acc[m.id] = m; });
+        return acc;
+      }, {}),
       resolve: id => id
     };
   }

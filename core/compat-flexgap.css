@@ -142,6 +142,12 @@
   .no-flexgap .nactions > *:not(:last-child) { margin-right: 8px; }
   .no-flexgap .nactions > * { margin-bottom: 8px; }
   .no-flexgap .nactions { margin-bottom: -8px; }
+  .no-flexgap .team-delay-editor > *:not(:last-child) { margin-right: 4px; }
+  .no-flexgap .team-delay-editor > * { margin-bottom: 4px; }
+  .no-flexgap .team-delay-editor { margin-bottom: -4px; }
+  .no-flexgap .planning-panel-actions > *:not(:last-child) { margin-right: 8px; }
+  .no-flexgap .planning-panel-actions > * { margin-bottom: 8px; }
+  .no-flexgap .planning-panel-actions { margin-bottom: -8px; }
 
   /* Zurueck-/Navigationszeile ganz oben */
   /* Alte Topbars; Startseite und gemeinsame App-Leiste haben eigene Abstaende. */

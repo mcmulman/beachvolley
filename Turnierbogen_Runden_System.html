@@ -167,7 +167,7 @@
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="sheet.btn.names">Team / Namen</span></button>
     <button type="button" class="nbtn" id="btnToggleFields"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> <span data-i18n="sheet.btn.fields">Felder benennen</span></button>
-    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen</span></button>
+    <button type="button" class="nbtn" id="btnToggleAbsent"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg> <span data-i18n="sheet.btn.absent">Team ausgefallen/verspätet</span></button>
     <button type="button" class="nbtn" id="btnDrawStart"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg> <span data-i18n="rs.btn.drawStart">Startrunde auslosen</span></button>
     <button type="button" class="nbtn" id="btnTimefit"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> <span data-i18n="sheet.btn.timefit">Zeit optimieren</span></button>
     <button type="button" class="nbtn" id="btnClearScores" data-i18n="sheet.btn.clearScores">Ergebnisse löschen</button>
@@ -190,7 +190,7 @@
   </div>
   <div id="absentpanel" class="noprint namepanel" hidden>
     <div class="panel-checks" id="absentGrid"></div>
-    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle zurücksetzen</button></div>
+    <div class="nactions"><button type="button" class="nbtn" id="btnClearAbsent" data-i18n="sheet.btn.clearAbsent">Ausfälle und Verspätungen zurücksetzen</button></div>
     <p class="nhint" id="absentHint"></p>
   </div>
 </div>
@@ -418,7 +418,7 @@
     const t = $('teamCount');
     if(!t.options.length){
       for(let n=MIN_TEAMS;n<=24;n++) t.add(new Option(T('common.teams', { count: n }), n));
-      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(setModeLabel(m.id), m.id)));
+      TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(TUI.modeOptionLabel(m.id), m.id)));
     }
     fillRoundCount();
     t.value = S.config.teams;
@@ -479,6 +479,7 @@
     return TPlanning.apply(TFormat.buildRounds({
       mode: c.mode, teams: c.teams, fields: c.fields,
       rounds: c.rounds, setMode: c.setMode,
+      outcomeProfile: c.outcomeProfile,
       rankingProfile: c.rankingProfile, sport: s.sport, stageDecisions: s.stageDecisions,
       roundModes: s.frozenModes, startTime: c.startTime,
       absent: s.absent, results: s.results, outcomes: s.outcomes,
@@ -608,7 +609,7 @@
     if (hintEl) hintEl.hidden = false;
     $('nameGrid').innerHTML = TUI.namePanelHtml(allTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
-    $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS });
+    $('absentGrid').innerHTML = TUI.absentPanelHtml(allTeams(), S.absent, ctx, { removable: true, minTeams: MIN_TEAMS, teamDelays: S.config.planning && S.config.planning.teamDelays });
     TUI.applyRoundFilter($('schedBody'), roundFilter);
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
@@ -1173,7 +1174,11 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    if(S.config.planning && B) S.config.planning.locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked);
+    if(S.config.planning && B) {
+      const locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked);
+      if(Object.keys(locked).length) S.config.planning.locked = locked;
+      else delete S.config.planning.locked;
+    }
     S.sheet = storageSheetId(MODE);
     return TStore.save(S);
   }
@@ -1317,7 +1322,7 @@
       S.teamNames = {}; S.pairMembers = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
-    $('btnClearAbsent').addEventListener('click', () => { S.absent = []; save(); structureKey=''; rebuild(); });
+    $('btnClearAbsent').addEventListener('click', () => { TUI.clearTeamAbsences(S); save(); structureKey=''; rebuild(); });
 
     $('btnClearScores').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearScores'))) return;

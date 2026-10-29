@@ -700,7 +700,7 @@
   /* Generisches Info-/Bestätigungs-Overlay im gleichen visuellen Stil wie der
      Teilen-Dialog - für andere Aktionen im Bogen (z. B. "Finalrunde spielen"),
      bei denen ein natives confirm() zu wenig Platz für Erklärungen bietet.
-     opts: { title, bodyHtml, confirmLabel, cancelLabel, onConfirm } */
+     opts: { title, bodyHtml, confirmLabel, cancelLabel, onConfirm, onCancel } */
   function openInfoDialog(opts) {
     opts = opts || {};
     const confirmLabel = opts.confirmLabel || tx('share.continue', 'Weiter');
@@ -711,7 +711,10 @@
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(cancelLabel) + '</button>' +
       '<button type="button" class="tshare-btn tshare-btn-primary" data-act="confirm">' + escapeHtml(confirmLabel) + '</button>'
     );
-    root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
+    root.querySelector('[data-act="cancel"]').addEventListener('click', function () {
+      closeShareModal();
+      if (typeof opts.onCancel === 'function') opts.onCancel();
+    });
     root.querySelector('[data-act="confirm"]').addEventListener('click', function () {
       closeShareModal();
       if (typeof opts.onConfirm === 'function') opts.onConfirm();
