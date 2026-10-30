@@ -2251,6 +2251,56 @@
       /* Width only: focus changes must not move the sticky round bar
          between mousedown and mouseup. */
       document.body.classList.toggle('has-section-jumpbar', window.innerWidth > 640);
+      /* The root scroller owns scroll-padding; CSS reserves the bar per
+         breakpoint for native focus/scrollIntoView reveal. */
+      document.documentElement.classList.add('has-section-nav');
+    }
+    /* Round bars are body-level sticky, so they stay over all later content.
+       Their wrapped height feeds scroll-margin-top in turnier-base.css. */
+    function syncRoundbarClearance() {
+      let height = 0;
+      Array.prototype.forEach.call(document.querySelectorAll('.schedule-roundbar'), roundbar => {
+        if (/sticky|fixed/.test(getComputedStyle(roundbar).position)) height = Math.max(height, roundbar.offsetHeight);
+      });
+      const value = height ? height + 8 + 'px' : '0px';
+      if (document.documentElement.style.getPropertyValue('--schedule-roundbar-clearance') !== value) {
+        document.documentElement.style.setProperty('--schedule-roundbar-clearance', value);
+      }
+    }
+    /* Viewport band left clear by the header, section bar and any round bar
+       before target. Sticky bars count at their stuck position, so the band
+       stays valid after scrolling. */
+    function clearBand(target) {
+      let top = 0, bottom = window.innerHeight;
+      const chrome = [document.querySelector('.app-bar'), bar]
+        .concat(Array.prototype.slice.call(document.querySelectorAll('.schedule-roundbar')));
+      chrome.forEach(el => {
+        if (!el || !el.getClientRects().length || el.contains(target)) return;
+        const style = getComputedStyle(el), r = el.getBoundingClientRect();
+        if (style.position === 'fixed') {
+          if (r.top < window.innerHeight / 2) top = Math.max(top, r.bottom);
+          else bottom = Math.min(bottom, r.top);
+        } else if (style.position === 'sticky' && !isNaN(parseFloat(style.top))
+          && (el.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+          top = Math.max(top, parseFloat(style.top) + r.height);
+        }
+      });
+      return { top, bottom };
+    }
+    /* Safari 12 ignores scroll-padding/scroll-margin when focus() or
+       scrollIntoView() reveal a control, so keyboard and programmatic focus
+       is corrected by geometry. Pointer focus and plain scrolling stay as is. */
+    function revealFocused(target) {
+      if (document.activeElement !== target || !target.getClientRects().length
+        || window.matchMedia('print').matches) return;
+      if (target.matches('input.score') && window.matchMedia('(max-width: 960px)').matches) return;
+      for (let el = target; el && el !== document.body; el = el.parentElement) {
+        if (/sticky|fixed/.test(getComputedStyle(el).position)) return;
+      }
+      const band = clearBand(target), r = target.getBoundingClientRect();
+      const top = band.top + 8, bottom = band.bottom - 8;
+      const delta = r.top < top ? r.top - top : r.bottom > bottom ? Math.min(r.bottom - bottom, r.top - top) : 0;
+      if (delta) window.scrollBy(0, delta);
     }
     function placeAfterHeader() {
       const header = document.querySelector('.app-bar');
@@ -2261,6 +2311,7 @@
       return !!(header && header.parentNode);
     }
     function updateCurrent() {
+      syncRoundbarClearance();
       const buttons = Array.from(bar.querySelectorAll('[data-jump]'));
       const targets = buttons.map(button => {
         const target = document.getElementById(button.getAttribute('data-jump'));
@@ -2272,17 +2323,14 @@
         return;
       }
 
-      const header = document.querySelector('.app-bar');
-      const headerBottom = header && /sticky|fixed/.test(getComputedStyle(header).position)
-        ? header.getBoundingClientRect().bottom : 0;
-      const barBottom = window.innerWidth > 640 && /sticky|fixed/.test(getComputedStyle(bar).position)
-        ? bar.getBoundingClientRect().bottom : 0;
-      const activationLine = Math.max(headerBottom, barBottom) + 32;
       let active = targets[0];
       if (window.pageYOffset + window.innerHeight >= document.documentElement.scrollHeight - 2) {
         active = targets[targets.length - 1];
       } else {
-        targets.forEach(item => { if (item.top <= activationLine) active = item; });
+        targets.forEach(item => {
+          const target = document.getElementById(item.button.getAttribute('data-jump'));
+          if (item.top <= clearBand(target).top + 32) active = item;
+        });
       }
       buttons.forEach(button => {
         if (button === active.button) button.setAttribute('aria-current', 'location');
@@ -2309,11 +2357,7 @@
         if (!el) return;
         const target = document.getElementById(el.getAttribute('data-jump'));
         if (target) {
-          const header = document.querySelector('.app-bar');
-          const headerSticky = header && /sticky|fixed/.test(getComputedStyle(header).position);
-          const barSticky = window.innerWidth > 640 && /sticky|fixed/.test(getComputedStyle(bar).position);
-          const offset = (headerSticky ? header.getBoundingClientRect().height : 0)
-            + (barSticky ? bar.getBoundingClientRect().height : 0) + 24;
+          const offset = Math.max(54 + (window.innerWidth > 640 ? 53 : 0), clearBand(target).top) + 24;
           window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
           updateCurrent();
         }
@@ -2327,6 +2371,19 @@
       }
       document.addEventListener('focusin', editing);
       document.addEventListener('focusout', function () { setTimeout(editing, 0); });
+      let pointerDown = false;
+      const pointerState = down => () => { pointerDown = down; };
+      ['mousedown', 'touchstart'].forEach(type => document.addEventListener(type, pointerState(true), true));
+      ['mouseup', 'touchend', 'touchcancel'].forEach(type => document.addEventListener(type, pointerState(false), true));
+      document.addEventListener('focusin', e => {
+        const target = e.target;
+        if (pointerDown || !target || target === document.body || !target.getClientRects) return;
+        window.requestAnimationFrame(() => revealFocused(target));
+      });
+      const roundbarObserver = new MutationObserver(syncRoundbarClearance);
+      Array.prototype.forEach.call(document.querySelectorAll('.schedule-roundbar'), roundbar => {
+        roundbarObserver.observe(roundbar, { childList: true, subtree: true, characterData: true });
+      });
     }
     /* appbar.build wires the King sheets before inserting their header.
        Observe that insertion once, rather than guessing when build finishes. */

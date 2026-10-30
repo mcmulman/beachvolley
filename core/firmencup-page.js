@@ -2039,6 +2039,8 @@
     const status = !binding ? tr('Noch kein Server-Link. Das Ereignis bleibt ausschließlich lokal.', 'No server link yet. This event remains local only.') :
       binding.conflict ? tr('Konflikt: Serverrevision ' + (binding.remoteRevision || '?') + ' ist neuer. Der lokale Entwurf bleibt erhalten und wird nicht überschrieben.', 'Conflict: server revision ' + (binding.remoteRevision || '?') + ' is newer. The local draft is retained and will not be overwritten.') :
         binding.pending ? tr('Übertragung ausstehend. Lokal gespeichert; wird bei Verbindung erneut übertragen.', 'Upload pending. Saved locally; upload retries when connected.') :
+          binding.pendingSharing ? tr('Freigabeänderung ausstehend. Derselbe Link wird erneut bestätigt. Falls ein neues Adminpasswort noch nicht übernommen wurde, bitte erneut eingeben.',
+            'Sharing change pending. The same link will be acknowledged again. If a new admin password was not committed yet, please enter it again.') :
           tr('Serverrevision ' + binding.revision + ' · Bearbeitungsrecht nur in diesem Browser gespeichert.', 'Server revision ' + binding.revision + ' · editor capability stored only in this browser.');
     const publicLink = published ? Server.publicUrl(binding.id, location.href, en ? 'en' : 'de') : '';
     return '<section id="fc-tools" class="noprint">' +
@@ -2130,12 +2132,15 @@
     try {
       binding = await Server.load(event.id);
       if (!binding || !binding.id || binding.conflict) return;
+      const retryingSharing = !!binding.pendingSharing;
+      await resumeSharing();
       if (binding.role === 'admin' && !binding.token) {
         event = null;
         adminUnlock(binding.id, binding.adminShareToken, binding);
         notify(tr('Adminsitzung abgelaufen. Erneut entsperren.', 'Admin session expired. Unlock again.'), true);
         return;
       }
+      if (retryingSharing && !binding.pendingSharing) render();
       const retrying = !!binding.pending;
       try {
         binding = await Server.sync(event);
@@ -2150,6 +2155,11 @@
         }
         if (error.code === 'network') return;
         throw error;
+      }
+      if (binding.role === 'admin' && !binding.token) {
+        event = null;
+        adminUnlock(binding.id, binding.adminShareToken, binding);
+        return;
       }
       const remote = await Server.get(binding.id, binding.token, '"' + binding.revision + '"');
       if (event !== polledEvent || busy || hasUnsavedSetup()) return;
@@ -2177,6 +2187,20 @@
       }
       notify(error.message, true);
     }
+  }
+  async function resumeSharing() {
+    if (!binding || !binding.pendingSharing) return;
+    try { await Server.retrySharing(binding); }
+    catch (error) {
+      if (error.code !== 'network' && error.code !== 'invalid_password' && error.status !== 403) throw error;
+    }
+  }
+  async function saveSharing(settings) {
+    await Server.sharing(binding, settings);
+    if (binding.role === 'admin' && !binding.token) {
+      event = null;
+      adminUnlock(binding.id, binding.adminShareToken, binding);
+    } else render();
   }
   function adminUnlock(serverId, shareToken, localBinding) {
     app.innerHTML = '<form id="fc-admin-unlock"><h2>' + tr('Adminzugriff entsperren', 'Unlock admin access') +
@@ -2628,16 +2652,16 @@
     if (participantShare) participantShare.onsubmit = ev => {
       ev.preventDefault();
       action(async function () {
-        await Server.sharing(binding, { participantToken: Server.token() });
-        render(); notify(tr('Teilnehmer:innen-Link erneuert.', 'Participant link rotated.'));
+        await saveSharing({ participantToken: Server.token() });
+        notify(tr('Teilnehmer:innen-Link erneuert.', 'Participant link rotated.'));
       });
     };
     const adminShare = document.getElementById('fc-admin-share-form');
     if (adminShare) adminShare.onsubmit = ev => {
       ev.preventDefault();
       action(async function () {
-        await Server.sharing(binding, { adminShareToken: Server.token(), password: new FormData(adminShare).get('password') });
-        render(); notify(tr('Adminlink und Passwort gesetzt.', 'Admin link and password set.'));
+        await saveSharing({ adminShareToken: Server.token(), password: new FormData(adminShare).get('password') });
+        notify(tr('Adminlink und Passwort gesetzt. Adminsitzungen wurden beendet.', 'Admin link and password set. Admin sessions were ended.'));
       });
     };
     app.querySelectorAll('[data-phase]').forEach(node => {
@@ -3262,11 +3286,11 @@
       render();
       notify(tr('Private Livefreigabe eingerichtet. Teilnehmer:innen-Link jetzt unter „Teilen & Sichern“ erzeugen. Änderungen werden lokal und auf dem Server gespeichert.', 'Private live sharing set up. Create a participant link under “Sharing & backup”. Changes are saved locally and on the server.'));
     } else if (name === 'revoke-participant' || name === 'revoke-admin') {
-      await Server.sharing(binding, name === 'revoke-participant' ? { revokeParticipant: true } : { revokeAdmin: true });
-      render(); notify(tr('Zugriff widerrufen.', 'Access revoked.'));
+      await saveSharing(name === 'revoke-participant' ? { revokeParticipant: true } : { revokeAdmin: true });
+      notify(tr('Zugriff widerrufen.', 'Access revoked.'));
     } else if (name === 'toggle-public') {
-      await Server.sharing(binding, { publicRead: !(binding.access && binding.access.publicRead) });
-      render(); notify(tr('Öffentlicher Zugriff aktualisiert.', 'Public access updated.'));
+      await saveSharing({ publicRead: !(binding.access && binding.access.publicRead) });
+      notify(tr('Öffentlicher Zugriff aktualisiert.', 'Public access updated.'));
     } else if (name === 'admin-logout') {
       await Server.logout(binding);
       event = null;
@@ -3358,6 +3382,7 @@
     } else if (params.has('local') && !readOnly) {
       // Public routes must never open a private local record, even when ?local= is appended.
       binding = await Server.load(params.get('local'));
+      await resumeSharing();
       if (binding && binding.role === 'admin' && !binding.token) {
         adminUnlock(binding.id, binding.adminShareToken, binding);
         return;

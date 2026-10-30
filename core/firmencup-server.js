@@ -230,6 +230,14 @@
   async function sync(event) {
     let binding = await load(event.id);
     if (!binding) return null;
+    if (binding.pendingSharing) {
+      try { await flushSharing(binding); }
+      catch (error) {
+        // An uncommitted password change needs re-entry, not a persisted password.
+        // Sharing failures must not replace or discard an independent score draft.
+        if (error.code !== 'invalid_password' && error.code !== 'network') throw error;
+      }
+    }
     if (binding.conflict) throw Object.assign(new Error('Server conflict: the local draft is retained / Serverkonflikt: Der lokale Entwurf bleibt erhalten'), { code: 'revision_conflict', status: 412 });
     if (binding.pending) await flush(binding);
     binding = await load(event.id);
@@ -257,7 +265,7 @@
     const effectiveRole = role || (previous && previous.id === id ? previous.role : null);
     if (effectiveRole) binding.role = effectiveRole;
     if (previous && previous.id === id && (previous.role || 'owner') === (effectiveRole || 'owner')) {
-      for (const key of ['participantShareToken', 'adminShareToken', 'access']) {
+      for (const key of ['participantShareToken', 'adminShareToken', 'access', 'pendingSharing']) {
         if (Object.prototype.hasOwnProperty.call(previous, key)) binding[key] = previous[key];
       }
     }
@@ -308,18 +316,52 @@
     url.hash = role + '=' + encodeURIComponent(capability);
     return url.href;
   }
-  async function sharing(binding, settings) {
-    if (binding.role === 'participant') throw Object.assign(new Error('Admin permission required / Adminberechtigung erforderlich'), { code: 'forbidden' });
+  function sharingKind(settings) {
+    return JSON.stringify(Object.keys(settings).filter(key => key !== 'password' && key !== 'id' && key !== 'requestKey')
+      .sort().map(key => [key, /Token$/.test(key) ? true : settings[key]]));
+  }
+  async function flushSharing(binding, password) {
+    const body = binding.pendingSharing;
+    if (!body) return binding.access;
     const result = await request(API + '?action=sharing', { method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + binding.token },
-      body: JSON.stringify(Object.assign({}, settings, { id: binding.id })) });
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        binding.token ? { Authorization: 'Bearer ' + binding.token } : {}),
+      body: JSON.stringify(Object.assign({}, body, typeof password === 'string' ? { password: password } : {})) });
+    if (!result.body || result.body.id !== binding.id || !isPlainObject(result.body.access)) {
+      throw new Error('Incomplete Firmencup server response / Unvollständige Firmencup-Serverantwort');
+    }
     binding.access = result.body.access;
-    if (settings.participantToken) binding.participantShareToken = settings.participantToken;
-    if (settings.adminShareToken) binding.adminShareToken = settings.adminShareToken;
-    if (settings.revokeParticipant) delete binding.participantShareToken;
-    if (settings.revokeAdmin) delete binding.adminShareToken;
+    for (const key of ['participantToken', 'adminShareToken']) {
+      const savedKey = key === 'participantToken' ? 'participantShareToken' : key;
+      if (body[key]) {
+        if (result.body[key + 'Current'] !== false) binding[savedKey] = body[key];
+        else delete binding[savedKey];
+      }
+    }
+    if (body.revokeParticipant) delete binding.participantShareToken;
+    if (body.revokeAdmin) delete binding.adminShareToken;
+    if (binding.role === 'admin' && (body.adminShareToken || body.revokeAdmin)) {
+      delete adminSessions[binding.localId];
+      binding.token = '';
+    }
+    binding.pendingSharing = null;
     await persist(binding);
     return result.body.access;
+  }
+  async function sharing(binding, settings) {
+    if (binding.role === 'participant') throw Object.assign(new Error('Admin permission required / Adminberechtigung erforderlich'), { code: 'forbidden' });
+    if (binding.pendingSharing) {
+      const retry = sharingKind(binding.pendingSharing) === sharingKind(settings);
+      const access = await flushSharing(binding, retry ? settings.password : undefined);
+      if (retry) return access;
+    }
+    if (binding.role === 'admin' && !binding.token) {
+      throw Object.assign(new Error('Admin session expired. Unlock again / Adminsitzung abgelaufen. Erneut entsperren'), { code: 'admin_session_required', status: 403 });
+    }
+    binding.pendingSharing = Object.assign({}, settings, { id: binding.id, requestKey: token() });
+    delete binding.pendingSharing.password;
+    await persist(binding);
+    return flushSharing(binding, settings.password);
   }
   async function unlock(id, adminShareToken, password) {
     const result = await request(API + '?action=unlock', { method: 'POST',
@@ -350,6 +392,7 @@
     publicUrl: publicUrl, editorUrl: editorUrl, capabilityFromHash: capabilityFromHash,
     fingerprint: fingerprint, token: token,
     sharing: (binding, settings) => withBinding(sharing, binding, [Object.assign({}, settings)]),
+    retrySharing: binding => withBinding(flushSharing, binding),
     unlock: unlock,
     logout: binding => withBinding(logout, binding),
     reauthorize: (binding, sessionToken, expiresAt) => withBinding(reauthorize, binding, [sessionToken, expiresAt]),

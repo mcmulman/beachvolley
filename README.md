@@ -33,6 +33,10 @@
 
 ### Kompakte Feature-Übersicht
 
+- **Freie Sicht bei Abschnitts- und Fokussprüngen:** Kopf-, Abschnitts- und Rundenleisten werden beim Hinscrollen berücksichtigt. Ein geometrischer Fokus-Fallback hält Bedienelemente auch ohne wirksame Scroll-Abstandsregeln sichtbar; normales Scrollen und Pointer-Fokus bleiben unverändert.
+
+- **Wiederholbare Livefreigabe:** Freigabeänderungen werden vor dem Versand separat gesichert. Nach einer verlorenen Serverantwort wird dieselbe Änderung bestätigt statt einen weiteren Schlüssel zu erzeugen; Ergebnisübertragungen bleiben davon getrennt. Das Erneuern oder Widerrufen der eigenen Adminfreigabe sperrt die private Ansicht.
+
 - **Alt-iPad-Darstellung und vollständiger Ergebnisdruck:** Firmencup-Ergebnisse werden auch ohne Druckereignis vollständig gedruckt, unabhängig von Such- und Gruppenfiltern. Filterkarten, Teamherkunft und Platzierungsduelle behalten ihre Abstände auch in Browsern ohne Flex-Gap-Unterstützung.
 
 - **Team-Herkunftsgruppen bis ins Finale:** Gruppen + Finalrunde und Modified Pool Play zeigen die tatsächliche Vorrundengruppe direkt bei spielenden Teams – auch in Überkreuz-Platzierung, K.-o., Hauptrunde und Endplatzierungen sowie im Druck. Die Zuordnung stammt aus der ursprünglichen Gruppeneinteilung, nicht aus dem aktuellen Spiel-/Finalkontext. Offene Quellen erhalten keine erfundene Gruppe; Namen, Namensfelder und Sicherungsdaten bleiben unverändert. Firmencup zeigt dieselbe Herkunft in seinen Gruppen- und Klassifikationsphasen. Formate ohne Vorrundengruppen (auch Flex RR/Swiss) und importierte Ranglisten-/Platzierungsblöcke werden nicht künstlich gruppiert.
@@ -170,6 +174,10 @@
 - **Company cup – reliable live persistence and withdrawal proofs:** Concurrent synchronization and permission changes run sequentially per local event, retaining distinct queued snapshots and failed requests' retry keys. For multiple withdrawal decisions concerning the same team, the lexicographically smallest fixture ID supplies the representative event-wide proof (note and original timestamp), independent of input order, device clocks or equal timestamps. Every individual note remains in its match decision. Correction/removal requires the correspondingly re-derived proof; live changes to recorded decisions remain blocked. Withdrawal still applies event-wide while at least one such decision exists. Local and server text limits count UTF-16 code units (non-BMP emoji count twice), not UTF-8 bytes.
 
 ### Compact Feature Highlights
+
+- **Unobstructed section and focus navigation:** Header, section and round bars are accounted for when revealing content. A geometric focus fallback keeps controls visible when native scroll-clearance rules are ineffective; ordinary scrolling and pointer focus remain unchanged.
+
+- **Retry-safe live sharing:** Sharing changes are saved separately before transmission. After a lost server response, the same change is acknowledged instead of generating another key; score uploads remain separate. Rotating or revoking the current admin share locks the private view.
 
 - **Older-iPad layout and complete result printing:** Company-cup results print in full even without print events, independently of search and pool filters. Filter cards, team origins and placement duels retain their spacing in browsers without flex-gap support.
 
