@@ -31,7 +31,7 @@
      Speichervorgänge abwarten und erst dann zur vorigen Seite (WebView-
      Verlauf), ohne Verlauf zur Startseite bzw. auf der Startseite die App in
      den Hintergrund legen (wie Android ab 12; nichts wird beendet). Ist nicht
-     alles gespeichert, wird vor dem Verlassen der Seite nachgefragt.
+     alles gespeichert, wird vor dem Verlassen der Seite oder Minimieren nachgefragt.
    - App geht in den Hintergrund (pause, iOS/Android): fokussiertes
      Eingabefeld übernehmen, damit eine getippte Eingabe gespeichert wird,
      bevor das System die App beendet.
@@ -540,14 +540,14 @@
     /* Ein Takt Pause: change-Handler, die erst asynchron speichern, sollen
        ihren Speichervorgang noch anmelden können. */
     return wait(0).then(settleSaves).then(function (saved) {
+      if (!saved && !root.confirm(tx('native.back.unsaved',
+        'Nicht alle Änderungen sind gespeichert. Seite trotzdem verlassen? Nicht gespeicherte Eingaben gehen dabei verloren.'))) {
+        return 'stayed';
+      }
       if (isStartPage() && !(event && event.canGoBack)) {
         const app = root.TNativeApp;
         if (!app || typeof app.minimize !== 'function') return 'stayed';
         return app.minimize().then(function () { return 'minimized'; }, function () { return 'stayed'; });
-      }
-      if (!saved && !root.confirm(tx('native.back.unsaved',
-        'Nicht alle Änderungen sind gespeichert. Seite trotzdem verlassen? Nicht gespeicherte Eingaben gehen dabei verloren.'))) {
-        return 'stayed';
       }
       /* Bereits bestätigt: beforeunload von TStore nicht ein zweites Mal fragen lassen. */
       if (!saved && root.TStore && typeof root.TStore.allowLeave === 'function') root.TStore.allowLeave();

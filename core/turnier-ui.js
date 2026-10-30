@@ -1397,7 +1397,10 @@
           results: state.results, outcomes: state.outcomes, config: state.config,
           manualPlacements: state.manualPlacements, manualStandings: state.manualStandings
         };
-        const finalIds = new Set(options.plan().finalRounds.flatMap(round => round.matches.map(match => match.id)));
+        const finalIds = new Set();
+        options.plan().finalRounds.forEach(round => {
+          round.matches.forEach(match => finalIds.add(match.id));
+        });
         state.results = Object.assign({}, state.results);
         state.outcomes = Object.assign({}, state.outcomes);
         finalIds.forEach(id => { delete state.results[id]; delete state.outcomes[id]; });

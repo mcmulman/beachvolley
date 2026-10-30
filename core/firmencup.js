@@ -777,7 +777,10 @@
   }
   function standings(e) {
     if (e.status !== 'finals') return [];
-    const rows = sharedBands(e).flatMap(band => band.teams.map(id => ({ id: id, rank: band.from, sharedTo: band.to })));
+    const rows = [];
+    sharedBands(e).forEach(band => {
+      band.teams.forEach(id => rows.push({ id: id, rank: band.from, sharedTo: band.to }));
+    });
     e.matches.filter(m => m.placement).forEach(m => {
       if (!e.results[m.id] && !e.outcomes[m.id]) return;
       const winner = resolve(e, { match: m.id, outcome: 'winner' });

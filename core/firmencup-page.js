@@ -1282,7 +1282,7 @@
   function paperSeedingSheet() {
     if (!event.matches.length || event.status !== 'groups') return '';
     const bands = F.classificationBands(event.teams.length, F.effectivePoolCount(event.teams.length, event.config));
-    const rows = bands.flatMap(band => {
+    const rows = bands.map(band => {
       const shared = event.config.placementMode === 'shared' && band.from > event.config.placementThrough;
       const block = shared ?
         tr(' geteilter Rang · keine Spiele', ' shared place · no matches') :
