@@ -2173,7 +2173,13 @@
       }
       const img = document.createElement('img'); img.src = canvas.toDataURL('image/png');
       img.alt = tr('QR zum Live-Nur-Lesen-Link', 'QR to the live read-only link');
-      qrHost.appendChild(img);
+      const enlarge = document.createElement('button');
+      enlarge.type = 'button'; enlarge.id = 'fc-qr-enlarge';
+      enlarge.setAttribute('aria-label', tr('QR-Code groß anzeigen', 'Enlarge QR code'));
+      enlarge.setAttribute('aria-haspopup', 'dialog');
+      enlarge.appendChild(img);
+      enlarge.onclick = () => openQrPopup(img.src, enlarge);
+      qrHost.appendChild(enlarge);
       const downloadQr = document.createElement('a');
       downloadQr.id = 'fc-qr-download'; downloadQr.href = img.src;
       downloadQr.download = 'firmencup-qr.png';
@@ -2183,6 +2189,47 @@
       console.error('Firmencup QR:', error);
       note.textContent = tr('QR konnte nicht erzeugt werden; der Nur-Lesen-Link kann kopiert werden.', 'Could not create QR; copy the read-only link instead.');
     }
+  }
+  function openQrPopup(src, opener) {
+    if (document.getElementById('fc-qr-popup')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'fc-qr-popup'; overlay.className = 'fc-qr-backdrop noprint';
+    overlay.innerHTML = '<section class="fc-qr-dialog" role="dialog" aria-modal="true" aria-labelledby="fc-qr-title" tabindex="-1">' +
+      '<h2 id="fc-qr-title">' + tr('Firmencup · Live-QR-Code', 'Company cup · live QR code') + '</h2>' +
+      '<img alt="' + esc(tr('QR zum Live-Nur-Lesen-Link', 'QR to the live read-only link')) + '">' +
+      '<p>' + tr('Scannen, um Spielplan und Ergebnisse live anzusehen.', 'Scan to view live fixtures and results.') + '</p></section>';
+    const panel = overlay.firstElementChild;
+    panel.querySelector('img').src = src;
+    const hidden = Array.from(document.body.children).filter(node =>
+      node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE' && !node.hasAttribute('aria-hidden'));
+    const overflow = document.body.style.overflow;
+    hidden.forEach(node => node.setAttribute('aria-hidden', 'true'));
+    document.body.style.overflow = 'hidden';
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocus);
+      overlay.remove();
+      hidden.forEach(node => node.removeAttribute('aria-hidden'));
+      document.body.style.overflow = overflow;
+      if (opener.isConnected) opener.focus();
+      else {
+        const current = document.getElementById('fc-qr-enlarge');
+        if (current) current.focus();
+      }
+    }
+    const closeButton = TNative.mountClose(panel, tr('Schließen', 'Close'), close);
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.key === 'Tab') { e.preventDefault(); closeButton.focus(); }
+    }
+    function onFocus(e) {
+      if (!overlay.contains(e.target)) closeButton.focus();
+    }
+    overlay.onclick = e => { if (e.target === overlay) close(); };
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocus);
+    panel.focus();
   }
   async function reloadServerConflict() {
     if (!binding || !binding.id) throw new Error(tr('Kein verbundener Serverstand.', 'No connected server event.'));

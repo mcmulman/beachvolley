@@ -48,6 +48,12 @@ legend { font-weight: 700; max-width: 100%; overflow-wrap: break-word; }
 #fc-qr { max-width: 180px; }
 #fc-qr img { display: block; max-width: 100%; height: auto; }
 #fc-qr-download { display: inline-flex; align-items: center; min-height: 44px; }
+#fc-qr-enlarge { display: block; margin: 0; padding: 0; border: 0; background: #fff; cursor: zoom-in; }
+.fc-qr-backdrop { position: fixed; z-index: 10000; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .75); }
+.fc-qr-dialog { position: relative; box-sizing: border-box; width: 100%; max-width: 760px; max-height: 100%; overflow: auto; padding: 16px; border-radius: 12px; background: #fff; color: #1a3a5c; text-align: center; }
+.fc-qr-dialog h2 { margin: 0 44px 12px; font-size: 1.2rem; }
+.fc-qr-dialog img { display: block; width: 100%; max-width: 68vh; height: auto; margin: 0 auto; image-rendering: pixelated; }
+.fc-qr-dialog p { margin: 12px 0 0; }
 @media (max-width: 480px) {
   .fc-share-url-row { flex-direction: column; align-items: stretch; gap: 0; }
   .fc-share-url-row button { width: 100%; margin-top: 0; }
