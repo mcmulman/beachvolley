@@ -329,6 +329,24 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
   .fc-read-only .fc-fixture .fc-referee-duty { border: 0; border-left: 3px solid #377662; border-radius: 0; padding: 2px 8px; background: transparent; color: #29415d; }
   .fc-read-only .fc-fixture .fc-fx-identifiers { display: none; }
   .fc-read-only .fc-fixture > p.noprint { order: 4; margin: 4px 0 0; font-size: .8rem; }
+  .fc-read-only #fc-live > h2 { margin-bottom: 4px; }
+  .fc-read-only #fc-live #fc-countdown { margin: 0 0 14px; font-size: .85rem; line-height: 1.4; color: #46576b; overflow-wrap: break-word; }
+  .fc-read-only #fc-current-wave { padding: 0; border: 0; background: transparent; }
+  .fc-read-only #fc-current-wave-title { margin: 0 0 10px; font-size: 1rem; }
+  .fc-read-only .fc-current-matches { display: grid; grid-template-columns: minmax(0, 1fr); grid-gap: 8px; min-width: 0; }
+  .fc-read-only .fc-public-match { min-width: 0; padding: 12px; border: 1px solid #d8e1ec; border-radius: 8px; background: #fff; }
+  .fc-read-only .fc-public-card { min-width: 0; }
+  .fc-read-only .fc-public-card .fc-fx-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 8px; font-size: .85rem; color: #29415d; }
+  .fc-read-only .fc-public-card .fc-fx-meta { margin-left: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fc-read-only .fc-public-card .fc-public-context { margin: 0 0 6px; font-size: .8rem; color: #46576b; overflow-wrap: break-word; word-break: break-word; }
+  .fc-read-only .fc-public-card .fc-fx-teams { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.45; }
+  .fc-read-only .fc-public-team { display: block; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+  .fc-read-only .fc-public-team + .fc-public-team { margin-top: 4px; }
+  .fc-read-only .fc-public-match-link { display: block; min-height: 44px; color: #1a3a5c; text-decoration: none; }
+  .fc-read-only .fc-public-match-link:hover, .fc-read-only .fc-public-match-link:focus { text-decoration: underline; }
+  .fc-read-only .fc-public-card .fc-fx-result { margin: 8px 0 0; font-size: 1rem; color: #1a3a5c; font-variant-numeric: tabular-nums; }
+  .fc-read-only .fc-public-card .fc-public-pending { font-size: .8rem; font-weight: 400; color: #46576b; }
+  .fc-read-only .fc-public-card .fc-referee { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #e4eaf1; font-size: .8rem; line-height: 1.4; font-weight: 400; color: #46576b; overflow-wrap: break-word; word-break: break-word; }
   .fc-read-only .fc-wave-context { display: none; }
   .fc-read-only .fc-wave-matches { grid-template-columns: minmax(0, 1fr); min-width: 0; }
   .fc-read-only .fc-phases button { overflow-wrap: break-word; word-break: break-word; }
@@ -340,6 +358,7 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
   .fc-read-only #fc-participant-info p { margin: 0 0 10px; font-size: .9rem; overflow-wrap: break-word; }
   @media (min-width: 760px) {
     .fc-read-only .fc-wave-matches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fc-read-only .fc-current-matches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 480px) {
     .fc-read-only .fc-wave-head { padding: 10px; grid-gap: 6px; }

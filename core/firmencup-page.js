@@ -1793,16 +1793,13 @@
   }
   function currentWaveSummary() {
     const wave = nextWave();
-    if (wave == null) return '';
+    if (wave == null) return '<p class="fc-note">' + tr('Alle Spielrunden erfasst.', 'All time slots recorded.') + '</p>';
     const running = event.liveWave && event.liveWave.wave === wave;
     const matches = event.matches.filter(m => m.wave === wave).sort((a, b) => a.field - b.field);
     return '<section id="fc-current-wave" aria-labelledby="fc-current-wave-title"><h3 id="fc-current-wave-title">' +
       (running ? tr('Aktuelle Spielrunde ', 'Current time slot ') : tr('Nächste Spielrunde ', 'Next time slot ')) + (wave + 1) + '</h3>' +
-      '<details class="fc-current-mode"><summary>' + tr('Spielmodus: ', 'Match mode: ') + roundModeSummary() +
-      '</summary><p>' + scoringExplanation() + ' ' + timingExplanation() + '</p></details>' +
-      matches.map(m => '<p data-current-match="' + esc(m.id) + '">' +
-        '<a href="#fc-match-' + esc(m.id) + '" data-focus-target="fc-match-' + esc(m.id) + '">' +
-        tr('Feld ', 'Court ') + m.field + ' · ' + matchLabel(m) + '</a> ' + matchContext(m, true) + '<br>' + refereeLabel(m) + '</p>').join('') +
+      '<div class="fc-current-matches">' + matches.map(m => '<article class="fc-public-match" data-current-match="' + esc(m.id) + '">' +
+        publicMatchContent(m, true) + '</article>').join('') + '</div>' +
       '</section>';
   }
   function cockpit() {
@@ -1878,10 +1875,27 @@
   }
   function matchLabel(m, poolContext, separator) {
     const a = F.resolve(event, m.a), b = F.resolve(event, m.b);
-    function refName(ref) { return typeof ref === 'string' ? teamIdentity(ref) : (ref.outcome === 'winner' ? tr('Siegreiches Team aus ', 'Winner ') : tr('Unterlegenes Team aus ', 'Loser ')) + ref.match; }
     const showOrigin = id => id && (poolContext == null || teamPool(id) !== poolContext);
-    return esc(a ? teamIdentity(a) : refName(m.a)) + (showOrigin(a) ? ' ' + teamBadge(a, true, false) : '') +
-      (separator || ' — ') + esc(b ? teamIdentity(b) : refName(m.b)) + (showOrigin(b) ? ' ' + teamBadge(b, true, false) : '');
+    return esc(opponentLabel(m.a)) + (showOrigin(a) ? ' ' + teamBadge(a, true, false) : '') +
+      (separator || ' — ') + esc(opponentLabel(m.b)) + (showOrigin(b) ? ' ' + teamBadge(b, true, false) : '');
+  }
+  function opponentLabel(ref) {
+    const id = F.resolve(event, ref);
+    return id ? teamIdentity(id) : typeof ref === 'string' ? teamIdentity(ref) :
+      (ref.outcome === 'winner' ? tr('Siegreiches Team aus ', 'Winner ') : tr('Unterlegenes Team aus ', 'Loser ')) + ref.match;
+  }
+  function publicMatchContent(m, linked) {
+    const opponents = '<span class="fc-public-team">' + esc(opponentLabel(m.a)) + '</span>' +
+      '<span class="fc-public-team">' + esc(opponentLabel(m.b)) + '</span>';
+    return '<div class="fc-public-card noprint"><p class="fc-fx-head"><strong>' + tr('Feld ', 'Court ') + m.field +
+      '</strong><time class="fc-fx-meta">' + F.clock(m.startMin) + '</time></p>' +
+      (linked ? '<p class="fc-public-context">' + (m.phase === 'group' ? esc(poolLabel(m.pool, false)) : tr('Baumphase', 'Bracket stage')) +
+        (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</p>' :
+        m.placement ? '<p class="fc-public-context">' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) + '</p>' : '') +
+      '<p class="fc-fx-teams">' + (linked ? '<a class="fc-public-match-link" href="#fc-match-' + esc(m.id) +
+        '" data-focus-target="fc-match-' + esc(m.id) + '">' + opponents + '</a>' : opponents) + '</p>' +
+      '<p class="fc-fx-result' + (!decided(m) ? ' fc-public-pending' : '') + '">' + resultText(m) + '</p>' +
+      '<p class="fc-referee">' + refereeLabel(m, true) + '</p></div>';
   }
   function scoreNext(afterScore, compact) {
     const next = event.matches.filter(m => !decided(m)).sort((a, b) => a.wave - b.wave || a.field - b.field)[0];
@@ -1915,13 +1929,14 @@
     const absentHere = editable ? [a, b].find(id => isAbsent(id)) || null : null;
     const scoreLabel = (team, side) => esc(teamIdentity(team) + ' ' + poolLabel(teamPool(team), true)) + ' · ' + tr('Ballpunkte ', 'Ball points ') + side;
     return '<article class="fc-fixture' + (r || outcome ? ' fc-fixture-done' : '') + (editable ? ' fc-fixture-edit' : '') + '" id="fc-match-' + esc(m.id) +
-      '" tabindex="-1" data-match="' + m.id + '"><p class="fc-fx-head">' + (m.phase === 'group' ? '' : matchContext(m, false)) +
+      '" tabindex="-1" data-match="' + m.id + '">' + (readOnly ? publicMatchContent(m, false) : '') +
+      '<p class="fc-fx-head' + (readOnly ? ' fc-print-only' : '') + '">' + (m.phase === 'group' ? '' : matchContext(m, false)) +
       '<strong>' + tr('Feld ', 'Court ') + m.field + '</strong><span class="fc-fx-meta"> · ' +
       F.clock(m.startMin) + '<span class="fc-fx-identifiers"> · <span class="fc-fx-wave">' + tr('Spielrunde ', 'Time slot ') + (m.wave + 1) + ' · </span>' + esc(m.id) +
       '</span>' + (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</span></p>' +
-      '<p class="fc-referee">' + refereeLabel(m) + '</p>' +
-      '<p class="fc-fx-teams' + (editable ? ' fc-print-only' : '') + '">' + matchLabel(m, null) + '</p>' +
-      '<p class="fc-fx-result' + (!r && !outcome ? ' fc-print-pending-result' : editable && !(r && r.drawWinner) ? ' fc-print-only' : '') + '">' + resultText(m) + '</p>' +
+      '<p class="fc-referee' + (readOnly ? ' fc-print-only' : '') + '">' + refereeLabel(m) + '</p>' +
+      '<p class="fc-fx-teams' + (editable || readOnly ? ' fc-print-only' : '') + '">' + matchLabel(m, null) + '</p>' +
+      '<p class="fc-fx-result' + (readOnly ? ' fc-print-only' : '') + (!r && !outcome ? ' fc-print-pending-result' : editable && !(r && r.drawWinner) ? ' fc-print-only' : '') + '">' + resultText(m) + '</p>' +
       (!r && !outcome && a && b && !absentHere ? '<div class="fc-print-score" aria-label="' + tr('Leere Ballpunktfelder', 'Blank ball-point boxes') + '">' +
         '<div><span class="fc-print-score-name">' + scoreTeam(a) + '</span><span class="fc-print-score-label">' + tr('Ballpunkte', 'Ball points') +
         '</span><span class="fc-print-score-box" aria-hidden="true"></span></div><div><span class="fc-print-score-name">' + scoreTeam(b) +
@@ -1935,7 +1950,7 @@
           options(event.teams.filter(t => t.id === a || t.id === b), r && r.drawWinner) + '</select></label>' : '') +
         '<p class="fc-score-error fc-error" id="fc-score-error-' + m.id + '" role="alert" hidden></p>' +
         '<button type="submit" class="fc-score-save">' + (r ? tr('Korrektur speichern', 'Save correction') : tr('Ergebnis speichern', 'Save score')) + '</button></form>' : '') +
-      (m.phase === 'group' ? '<p class="noprint"><a class="fc-pool-matches" href="#fc-pool-' + m.pool + '" data-focus-target="fc-pool-' + m.pool + '">' +
+      (!readOnly && m.phase === 'group' ? '<p class="noprint"><a class="fc-pool-matches" href="#fc-pool-' + m.pool + '" data-focus-target="fc-pool-' + m.pool + '">' +
         tr('Zur Gruppentabelle', 'View pool table') + '</a></p>' : '') +
       '<p class="fc-match-mode fc-print-only">' + matchModeSummary(m.phase) + '</p>' +
       (editable && !participant ? (!r && !outcome && absentHere ? '<p class="fc-warning">' + esc(teamName(absentHere)) +
@@ -2023,8 +2038,10 @@
       '<p id="fc-search-help" class="fc-note">' + tr('Suche: Gruppenverzeichnis und Spiele inkl. Schiridiensten. Gruppenfilter: nur Spielplan. Teamauswahl: nur Teamablauf.', 'Search: pool directory and fixtures including referee duties. Pool filter: fixtures only. Team selection: agenda only.') + '</p>' +
       '<div id="fc-next" role="status"></div></section>';
   }
-  function refereeLabel(m) {
+  function refereeLabel(m, plain) {
     const mode = F.refereeMode(event);
+    if (plain) return mode === 'teams' ? tr('Schiri-Team: ', 'Referee team: ') + esc(teamIdentity(m.refereeTeam)) :
+      mode === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externer Schiri', 'External referee');
     return '<span class="fc-referee-duty fc-referee-duty-' + mode + '">' +
       '<span>' + (mode === 'teams' ? tr('Schiri-Team: ', 'Referee team: ') + '<strong>' + esc(teamIdentity(m.refereeTeam)) + '</strong>' :
         mode === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externer Schiri', 'External referee')) +
@@ -2033,7 +2050,7 @@
   function live() {
     if (!event.matches.length) return '';
     if (readOnly) return '<section id="fc-live" class="noprint"><h2>' + tr('Live', 'Live') +
-      '</h2>' + currentWaveSummary() + '<p id="fc-countdown" role="timer"></p></section>';
+      '</h2><p id="fc-countdown" role="timer"></p>' + currentWaveSummary() + '</section>';
     const waves = Array.from(new Set(event.matches.map(m => m.wave)));
     const selectedWave = nextWave();
     const completedWaves = event.matches.filter(m => event.results[m.id] || event.outcomes[m.id]).map(m => m.wave);
