@@ -1917,8 +1917,8 @@
     return '<article class="fc-fixture' + (r || outcome ? ' fc-fixture-done' : '') + (editable ? ' fc-fixture-edit' : '') + '" id="fc-match-' + esc(m.id) +
       '" tabindex="-1" data-match="' + m.id + '"><p class="fc-fx-head">' + (m.phase === 'group' ? '' : matchContext(m, false)) +
       '<strong>' + tr('Feld ', 'Court ') + m.field + '</strong><span class="fc-fx-meta"> · ' +
-      F.clock(m.startMin) + ' · <span class="fc-fx-wave">' + tr('Spielrunde ', 'Time slot ') + (m.wave + 1) + ' · </span>' + esc(m.id) +
-      (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</span></p>' +
+      F.clock(m.startMin) + '<span class="fc-fx-identifiers"> · <span class="fc-fx-wave">' + tr('Spielrunde ', 'Time slot ') + (m.wave + 1) + ' · </span>' + esc(m.id) +
+      '</span>' + (m.placement ? ' · ' + tr('Plätze ', 'Places ') + m.placement + '/' + (m.placement + 1) : '') + '</span></p>' +
       '<p class="fc-referee">' + refereeLabel(m) + '</p>' +
       '<p class="fc-fx-teams' + (editable ? ' fc-print-only' : '') + '">' + matchLabel(m, null) + '</p>' +
       '<p class="fc-fx-result' + (!r && !outcome ? ' fc-print-pending-result' : editable && !(r && r.drawWinner) ? ' fc-print-only' : '') + '">' + resultText(m) + '</p>' +
@@ -1988,7 +1988,7 @@
     return '<details class="fc-wave-group ' + stateClass + '" id="fc-wave-group-' + wave + '" data-wave="' + wave + '" data-default-open="' + (defaultOpen ? '1' : '0') + '"' + (open ? ' open' : '') + '>' +
       '<summary class="fc-wave-head"><span class="fc-wave-title">' + tr('Spielrunde ', 'Time slot ') + (wave + 1) + ' · ' + F.clock(matches[0].startMin) + '</span> ' +
       '<span class="fc-wave-state">' + state + '</span></summary>' +
-      '<p class="fc-wave-context">' +
+      '<p class="fc-wave-context' + (readOnly ? ' fc-print-only' : '') + '">' +
       (start ? '<span class="fc-wave-actions noprint"><button type="button" id="fc-wave-start-' + wave + '" data-action="start-wave" data-wave="' + wave + '"' +
         (readiness.ready ? '' : ' disabled') + '>' + tr('Spielrunde ' + (wave + 1) + ' zentral starten', 'Start time slot ' + (wave + 1) + ' centrally') + '</button>' +
         (readiness.ready ? '' : '<span class="fc-note"> ' + tr('Noch nicht startbereit – siehe Turniertag oben.', 'Not ready yet – see event day above.') + '</span>') + '</span>' : '') +
@@ -2492,6 +2492,8 @@
     let hero = document.getElementById('fc-event-hero');
     if (!readOnly) {
       if (hero) { hero.parentElement.insertBefore(heading, hero); hero.remove(); }
+      const info = document.getElementById('fc-participant-info');
+      if (info) info.remove();
       return;
     }
     if (!hero) {
@@ -2506,6 +2508,25 @@
     document.getElementById('fc-event-meta').textContent = event.teams.length + ' Teams · ' +
       F.courtCapacity(event) + tr(' Felder', ' courts') + ' · ' + event.config.start +
       (livePublic || participant ? ' · Live' : '');
+    let info = document.getElementById('fc-participant-info');
+    if (!info) {
+      info = document.createElement('details');
+      info.id = 'fc-participant-info'; info.className = 'noprint';
+      info.innerHTML = '<summary>' + tr('Ablauf & Regeln', 'Format & rules') + '</summary><div></div>';
+      hero.insertAdjacentElement('afterend', info);
+    }
+    info.querySelector('div').innerHTML = '<p>' +
+      tr('Vorrunde: Jeder gegen jeden in der Gruppe. Danach Final- und Platzierungsspiele nach Spielplan.',
+        'Groups: round robin within each pool. Finals and placement matches follow the schedule.') + '</p><p>' +
+      playingTimeSummary() + ' · ' + event.config.change + tr(' Min. Wechselpause.', ' min changeover.') + ' ' +
+      (F.tiePolicy(event) === 'lead' ? tr('Bei Gleichstand am Zeitende: bis zur ersten Führung weiterspielen.',
+        'Tied at the time limit: play until the first lead.') :
+        tr('Vorrunden-Remis erlaubt; bei Gleichstand im Baum entscheidet ein Los.',
+          'Pool draws are allowed; bracket ties are decided by a draw.')) + '</p><p>' +
+      tr('Wertung: Siege, dann Balldifferenz, dann erzielte Ballpunkte. Restgleichstand: geteilter Rang; für die Finalsetzung entscheidet ein Los.',
+        'Ranking: wins, then ball-point difference, then scored ball points. Remaining ties share rank; final seeding uses a draw.') +
+      '</p><p>' + tr('Seitenwechsel alle 7 Ballpunkte insgesamt. Es gelten die Hausregeln der Turnierleitung.',
+        'Switch sides every 7 total ball points. Organizer house rules apply.') + '</p>';
   }
   function toolsReturnPhase() {
     if (toolsReturn && toolsReturn !== 'tools') return toolsReturn;

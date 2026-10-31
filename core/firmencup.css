@@ -306,6 +306,47 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
 .fc-wave-pool { min-width: 0; border: 1px solid #9eafc3; border-radius: 8px; background: #edf4fa; }
 .fc-wave-pool > h4 { margin: 0; padding: 4px 10px; font-size: .9rem; line-height: 1.2; color: #1a3a5c; }
 .fc-pool-fixtures { display: grid; grid-gap: 8px; padding: 0 6px 6px; }
+@media screen {
+  .fc-read-only #fc-schedule { padding: 0; background: transparent; border: 0; }
+  .fc-read-only .fc-schedule-head { margin: 16px 0 8px; }
+  .fc-read-only .fc-wave-group { padding: 0; margin: 12px 0; border: 1px solid #d8e1ec; border-radius: 10px; background: #fff; overflow: hidden; }
+  .fc-read-only .fc-wave-head { display: grid; grid-template-columns: minmax(0, 1fr) auto 12px; grid-gap: 8px; align-items: center; min-height: 48px; padding: 12px 14px; list-style: none; background: #edf4fa; }
+  .fc-read-only .fc-wave-head::-webkit-details-marker { display: none; }
+  .fc-read-only .fc-wave-head::after { content: ""; width: 7px; height: 7px; border-right: 2px solid #46576b; border-bottom: 2px solid #46576b; transform: rotate(45deg); justify-self: center; }
+  .fc-read-only .fc-wave-group[open] > .fc-wave-head::after { transform: rotate(225deg); }
+  .fc-read-only .fc-wave-title { font-size: 1rem; line-height: 1.4; }
+  .fc-read-only .fc-wave-state { margin: 0; padding: 2px 7px; font-size: .75rem; white-space: normal; max-width: 9em; text-align: center; }
+  .fc-read-only .fc-wave-matches { padding: 12px; grid-gap: 16px; }
+  .fc-read-only .fc-wave-pool { border: 0; border-radius: 0; background: transparent; }
+  .fc-read-only .fc-wave-pool > h4 { padding: 0 0 8px; font-size: .8rem; color: #46576b; }
+  .fc-read-only .fc-pool-fixtures { padding: 0; grid-gap: 8px; }
+  .fc-read-only .fc-wave-live { border-color: #b07818; }
+  .fc-read-only .fc-fixture { display: flex; flex-direction: column; padding: 12px; border-color: #d8e1ec; border-radius: 8px; background: #fff; }
+  .fc-read-only .fc-fixture .fc-fx-head { order: 0; margin: 0 0 8px; }
+  .fc-read-only .fc-fixture .fc-fx-teams { order: 1; margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.5; }
+  .fc-read-only .fc-fixture .fc-fx-result { order: 2; margin: 6px 0; color: #1a3a5c; }
+  .fc-read-only .fc-fixture .fc-referee { order: 3; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #e4eaf1; }
+  .fc-read-only .fc-fixture .fc-referee-duty { border: 0; border-left: 3px solid #377662; border-radius: 0; padding: 2px 8px; background: transparent; color: #29415d; }
+  .fc-read-only .fc-fixture .fc-fx-identifiers { display: none; }
+  .fc-read-only .fc-fixture > p.noprint { order: 4; margin: 4px 0 0; font-size: .8rem; }
+  .fc-read-only .fc-wave-context { display: none; }
+  .fc-read-only .fc-wave-matches { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  .fc-read-only .fc-phases button { overflow-wrap: break-word; word-break: break-word; }
+  .fc-read-only #fc-results-filter-card input, .fc-read-only #fc-results-filter-card select { min-width: 0; }
+  .fc-read-only .fc-wave-title, .fc-read-only .fc-fx-teams, .fc-read-only .fc-fx-result { min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+  .fc-read-only .fc-fixture .fc-referee-duty > span { word-break: break-word; }
+  .fc-read-only #fc-participant-info { padding: 0 14px; background: #f8fafd; }
+  .fc-read-only #fc-participant-info > summary { color: #1a3a5c; font-size: .9rem; }
+  .fc-read-only #fc-participant-info p { margin: 0 0 10px; font-size: .9rem; overflow-wrap: break-word; }
+  @media (min-width: 760px) {
+    .fc-read-only .fc-wave-matches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .fc-read-only .fc-wave-head { padding: 10px; grid-gap: 6px; }
+    .fc-read-only .fc-wave-matches { padding: 8px; }
+    .fc-read-only .fc-wave-title { font-size: .9rem; }
+  }
+}
 .fc-group-breakdown > h3 { margin: 0 0 10px; color: #1a3a5c; }
 .fc-pool-grid.fc-team-directory { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); grid-gap: 8px; }
 .fc-team-directory .fc-pool { padding: 6px 8px 8px; border: 1px solid #9eafc3; border-radius: 8px; background: #edf4fa; }
