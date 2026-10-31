@@ -27,15 +27,16 @@
   }
   function poolDirectory(context) {
     const lock = F.groupEditLock(event), positionLock = F.groupPositionLock(event);
+    const editing = !readOnly && context !== 'overview';
     return '<div class="fc-group-directory"><div class="fc-pool-grid fc-team-directory">' + event.pools.map((pool, index) =>
       '<div class="fc-pool">' + poolHeading('G' + (index + 1), 'fc-directory-' + context + '-G' + (index + 1), event.status === 'finals') + '<ul>' + pool.map(id =>
         '<li><a href="#fc-team-overview-title" data-overview-team="' + esc(id) + '"' + (id === overviewTeam ? ' aria-current="true"' : '') + '>' +
         esc(teamIdentity(id)) + '</a>' + (!readOnly ? '<span class="fc-team-status noprint">' +
           (event.withdrawals && event.withdrawals[id] ? tr('Zurückgezogen', 'Withdrawn') :
             isAbsent(id) ? tr('Abwesend', 'Absent') : '') + '</span>' : '') +
-        (!readOnly && !positionLock ? '<div class="fc-group-assignment noprint">' + (!lock ? groupSelection(id, index, context) : '') +
+        (editing && !positionLock ? '<div class="fc-group-assignment noprint">' + (!lock ? groupSelection(id, index, context) : '') +
           groupPosition(id, index, context) + '</div>' : '') + '</li>').join('') + '</ul></div>').join('') + '</div>' +
-      (!readOnly && positionLock ? '<p class="fc-note noprint">' + esc(en ? positionLock.split(' / ')[0] : positionLock.split(' / ')[1]) + '</p>' : '') + '</div>';
+      (editing && positionLock ? '<p class="fc-note noprint">' + esc(en ? positionLock.split(' / ')[0] : positionLock.split(' / ')[1]) + '</p>' : '') + '</div>';
   }
   function groupSelection(id, source, context) {
     return '<select class="fc-group-select noprint" data-group-select="' + esc(id) +
@@ -327,6 +328,12 @@
   };
   function button(action, label, describedBy) { return '<button type="' + (action === 'save-setup' ? 'submit' : 'button') + '" data-action="' + action + '"' +
     (describedBy ? ' aria-describedby="' + describedBy + '"' : '') + '>' + label + '</button>'; }
+  function shareUrlField(id, label, url) {
+    return '<div class="fc-share-url-row"><label for="' + id + '">' + label +
+      '<input id="' + id + '" class="fc-share-url" type="text" aria-label="' + label + '" value="' + esc(url) + '" readonly></label>' +
+      '<button type="button" data-action="copy-share-link" data-copy-target="' + id + '">' +
+      tr('Link kopieren', 'Copy link') + '</button></div>';
+  }
   function label(name, title, value, type, min, max) {
     return '<label>' + title + '<input name="' + name + '" type="' + (type || 'text') + '" value="' + esc(value) + '" required' +
       (min == null ? '' : ' min="' + min + '" max="' + max + '"') + '></label>';
@@ -829,7 +836,7 @@
     return { title: String(data.get('title')).trim(), config: c };
   }
   async function save(next, text) {
-    if (readOnly && !participant) throw new Error('Read-only / Nur Lesen');
+    if (readOnly) throw new Error('Read-only / Nur Lesen');
     const submitted = editorFields();
     saving = true;
     try { event = await Store.save(next); }
@@ -1309,6 +1316,20 @@
       '</summary><p class="fc-note">' + text + '</p></details>';
   }
   function resultsFilterPanel() {
+    if (participant) {
+      return '<section id="fc-results-filter-card" class="fc-toolbar fc-results-filter-card noprint" aria-label="' +
+        tr('Teamfilter für Spielplan und Ergebnisse', 'Team filter for fixtures and results') + '">' +
+        '<label class="fc-group-filter"><span>' + tr('Mein Team auswählen', 'Choose my team') +
+        '</span><select id="fc-results-team-filter" aria-controls="fc-team-agenda fc-pools fc-standings fc-schedule" aria-describedby="fc-results-filter-help">' +
+        '<option value="">' + tr('Alle Teams', 'All teams') + '</option>' +
+        event.teams.map(team => '<option value="' + esc(team.id) + '"' +
+          (overviewTeam === team.id ? ' selected' : '') + '>' + esc(teamIdentity(team.id)) + '</option>').join('') +
+        '</select></label><p id="fc-results-filter-help" class="fc-note">' +
+        tr('Wähle dein Team für das nächste Spiel, den nächsten Schiri-Einsatz und die gefilterten Ergebnisse. Gruppentabellen bleiben vollständig sichtbar.',
+          'Choose your team to see its next match, next referee duty and filtered results. Pool standings remain complete.') +
+        '</p><p id="fc-results-filter-status" role="status" aria-live="polite" aria-atomic="true">' +
+        esc(resultsFilterMessage()) + '</p></section>';
+    }
     return '<section id="fc-results-filter-card" class="fc-toolbar fc-results-filter-card noprint" aria-label="' +
       tr('Ergebnisse durchsuchen und filtern', 'Search and filter results') + '">' +
       '<label class="fc-search-label"><span>' + tr('Team / Firma suchen', 'Find team / company') +
@@ -1494,10 +1515,12 @@
           (readOnly ? tr('Spiele ansehen', 'View matches') : tr('Spiele & Punkteeingabe', 'Matches & score entry')) + '</a>' + poolTable(F.table(event, p, pool), pool) + '</div>';
       }).join('') + '</div>' + paperTallySheet() + paperSeedingSheet() + '</section>';
   }
-  let overviewTeam = '';
+  let overviewTeam = params.get('team') || '';
   let overviewHidden = false;
   function teamOverviewBody(id) {
-    if (!id) return '<p class="fc-note">' + tr('Team im Gruppenverzeichnis wählen: Spiele, Schiridienste und Ergebnisse. Die Auswahl ändert keine Spielplanfilter.', 'Choose a team in the pool directory for matches, referee duties and results. Selection does not change fixture filters.') + '</p>';
+    if (!id) return '<p class="fc-note">' + (participant ?
+      tr('Wähle oben dein Team, um das nächste Spiel, den nächsten Schiri-Einsatz und die Ergebnisse zu sehen.', 'Choose your team above to see its next match, next referee duty and results.') :
+      tr('Team im Gruppenverzeichnis wählen: Spiele, Schiridienste und Ergebnisse. Die Auswahl ändert keine Spielplanfilter.', 'Choose a team in the pool directory for matches, referee duties and results. Selection does not change fixture filters.')) + '</p>';
     const view = F.teamOverview(event, id);
     const order = (x, y) => x.wave - y.wave || x.field - y.field;
     function item(m, duty) {
@@ -1526,7 +1549,26 @@
     }
     const teamDuties = F.refereeMode(event) === 'teams';
     const upcoming = view.upcoming.length + view.duties.filter(d => !d.completed).length;
-    const completed = view.completed.length + view.duties.filter(d => d.completed).length;
+    const completed = participant ? view.completed.length : view.completed.length + view.duties.filter(d => d.completed).length;
+    if (participant) {
+      const nextGame = view.upcoming[0] || null;
+      const nextDuty = view.duties.find(duty => !duty.completed) || null;
+      const nextSection = (title, match, duty, empty) => '<section class="fc-participant-next fc-agenda-upcoming"><h5>' + title + '</h5>' +
+        (match ? list(duty ? [] : [match], duty ? [match] : [], '', '') : '<p class="fc-note">' + empty + '</p>') + '</section>';
+      return '<h4 id="fc-team-overview-title" class="fc-team-title" tabindex="-1"><span>' + esc(teamIdentity(id)) + '</span>' +
+        (view.pool ? ' <span class="fc-team-pool-link">' + teamBadge(id, event.status === 'finals', false) + '</span>' : '') + '</h4>' +
+        '<div class="fc-team-agenda fc-participant-agenda">' +
+        nextSection(tr('Nächstes Spiel', 'Next match'), nextGame, false,
+          tr('Kein festes weiteres Spiel. Offene Baumspiele können noch dazukommen.', 'No confirmed next match. Pending bracket results may add one.')) +
+        (teamDuties ? nextSection(tr('Nächster Schiri-Einsatz', 'Next referee duty'), nextDuty, true,
+          tr('Kein weiterer Schiri-Einsatz geplant.', 'No further referee duty is scheduled.')) : '') +
+        (completed ? '<div class="fc-agenda-completed"><h5>' + tr('Ergebnisse', 'Results') + ' <span>(' + view.completed.length + ')</span></h5>' +
+          list(view.completed, [], '', '') + '</div>' : '<p class="fc-note fc-agenda-empty">' +
+          tr('Für dieses Team gibt es noch keine Ergebnisse.', 'No results have been recorded for this team yet.') + '</p>') +
+        (upcoming > (nextGame ? 1 : 0) + (nextDuty ? 1 : 0) ? '<p class="fc-note">' +
+          tr('Weitere Termine stehen im vollständigen Spielplan.', 'More fixtures are listed in the full schedule.') + '</p>' : '') +
+        '</div>';
+    }
     return '<h4 id="fc-team-overview-title" class="fc-team-title" tabindex="-1"><span>' + esc(teamIdentity(id)) + '</span>' +
       ' <a class="fc-team-pool-link" href="#fc-pool-' + view.pool + '" data-focus-target="fc-pool-' + view.pool + '">' +
       teamBadge(id, event.status === 'finals', false) + '</a></h4>' +
@@ -1543,13 +1585,13 @@
   }
   function teamOverview() {
     if (!event.matches.length) return '';
-    return '<button type="button" id="fc-team-overview-open" class="noprint" aria-controls="fc-team-overview" aria-expanded="' + !overviewHidden + '"' +
-      (overviewHidden ? '' : ' hidden') + '>' + tr('Teams & Gruppen einblenden', 'Show teams & pools') + '</button>' +
-      '<section id="fc-team-overview" aria-labelledby="fc-team-overview-heading"' + (overviewHidden ? ' hidden' : '') +
+    return (!participant ? '<button type="button" id="fc-team-overview-open" class="noprint" aria-controls="fc-team-overview" aria-expanded="' + !overviewHidden + '"' +
+      (overviewHidden ? '' : ' hidden') + '>' + tr('Teams & Gruppen einblenden', 'Show teams & pools') + '</button>' : '') +
+      '<section id="fc-team-overview" aria-labelledby="fc-team-overview-heading"' + (!participant && overviewHidden ? ' hidden' : '') +
       '><div class="fc-team-overview-head"><h2 id="fc-team-overview-heading" tabindex="-1">' +
-      tr('Teams & Gruppen', 'Teams & pools') + '</h2></div>' +
-      poolDirectory('overview') + '<p id="fc-directory-empty" class="fc-note noprint" hidden>' +
-      tr('Kein Team zur Suche gefunden. Suche unten ändern oder Filter zurücksetzen.', 'No team matches the search. Change the search below or reset filters.') + '</p>' +
+      tr(participant ? 'Dein Teamablauf' : 'Teams & Gruppen', participant ? 'Your team schedule' : 'Teams & pools') + '</h2></div>' +
+      (!participant ? poolDirectory('overview') + '<p id="fc-directory-empty" class="fc-note noprint" hidden>' +
+      tr('Kein Team zur Suche gefunden. Suche unten ändern oder Filter zurücksetzen.', 'No team matches the search. Change the search below or reset filters.') + '</p>' : '') +
       '<div id="fc-team-agenda" data-team="' + esc(overviewTeam) + '" aria-live="polite">' + teamOverviewBody(overviewTeam) + '</div></section>';
   }
   function setTeamOverviewVisible(visible, focus) {
@@ -1563,15 +1605,25 @@
     if (focus) (visible ? overview.querySelector('.app-close') : opener).focus();
   }
   function chooseTeam(id) {
-    setTeamOverviewVisible(true, false);
+    if (!participant) setTeamOverviewVisible(true, false);
     overviewTeam = id;
+    if (participant) {
+      const url = new URL(location.href);
+      if (id) url.searchParams.set('team', id);
+      else url.searchParams.delete('team');
+      history.replaceState(null, '', url.href);
+    }
+    const teamFilter = document.getElementById('fc-results-team-filter');
+    if (teamFilter) teamFilter.value = id;
     const agenda = document.getElementById('fc-team-agenda');
+    if (!agenda) return;
     agenda.dataset.team = id;
     agenda.innerHTML = teamOverviewBody(id);
     app.querySelectorAll('.fc-team-directory [data-overview-team]').forEach(link => {
       if (link.dataset.overviewTeam === id) link.setAttribute('aria-current', 'true');
       else link.removeAttribute('aria-current');
     });
+    if (participant) resultsFilter();
   }
   function navigationTarget(id) {
     return document.getElementById(id);
@@ -1833,7 +1885,7 @@
     const r = event.results[m.id], a = F.resolve(event, m.a), b = F.resolve(event, m.b);
     const scoreTeam = id => esc(teamIdentity(id)) + ' ' + teamBadge(id, true, false);
     const outcome = event.outcomes && event.outcomes[m.id];
-    const editable = (!readOnly || participant) && !outcome && a && b && !(event.status === 'finals' && m.phase === 'group') && !F.hasPlayedDescendant(event, m.id);
+    const editable = !readOnly && !outcome && a && b && !(event.status === 'finals' && m.phase === 'group') && !F.hasPlayedDescendant(event, m.id);
     const absentHere = editable ? [a, b].find(id => isAbsent(id)) || null : null;
     const scoreLabel = (team, side) => esc(teamIdentity(team) + ' ' + poolLabel(teamPool(team), true)) + ' · ' + tr('Ballpunkte ', 'Ball points ') + side;
     return '<article class="fc-fixture' + (r || outcome ? ' fc-fixture-done' : '') + (editable ? ' fc-fixture-edit' : '') + '" id="fc-match-' + esc(m.id) +
@@ -1916,7 +1968,7 @@
         (readiness.ready ? '' : '<span class="fc-note"> ' + tr('Noch nicht startbereit – siehe Turniertag oben.', 'Not ready yet – see event day above.') + '</span>') + '</span>' : '') +
       '<span class="fc-wave-mode">' + roundModeSummary(matches[0].phase) + '</span></p>' +
       '<div class="fc-wave-matches">' + grouped + '</div>' +
-      '<p class="fc-wave-score-guide" id="fc-wave-score-guide-' + wave + '">' + scoreEntryExplanation(matches) + '</p></details>';
+      '<p class="fc-wave-score-guide' + (participant ? ' fc-print-only' : '') + '" id="fc-wave-score-guide-' + wave + '">' + scoreEntryExplanation(matches) + '</p></details>';
   }
   function fixtures() {
     if (!event.matches.length) return '';
@@ -2034,47 +2086,76 @@
     if (target) target.focus();
     notify(tr('Neue lokale Kopie erstellt; Original unverändert. Nicht live freigegeben.', 'New local copy created; original unchanged. Not shared live.'), false, true);
   }
+  function participantSharing(published) {
+    const enabled = published && binding.access && binding.access.participantEnabled;
+    const active = enabled && binding.participantShareToken;
+    return '<fieldset id="fc-participant-sharing" class="fc-share-group fc-share-participant"><legend>' +
+      tr('Für Teilnehmer:innen teilen', 'Share with participants') + '</legend>' +
+      '<p class="fc-note">' + tr('Nächstes Spiel, Schiri-Einsatz und Ergebnisse. Nur ansehen, keine Bearbeitung.',
+        'Next match, referee duty and results. View only, no editing.') + '</p>' +
+      (active ? shareUrlField('fc-participant-url', tr('Teilnehmer:innen-Link', 'Participant link'),
+        Server.participantUrl(binding.id, binding.participantShareToken, location.href, en ? 'en' : 'de')) :
+        '<p class="fc-note">' + tr('Link erstellen und an die Teams senden. Gültig für 30 Tage.',
+          'Create a link and send it to the teams. Valid for 30 days.') + '</p>') +
+      (!published ? '<p class="fc-note">' + tr('Der komplette Turnierstand wird auf dem Server gespeichert. Spieler:innen-Namen und Anwesenheit bleiben privat.',
+        'The full event is saved on the server. Player names and attendance remain private.') + '</p>' +
+        '<label class="fc-share-consent"><input id="fc-share-consent" type="checkbox"> ' +
+        tr('Ich bestätige die Live-Speicherung auf dem Server.', 'I confirm live saving on the server.') + '</label>' : '') +
+      (active ? '<details class="fc-share-manage"><summary>' + tr('Link verwalten', 'Manage link') + '</summary>' : '') +
+      (enabled ? '<p class="fc-note">' + tr('Erneuern macht den alten Link ungültig.', 'Renewing invalidates the old link.') + '</p>' : '') +
+      '<form id="fc-participant-share-form"><button type="submit"' + (enabled ? ' class="secondary"' : '') + '>' +
+      (enabled ? tr('Link erneuern', 'Renew link') : tr('Teilnehmer:innen-Link erstellen', 'Create participant link')) + '</button></form>' +
+      (active ? button('revoke-participant', tr('Link widerrufen', 'Revoke link')) + '</details>' : '') + '</fieldset>';
+  }
   function tools() {
     const published = !!(binding && binding.id);
-    const status = !binding ? tr('Noch kein Server-Link. Das Ereignis bleibt ausschließlich lokal.', 'No server link yet. This event remains local only.') :
+    const status = !binding ? tr('Nur auf diesem Gerät gespeichert.', 'Saved on this device only.') :
       binding.conflict ? tr('Konflikt: Serverrevision ' + (binding.remoteRevision || '?') + ' ist neuer. Der lokale Entwurf bleibt erhalten und wird nicht überschrieben.', 'Conflict: server revision ' + (binding.remoteRevision || '?') + ' is newer. The local draft is retained and will not be overwritten.') :
-        binding.pending ? tr('Übertragung ausstehend. Lokal gespeichert; wird bei Verbindung erneut übertragen.', 'Upload pending. Saved locally; upload retries when connected.') :
-          binding.pendingSharing ? tr('Freigabeänderung ausstehend. Derselbe Link wird erneut bestätigt. Falls ein neues Adminpasswort noch nicht übernommen wurde, bitte erneut eingeben.',
-            'Sharing change pending. The same link will be acknowledged again. If a new admin password was not committed yet, please enter it again.') :
-          tr('Serverrevision ' + binding.revision + ' · Bearbeitungsrecht nur in diesem Browser gespeichert.', 'Server revision ' + binding.revision + ' · editor capability stored only in this browser.');
+          binding.pending ? tr('Noch nicht mit dem Server synchronisiert. Wird bei Verbindung erneut versucht.', 'Not synced with the server yet. Will retry when connected.') :
+            binding.pendingSharing ? tr('Link-Änderung noch nicht bestätigt. Erneut versuchen.', 'Link change not confirmed yet. Try again.') :
+            tr('Live gespeichert. Änderungen werden synchronisiert; Bearbeitungsrecht bleibt auf diesem Gerät.', 'Live saved. Changes are synced; editing access stays on this device.');
     const publicLink = published ? Server.publicUrl(binding.id, location.href, en ? 'en' : 'de') : '';
     return '<section id="fc-tools" class="noprint">' +
-      button('edit-config', tr('Konfiguration bearbeiten / zurücksetzen', 'Edit / reset configuration')) +
-      '<h3>' + tr('Sicherung', 'Backup') + '</h3>' +
-      button('backup', tr('Eigene JSON-Sicherung herunterladen', 'Download own JSON backup')) +
-      (binding && binding.role === 'admin' ? button('admin-logout', tr('Adminzugriff sperren', 'Lock admin access')) : '') +
-      '<p class="fc-note">' + tr('Firmencup-Daten gehören nicht zur allgemeinen Bogen-Sicherung. Eigene Datei enthält die Namen der Spieler:innen; privat aufbewahren. Vorheriger gespeicherter Stand liegt zusätzlich auf diesem Gerät vor.', 'Firmencup records are not included in general sheet backups. Your own file includes player names; keep it private. The previous saved revision is also held on this device.') + '</p>' +
-      button('previous', tr('Vorherigen Stand als neue Veranstaltung kopieren', 'Copy previous snapshot as new event')) +
-      '<h3>' + tr('Mehrgeräte-Live-Link (Web)', 'Multi-device live link (web)') + '</h3><p id="fc-server-status" role="status">' + esc(status) + '</p>' +
-      '<label><input id="fc-share-consent" type="checkbox" style="width:auto;vertical-align:middle"> ' +
-      tr('Livefreigabe auf dem Server speichern. Zunächst privat; Zugriff nur über freigegebene Links. Private Spieler:innen-Namen und Anwesenheit bleiben privat. Jede Aktualisierung wird auf dem Server gespeichert.', 'Save live sharing on the server. Initially private; access only through shared links. Private player names and attendance remain private. Each update is stored on the server.') + '</label>' +
-      button('share', published ? tr('Live-Link aktualisieren', 'Update live link') : tr('Private Livefreigabe einrichten', 'Set up private live sharing')) +
-      (!published ? '<p class="fc-note">' + tr('Danach den Teilnehmer:innen-Link separat erzeugen und teilen.', 'Then create and share the participant link separately.') + '</p>' : '') +
-      (published ? '<div id="fc-share-output"><label>' + tr('Öffentlicher Nur-Lesen-Link (ohne Bearbeitungsrecht)', 'Public read-only link (no edit permission)') +
-        '<textarea id="fc-share-url" readonly>' + esc(publicLink) + '</textarea></label><div id="fc-qr"></div><p id="fc-qr-note" role="status">' +
-        tr('Live-Ansicht · aktualisiert sich bei Verbindung automatisch.', 'Live view · refreshes automatically when connected.') + '</p>' +
-        '<p>' + tr('Der Nur-Lesen-Link funktioniert nur bei ausdrücklich öffentlicher Freigabe.', 'The read-only link works only when public access is explicitly enabled.') + '</p>' +
-        '<form id="fc-participant-share-form"><h3>' + tr('Teilnehmer:innen: nur Ergebnisse und Punkte', 'Participants: results and scores only') +
-        '</h3><button type="submit">' + tr('Teilnehmer:innen-Link erzeugen/erneuern', 'Create/rotate participant link') + '</button></form>' +
-        (binding.participantShareToken ? '<textarea id="fc-participant-url" aria-label="' + tr('Teilnehmer:innen-Link', 'Participant link') + '" readonly>' +
-          esc(Server.participantUrl(binding.id, binding.participantShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
-        button('revoke-participant', tr('Teilnehmer:innen-Link widerrufen', 'Revoke participant link')) +
-        '<form id="fc-admin-share-form"><h3>' + tr('Admin: voller Zugriff mit Passwort', 'Admin: full access with password') +
-        '</h3><label>' + tr('Neues Adminpasswort (mindestens 10 Zeichen)', 'New admin password (at least 10 characters)') +
-        '<input name="password" type="password" minlength="10" required autocomplete="new-password"></label><button type="submit">' +
-        tr('Adminlink und Passwort setzen', 'Set admin link and password') + '</button></form>' +
-        (binding.adminShareToken ? '<textarea id="fc-admin-url" aria-label="' + tr('Adminlink', 'Admin link') + '" readonly>' +
-          esc(Server.adminUrl(binding.id, binding.adminShareToken, location.href, en ? 'en' : 'de')) + '</textarea>' : '') +
-        button('revoke-admin', tr('Adminzugriff widerrufen', 'Revoke admin access')) + '</div>' : '') +
-      (published ? button('toggle-public', binding.access && binding.access.publicRead ?
-        tr('Öffentlichen Nur-Lesen-Zugriff deaktivieren', 'Disable public read-only access') :
-        tr('Öffentlichen Nur-Lesen-Zugriff aktivieren', 'Enable public read-only access')) : '') +
-      (binding && binding.conflict ? '<p class="fc-warning">' + tr('Serverladen sichert den lokalen Entwurf zuerst als unabhängige Veranstaltung.', 'Loading the server first saves the local draft as an independent event.') + '</p>' +
+        participantSharing(published) +
+        '<h3>' + tr('Sicherung', 'Backup') + '</h3>' +
+        button('backup', tr('Eigene JSON-Sicherung herunterladen', 'Download own JSON backup')) +
+        (binding && binding.role === 'admin' ? button('admin-logout', tr('Adminzugriff sperren', 'Lock admin access')) : '') +
+        '<p class="fc-note">' + tr('Firmencup-Daten gehören nicht zur allgemeinen Bogen-Sicherung. Eigene Datei enthält die Namen der Spieler:innen; privat aufbewahren. Vorheriger gespeicherter Stand liegt zusätzlich auf diesem Gerät vor.', 'Firmencup records are not included in general sheet backups. Your own file includes player names; keep it private. The previous saved revision is also held on this device.') + '</p>' +
+        button('previous', tr('Vorherigen Stand als neue Veranstaltung kopieren', 'Copy previous snapshot as new event')) +
+        '<h3>' + tr('Live speichern & teilen', 'Live save & share') + '</h3><p id="fc-server-status" class="fc-note" role="status">' + esc(status) + '</p>' +
+        '<fieldset class="fc-share-group"><legend>' + tr('Live-Speicherung', 'Live saving') + '</legend>' +
+        '<p class="fc-note">' + tr('Der komplette Turnierstand wird gespeichert. Namen und Anwesenheit sind nicht öffentlich sichtbar.', 'The full event is saved. Names and attendance are not visible publicly.') + '</p>' +
+        (published ? '<label class="fc-share-consent"><input id="fc-share-consent" type="checkbox"> ' +
+        tr('Ich bestätige die Live-Speicherung auf dem Server.', 'I confirm live saving on the server.') + '</label>' : '') +
+        '<button type="button" data-action="share">' + (published ?
+          tr('Live-Speicherung aktualisieren', 'Update live saving') :
+          tr('Privat auf dem Server speichern', 'Save privately on server')) + '</button></fieldset>' +
+        (published ? '<h3>' + tr('Zugriffslinks', 'Access links') + '</h3><div id="fc-share-output">' +
+          '<fieldset class="fc-share-group"><legend>' + tr('Admins · Turnier bearbeiten', 'Admins · edit event') + '</legend>' +
+          '<p class="fc-note">' + tr('Voller Zugriff: Link und Passwort separat teilen. Gilt 7 Tage; neue Zugangsdaten melden alle Admins ab.', 'Full access: share the link and password separately. Lasts 7 days; new credentials sign out all admins.') + '</p>' +
+          (binding.access && binding.access.adminEnabled && binding.adminShareToken ?
+            shareUrlField('fc-admin-url', tr('Adminlink', 'Admin link'),
+              Server.adminUrl(binding.id, binding.adminShareToken, location.href, en ? 'en' : 'de')) :
+            '<p class="fc-note">' + tr('Kein aktiver Adminlink.', 'No active admin link.') + '</p>') +
+          '<form id="fc-admin-share-form"><label>' + tr('Neues Passwort (mindestens 10 Zeichen)', 'New password (at least 10 characters)') +
+          '<input name="password" type="password" minlength="10" required autocomplete="new-password"></label><button type="submit">' +
+          (binding.access && binding.access.adminEnabled ? tr('Adminzugang erneuern', 'Renew admin access') : tr('Adminzugang einrichten', 'Set up admin access')) +
+          '</button></form>' +
+          (binding.adminShareToken ? button('revoke-admin', tr('Adminzugang widerrufen', 'Revoke admin access')) : '') +
+          '</fieldset>' +
+          '<fieldset class="fc-share-group"><legend>' + tr('Öffentlich · nur ansehen', 'Public · view only') + '</legend>' +
+          '<p class="fc-note">' + (binding.access && binding.access.publicRead ?
+            tr('Jede Person mit dem Link kann den Turnierstand ansehen.', 'Anyone with the link can view the event.') :
+            tr('Aus. Der Turnierstand ist nicht öffentlich.', 'Off. The event is not public.')) + '</p>' +
+          (binding.access && binding.access.publicRead ?
+            shareUrlField('fc-share-url', tr('Öffentlicher Link', 'Public link'), publicLink) +
+            '<div id="fc-qr"></div><p id="fc-qr-note" class="fc-note" role="status">' +
+            tr('QR-Code zum öffentlichen Link.', 'QR code for the public link.') + '</p>' : '') +
+          button('toggle-public', binding.access && binding.access.publicRead ?
+            tr('Öffentliche Freigabe beenden', 'Stop public access') :
+            tr('Für alle freigeben', 'Make public')) +
+          '</fieldset></div>' : '') +
+        (binding && binding.conflict ? '<p class="fc-warning">' + tr('Serverladen sichert den lokalen Entwurf zuerst als unabhängige Veranstaltung.', 'Loading the server first saves the local draft as an independent event.') + '</p>' +
         button('server-reload', tr('Serverstand laden (lokalen Entwurf kopieren)', 'Load server (fork local draft)')) : '') +
       '</section>';
   }
@@ -2131,6 +2212,25 @@
     const polledEvent = event;
     try {
       binding = await Server.load(event.id);
+      if (participant && binding && binding.id) {
+        if (binding.pending || binding.pendingSharing || Server.fingerprint(event) !== binding.syncedFingerprint) {
+          throw new Error(tr('Alte lokale Änderungen können mit dem Nur-Lesen-Link nicht übertragen werden. Der lokale Stand bleibt erhalten.',
+            'Earlier local changes cannot be sent with a read-only link. The local state is retained.'));
+        }
+        const remote = await Server.get(binding.id, binding.token);
+        if (event !== polledEvent || busy) return;
+        if (remote.role !== 'participant' || remote.canScore || remote.canEdit) {
+          throw new Error(tr('Ungültige Teilnehmerberechtigung.', 'Invalid participant permission.'));
+        }
+        if (remote.revision <= binding.revision) return;
+        const replacement = F.validate(remote.event, { publicSnapshot: true });
+        replacement.revision = 0;
+        event = await Store.replace(replacement, { publicSnapshot: true });
+        binding = await Server.adopt(event.id, binding.id, binding.token, remote.revision, event, 'participant');
+        render();
+        notify(tr('Live-Stand aktualisiert · Revision ', 'Live state updated · revision ') + remote.revision);
+        return;
+      }
       if (!binding || !binding.id || binding.conflict) return;
       const retryingSharing = !!binding.pendingSharing;
       await resumeSharing();
@@ -2181,9 +2281,6 @@
       if (error.status === 403 && binding && binding.role === 'admin') {
         event = null;
         adminUnlock(binding.id, binding.adminShareToken, binding);
-      } else if (error.status === 403 && participant) {
-        participant = false;
-        render();
       }
       notify(error.message, true);
     }
@@ -2222,7 +2319,9 @@
   }
   async function openAccess(serverId, token, role, expiresAt, shareToken) {
     const remote = await Server.get(serverId, token);
-    if (role === 'participant' ? !remote.canScore || remote.canEdit : !remote.canEdit) {
+    if (role === 'participant' ?
+        remote.role !== 'participant' || remote.canScore || remote.canEdit :
+        !remote.canEdit) {
       throw new Error(tr('Berechtigung fehlt oder wurde widerrufen.', 'Permission missing or revoked.'));
     }
     const incoming = F.validate(remote.event, { publicSnapshot: role === 'participant' });
@@ -2236,11 +2335,14 @@
       }
     }
     incoming.revision = 0;
-    event = existing ? await Store.replace(incoming) : await Store.save(incoming);
+    const options = { publicSnapshot: role === 'participant' };
+    event = existing ? await Store.replace(incoming, options) : await Store.save(incoming, options);
     binding = await Server.adopt(event.id, serverId, token, remote.revision, event, role, expiresAt, shareToken);
     binding = await Server.rememberAccess(binding, remote.access);
     participant = role === 'participant'; readOnly = participant;
-    history.replaceState(null, '', '?local=' + encodeURIComponent(event.id) + '&lang=' + (en ? 'en' : 'de'));
+    const team = participant && event.teams.some(item => item.id === overviewTeam) ? overviewTeam : '';
+    history.replaceState(null, '', '?local=' + encodeURIComponent(event.id) + '&lang=' + (en ? 'en' : 'de') +
+      (team ? '&team=' + encodeURIComponent(team) : ''));
     render();
     notify(tr('Zugriff geladen.', 'Access loaded.'), false, true);
   }
@@ -2253,16 +2355,17 @@
     if (overviewTeam && !event.teams.some(team => team.id === overviewTeam)) overviewTeam = '';
     identity(event.title);
     if (!phase) phase = (event.matches.length || readOnly) ? 'play' : 'teams';
-    const accessState = participant ? tr('Teilnehmer:innen · Ergebnisse ansehen und Punkte eintragen', 'Participants · view results and enter scores') : readOnly ? tr('Teilnehmer:innen-Ansicht · Nur Lesen', 'Participant view · read-only') :
+    const accessState = participant ? tr('Teilnehmer:innen · nur lesen', 'Participants · read-only') : readOnly ? tr('Öffentliche Ansicht · nur lesen', 'Public view · read-only') :
       (binding && binding.id ? tr('Mehrgeräte-Turnierleitung · Serverrevision ' + binding.revision, 'Multi-device organizer · server revision ' + binding.revision) : '');
     app.innerHTML = (accessState ? '<p class="fc-access-state"><strong>' + accessState +
       (livePublic ? ' · ' + tr('Live · Serverrevision ' + liveRevision, 'Live · server revision ' + liveRevision) : '') + '</strong></p>' : '') +
       (readOnly ? '<p class="fc-warning">' + (participant ?
-        tr('Teilnehmer:innen-Zugriff: nur Ergebnisse und Punkteeingabe. Keine Konfiguration, private Spieler:innen-Namen oder Anwesenheit.', 'Participant access: results and score entry only. No configuration, private player names or attendance.') :
+        tr('Teilnehmer:innen-Link: Ergebnisse, Zwischenstände und Spielplan ansehen. Keine Eingabe oder Bearbeitung; Spielernamen und Anwesenheit bleiben privat.', 'Participant link: view results, current standings and fixtures. No entry or editing; player names and attendance remain private.') :
         tr('Öffentliche Live-Ansicht: aktualisiert sich bei Verbindung automatisch. Team-/Organisationsnamen und Ergebnisse sind sichtbar; Private Spieler:innen-Namen, Anwesenheit und Bearbeitungsrecht bleiben privat.', 'Public live view: refreshes automatically when connected. Team/organization names and results are visible; private player names, attendance and editor rights remain private.')) + '</p>' :
         editor()) +
-      rules() + (readOnly ? capacity() : '') + cockpit() + (readOnly ? live() : organization()) + teamOverview() + searchPanel() +
-      resultsFilterPanel() + printInstructions() + resultsStatus() + poolsHtml() + standingsHtml() + fixtures() +
+      rules() + (readOnly ? capacity() : '') + cockpit() + (readOnly ? live() : organization()) +
+      (participant ? resultsFilterPanel() + teamOverview() : teamOverview() + searchPanel() + resultsFilterPanel()) +
+      printInstructions() + resultsStatus() + poolsHtml() + standingsHtml() + fixtures() +
       (!readOnly ? groupBreakdown('teams') + groupBreakdown('configuration') : '') +
       (!readOnly && event.status === 'groups' ? '<section id="fc-finals" class="noprint" tabindex="-1">' +
         '<p>' + tr('Alle Gruppenergebnisse fertig? Finale ausdrücklich auslosen: Restgleichstände werden mit einem kryptografisch zufälligen, gespeicherten Losprotokoll aufgelöst. Danach sind Gruppenergebnisse eingefroren.', 'All group results complete? Explicitly draw finals: unresolved ties use a cryptographically randomized, saved draw record. Group scores are then frozen.') + '</p>' +
@@ -2334,10 +2437,12 @@
       ['teams', tr('Firmen & Teams', 'Companies & teams'), ['fc-editor', 'fc-registration', 'fc-group-breakdown-teams']],
       ['configuration', tr('Konfiguration', 'Configuration'), ['fc-setup', 'fc-locked-planning', 'fc-group-breakdown-configuration', 'fc-capacity', 'fc-config-actions', 'fc-rules']],
       ['play', tr('Turnierablauf', 'Tournament play'), readOnly ?
-        ['fc-search-panel', 'fc-live', 'fc-team-overview-open', 'fc-team-overview', 'fc-schedule', 'fc-draw-record', 'fc-capacity', 'fc-rules'] :
+        (participant ? ['fc-results-filter-card', 'fc-team-overview', 'fc-live', 'fc-schedule', 'fc-draw-record', 'fc-capacity', 'fc-rules'] :
+          ['fc-search-panel', 'fc-live', 'fc-team-overview-open', 'fc-team-overview', 'fc-schedule', 'fc-draw-record', 'fc-capacity', 'fc-rules']) :
         ['fc-search-panel', 'fc-cockpit', 'fc-team-overview-open', 'fc-team-overview'].concat(groupStageDecided() ? ['fc-finals'] : [])
           .concat(['fc-schedule', 'fc-finals', 'fc-org', 'fc-draw-record'])],
-      ['results', tr('Turnierergebnis', 'Tournament results'), resultsState().final ?
+      ['results', tr('Turnierergebnis', 'Tournament results'), participant ?
+        (resultsState().final ? ['fc-results-status', 'fc-standings', 'fc-pools'] : ['fc-results-status', 'fc-pools', 'fc-standings']) : resultsState().final ?
         ['fc-results-filter-card', 'fc-results-status', 'fc-standings', 'fc-pools'] :
         ['fc-results-filter-card', 'fc-results-status', 'fc-pools', 'fc-standings']],
       ['tools', tr('Teilen & Sichern', 'Sharing & backup'), ['fc-tools']]
@@ -2382,6 +2487,7 @@
         tr('Zurück zum Turnierablauf', 'Back to tournament play') + '</button></div>');
       app.appendChild(panel);
     });
+    if (participant) showPhase(phase, false);
   }
   function showPhase(id, focus) {
     if (id === 'tools' && phase !== 'tools') toolsReturn = phase;
@@ -2393,6 +2499,14 @@
     const opener = document.getElementById('fc-tools-open');
     if (opener) opener.setAttribute('aria-expanded', id === 'tools' ? 'true' : 'false');
     app.querySelectorAll('.fc-phase').forEach(panel => { panel.hidden = panel.id !== 'fc-phase-' + id; });
+    if (participant && (id === 'play' || id === 'results')) {
+      const panel = document.getElementById('fc-phase-' + id);
+      const heading = panel.querySelector('.fc-phase-heading');
+      const filter = document.getElementById('fc-results-filter-card');
+      const overview = document.getElementById('fc-team-overview');
+      if (filter) heading.insertAdjacentElement('afterend', filter);
+      if (filter && overview) filter.insertAdjacentElement('afterend', overview);
+    }
     app.querySelectorAll('.fc-phases [data-phase]').forEach(button => {
       if (button.dataset.phase === id) button.setAttribute('aria-current', 'step');
       else button.removeAttribute('aria-current');
@@ -2406,9 +2520,14 @@
     const fixture = target.closest('.fc-fixture');
     const group = target.closest('.fc-wave-group');
     if ((fixture && fixture.hidden) || (group && group.hidden)) {
-      document.getElementById('fc-search').value = '';
-      document.getElementById('fc-group-filter').value = '';
-      search();
+      if (participant) {
+        chooseTeam('');
+        resultsFilter();
+      } else {
+        document.getElementById('fc-search').value = '';
+        document.getElementById('fc-group-filter').value = '';
+        search();
+      }
     }
     const resultPool = target.closest('.fc-results-pool');
     if (resultPool) {
@@ -2621,10 +2740,12 @@
   function bind() {
     const overview = document.getElementById('fc-team-overview');
     if (overview) {
-      const close = TNative.mountClose(overview, tr('Teams & Gruppen ausblenden', 'Hide teams & pools'), () => setTeamOverviewVisible(false, true), null, true);
-      close.removeAttribute('data-i18n-attr');
-      close.setAttribute('aria-controls', 'fc-team-overview');
-      document.getElementById('fc-team-overview-open').onclick = () => setTeamOverviewVisible(true, true);
+      if (!participant) {
+        const close = TNative.mountClose(overview, tr('Teams & Gruppen ausblenden', 'Hide teams & pools'), () => setTeamOverviewVisible(false, true), null, true);
+        close.removeAttribute('data-i18n-attr');
+        close.setAttribute('aria-controls', 'fc-team-overview');
+        document.getElementById('fc-team-overview-open').onclick = () => setTeamOverviewVisible(true, true);
+      }
       document.getElementById('fc-team-agenda').onclick = ev => {
         const link = ev.target.closest('[data-focus-target]');
         if (!link) return;
@@ -2652,8 +2773,16 @@
     if (participantShare) participantShare.onsubmit = ev => {
       ev.preventDefault();
       action(async function () {
+        if (!binding || !binding.id) {
+          if (!document.getElementById('fc-share-consent').checked) {
+            throw new Error(tr('Live-Speicherung auf dem Server zuerst bestätigen.', 'Confirm live saving on the server first.'));
+          }
+          binding = await Server.publish(event, { publicRead: false });
+          render();
+        }
         await saveSharing({ participantToken: Server.token() });
-        notify(tr('Teilnehmer:innen-Link erneuert.', 'Participant link rotated.'));
+        notify(tr('Teilnehmer:innen-Link bereit. Jetzt kopieren und an die Teams senden.',
+          'Participant link ready. Copy it and send it to the teams.'));
       });
     };
     const adminShare = document.getElementById('fc-admin-share-form');
@@ -2913,16 +3042,22 @@
     app.querySelectorAll('[data-pool-matches]').forEach(link => {
       link.onclick = function (ev) {
         ev.preventDefault();
-        document.getElementById('fc-search').value = '';
-        document.getElementById('fc-group-filter').value = link.dataset.poolMatches;
-        search();
+        const searchInput = document.getElementById('fc-search');
+        const groupInput = document.getElementById('fc-group-filter');
+        if (searchInput && groupInput) {
+          searchInput.value = '';
+          groupInput.value = link.dataset.poolMatches;
+          search();
+        }
         focusStatusTarget(document.getElementById('fc-schedule'));
       };
     });
     app.querySelectorAll('.fc-wave-head').forEach(summary => {
       summary.onclick = function () {
         const group = summary.parentElement;
-        if (!document.getElementById('fc-search').value.trim() && !document.getElementById('fc-group-filter').value) waveOpenOverride.set(Number(group.dataset.wave), !group.open);
+        const searchInput = document.getElementById('fc-search');
+        const groupInput = document.getElementById('fc-group-filter');
+        if (searchInput && groupInput && !searchInput.value.trim() && !groupInput.value) waveOpenOverride.set(Number(group.dataset.wave), !group.open);
       };
     });
     const waveSelect = document.getElementById('fc-wave');
@@ -2934,19 +3069,30 @@
       waveSelect.onchange = updateWaveReadiness;
       updateWaveReadiness();
     }
-    document.getElementById('fc-search').oninput = () => search();
-    document.getElementById('fc-group-filter').onchange = () => search();
-    document.getElementById('fc-filter-reset').onclick = function () {
-      document.getElementById('fc-search').value = '';
-      document.getElementById('fc-group-filter').value = '';
-      search();
-      document.getElementById('fc-search').focus();
+    const searchInput = document.getElementById('fc-search');
+    const groupInput = document.getElementById('fc-group-filter');
+    const searchReset = document.getElementById('fc-filter-reset');
+    if (searchInput && groupInput && searchReset) {
+      searchInput.oninput = () => search();
+      groupInput.onchange = () => search();
+      searchReset.onclick = function () {
+        searchInput.value = '';
+        groupInput.value = '';
+        search();
+        searchInput.focus();
+      };
+      search(false);
+    }
+    const teamFilter = document.getElementById('fc-results-team-filter');
+    if (teamFilter) teamFilter.onchange = function () {
+      chooseTeam(teamFilter.value);
     };
-    search(false);
     const resultsSearch = document.getElementById('fc-results-filter');
     const resultsGroup = document.getElementById('fc-results-group-filter');
     const resultsReset = document.getElementById('fc-results-filter-reset');
-    if (resultsSearch && resultsGroup && resultsReset) {
+    if (teamFilter) {
+      resultsFilter();
+    } else if (resultsSearch && resultsGroup && resultsReset) {
       resultsSearch.oninput = () => resultsFilter();
       resultsGroup.onchange = () => resultsFilter();
       resultsReset.onclick = function () {
@@ -2962,13 +3108,16 @@
         if (node.dataset.action === 'save-setup') return;
         if (node.dataset.action === 'print') {
           app.querySelectorAll('.fc-fixture, .fc-wave-group, .fc-wave-pool').forEach(el => { el.hidden = false; });
-          window.print(); search(); return;
+          window.print();
+          if (document.getElementById('fc-search')) search();
+          resultsFilter();
+          return;
         }
         if (node.dataset.action === 'start-wave' && node.dataset.wave != null) {
           const select = document.getElementById('fc-wave');
           if (select) select.value = node.dataset.wave;
         }
-        if (!readOnly) action(() => runAction(node.dataset.action, node.dataset.company, node.dataset.team));
+        if (!readOnly) action(() => runAction(node.dataset.action, node.dataset.company, node.dataset.team, node));
       };
     });
   }
@@ -3011,23 +3160,41 @@
   function resultsFilter() {
     const searchInput = document.getElementById('fc-results-filter');
     const groupInput = document.getElementById('fc-results-group-filter');
-    if (!searchInput || !groupInput) return;
-    resultsQuery = searchInput.value;
-    resultsGroupFilter = groupInput.value;
+    if (!participant && (!searchInput || !groupInput)) return;
+    resultsQuery = participant ? '' : searchInput.value;
+    resultsGroupFilter = participant ? '' : groupInput.value;
     const q = resultsQuery.trim().toLocaleLowerCase();
-    const active = !!q || !!resultsGroupFilter;
-    const matchingTeams = event.teams.filter(team =>
-      (team.name + ' ' + orgName(team.orgId)).toLocaleLowerCase().indexOf(q) >= 0);
+    const active = participant ? !!overviewTeam : !!q || !!resultsGroupFilter;
+    const matchingTeams = participant ?
+      event.teams.filter(team => !overviewTeam || team.id === overviewTeam) :
+      event.teams.filter(team => (team.name + ' ' + orgName(team.orgId)).toLocaleLowerCase().indexOf(q) >= 0);
     const matchingIds = new Set(matchingTeams.map(team => team.id));
     const printingResults = printing;
     const reset = document.getElementById('fc-results-filter-reset');
     if (reset) reset.hidden = !active;
+    if (participant) {
+      app.querySelectorAll('.fc-fixture').forEach(node => {
+        const match = event.matches.find(item => item.id === node.dataset.match);
+        const sides = match ? [F.resolve(event, match.a), F.resolve(event, match.b)] : [];
+        node.hidden = !printingResults && !!overviewTeam && !sides.includes(overviewTeam) &&
+          (!match || match.refereeTeam !== overviewTeam);
+      });
+      app.querySelectorAll('.fc-wave-pool').forEach(pool => {
+        pool.hidden = !pool.querySelector('.fc-fixture:not([hidden])');
+      });
+      app.querySelectorAll('.fc-wave-group').forEach(group => {
+        const wave = Number(group.dataset.wave);
+        group.hidden = !printingResults && !!overviewTeam && !group.querySelector('.fc-fixture:not([hidden])');
+        group.open = printingResults ? group.dataset.defaultOpen === '1' :
+          overviewTeam ? !group.hidden : (waveOpenOverride.has(wave) ? waveOpenOverride.get(wave) : group.dataset.defaultOpen === '1');
+      });
+    }
     app.querySelectorAll('.fc-results-pool').forEach(pool => {
       pool.hidden = !printingResults && !!resultsGroupFilter && pool.dataset.resultsPool !== resultsGroupFilter;
       pool.querySelectorAll('.fc-pool-table tr[data-team]').forEach(row => {
         const matched = matchingIds.has(row.dataset.team);
         row.hidden = false;
-        row.classList.toggle('fc-results-filter-match', !printingResults && !!q && matched);
+        row.classList.toggle('fc-results-filter-match', !printingResults && (participant ? !!overviewTeam && matched : !!q && matched));
       });
     });
     const placementRows = Array.from(app.querySelectorAll('#fc-standings .fc-place-table tbody tr'));
@@ -3042,14 +3209,16 @@
       const matched = !!row.dataset.team && matchingIds.has(row.dataset.team);
       const slot = row.dataset.resultSlot;
       const contextualMatch = slot && slotMatches[slot];
-      row.hidden = !printingResults && !!q && !matched && !contextualMatch;
-      row.classList.toggle('fc-results-filter-match', !printingResults && !!q && matched);
+      row.hidden = !printingResults && (participant ? !!overviewTeam && !matched && !contextualMatch :
+        !!q && !matched && !contextualMatch);
+      row.classList.toggle('fc-results-filter-match', !printingResults && (participant ? !!overviewTeam && matched : !!q && matched));
     });
     app.querySelectorAll('#fc-standings [data-company-row]').forEach(row => {
       const org = event.organizations.find(item => item.id === row.dataset.companyRow);
       const companyMatch = !!org && org.name.toLocaleLowerCase().indexOf(q) >= 0;
       const teamMatch = (row.dataset.companyTeams || '').split(' ').some(id => matchingIds.has(id));
-      row.hidden = !printingResults && !!q && !companyMatch && !teamMatch;
+      row.hidden = !printingResults && (participant ? !!overviewTeam && !teamMatch :
+        !!q && !companyMatch && !teamMatch);
     });
     const status = document.getElementById('fc-results-filter-status');
     if (!status) return;
@@ -3057,6 +3226,12 @@
     if (status.textContent !== message) status.textContent = message;
   }
   function resultsFilterMessage() {
+    if (participant) {
+      return overviewTeam ?
+        tr('Spielplan und Endplatzierungen für ', 'Fixtures and final places for ') + teamIdentity(overviewTeam) +
+          tr(' gefiltert · Gruppentabellen bleiben vollständig.', ' · pool standings remain complete.') :
+        tr('Alle Teams werden angezeigt. Wähle dein Team, um Spielplan und Ergebnisse zu filtern.', 'All teams are shown. Choose your team to filter fixtures and results.');
+    }
     const q = resultsQuery.trim().toLocaleLowerCase();
     const active = !!q || !!resultsGroupFilter;
     const groupNumber = /^G([1-9]\d*)$/.exec(resultsGroupFilter);
@@ -3119,13 +3294,8 @@
         tr('Noch nichts ist gestartet. Der neue Plan ersetzt den bisherigen vorläufigen Plan.', 'Nothing has started yet. The new schedule replaces the previous preliminary one.'))) return;
     await save(built, tr('Teams entfernt und Gruppenplan neu erstellt: ', 'Teams removed and pool schedule rebuilt: ') + built.matches.length + tr(' Spiele.', ' matches.'));
   }
-  async function runAction(name, companyId, teamId) {
-    if (name === 'edit-config') {
-      await switchPhase('configuration', true, false);
-      const title = app.querySelector('#fc-edit [name="title"]');
-      if (title) title.focus();
-      else document.getElementById('fc-config-actions').focus();
-    } else if (['reset-points', 'reset-config', 'restart-edit'].indexOf(name) >= 0) {
+  async function runAction(name, companyId, teamId, actionNode) {
+    if (['reset-points', 'reset-config', 'restart-edit'].indexOf(name) >= 0) {
       await restartConfiguration(name);
     } else if (name === 'save-setup') {
       const controls = app.querySelectorAll('[data-action="save-setup"]');
@@ -3146,6 +3316,29 @@
           await save(next, tr('Entwurf gespeichert.', 'Draft saved.'));
         }
       }
+    } else if (name === 'copy-share-link') {
+      const field = document.getElementById(actionNode && actionNode.dataset.copyTarget);
+      if (!field) throw new Error(tr('Linkfeld nicht gefunden.', 'Link field not found.'));
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(field.value);
+          copied = true;
+        } catch (error) {
+          copied = false;
+        }
+      }
+      if (!copied) {
+        field.focus();
+        field.select();
+        try {
+          copied = !!document.execCommand('copy');
+        } catch (error) {
+          throw new Error(tr('Kopieren fehlgeschlagen. Bitte den markierten Link manuell kopieren.', 'Copy failed. Please copy the selected link manually.'));
+        }
+      }
+      if (!copied) throw new Error(tr('Kopieren fehlgeschlagen. Bitte den markierten Link manuell kopieren.', 'Copy failed. Please copy the selected link manually.'));
+      notify(tr('Link kopiert.', 'Link copied.'));
     } else if (name === 'build') {
       if (invalidSetupSettings()) {
         const form = document.getElementById('fc-edit');
@@ -3281,7 +3474,7 @@
       if (!confirm(tr('Vorherigen Stand als neue Veranstaltung kopieren? Die aktuelle bleibt unverändert.', 'Copy previous revision as a new event? Current event remains unchanged.'))) return;
       await restore(await Store.previous(event.id));
     } else if (name === 'share') {
-      if (!document.getElementById('fc-share-consent').checked) throw new Error(tr('Öffentliches Teilen zuerst bestätigen.', 'Confirm public sharing first.'));
+      if (!document.getElementById('fc-share-consent').checked) throw new Error(tr('Live-Speicherung auf dem Server zuerst bestätigen.', 'Confirm live saving on the server first.'));
       binding = await Server.publish(event, { publicRead: false });
       render();
       notify(tr('Private Livefreigabe eingerichtet. Teilnehmer:innen-Link jetzt unter „Teilen & Sichern“ erzeugen. Änderungen werden lokal und auf dem Server gespeichert.', 'Private live sharing set up. Create a participant link under “Sharing & backup”. Changes are saved locally and on the server.'));
@@ -3391,6 +3584,7 @@
       if (!event) throw new Error('Local event not found / Lokale Veranstaltung nicht gefunden');
       participant = !!(binding && binding.role === 'participant'); readOnly = participant;
       render();
+      if (participant) setTimeout(pollEditor, 0);
     } else if (readOnly) {
       const remote = await Server.get(params.get('eventId'));
       if (remote.canEdit) throw new Error('Public link unexpectedly has editor access / Öffentlicher Link besitzt unerwartet Bearbeitungsrechte');

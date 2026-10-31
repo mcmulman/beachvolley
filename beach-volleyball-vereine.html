@@ -58,6 +58,15 @@
       -webkit-backdrop-filter: saturate(180%) blur(12px);
       backdrop-filter: saturate(180%) blur(12px);
     }
+    .club-lang-slot { display: inline-flex; align-items: center; margin-left: auto; }
+    .club-lang-switch {
+      min-height: 40px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--blue-dark);
+    }
     .back-link { color: var(--blue-dark); font-weight: 700; text-decoration: none; }
     .back-link:hover { text-decoration: underline; }
     .page { width: min(100% - 32px, 980px); margin: 24px auto 48px; }
@@ -88,9 +97,22 @@
     .notice p, .method p { margin: 0; }
     .section-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 24px 2px 10px; }
     .section-heading { margin: 0; }
+    .club-filters { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .club-sort {
       max-width: 46%;
-      padding: 5px 8px;
+      min-height: 44px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+    }
+    .club-city-filter {
+      max-width: 46%;
+      min-height: 44px;
+      padding: 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--white);
@@ -99,6 +121,7 @@
       font-size: 12px;
     }
     .club-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .club-results { margin: 0 2px 10px; color: var(--muted); font-size: 13px; }
     .club-card { min-width: 0; padding: 17px; }
     .club-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
     h3 { margin: 0; color: var(--blue-dark); font-size: 17px; line-height: 1.3; }
@@ -129,15 +152,17 @@
     .club-data { margin: 0; }
     .club-data dt { margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--blue); }
     .club-data dd { margin: 2px 0 0; font-size: 14px; }
-    .club-data dt[data-i18n="clubs.winter.label"] { color: var(--muted); font-weight: 600; }
-    .club-data dd[data-i18n$=".winter"] { color: var(--muted); font-size: 13px; }
     .sources { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); }
     .sources a { color: var(--blue-dark); font-size: 12px; font-weight: 700; text-underline-offset: 2px; }
     a:focus-visible { outline: 3px solid #e0a326; outline-offset: 3px; border-radius: 3px; }
+    .club-lang-switch:focus-visible { outline: 3px solid #e0a326; outline-offset: 3px; }
     footer { padding: 18px 16px max(18px, env(safe-area-inset-bottom)); text-align: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--sand-dark); }
     @media (max-width: 680px) {
       .page { width: min(100% - 20px, 560px); margin-top: 12px; }
       .intro { padding: 19px; }
+      .section-heading-row { align-items: flex-start; flex-direction: column; }
+      .club-filters { width: 100%; justify-content: flex-start; }
+      .club-sort, .club-city-filter { flex: 1; max-width: none; min-width: 0; }
       .club-grid { grid-template-columns: 1fr; gap: 9px; }
       .notice, .method { padding: 15px; }
     }
@@ -154,6 +179,7 @@
 <body>
   <nav class="appbar" aria-label="Seitennavigation" data-i18n-attr="aria-label:clubs.navigation.label">
     <a class="back-link" href="index.html" data-i18n="clubs.back">← Zur Startseite</a>
+    <span class="club-lang-slot" data-i18n-switch="club-lang-switch"></span>
   </nav>
 
   <main class="page">
@@ -170,18 +196,43 @@
 
     <div class="section-heading-row">
       <h2 class="section-heading" data-i18n="clubs.section.heading">Vereine und Anbieter im Überblick</h2>
-      <select id="club-sort" class="club-sort" aria-label="Absteigend sortieren; nicht veröffentlichte Angaben zuletzt" data-i18n-attr="aria-label:clubs.sort.label">
-        <option value="" selected data-i18n="clubs.sort.default">Sortieren</option>
-        <option value="members" data-i18n="clubs.sort.members">Mitglieder ↓</option>
-        <option value="courts" data-i18n="clubs.sort.courts">Plätze ↓</option>
-        <option value="trainings" data-i18n="clubs.sort.trainings">Trainings/Jahr ↓</option>
-        <option value="meetups" data-i18n="clubs.sort.meetups">Treffs/Jahr ↓</option>
-        <option value="tournaments" data-i18n="clubs.sort.tournaments">Turniere/Jahr ↓</option>
-        <option value="winter" data-i18n="clubs.sort.winter">Winterangebot ↓</option>
-      </select>
+      <div class="club-filters">
+        <select id="club-sort" class="club-sort" aria-label="Absteigend sortieren; nicht veröffentlichte Angaben zuletzt" data-i18n-attr="aria-label:clubs.sort.label">
+          <option value="" selected data-i18n="clubs.sort.default">Sortieren</option>
+          <option value="members" data-i18n="clubs.sort.members">Mitglieder ↓</option>
+          <option value="courts" data-i18n="clubs.sort.courts">Plätze ↓</option>
+          <option value="trainings" data-i18n="clubs.sort.trainings">Trainings/Jahr ↓</option>
+          <option value="meetups" data-i18n="clubs.sort.meetups">Treffs/Jahr ↓</option>
+          <option value="tournaments" data-i18n="clubs.sort.tournaments">Turniere/Jahr ↓</option>
+        </select>
+        <select id="club-city-filter" class="club-city-filter" aria-label="Nach Stadt filtern" data-i18n-attr="aria-label:clubs.cityFilter.label">
+          <option value="" selected data-i18n="clubs.cityFilter.all">Alle Städte</option>
+          <option value="leipzig" data-i18n="clubs.city.leipzig">Leipzig</option>
+          <option value="hamburg" data-i18n="clubs.city.hamburg">Hamburg</option>
+          <option value="koeln" data-i18n="clubs.city.koeln">Köln</option>
+          <option value="dortmund" data-i18n="clubs.city.dortmund">Dortmund</option>
+          <option value="castrop" data-i18n="clubs.city.castrop">Castrop</option>
+          <option value="bochum" data-i18n="clubs.city.bochum">Bochum</option>
+          <option value="dueren" data-i18n="clubs.city.dueren">Düren</option>
+          <option value="bonn" data-i18n="clubs.city.bonn">Bonn</option>
+          <option value="bergisch-gladbach" data-i18n="clubs.city.bergischGladbach">Bergisch Gladbach</option>
+          <option value="duesseldorf" data-i18n="clubs.city.duesseldorf">Düsseldorf</option>
+          <option value="koblenz-lahnstein" data-i18n="clubs.city.koblenzLahnstein">Koblenz/Lahnstein</option>
+          <option value="freiburg" data-i18n="clubs.city.freiburg">Freiburg im Breisgau</option>
+          <option value="berlin" data-i18n="clubs.city.berlin">Berlin</option>
+          <option value="dresden" data-i18n="clubs.city.dresden">Dresden</option>
+          <option value="velten" data-i18n="clubs.city.velten">Velten</option>
+          <option value="dachau" data-i18n="clubs.city.dachau">Dachau</option>
+          <option value="stuttgart" data-i18n="clubs.city.stuttgart">Stuttgart</option>
+          <option value="wien" data-i18n="clubs.city.wien">Wien</option>
+          <option value="kloten" data-i18n="clubs.city.kloten">Kloten</option>
+          <option value="bassersdorf" data-i18n="clubs.city.bassersdorf">Bassersdorf</option>
+        </select>
+      </div>
     </div>
+    <p id="club-results-count" class="club-results" aria-live="polite" aria-atomic="true"></p>
     <div class="club-grid">
-      <article class="club-card" data-sort-members="800" data-sort-courts="14" data-sort-trainings="100" data-sort-meetups="250" data-sort-tournaments="80" data-sort-winter="4">
+      <article class="club-card" data-cities="leipzig" data-sort-members="800" data-sort-courts="14" data-sort-trainings="100" data-sort-meetups="250" data-sort-tournaments="80">
         <div class="club-heading"><h3>BeachL e.V.</h3></div><p class="city">Leipzig · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachl.offers">Über 100 Trainings, ca. 250 Beachtreffs und mehr als 80 Turniere pro Jahr.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -189,8 +240,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachl.members">Mehr als 800 Mitglieder.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachl.courts">10 Outdoor · 4 Indoor.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachl.winter">Beachhalle mit vier Indoorfeldern.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachl.courts">10 Outdoor · 4 Indoor (Beachhalle).</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachl.popularity">Keine separate Teilnehmer- oder Wartelistenzahl angegeben.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachl.legal">Eigenständiger eingetragener Verein: BeachL e.V. (VR 5714, Amtsgericht Leipzig).</dd>
         </dl>
@@ -202,7 +252,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-members="650" data-sort-winter="1">
+      <article class="club-card" data-cities="hamburg" data-sort-members="650">
         <div class="club-heading"><h3>FC St. Pauli · Sand Pauli</h3></div><p class="city">Hamburg · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.stpauli.offers">Training, Jugend- und Turnierangebote.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -210,8 +260,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.stpauli.members">Beach-Abteilung: über 650; ältere Seite: über 450.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.stpauli.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.stpauli.winter">Beachvolleyball-Wintertraining in einer externen Sandhalle.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.stpauli.courts">Zahl nicht veröffentlicht; Wintertraining in externer Beachhalle.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.stpauli.popularity">Mitgliederangaben der Abteilung sind widersprüchlich.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.stpauli.legal">Beachvolleyball-Abteilung des Fußball-Club St. Pauli von 1910 e.V. (VR 1884); kein eigener Beach-e.V.</dd>
         </dl>
@@ -221,7 +270,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-winter="1">
+      <article class="club-card" data-cities="hamburg|koeln">
         <div class="club-heading"><h3>Beach me · e.V. / GmbH</h3></div><p class="city">Hamburg · Köln · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachme.offers">Vereinsangebote: Erwachsenen- und Jugendtraining, Liga und Turniere; Camps über beach me GmbH.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -229,8 +278,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachme.members">Keine aktuelle Vereinszahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachme.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachme.winter">Winterkurse in Indoor-Beachhallen; Feldzahl nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachme.courts">Zahl nicht veröffentlicht; Winterkurse in Indoor-Beachhallen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachme.popularity">Keine öffentliche Nachfragezahl gefunden.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachme.legal">Beach me e.V. (VR 22963) und beach me GmbH sind getrennt; die Camps-Marke wird von der GmbH getragen.</dd>
         </dl>
@@ -242,7 +290,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-winter="1">
+      <article class="club-card" data-cities="dortmund|castrop|bochum|koeln|dueren|bonn|bergisch-gladbach|duesseldorf|koblenz-lahnstein">
         <div class="club-heading"><h3>Beachclub 2000 e.V.</h3></div><p class="city">Dortmund · mehrere Standorte · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachclub2000.offers">Beachtraining für verschiedene Spielstärken, Turniere, Mitglieder-Spielzeiten und Winterligen an mehreren Standorten.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -250,8 +298,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachclub2000.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachclub2000.courts">Gesamtzahl nicht veröffentlicht; Trainings- und Spielangebote an mehreren Standorten.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachclub2000.winter">Winterangebote und Beachligen; genaue Feld- und Trainingszahlen nicht veröffentlicht.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachclub2000.courts">An mehreren Standorten; Gesamtzahl nicht veröffentlicht. Winter-Beachligen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachclub2000.popularity">Keine öffentliche Mitglieder- oder Wartelistenzahl gefunden.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachclub2000.legal">Eigenständiger Verein: Beachclub 2000 e.V. (VR 5355, Amtsgericht Dortmund); laut Verein dem WVV angeschlossen.</dd>
         </dl>
@@ -262,7 +309,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="6">
+      <article class="club-card" data-cities="freiburg" data-sort-courts="6">
         <div class="club-heading"><h3>Beachverein Freiburg e.V.</h3></div><p class="city">Freiburg im Breisgau · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachfreiburg.offers">Beachvolleyball-Liga sowie Trainings, Workshops und Camps; außerdem weitere Sandsportarten.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -270,8 +317,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachfreiburg.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachfreiburg.courts">Vereinsgelände in Freiburg-St. Georgen mit einer ausgewiesenen 6-Feld-Anlage.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachfreiburg.winter">Kein öffentlich ausgewiesenes Winter-Beachangebot gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachfreiburg.courts">6-Feld-Anlage in Freiburg-St. Georgen; Winterangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachfreiburg.popularity">Keine öffentliche Auslastungs- oder Wartelistenzahl gefunden.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachfreiburg.legal">Eigenständiger Verein: Beachverein Freiburg e.V. (VR 703152, Amtsgericht Freiburg im Breisgau).</dd>
         </dl>
@@ -283,7 +329,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="7">
+      <article class="club-card" data-cities="freiburg" data-sort-courts="7">
         <div class="club-heading"><h3>FT 1844 Freiburg</h3></div><p class="city">Freiburg im Breisgau · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.ft1844.offers">Sieben Beachfelder am Dreisamstrand; Platzbuchung für Mitglieder und Gäste.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -291,8 +337,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.ft1844.members">Keine Beach-Abteilungszahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.ft1844.courts">7 Outdoorfelder am Dreisamstrand; Indoor-Beachplätze nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.ft1844.winter">Laut Verein ganzjährig bespielbar; wetterabhängig, keine Beachhalle ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.ft1844.courts">7 Outdoorfelder am Dreisamstrand; laut Verein ganzjährig bespielbar (wetterabhängig).</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.ft1844.popularity">Playercards derzeit vorrangig für FT-Volleyballmitglieder; weitere Anfragen können auf eine Warteliste kommen.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.ft1844.legal">Beachvolleyballangebot der Freiburger Turnerschaft von 1844 e.V. (VR 59, Amtsgericht Freiburg); keine separate Beach-Rechtsperson ausgewiesen.</dd>
         </dl>
@@ -302,7 +347,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="2">
+      <article class="club-card" data-cities="freiburg" data-sort-courts="2">
         <div class="club-heading"><h3>SG Freiburg-Landwasser</h3></div><p class="city">Freiburg im Breisgau · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.sglandwasser.offers">Freizeit-Beachvolleyball für Erwachsene auf zwei Feldern am Moosweiher, mit festen wöchentlichen Spielzeiten.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -311,7 +356,6 @@
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.sglandwasser.members">Keine Beach-Abteilungszahl gefunden.</dd>
           <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.sglandwasser.courts">2 Outdoorfelder am Moosweiher.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.sglandwasser.winter">Im Winter Hallenvolleyball; kein Beachsand-Angebot ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.sglandwasser.popularity">Vereinsseite nennt freie Plätze für neue Mitglieder; keine Auslastungszahl veröffentlicht.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.sglandwasser.legal">Beachvolleyball im Angebot der Sportgemeinschaft Freiburg-Landwasser von 1970 e.V. (VR 676, Registergericht Freiburg); keine separate Beach-Rechtsperson.</dd>
         </dl>
@@ -321,7 +365,7 @@
         </div>
       </article>
 
-      <article class="club-card">
+      <article class="club-card" data-cities="duesseldorf">
         <div class="club-heading"><h3>Eintracht Spontent e.V.</h3></div><p class="city">Düsseldorf · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.spontent.offers">Beachvolleyball-Sparte, geförderte Beachteams und Nachwuchs-Stützpunkttraining in Kooperation mit dem Spontent Playground.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -329,8 +373,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.spontent.members">Keine öffentliche Beach-Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.spontent.courts">Keine vereinseigenen Beachfelder oder Feldzahl ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.spontent.winter">Beach-Angebot über die Kooperation mit Indoor- und Outdoorfeldern des Spontent Playground; Saisonzeiten nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.spontent.courts">Spontent Playground: Indoor- und Outdoorfelder; Anzahl und Saisonzeiten nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.spontent.popularity">Keine öffentliche Auslastungs- oder Wartelistenzahl gefunden.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.spontent.legal">Eintracht Spontent e.V. (VR 12327, Amtsgericht Düsseldorf); getrennt von der SPONTENT GmbH.</dd>
         </dl>
@@ -341,7 +384,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-winter="1">
+      <article class="club-card" data-cities="berlin">
         <div class="club-heading"><h3>Hauptstadt Beacher e.V.</h3></div><p class="city">Berlin · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.hauptstadt.offers">Trainingsgruppen, Community-Training, Camps und Turniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -349,8 +392,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.hauptstadt.members">Keine öffentliche Zahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.hauptstadt.courts">Outdoor-/Indoor-Zahl nicht veröffentlicht.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.hauptstadt.winter">Wintertrainingsgruppen; Spielort und Sandhalle nicht ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.hauptstadt.courts">Zahl nicht veröffentlicht; Wintertrainingsgruppen ohne ausgewiesenen Spielort.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.hauptstadt.popularity">Nachrücker-Regel belegt; Auslastung nicht veröffentlicht.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.hauptstadt.legal">Eigenständiger Verein: Hauptstadt Beacher e.V. (VR 35786 B, Amtsgericht Charlottenburg).</dd>
         </dl>
@@ -361,7 +403,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="6">
+      <article class="club-card" data-cities="berlin" data-sort-courts="6">
         <div class="club-heading"><h3>TiB 1848 e.V. · Beachvolleyball</h3></div><p class="city">Berlin · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.tib.offers">Beachvolleyballabteilung mit sechs Feldern am Columbiadamm, Spielzeitbuchung und Jugendangebot.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -369,8 +411,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.tib.members">Keine Beach-Abteilungszahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.tib.courts">6 Outdoorfelder auf dem Gelände am Columbiadamm.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.tib.winter">Kein öffentlich ausgewiesenes Winter-Beachangebot gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.tib.courts">6 Outdoorfelder am Columbiadamm; Winterangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.tib.popularity">Platzbuchungen und Nutzung der Beachanlage setzen eine TiB-Mitgliedschaft voraus.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.tib.legal">Beachvolleyballabteilung der Turngemeinde in Berlin 1848 e.V.; kein eigener Beach-e.V.</dd>
         </dl>
@@ -380,16 +421,15 @@
         </div>
       </article>
 
-      <article class="club-card">
+      <article class="club-card" data-cities="berlin">
         <div class="club-heading"><h3>Beachfreunde Berlin 23 e.V.</h3></div><p class="city">Berlin · DE</p>
-        <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachfreunde.offers">Beachvolleyballverein mit Training, Kursen und Turnieren; aktuelle Trainingszeiten bitte direkt beim Verein prüfen.</p></div>
+        <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachfreunde.offers">Beachvolleyballverein mit Training, Kursen und Turnieren; aktuelle Trainingszeiten sind nicht ausgewiesen.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
           <span class="feature-tag" data-i18n="clubs.feature.training">Training</span><span class="feature-tag" data-i18n="clubs.feature.tournaments">Turniere</span>
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachfreunde.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachfreunde.courts">Keine verifizierte Platzanzahl veröffentlicht.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachfreunde.winter">Keine aktuellen Angaben zu einer Winter-Beachhalle gefunden.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachfreunde.courts">Keine verifizierte Platzanzahl; Winterangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachfreunde.popularity">Keine öffentliche Mitglieder- oder Wartelistenzahl gefunden.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachfreunde.legal">Beachfreunde Berlin 23 e.V.; aktuelle Vereinsaktivitäten sind auf dem eigenen Vereinsauftritt beschrieben.</dd>
         </dl>
@@ -399,7 +439,7 @@
         </div>
       </article>
 
-      <article class="club-card">
+      <article class="club-card" data-cities="berlin">
         <div class="club-heading"><h3>BeachVBM e.V.</h3></div><p class="city">Berlin · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachvbm.offers">Mitgliedschaft und Zugang zu freiem Spiel sowie Platzbuchung in der Indoor-Beachanlage.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -407,8 +447,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachvbm.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachvbm.courts">Indoor-Beachanlage; aktuelle Feldzahl nicht verifiziert.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachvbm.winter">Indoor-Spielbetrieb grundsätzlich möglich; letzte öffentlich gefundene Vereinsmeldungen stammen aus 2025.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachvbm.courts">Indoor-Beachanlage; Feldzahl nicht verifiziert. Spielbetrieb zuletzt 2025 erwähnt.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachvbm.popularity">Der Verein bat 2025 um Unterstützung zur Sicherung des Spielbetriebs; aktuelle Auslastung und Saisonstatus sind nicht veröffentlicht.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachvbm.legal">Eigenständiger Verein: BeachVBM e.V. (VR 41318, Amtsgericht Charlottenburg).</dd>
         </dl>
@@ -419,7 +458,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="8">
+      <article class="club-card" data-cities="dresden" data-sort-courts="8">
         <div class="club-heading"><h3>Dresdner SSV</h3></div><p class="city">Dresden · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.dresden.offers">Acht Courts, Training, Camps und Turniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -427,8 +466,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.dresden.members">Keine Beach-Abteilungszahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.dresden.courts">8 Outdoor · Indoor-Beachplätze nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.dresden.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.dresden.courts">8 Outdoor; Winter-Beachangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.dresden.popularity">Keine öffentliche Mitglieder- oder Teilnehmerzahl.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.dresden.legal">Beachvolleyballangebot des Dresdner SSV e.V. (VR 4520); keine separate Beach-Rechtsperson ausgewiesen.</dd>
         </dl>
@@ -439,7 +477,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="12" data-sort-winter="1">
+      <article class="club-card" data-cities="velten" data-sort-courts="12">
         <div class="club-heading"><h3>Beachsport BB</h3></div><p class="city">Velten · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.beachsport.offers">12 Courts; Termine, Camps sowie Jugend- und Seniorenturniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -447,8 +485,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.beachsport.members">Keine öffentliche Zahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachsport.courts">12 Outdoor · keine Indoor-Beachplätze ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.beachsport.winter">Wintertraining in einer Sporthalle; kein Sandfeld ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.beachsport.courts">12 Outdoor; Wintertraining in Sporthalle ohne ausgewiesenen Sandplatz.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.beachsport.popularity">Court-Zahl zeigt Infrastruktur, nicht Auslastung.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.beachsport.legal">Eigene Satzung und eigener Vereinsauftritt; aktuellen Registereintrag nicht verifiziert.</dd>
         </dl>
@@ -460,7 +497,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="6">
+      <article class="club-card" data-cities="dachau" data-sort-courts="6">
         <div class="club-heading"><h3>ASV Dachau</h3></div><p class="city">Dachau · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.asv.offers">Jugendförderung und Firmen-Cup: 24 Teams, rund 160 Teilnehmende (2026).</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -468,8 +505,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.asv.members">Keine belastbare Beach-Zahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.asv.courts">6 Outdoor · keine Indoor-Beachplätze ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.asv.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.asv.courts">6 Outdoor; Winter-Beachangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.asv.popularity">Cup-Besuchende sind keine Vereinsmitglieder.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.asv.legal">Beachvolleyball im Volleyballangebot des ASV Dachau e.V. (VR 20021); keine separate Beach-Rechtsperson.</dd>
         </dl>
@@ -480,7 +516,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="3">
+      <article class="club-card" data-cities="stuttgart" data-sort-courts="3">
         <div class="club-heading"><h3>TSV Georgii-Allianz · Alli-Beach</h3></div><p class="city">Stuttgart · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.allianz.offers">Drei Courts, wöchentliches „Grill & Chill“, Turniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -488,8 +524,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.allianz.members">Keine Beach-Zahl veröffentlicht.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.allianz.courts">3 Beachfelder · Indoor-Zahl nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.allianz.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.allianz.courts">3 Beachfelder; Winter-Beachangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.allianz.popularity">Keine vergleichbare Teilnehmerzahl veröffentlicht.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.allianz.legal">Alli-Beach ist das Beachangebot der Volleyballabteilung des TSV Georgii-Allianz e.V. (VR 582).</dd>
         </dl>
@@ -499,7 +534,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="2" data-sort-winter="1">
+      <article class="club-card" data-cities="hamburg" data-sort-courts="2">
         <div class="club-heading"><h3>Lufthansa Sportverein Hamburg</h3></div><p class="city">Hamburg · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.lsv.offers">Zwei Courts, feste Trainingszeiten und eigene Turniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -507,8 +542,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.lsv.members">Gesamtverein: ca. 4.500; Beach-Zahl fehlt.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.lsv.courts">2 Beachfelder · Indoor-Zahl nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.lsv.winter">Hallenvolleyball im Winter (ohne Beachsand).</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.lsv.courts">2 Beachfelder; im Winter Hallenvolleyball ohne Beachsand.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.lsv.popularity">Aufnahmestopp mit Warteliste (Vereinsangabe).</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.lsv.legal">Beachvolleyball in der Volleyballabteilung des Lufthansa Sportverein Hamburg e.V. (VR 6111).</dd>
         </dl>
@@ -518,7 +552,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="4">
+      <article class="club-card" data-cities="duesseldorf" data-sort-courts="4">
         <div class="club-heading"><h3>DJK TuSA 06</h3></div><p class="city">Düsseldorf · DE</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.tusa.offers">Vier Courts, Jugendförderung und Sommercamps.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -526,8 +560,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.tusa.members">Gesamtverein: ca. 2.300; Beach-Zahl fehlt.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.tusa.courts">4 Outdoor · Indoor-Beachplätze nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.tusa.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.tusa.courts">4 Outdoor; Winter-Beachangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.tusa.popularity">Keine Beach-Mitglieder- oder Wartelistenzahl.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.tusa.legal">Volleyballangebot des DJK TUSA 06 Düsseldorf e.V. (VR 3922); kein eigener Beach-e.V. ausgewiesen.</dd>
         </dl>
@@ -538,7 +571,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="40" data-sort-tournaments="100" data-sort-winter="8">
+      <article class="club-card" data-cities="wien" data-sort-courts="40" data-sort-tournaments="100">
         <div class="club-heading"><h3 data-i18n="clubs.vienna.name">Beachvolley Wien · SportZ Ziegler GmbH</h3></div><p class="city">Wien · AT</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.vienna.offers">Über 100 Hobbyturniere jährlich; Jugendtraining bis zu dreimal pro Woche.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -546,20 +579,19 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.vienna.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.vienna.courts">40+ insgesamt; darunter 14 Outdoor (Schmelz) und 8 saisonal Indoor/Outdoor (Spielmanngasse). Gesamtaufteilung nicht veröffentlicht.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.vienna.winter">8 Beachfelder indoor an der Spielmanngasse (Wintersaison 2026/27).</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.vienna.courts">40+ insgesamt, darunter 14 Outdoor (Schmelz) und 8 Indoor (Spielmanngasse, Winter 2026/27); Gesamtaufteilung nicht veröffentlicht.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.vienna.popularity">Turnierhäufigkeit ist belegt; Teilnehmerzahlen fehlen.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.vienna.legal">Courtbetreiber ist SportZ Ziegler GmbH (FN 487024m), kein Verein. Unabhängig besteht der Beachvolley Wien Trendsportverein als separate Rechtsperson; Aktivitäten werden nicht automatisch gleichgesetzt.</dd>
         </dl>
         <div class="sources" aria-label="Quellen" data-i18n-attr="aria-label:clubs.sources.label">
           <a href="https://www.beachvolleywien.at/service/impressum/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.operator">Betreiber</a>
           <a href="https://www.beachvolleywien.at/beachplaetze/1150-schmelz/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.outdoor">Outdoor-Anlage</a>
-          <a href="https://www.beachvolleywien.at/beachplaetze/1200-spielmanngasse/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.winterHall">Winterhalle</a>
+          <a href="https://www.beachvolleywien.at/beachplaetze/1200-spielmanngasse/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.indoor">Indoor / Outdoor</a>
           <a href="https://www.beachvolleywien.at/turniere/turniere/" target="_blank" rel="noopener noreferrer" data-i18n="clubs.source.tournaments">Turniere</a>
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="5">
+      <article class="club-card" data-cities="wien" data-sort-courts="5">
         <div class="club-heading"><h3>Beachvolley Club Alte Donau</h3></div><p class="city">Wien · AT</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.alteDonau.offers">Fünf Courts, selbstorganisierte Trainings und ÖVV-Ranglistenturniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -567,8 +599,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.alteDonau.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.alteDonau.courts">5 Plätze an der Alten Donau · Indoor-Anteil nicht ausgewiesen.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.alteDonau.winter">Winter-Beachangebot nicht öffentlich ausgewiesen.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.alteDonau.courts">5 Plätze an der Alten Donau; Indoor- und Winterangebot nicht ausgewiesen.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.alteDonau.popularity">Turniere sind öffentlich; Mitgliederzahl fehlt.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.alteDonau.legal">Eigenständiger Beachvolley Club, ZVR 906829272; nicht mit SportZ Ziegler GmbH gleichzusetzen.</dd>
         </dl>
@@ -579,7 +610,7 @@
         </div>
       </article>
 
-      <article class="club-card" data-sort-courts="9" data-sort-winter="3">
+      <article class="club-card" data-cities="kloten|bassersdorf" data-sort-courts="9">
         <div class="club-heading"><h3>ZUZU Beach</h3></div><p class="city">Kloten / Bassersdorf · CH</p>
         <div class="offer-teaser"><strong data-i18n="clubs.offers.label">Angebot</strong><p data-i18n="clubs.zuzu.offers">Neun Courts (sechs Outdoor, drei Indoor); Training und Turniere.</p></div>
         <div class="feature-tags" aria-label="Highlights" data-i18n-attr="aria-label:clubs.features.label">
@@ -587,8 +618,7 @@
         </div>
         <dl class="club-data">
           <dt data-i18n="clubs.members.label">Mitglieder</dt><dd data-i18n="clubs.zuzu.members">Keine öffentliche Mitgliederzahl gefunden.</dd>
-          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.zuzu.courts">6 Outdoor · 3 Indoor.</dd>
-          <dt data-i18n="clubs.winter.label">Winterspiel</dt><dd data-i18n="clubs.zuzu.winter">Wintertraining in der Indoor-Beachhalle mit drei Feldern.</dd>
+          <dt data-i18n="clubs.courts.label">Beachplätze</dt><dd data-i18n="clubs.zuzu.courts">6 Outdoor · 3 Indoor; Wintertraining in der Indoor-Beachhalle.</dd>
           <dt data-i18n="clubs.popularity.label">Nachfrage</dt><dd data-i18n="clubs.zuzu.popularity">Angebote für Nachwuchs, Breitensport und Leistungssport.</dd>
           <dt data-i18n="clubs.legal.label">Träger / Rechtsform</dt><dd data-i18n="clubs.zuzu.legal">Unabhängiger Schweizer Verein laut eigener Darstellung und kommunaler Vereinsliste.</dd>
         </dl>
@@ -616,24 +646,46 @@
     if (year) year.textContent = new Date().getFullYear();
     var clubGrid = document.querySelector('.club-grid');
     var clubSort = document.getElementById('club-sort');
-    if (clubGrid && clubSort) {
+    var clubCityFilter = document.getElementById('club-city-filter');
+    var clubResultsCount = document.getElementById('club-results-count');
+    if (clubGrid && clubSort && clubCityFilter) {
       var clubCards = Array.prototype.slice.call(clubGrid.querySelectorAll('.club-card'));
-      var sortClubCards = function () {
+      var updateClubResultsCount = function () {
+        var visibleCount = clubCards.filter(function (card) { return !card.hidden; }).length;
+        if (clubResultsCount && window.TI18n) {
+          clubResultsCount.textContent = window.TI18n.t('clubs.results', { count: visibleCount });
+        }
+      };
+      var updateClubCards = function () {
         if (!clubSort.value) {
           clubCards.forEach(function (card) { clubGrid.appendChild(card); });
-          return;
+        } else {
+          var attribute = 'data-sort-' + clubSort.value;
+          var sortedCards = clubCards.slice().sort(function (a, b) {
+            var aValue = a.hasAttribute(attribute) ? Number(a.getAttribute(attribute)) : null;
+            var bValue = b.hasAttribute(attribute) ? Number(b.getAttribute(attribute)) : null;
+            if (aValue === null) return bValue === null ? 0 : 1;
+            if (bValue === null) return -1;
+            return bValue - aValue;
+          });
+          sortedCards.forEach(function (card) { clubGrid.appendChild(card); });
         }
-        var attribute = 'data-sort-' + clubSort.value;
-        var sortedCards = clubCards.slice().sort(function (a, b) {
-          var aValue = a.hasAttribute(attribute) ? Number(a.getAttribute(attribute)) : null;
-          var bValue = b.hasAttribute(attribute) ? Number(b.getAttribute(attribute)) : null;
-          if (aValue === null) return bValue === null ? 0 : 1;
-          if (bValue === null) return -1;
-          return bValue - aValue;
+        var city = clubCityFilter.value;
+        clubCards.forEach(function (card) {
+          var cities = (card.getAttribute('data-cities') || '').split('|');
+          card.hidden = !!city && cities.indexOf(city) === -1;
         });
-        sortedCards.forEach(function (card) { clubGrid.appendChild(card); });
+        updateClubResultsCount();
       };
-      clubSort.addEventListener('change', sortClubCards);
+      clubSort.addEventListener('change', updateClubCards);
+      clubCityFilter.addEventListener('change', updateClubCards);
+      updateClubCards();
+      if (window.MutationObserver) {
+        new MutationObserver(updateClubResultsCount).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['lang']
+        });
+      }
     }
     if (!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) && 'serviceWorker' in navigator) {
       window.addEventListener('load', function () {

@@ -385,6 +385,58 @@
         }
       }
     }
+    // Optimize only after balancing, with count-preserving swaps of movable duties.
+    // Field-number distance is a proxy, not a claim about the site's physical layout.
+    const playingCourts = {}, groups = {}, costs = {}, allowed = {};
+    e.pools.forEach((pool, i) => pool.forEach(id => { groups[id] = 'G' + (i + 1); }));
+    all.forEach(m => {
+      new Set(possible(m.a, all).concat(possible(m.b, all))).forEach(id => {
+        if (!playingCourts[id]) playingCourts[id] = [];
+        playingCourts[id].push(m);
+      });
+    });
+    Object.keys(eligible).forEach(wave => { allowed[wave] = new Set(eligible[wave]); });
+    plan.forEach(m => {
+      costs[m.id] = {};
+      eligible[m.wave].forEach(id => {
+        let distance = 0;
+        [-1, 1].forEach(direction => {
+          const plays = (playingCourts[id] || []).filter(p => direction * (p.wave - m.wave) > 0);
+          if (!plays.length) return;
+          const gap = Math.min.apply(null, plays.map(p => direction * (p.wave - m.wave)));
+          const nearest = plays.filter(p => direction * (p.wave - m.wave) === gap);
+          // Unresolved brackets can reserve several courts in the nearest wave:
+          // average those alternatives without assuming a particular future result.
+          distance += nearest.reduce((sum, p) => sum + Math.abs(m.field - p.field), 0) / nearest.length;
+        });
+        costs[m.id][id] = { outside: m.phase === 'group' && groups[id] !== m.pool ? 1 : 0, distance: distance };
+      });
+    });
+    // Keep both soft preferences non-worsening; cap search work for large custom pools.
+    let comparisons = 0;
+    improved = true;
+    while (improved && comparisons < 200000) {
+      improved = false;
+      for (let i = 0; i < plan.length && comparisons < 200000; i++) {
+        for (let j = i + 1; j < plan.length && comparisons < 200000; j++) {
+          comparisons++;
+          const a = plan[i], b = plan[j], x = a.refereeTeam, y = b.refereeTeam;
+          if (x === y || !allowed[a.wave].has(y) || !allowed[b.wave].has(x) ||
+            a.wave !== b.wave && (occupied[a.wave].has(y) || occupied[b.wave].has(x))) continue;
+          const beforeA = costs[a.id][x], beforeB = costs[b.id][y];
+          const afterA = costs[a.id][y], afterB = costs[b.id][x];
+          const outside = afterA.outside + afterB.outside - beforeA.outside - beforeB.outside;
+          const distance = afterA.distance + afterB.distance - beforeA.distance - beforeB.distance;
+          if (outside > 0 || distance > 1e-9 || outside === 0 && distance >= -1e-9) continue;
+          if (a.wave !== b.wave) {
+            occupied[a.wave].delete(x); occupied[a.wave].add(y);
+            occupied[b.wave].delete(y); occupied[b.wave].add(x);
+          }
+          a.refereeTeam = y; b.refereeTeam = x;
+          improved = true;
+        }
+      }
+    }
     return plan;
   }
   function schedule(e, matches, startWave, earliest) {

@@ -109,7 +109,7 @@
         headers: { Accept: 'application/json' }
       }, options || {}));
     } catch (error) {
-      const offline = new Error('Local changes are saved; server is unavailable / Lokale Änderung gespeichert; Server nicht erreichbar');
+      const offline = new Error('Server unavailable; last loaded state and local changes retained / Server nicht erreichbar; letzter geladener Stand und lokale Änderungen bleiben erhalten');
       offline.code = 'network';
       throw offline;
     }
@@ -128,6 +128,9 @@
   async function flush(binding) {
     const pending = binding.pending;
     if (!pending) return binding;
+    if (binding.role === 'participant') {
+      throw Object.assign(new Error('Participant links are read-only / Teilnehmer:innen-Links sind nur lesbar'), { code: 'read_only', status: 403 });
+    }
     if (binding.role === 'admin' && !binding.token) {
       throw Object.assign(new Error('Admin session expired. Unlock again; local draft retained / Adminsitzung abgelaufen. Erneut entsperren; lokaler Entwurf bleibt erhalten'), { code: 'admin_session_required', status: 403 });
     }
@@ -165,7 +168,9 @@
     return binding;
   }
   async function prepareUpdate(binding, event) {
-    if (binding.role === 'participant') return prepareScore(binding, event);
+    if (binding.role === 'participant') {
+      throw Object.assign(new Error('Participant links are read-only / Teilnehmer:innen-Links sind nur lesbar'), { code: 'read_only', status: 403 });
+    }
     binding.pending = {
       action: 'update',
       fingerprint: fingerprint(event),
@@ -179,31 +184,6 @@
     if (binding.role !== 'admin') binding.pending.body.editorToken = binding.token;
     await persist(binding);
     return flush(binding);
-  }
-  async function prepareScore(binding, event) {
-    const previous = JSON.parse(binding.syncedFingerprint), next = root.Firmencup.clone(previous);
-    const changed = Object.keys(event.results).filter(id =>
-      JSON.stringify(previous.results[id]) !== JSON.stringify(event.results[id]));
-    // Scores are the only participant command; all other state originates on the server.
-    const allowed = root.Firmencup.clone(event);
-    allowed.results = previous.results;
-    allowed.startedAt = previous.startedAt;
-    if (Object.keys(previous.results).some(id => !Object.prototype.hasOwnProperty.call(event.results, id)) ||
-        fingerprint(allowed) !== fingerprint(previous)) {
-      throw Object.assign(new Error('Participant access permits scores only / Teilnehmerzugriff erlaubt nur Punkte'), { code: 'score_only', status: 403 });
-    }
-    for (const matchId of changed) {
-      const score = event.results[matchId];
-      next.results[matchId] = root.Firmencup.clone(score);
-      next.startedAt = event.startedAt;
-      binding.pending = { action: 'score', fingerprint: fingerprint(next), body: {
-        id: binding.id, expectedRevision: binding.revision, requestKey: token(),
-        matchId: matchId, a: score.a, b: score.b, drawWinner: score.drawWinner
-      } };
-      await persist(binding);
-      await flush(binding);
-    }
-    return binding;
   }
   async function publish(event, options) {
     assertWebCloud();
@@ -230,6 +210,12 @@
   async function sync(event) {
     let binding = await load(event.id);
     if (!binding) return null;
+    if (binding.role === 'participant') {
+      if (binding.pending || binding.pendingSharing || binding.syncedFingerprint !== fingerprint(event)) {
+        throw Object.assign(new Error('Participant links are read-only; local draft retained / Teilnehmer:innen-Links sind nur lesbar; lokaler Entwurf bleibt erhalten'), { code: 'read_only', status: 403 });
+      }
+      return binding;
+    }
     if (binding.pendingSharing) {
       try { await flushSharing(binding); }
       catch (error) {
@@ -323,6 +309,9 @@
   async function flushSharing(binding, password) {
     const body = binding.pendingSharing;
     if (!body) return binding.access;
+    if (binding.role === 'participant') {
+      throw Object.assign(new Error('Admin permission required / Adminberechtigung erforderlich'), { code: 'forbidden', status: 403 });
+    }
     const result = await request(API + '?action=sharing', { method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' },
         binding.token ? { Authorization: 'Bearer ' + binding.token } : {}),
