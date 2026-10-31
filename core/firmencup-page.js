@@ -1319,17 +1319,17 @@
     if (readOnly) {
       return '<section id="fc-results-filter-card" class="fc-toolbar fc-results-filter-card noprint" aria-label="' +
         tr('Teamfilter für Spielplan und Ergebnisse', 'Team filter for fixtures and results') + '">' +
+        '<label class="fc-search-label"><span>' + tr('Team suchen', 'Find team') +
+        '</span><input id="fc-team-search" type="search" autocomplete="off" value="' + esc(teamSearch) +
+        '" placeholder="' + tr('Team oder Firma', 'Team or company') + '" aria-controls="fc-results-team-filter"></label>' +
         '<label class="fc-group-filter"><span>' + tr('Mein Team auswählen', 'Choose my team') +
-        '</span><select id="fc-results-team-filter" aria-controls="fc-team-agenda fc-pools fc-standings fc-schedule" aria-describedby="fc-results-filter-help">' +
+        '</span><select id="fc-results-team-filter" aria-controls="fc-team-agenda fc-pools fc-standings fc-schedule">' +
         '<option value="">' + tr('Alle Teams', 'All teams') + '</option>' +
         event.teams.map(team => '<option value="' + esc(team.id) + '"' +
           (overviewTeam === team.id ? ' selected' : '') + '>' + esc(teamIdentity(team.id)) + '</option>').join('') +
-        '</select></label><p id="fc-results-filter-help" class="fc-note">' +
-        (participant ? tr('Wähle dein Team für das nächste Spiel, den nächsten Schiri-Einsatz und die gefilterten Ergebnisse. Gruppentabellen bleiben vollständig sichtbar.',
-          'Choose your team to see its next match, next referee duty and filtered results. Pool standings remain complete.') :
-          tr('Wähle dein Team für kommende Spiele, Schiridienste und eigene Ergebnisse. Die gesamten Gruppen-, Team- und Firmenwertungen bleiben sichtbar.',
-            'Choose your team for upcoming matches, referee duties and your results. Overall pool, team and company standings remain visible.')) +
-        '</p><p id="fc-results-filter-status" role="status" aria-live="polite" aria-atomic="true">' +
+        '</select></label><button type="button" id="fc-team-reset"' + (!overviewTeam && !teamSearch ? ' hidden' : '') + '>' +
+        tr('Alle Teams', 'All teams') + '</button><p id="fc-team-search-status" role="status" aria-live="polite" hidden></p>' +
+        '<p id="fc-results-filter-status" role="status" aria-live="polite" aria-atomic="true">' +
         esc(resultsFilterMessage()) + '</p></section>';
     }
     return '<section id="fc-results-filter-card" class="fc-toolbar fc-results-filter-card noprint" aria-label="' +
@@ -1356,6 +1356,9 @@
   }
   function resultsStatus() {
     const state = resultsState();
+    if (readOnly) return '<section id="fc-results-status" class="fc-results-status" tabindex="-1"><h2>' +
+      (state.final ? tr('Endergebnis', 'Final results') : tr('Zwischenstand', 'Current standings')) + ' ' + badge(state.final) +
+      '</h2><p>' + state.played + '/' + state.total + tr(' Spiele gewertet', ' matches recorded') + '</p></section>';
     if (!event.matches.length) return '<section id="fc-results-status" class="fc-results-status noprint" tabindex="-1"><h2>' +
       tr('Noch keine Ergebnisse', 'No results yet') + '</h2><p class="fc-empty">' + (readOnly ?
         tr('Die Turnierleitung hat noch keinen Spielplan veröffentlicht.', 'The organizer has not published a schedule yet.') :
@@ -1454,12 +1457,14 @@
         '<h3>' + tr('Endplatzierungen aller Teams', 'Final places of all teams') + '</h3><table class="fc-table fc-place-table"><thead><tr><th scope="col">' + tr('Platz', 'Place') +
         '</th><th scope="col">' + tr('Team / offene Platzierung', 'Team / pending placement') +
         '</th></tr></thead><tbody>' + placements + '</tbody></table>' :
-        '<p class="fc-note">' + tr('Endplatzierungen und Firmenwertung stehen erst nach der Endrunde fest. Bis dahin zählt der Zwischenstand der Gruppentabellen oben.',
-          'Final places and the company ranking are decided only after the finals. Until then, the pool tables above show the current standings.') + '</p>') +
+        '<p class="fc-note">' + (readOnly ? tr('Endplatzierungen folgen nach der Endrunde.', 'Final places follow after the finals.') :
+          tr('Endplatzierungen und Firmenwertung stehen erst nach der Endrunde fest. Bis dahin zählt der Zwischenstand der Gruppentabellen oben.',
+          'Final places and the company ranking are decided only after the finals. Until then, the pool tables above show the current standings.')) + '</p>') +
       (!company ? '</section>' :
       F.rankingMode(event) === 'mean' ? '<h3>' + tr('Zusätzliche Firmenwertung · Mittelwert', 'Additional company ranking · mean') + '</h3><p class="fc-note">' +
-        tr('Mittlerer Team-Endrang: kleiner ist besser. Firmenränge erst, wenn alle Teams platziert sind. = bedeutet geteilter Rang.',
-          'Mean team final rank: lower is better. Company ranks appear once all teams are placed. = means a shared rank.') +
+        (readOnly ? tr('Ø Endrang · kleiner ist besser · = geteilt', 'Mean final rank · lower is better · = shared') :
+          tr('Mittlerer Team-Endrang: kleiner ist besser. Firmenränge erst, wenn alle Teams platziert sind. = bedeutet geteilter Rang.',
+          'Mean team final rank: lower is better. Company ranks appear once all teams are placed. = means a shared rank.')) +
         '</p>' + resultsRules(rankingExplanation()) + '<table class="fc-table"><thead><tr><th>' + tr('Rang', 'Rank') + '</th><th>' + tr('Firma', 'Company') + '</th><th>' +
         tr('Teams platziert', 'Teams placed') + '</th><th>Ø ' + tr('Endrang', 'final rank') +
         '</th></tr></thead><tbody>' + orgs.map(r => '<tr data-company-row="' + esc(r.id) + '" data-company-teams="' +
@@ -1468,9 +1473,11 @@
           '</td><td>' + (r.meanRank == null ? '—' : r.meanRank.toFixed(2)) + '</td></tr>').join('') + '</tbody></table></section>' :
       (finals ? '<h3>' + (complete ? tr('Firmenwertung · Endstand', 'Company ranking · final standings') :
         tr('Firmenwertung · aktueller vorläufiger Stand', 'Company ranking · current provisional rule')) + '</h3>' : '') + '<p class="fc-note">' +
+      (readOnly ? tr('Firmenpokal: ausgewähltes Team · = geteilt · Regel vorläufig, nicht sportfachlich bestätigt.',
+        'Company trophy: selected team · = shared · provisional rule, not sport-approved.') :
       tr('Die Endplatzierung des ausgewählten Teams entscheidet über den Firmenpokal. Alle Teams zählen unabhängig davon für den Teampokal.', 'The selected team’s final placing determines the company trophy ranking. All teams independently compete for the team trophy.') +
       ' ' + tr('= bedeutet geteilter Firmenrang. Diese Firmenregel ist vorläufig, nicht sportfachlich bestätigt.',
-        '= means a shared company rank. This company rule is provisional, not sport-approved.') +
+        '= means a shared company rank. This company rule is provisional, not sport-approved.')) +
       '</p>' + resultsRules(rankingExplanation()) + '<table class="fc-table' + (finals ? '' : ' fc-plain-table') + '"><thead><tr>' + (finals ? '<th>' + tr('Platz', 'Place') + '</th>' : '') + '<th>' + tr('Firma', 'Company') +
       '</th><th>' + (finals ? tr('Team für den Firmenpokal / Endplatzierung', 'Company trophy team / final placing') : tr('Team für den Firmenpokal', 'Company trophy team')) + '</th></tr></thead><tbody>' +
       orgs.map(r => '<tr data-company-row="' + esc(r.id) + '" data-company-teams="' +
@@ -1518,10 +1525,11 @@
       }).join('') + '</div>' + paperTallySheet() + paperSeedingSheet() + '</section>';
   }
   let overviewTeam = params.get('team') || '';
+  let teamSearch = '';
   let overviewHidden = false;
   function teamOverviewBody(id) {
     if (!id) return '<p class="fc-note">' + (readOnly ?
-      tr('Wähle oben dein Team, um das nächste Spiel, den nächsten Schiri-Einsatz und die Ergebnisse zu sehen.', 'Choose your team above to see its next match, next referee duty and results.') :
+      tr('Alle Teams', 'All teams') :
       tr('Team im Gruppenverzeichnis wählen: Spiele, Schiridienste und Ergebnisse. Die Auswahl ändert keine Spielplanfilter.', 'Choose a team in the pool directory for matches, referee duties and results. Selection does not change fixture filters.')) + '</p>';
     const view = F.teamOverview(event, id);
     const order = (x, y) => x.wave - y.wave || x.field - y.field;
@@ -1561,14 +1569,12 @@
         (view.pool ? ' <span class="fc-team-pool-link">' + teamBadge(id, event.status === 'finals', false) + '</span>' : '') + '</h4>' +
         '<div class="fc-team-agenda fc-participant-agenda">' +
         nextSection(tr('Nächstes Spiel', 'Next match'), nextGame, false,
-          tr('Kein festes weiteres Spiel. Offene Baumspiele können noch dazukommen.', 'No confirmed next match. Pending bracket results may add one.')) +
+          tr('Kein weiteres Spiel zugeordnet.', 'No further match assigned.')) +
         (teamDuties ? nextSection(tr('Nächster Schiri-Einsatz', 'Next referee duty'), nextDuty, true,
           tr('Kein weiterer Schiri-Einsatz geplant.', 'No further referee duty is scheduled.')) : '') +
         (completed ? '<div class="fc-agenda-completed"><h5>' + tr('Ergebnisse', 'Results') + ' <span>(' + view.completed.length + ')</span></h5>' +
           list(view.completed, [], '', '') + '</div>' : '<p class="fc-note fc-agenda-empty">' +
           tr('Für dieses Team gibt es noch keine Ergebnisse.', 'No results have been recorded for this team yet.') + '</p>') +
-        (upcoming > (nextGame ? 1 : 0) + (nextDuty ? 1 : 0) ? '<p class="fc-note">' +
-          tr('Weitere Termine stehen im vollständigen Spielplan.', 'More fixtures are listed in the full schedule.') + '</p>' : '') +
         '</div>';
     }
     return '<h4 id="fc-team-overview-title" class="fc-team-title" tabindex="-1"><span>' + esc(teamIdentity(id)) + '</span>' +
@@ -1592,8 +1598,8 @@
       '<section id="fc-team-overview" aria-labelledby="fc-team-overview-heading"' + (!readOnly && overviewHidden ? ' hidden' : '') +
       '><div class="fc-team-overview-head"><h2 id="fc-team-overview-heading" tabindex="-1">' +
       tr(readOnly ? 'Dein Teamablauf' : 'Teams & Gruppen', readOnly ? 'Your team schedule' : 'Teams & pools') + '</h2></div>' +
-      (!participant ? poolDirectory('overview') + (!readOnly ? '<p id="fc-directory-empty" class="fc-note noprint" hidden>' +
-      tr('Kein Team zur Suche gefunden. Suche unten ändern oder Filter zurücksetzen.', 'No team matches the search. Change the search below or reset filters.') + '</p>' : '') : '') +
+      (!readOnly ? poolDirectory('overview') + '<p id="fc-directory-empty" class="fc-note noprint" hidden>' +
+      tr('Kein Team zur Suche gefunden. Suche unten ändern oder Filter zurücksetzen.', 'No team matches the search. Change the search below or reset filters.') + '</p>' : '') +
       '<div id="fc-team-agenda" data-team="' + esc(overviewTeam) + '" aria-live="polite">' + teamOverviewBody(overviewTeam) + '</div></section>';
   }
   function setTeamOverviewVisible(visible, focus) {
@@ -1607,6 +1613,7 @@
     if (focus) (visible ? overview.querySelector('.app-close') : opener).focus();
   }
   function chooseTeam(id) {
+    if (id && !event.teams.some(team => team.id === id)) return;
     if (!readOnly) setTeamOverviewVisible(true, false);
     overviewTeam = id;
     if (readOnly) {
@@ -1616,7 +1623,7 @@
       history.replaceState(null, '', url.href);
     }
     const teamFilter = document.getElementById('fc-results-team-filter');
-    if (teamFilter) teamFilter.value = id;
+    if (teamFilter) { updateTeamSearch(); teamFilter.value = id; }
     const agenda = document.getElementById('fc-team-agenda');
     if (!agenda) return;
     agenda.dataset.team = id;
@@ -1626,6 +1633,23 @@
       else link.removeAttribute('aria-current');
     });
     if (readOnly) resultsFilter();
+  }
+  function updateTeamSearch() {
+    const select = document.getElementById('fc-results-team-filter');
+    if (!select) return;
+    const q = teamSearch.trim().toLocaleLowerCase();
+    const matches = event.teams.filter(team =>
+      teamIdentity(team.id).toLocaleLowerCase().indexOf(q) >= 0);
+    // Keep the selected ID available even while searching for another team.
+    select.innerHTML = '<option value="">' + tr('Alle Teams', 'All teams') + '</option>' +
+      event.teams.filter(team => team.id === overviewTeam || matches.some(hit => hit.id === team.id))
+        .map(team => '<option value="' + esc(team.id) + '">' + esc(teamIdentity(team.id)) + '</option>').join('');
+    select.value = overviewTeam;
+    const status = document.getElementById('fc-team-search-status');
+    status.hidden = !q;
+    status.textContent = matches.length ?
+      matches.length + tr(' Teams gefunden', ' teams found') : tr('Kein Team gefunden', 'No team found');
+    document.getElementById('fc-team-reset').hidden = !overviewTeam && !teamSearch;
   }
   function navigationTarget(id) {
     return document.getElementById(id);
@@ -1970,12 +1994,13 @@
         (readiness.ready ? '' : '<span class="fc-note"> ' + tr('Noch nicht startbereit – siehe Turniertag oben.', 'Not ready yet – see event day above.') + '</span>') + '</span>' : '') +
       '<span class="fc-wave-mode">' + roundModeSummary(matches[0].phase) + '</span></p>' +
       '<div class="fc-wave-matches">' + grouped + '</div>' +
-      '<p class="fc-wave-score-guide' + (participant ? ' fc-print-only' : '') + '" id="fc-wave-score-guide-' + wave + '">' + scoreEntryExplanation(matches) + '</p></details>';
+      '<p class="fc-wave-score-guide' + (readOnly ? ' fc-print-only' : '') + '" id="fc-wave-score-guide-' + wave + '">' + scoreEntryExplanation(matches) + '</p></details>';
   }
   function fixtures() {
     if (!event.matches.length) return '';
     const waves = Array.from(new Set(event.matches.map(m => m.wave))).sort((x, y) => x - y);
-    return '<section id="fc-schedule" tabindex="-1"><div class="fc-schedule-head"><h2>' + tr('Spielplan & Ergebnisse', 'Fixtures & results') + '</h2>' +
+    return '<section id="fc-schedule" tabindex="-1"><div class="fc-schedule-head"><h2>' +
+      (readOnly ? tr('Spiele & Schiridienste', 'Matches & referee duties') : tr('Spielplan & Ergebnisse', 'Fixtures & results')) + '</h2>' +
       '<details class="fc-score-help"><summary>' + tr('Regeln', 'Rules') + '</summary>' +
       '<p id="fc-score-guide" class="fc-note">' + tr('Tatsächliche Ballpunkte erfassen, keine Tabellenpunkte. ', 'Enter actual ball points, not standings points. ') +
       scoringExplanation() + ' ' + timingExplanation() + '</p></details></div>' +
@@ -2007,6 +2032,8 @@
   }
   function live() {
     if (!event.matches.length) return '';
+    if (readOnly) return '<section id="fc-live" class="noprint"><h2>' + tr('Live', 'Live') +
+      '</h2>' + currentWaveSummary() + '<p id="fc-countdown" role="timer"></p></section>';
     const waves = Array.from(new Set(event.matches.map(m => m.wave)));
     const selectedWave = nextWave();
     const completedWaves = event.matches.filter(m => event.results[m.id] || event.outcomes[m.id]).map(m => m.wave);
@@ -2412,19 +2439,26 @@
   function render(preserveEdits) {
     const pending = preserveEdits !== false && hasUnsavedSetup() ? editorFields() : null;
     const focus = pending && editorFocus();
+    const active = readOnly && document.activeElement && app.contains(document.activeElement) ? {
+      id: document.activeElement.id,
+      phase: document.activeElement.dataset.phase,
+      start: document.activeElement.selectionStart,
+      end: document.activeElement.selectionEnd
+    } : null;
     const expandedCompanies = Array.from(app.querySelectorAll('.fc-company-teams[open]')).map(node => node.parentElement.dataset.company);
     const expandedRosters = Array.from(app.querySelectorAll('.fc-roster-details[open]')).map(node => node.dataset.rosterTeam);
     orgOpen = !!app.querySelector('#fc-org[open]');
     if (overviewTeam && !event.teams.some(team => team.id === overviewTeam)) overviewTeam = '';
     identity(event.title);
+    document.body.classList.toggle('fc-read-only', readOnly);
+    eventHeader();
     if (!phase) phase = (event.matches.length || readOnly) ? 'play' : 'teams';
     const accessState = participant ? tr('Teilnehmer:innen · nur lesen', 'Participants · read-only') : readOnly ? tr('Öffentliche Ansicht · nur lesen', 'Public view · read-only') :
       (binding && binding.id ? tr('Mehrgeräte-Turnierleitung · Serverrevision ' + binding.revision, 'Multi-device organizer · server revision ' + binding.revision) : '');
     app.innerHTML = (accessState ? '<p class="fc-access-state"><strong>' + accessState +
       (livePublic ? ' · ' + tr('Live · Serverrevision ' + liveRevision, 'Live · server revision ' + liveRevision) : '') + '</strong></p>' : '') +
-      (readOnly ? '<p class="fc-warning">' + (participant ?
-        tr('Teilnehmer:innen-Link: Ergebnisse, Zwischenstände und Spielplan ansehen. Keine Eingabe oder Bearbeitung; Spielernamen und Anwesenheit bleiben privat.', 'Participant link: view results, current standings and fixtures. No entry or editing; player names and attendance remain private.') :
-        tr('Öffentliche Live-Ansicht: aktualisiert sich bei Verbindung automatisch. Team-/Organisationsnamen und Ergebnisse sind sichtbar; Private Spieler:innen-Namen, Anwesenheit und Bearbeitungsrecht bleiben privat.', 'Public live view: refreshes automatically when connected. Team/organization names and results are visible; private player names, attendance and editor rights remain private.')) + '</p>' :
+      (readOnly ? '<p class="fc-privacy">' +
+        tr('Nur lesen · Spieler:innen-Namen und Anwesenheit bleiben privat.', 'Read-only · player names and attendance stay private.') + '</p>' :
         editor()) +
       rules() + (readOnly ? capacity() : '') + cockpit() + (readOnly ? live() : organization()) +
       (readOnly ? resultsFilterPanel() + teamOverview() : teamOverview() + searchPanel() + resultsFilterPanel()) +
@@ -2444,6 +2478,34 @@
     if (pending) restoreEditor(pending, focus);
     updateSaveButtons();
     followAnchor();
+    if (active) {
+      const node = active.id ? document.getElementById(active.id) :
+        app.querySelector('.fc-phases [data-phase="' + active.phase + '"]');
+      if (node && node.getClientRects().length) {
+        node.focus({ preventScroll: true });
+        if (typeof active.start === 'number') node.setSelectionRange(active.start, active.end);
+      }
+    }
+  }
+  function eventHeader() {
+    const heading = document.getElementById('fc-heading');
+    let hero = document.getElementById('fc-event-hero');
+    if (!readOnly) {
+      if (hero) { hero.parentElement.insertBefore(heading, hero); hero.remove(); }
+      return;
+    }
+    if (!hero) {
+      hero = document.createElement('header');
+      hero.id = 'fc-event-hero';
+      hero.setAttribute('aria-labelledby', 'fc-heading');
+      heading.parentElement.insertBefore(hero, heading);
+      hero.innerHTML = '<p class="fc-event-eyebrow">' + tr('Dein Turniertag', 'Your tournament day') + '</p>';
+      hero.appendChild(heading);
+      hero.insertAdjacentHTML('beforeend', '<p id="fc-event-meta"></p>');
+    }
+    document.getElementById('fc-event-meta').textContent = event.teams.length + ' Teams · ' +
+      F.courtCapacity(event) + tr(' Felder', ' courts') + ' · ' + event.config.start +
+      (livePublic || participant ? ' · Live' : '');
   }
   function toolsReturnPhase() {
     if (toolsReturn && toolsReturn !== 'tools') return toolsReturn;
@@ -2480,13 +2542,15 @@
   }
   function phaseNavigation() {
     return '<div class="fc-phasebar noprint"><nav class="fc-phases noprint" aria-label="' + tr('Turnierphasen', 'Tournament phases') + '">' +
-      PHASES.filter(id => !readOnly || EDITOR_PHASES.indexOf(id) < 0).map((id, index) => {
+      (readOnly ? ['play', 'matches', 'results'] : PHASES).map((id, index) => {
         const names = { teams: tr('Firmen & Teams', 'Companies & teams'), configuration: tr('Konfiguration', 'Configuration'),
-          play: tr('Turnierablauf', 'Tournament play'), results: tr('Turnierergebnis', 'Tournament results') };
+          play: readOnly ? tr('Zeitplan', 'Schedule') : tr('Turnierablauf', 'Tournament play'),
+          matches: tr('Einzelergebnisse', 'Match results'),
+          results: readOnly ? tr('Tabelle', 'Standings') : tr('Turnierergebnis', 'Tournament results') };
         return '<button type="button" data-phase="' + id + '" aria-controls="fc-phase-' + id + '"' +
           (id === phase ? ' aria-current="step"' : '') + (id === 'play' && !readOnly && !event.matches.length ? ' disabled title="' +
             esc(tr('Verfügbar, sobald unter „Konfiguration“ der Gruppenplan erstellt ist', 'Available once the group schedule is built under “Configuration”')) + '"' : '') +
-          '><span class="fc-phase-number" aria-hidden="true">' + (index + 1) + '</span> ' + names[id] + '</button>';
+          '>' + (!readOnly ? '<span class="fc-phase-number" aria-hidden="true">' + (index + 1) + '</span> ' : '') + names[id] + '</button>';
       }).join('') + '</nav></div>';
   }
   const PHASES = ['teams', 'configuration', 'play', 'results'], EDITOR_PHASES = ['teams', 'configuration'];
@@ -2499,17 +2563,19 @@
     const groups = [
       ['teams', tr('Firmen & Teams', 'Companies & teams'), ['fc-editor', 'fc-registration', 'fc-group-breakdown-teams']],
       ['configuration', tr('Konfiguration', 'Configuration'), ['fc-setup', 'fc-locked-planning', 'fc-group-breakdown-configuration', 'fc-capacity', 'fc-config-actions', 'fc-rules']],
-      ['play', tr('Turnierablauf', 'Tournament play'), readOnly ?
+      ['play', readOnly ? tr('Zeitplan', 'Schedule') : tr('Turnierablauf', 'Tournament play'), readOnly ?
         ['fc-results-filter-card', 'fc-team-overview', 'fc-live', 'fc-schedule', 'fc-draw-record', 'fc-capacity', 'fc-rules'] :
         ['fc-search-panel', 'fc-cockpit', 'fc-team-overview-open', 'fc-team-overview'].concat(groupStageDecided() ? ['fc-finals'] : [])
           .concat(['fc-schedule', 'fc-finals', 'fc-org', 'fc-draw-record'])],
-      ['results', tr('Turnierergebnis', 'Tournament results'), readOnly ?
+      ['matches', tr('Einzelergebnisse', 'Match results'), []],
+      ['results', readOnly ? tr('Tabelle', 'Standings') : tr('Turnierergebnis', 'Tournament results'), readOnly ?
         (resultsState().final ? ['fc-results-status', 'fc-standings', 'fc-pools'] : ['fc-results-status', 'fc-pools', 'fc-standings']) : resultsState().final ?
         ['fc-results-filter-card', 'fc-results-status', 'fc-standings', 'fc-pools'] :
         ['fc-results-filter-card', 'fc-results-status', 'fc-pools', 'fc-standings']],
       ['tools', tr('Teilen & Sichern', 'Sharing & backup'), ['fc-tools']]
     ];
     groups.forEach(([id, name, ids]) => {
+      if (!readOnly && id === 'matches') return;
       if (readOnly && (EDITOR_PHASES.indexOf(id) >= 0 || id === 'tools')) return;
       const panel = document.createElement('div');
       panel.id = 'fc-phase-' + id; panel.className = 'fc-phase'; panel.hidden = id !== phase;
@@ -2541,10 +2607,12 @@
       if ((id === 'configuration' || id === 'teams') && event.startedAt && event.matches.length) panel.insertAdjacentHTML('beforeend',
         '<div class="fc-step-actions noprint"><button type="button" data-phase="play">' +
         tr('Weiter zum Turnierablauf', 'Continue to tournament play') + '</button></div>');
-      if (id === 'play') panel.insertAdjacentHTML('beforeend',
+      if (id === 'matches') panel.insertAdjacentHTML('beforeend', '<p id="fc-match-results-empty" class="fc-empty" hidden>' +
+        tr('Noch keine Ergebnisse.', 'No results yet.') + '</p>');
+      if (id === 'play' && !readOnly) panel.insertAdjacentHTML('beforeend',
         '<div class="fc-step-actions noprint"><button type="button" data-phase="results">' +
         tr('Turnierergebnis ansehen', 'View tournament results') + '</button></div>');
-      if (id === 'results' && event.matches.length) panel.insertAdjacentHTML('beforeend',
+      if (id === 'results' && event.matches.length && !readOnly) panel.insertAdjacentHTML('beforeend',
         '<div class="fc-step-actions noprint"><button type="button" data-phase="play">' +
         tr('Zurück zum Turnierablauf', 'Back to tournament play') + '</button></div>');
       app.appendChild(panel);
@@ -2561,13 +2629,18 @@
     const opener = document.getElementById('fc-tools-open');
     if (opener) opener.setAttribute('aria-expanded', id === 'tools' ? 'true' : 'false');
     app.querySelectorAll('.fc-phase').forEach(panel => { panel.hidden = panel.id !== 'fc-phase-' + id; });
-    if (readOnly && (id === 'play' || id === 'results')) {
+    if (readOnly && (id === 'play' || id === 'matches' || id === 'results')) {
       const panel = document.getElementById('fc-phase-' + id);
       const heading = panel.querySelector('.fc-phase-heading');
       const filter = document.getElementById('fc-results-filter-card');
       const overview = document.getElementById('fc-team-overview');
       if (filter) heading.insertAdjacentElement('afterend', filter);
       if (filter && overview) filter.insertAdjacentElement('afterend', overview);
+      if (id !== 'results') {
+        const schedule = document.getElementById('fc-schedule');
+        if (schedule) panel.appendChild(schedule);
+      }
+      resultsFilter();
     }
     app.querySelectorAll('.fc-phases [data-phase]').forEach(button => {
       if (button.dataset.phase === id) button.setAttribute('aria-current', 'step');
@@ -2577,9 +2650,10 @@
   }
   function revealTarget(target) {
     if (target.closest('#fc-team-overview')) setTeamOverviewVisible(true, false);
-    const panel = target.closest('.fc-phase');
-    if (panel) showPhase(panel.id.slice('fc-phase-'.length), false);
     const fixture = target.closest('.fc-fixture');
+    const panel = target.closest('.fc-phase');
+    if (panel) showPhase(readOnly && (target.closest('#fc-schedule') || target.closest('#fc-team-overview')) ?
+      'play' : panel.id.slice('fc-phase-'.length), false);
     const group = target.closest('.fc-wave-group');
     if ((fixture && fixture.hidden) || (group && group.hidden)) {
       if (readOnly) {
@@ -3103,7 +3177,7 @@
         const group = summary.parentElement;
         const searchInput = document.getElementById('fc-search');
         const groupInput = document.getElementById('fc-group-filter');
-        if (searchInput && groupInput && !searchInput.value.trim() && !groupInput.value) waveOpenOverride.set(Number(group.dataset.wave), !group.open);
+        if (readOnly || searchInput && groupInput && !searchInput.value.trim() && !groupInput.value) waveOpenOverride.set(Number(group.dataset.wave), !group.open);
       };
     });
     const waveSelect = document.getElementById('fc-wave');
@@ -3130,9 +3204,15 @@
       search(false);
     }
     const teamFilter = document.getElementById('fc-results-team-filter');
-    if (teamFilter) teamFilter.onchange = function () {
-      chooseTeam(teamFilter.value);
-    };
+    if (teamFilter) {
+      const teamInput = document.getElementById('fc-team-search');
+      teamInput.oninput = function () { teamSearch = teamInput.value; updateTeamSearch(); };
+      teamFilter.onchange = function () { chooseTeam(teamFilter.value); };
+      document.getElementById('fc-team-reset').onclick = function () {
+        teamSearch = ''; teamInput.value = ''; chooseTeam(''); teamInput.focus();
+      };
+      updateTeamSearch();
+    }
     const resultsSearch = document.getElementById('fc-results-filter');
     const resultsGroup = document.getElementById('fc-results-group-filter');
     const resultsReset = document.getElementById('fc-results-filter-reset');
@@ -3222,18 +3302,22 @@
       app.querySelectorAll('.fc-fixture').forEach(node => {
         const match = event.matches.find(item => item.id === node.dataset.match);
         const sides = match ? [F.resolve(event, match.a), F.resolve(event, match.b)] : [];
-        node.hidden = !printingResults && !!overviewTeam && !sides.includes(overviewTeam) &&
-          (!match || match.refereeTeam !== overviewTeam);
+        node.hidden = !printingResults && ((phase === 'matches' && (!match || !decided(match))) ||
+          !!overviewTeam && !sides.includes(overviewTeam) && (!match || match.refereeTeam !== overviewTeam));
       });
       app.querySelectorAll('.fc-wave-pool').forEach(pool => {
         pool.hidden = !pool.querySelector('.fc-fixture:not([hidden])');
       });
       app.querySelectorAll('.fc-wave-group').forEach(group => {
         const wave = Number(group.dataset.wave);
-        group.hidden = !printingResults && !!overviewTeam && !group.querySelector('.fc-fixture:not([hidden])');
+        group.hidden = !printingResults && !group.querySelector('.fc-fixture:not([hidden])');
         group.open = printingResults ? group.dataset.defaultOpen === '1' :
-          overviewTeam ? !group.hidden : (waveOpenOverride.has(wave) ? waveOpenOverride.get(wave) : group.dataset.defaultOpen === '1');
+          overviewTeam || phase === 'matches' ? !group.hidden : (waveOpenOverride.has(wave) ? waveOpenOverride.get(wave) : group.dataset.defaultOpen === '1');
       });
+      const empty = document.getElementById('fc-match-results-empty');
+      if (empty) empty.hidden = printingResults || !!app.querySelector('.fc-fixture:not([hidden])');
+      const overview = document.getElementById('fc-team-overview');
+      if (overview) overview.classList.toggle('fc-no-team', !overviewTeam);
     }
     app.querySelectorAll('.fc-results-pool').forEach(pool => {
       pool.hidden = !printingResults && !!resultsGroupFilter && pool.dataset.resultsPool !== resultsGroupFilter;
@@ -3255,16 +3339,14 @@
       const matched = !!row.dataset.team && matchingIds.has(row.dataset.team);
       const slot = row.dataset.resultSlot;
       const contextualMatch = slot && slotMatches[slot];
-      row.hidden = !printingResults && (participant ? !!overviewTeam && !matched && !contextualMatch :
-        !!q && !matched && !contextualMatch);
+      row.hidden = !printingResults && !readOnly && !!q && !matched && !contextualMatch;
       row.classList.toggle('fc-results-filter-match', !printingResults && (readOnly ? !!overviewTeam && matched : !!q && matched));
     });
     app.querySelectorAll('#fc-standings [data-company-row]').forEach(row => {
       const org = event.organizations.find(item => item.id === row.dataset.companyRow);
       const companyMatch = !!org && org.name.toLocaleLowerCase().indexOf(q) >= 0;
       const teamMatch = (row.dataset.companyTeams || '').split(' ').some(id => matchingIds.has(id));
-      row.hidden = !printingResults && (participant ? !!overviewTeam && !teamMatch :
-        !!q && !companyMatch && !teamMatch);
+      row.hidden = !printingResults && !readOnly && !!q && !companyMatch && !teamMatch;
     });
     const status = document.getElementById('fc-results-filter-status');
     if (!status) return;
@@ -3272,17 +3354,11 @@
     if (status.textContent !== message) status.textContent = message;
   }
   function resultsFilterMessage() {
-    if (readOnly && !participant) {
+    if (readOnly) {
       return overviewTeam ?
-        tr('Spielplan für ', 'Fixtures for ') + teamIdentity(overviewTeam) +
-          tr(' gefiltert · eigene Ergebnisse im Teamablauf; Gesamtwertung bleibt vollständig.', ' filtered · your results appear in the team agenda; overall standings remain complete.') :
-        tr('Alle Teams werden angezeigt. Wähle dein Team für kommende Spiele und eigene Ergebnisse.', 'All teams are shown. Choose your team for upcoming matches and your results.');
-    }
-    if (participant) {
-      return overviewTeam ?
-        tr('Spielplan und Endplatzierungen für ', 'Fixtures and final places for ') + teamIdentity(overviewTeam) +
-          tr(' gefiltert · Gruppentabellen bleiben vollständig.', ' · pool standings remain complete.') :
-        tr('Alle Teams werden angezeigt. Wähle dein Team, um Spielplan und Ergebnisse zu filtern.', 'All teams are shown. Choose your team to filter fixtures and results.');
+        (phase === 'results' ? tr('Gesamtwertung · Team hervorgehoben', 'Overall standings · team highlighted') :
+          tr('Spiele & Schiridienste deines Teams', 'Your team’s matches & referee duties')) :
+        tr('Alle Teams', 'All teams');
     }
     const q = resultsQuery.trim().toLocaleLowerCase();
     const active = !!q || !!resultsGroupFilter;

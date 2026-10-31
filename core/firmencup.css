@@ -62,6 +62,47 @@ button.app-close { position: absolute; top: 12px; right: 0; display: flex; align
 button.app-close svg { width: 32px; height: 32px; pointer-events: none; }
 button.app-close:hover { background: #eef2f7; color: #1a3a5c; }
 .fc-phase-heading { margin-bottom: 4px; font-size: 1.4rem; color: #1a3a5c; }
+@media screen {
+  .fc-read-only main { max-width: 1000px; }
+  #fc-event-hero { position: relative; padding: 28px 24px; margin: 8px 0 20px; border-radius: 16px; color: #fff; background: linear-gradient(120deg, #133855, #176278); border-bottom: 5px solid #e8bd6a; }
+  #fc-event-hero #fc-heading { margin: 8px 0 12px; max-width: 22em; color: #fff; font-size: 2.8rem; line-height: 1.12; font-weight: 800; letter-spacing: -.025em; }
+  .fc-event-eyebrow { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #f6d998; }
+  #fc-event-meta { margin: 0; font-size: .95rem; color: #e5f1f5; }
+  .fc-read-only .fc-access-state { display: none; }
+  .fc-read-only .fc-privacy { margin: 10px 2px; color: #46576b; font-size: .8rem; }
+  .fc-read-only .fc-phases { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-gap: 6px; }
+  .fc-read-only .fc-phases button { padding: 12px 6px; text-align: center; font-size: .95rem; border-width: 1px; border-radius: 9px; }
+  .fc-read-only .fc-phase-heading { margin: 18px 0 10px; }
+  .fc-read-only #fc-results-filter-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; grid-gap: 8px 14px; align-items: end; background: #f8fafd; }
+  .fc-read-only #fc-results-filter-card label { margin: 0; min-width: 0; }
+  .fc-read-only #fc-results-filter-card label > span { display: block; margin-bottom: 6px; font-size: .85rem; }
+  .fc-read-only #fc-team-reset { margin: 0; background: #fff; color: #1a3a5c; }
+  .fc-read-only #fc-results-filter-status, .fc-read-only #fc-team-search-status { grid-column: 1 / -1; margin: 0; color: #46576b; font-size: .85rem; }
+  .fc-read-only #fc-team-overview { padding: 0; border: 0; background: transparent; }
+  .fc-read-only #fc-team-overview-heading { display: none; }
+  .fc-read-only #fc-team-overview.fc-no-team, .fc-read-only #fc-phase-results #fc-team-overview { display: none; }
+  .fc-read-only #fc-phase-play .fc-agenda-completed, .fc-read-only #fc-phase-play .fc-agenda-empty { display: none; }
+  .fc-read-only #fc-phase-matches .fc-participant-next { display: none; }
+  .fc-read-only #fc-phase-matches .fc-agenda-completed { display: none; }
+  .fc-read-only #fc-phase-matches .fc-team-title { margin-bottom: 0; }
+  .fc-read-only #fc-phase-matches .fc-agenda-empty { display: none; }
+  .fc-read-only #fc-capacity, .fc-read-only #fc-rules, .fc-read-only #fc-draw-record { display: none; }
+  .fc-read-only .fc-score-help, .fc-read-only .fc-print-row, .fc-read-only .fc-results-links { display: none; }
+  .fc-read-only .fc-standings-note, .fc-read-only .fc-pools-summary { display: none; }
+  .fc-read-only #fc-standings > .fc-note { font-size: .85rem; }
+  .fc-read-only #fc-live { padding: 12px 14px; background: #edf4fa; }
+  .fc-read-only #fc-live > h3 { margin: 0 0 8px; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
+  .fc-read-only .fc-wave-group { border-color: #c8d6e2; margin: 10px 0; }
+  .fc-read-only .fc-wave-head { color: #1a3a5c; }
+  .fc-read-only .fc-participant-next { background: #fff; border-top: 3px solid #176278; }
+  @media (max-width: 480px) {
+    #fc-event-hero { padding: 24px 18px; }
+    #fc-event-hero #fc-heading { font-size: 2rem; }
+    .fc-read-only .fc-phases button { font-size: .8rem; }
+    .fc-read-only #fc-results-filter-card { grid-template-columns: minmax(0, 1fr); }
+    .fc-read-only #fc-team-reset { justify-self: start; }
+  }
+}
 .fc-setup-prereq { margin: 6px 0 0; }
 .fc-settings > fieldset { margin: 14px 0; padding: 14px; background: #f8fafd; }
 .fc-settings .fc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-gap: 12px 24px; }
