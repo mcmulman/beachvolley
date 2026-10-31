@@ -120,6 +120,11 @@
       return root.TStore.transaction(function (view) {
         const k = key(event.id), raw = view.getItem(k), next = root.Firmencup.clone(event);
         const old = raw ? parse(raw) : null;
+        if (options && Number.isInteger(options.expectedRevision) && (!old || old.revision !== options.expectedRevision)) {
+          const stale = new Error('Changed in another tab. Reload / In anderem Tab geändert. Neu laden.');
+          stale.code = 'stale_local';
+          throw stale;
+        }
         if (raw) view.setItem(backup + event.id, raw);
         next.revision = old ? old.revision + 1 : 1;
         view.setItem(k, JSON.stringify(next));

@@ -114,7 +114,7 @@
   const statusNext = document.getElementById('fc-status-next');
   const statusNextLabel = document.getElementById('fc-status-next-label'), statusActionLink = document.getElementById('fc-status-action');
   let event = null, busy = false, setupStep = 1, setupSettingsDraft = null, phase = null, routedHash = null, toolsReturn = null, lastScored = null;
-  let binding = null, livePublic = false, liveRevision = null, liveEtag = null;
+  let binding = null, livePublic = false, liveRevision = null, liveEtag = null, pollingPublic = false;
   let currentStatusAction = null, orgOpen = false;
   let saving = false;
   let editorBaseline = '{}';
@@ -2109,6 +2109,10 @@
           'Copy the link and send it via WhatsApp, SMS or email, for example. “Send link” opens the app chooser on supported devices. Alternatively scan the QR code or download it as an image.') + '</p>' +
         '<div id="fc-qr"></div><p id="fc-qr-note" class="fc-note" role="status">' +
         tr('QR-Code zum öffentlichen Live-Link.', 'QR code for the public live link.') + '</p></div>' : '') +
+      (published && binding && binding.access && binding.access.participantEnabled ? '<p class="fc-note">' +
+        tr('Ein älterer Teilnehmer:innen-Link ist noch aktiv. Er bleibt nur lesbar und ist unabhängig von der öffentlichen Freigabe.',
+          'An older participant link is still active. It remains read-only and independent from public access.') + '</p>' +
+        button('revoke-participant', tr('Teilnehmer:innen-Link widerrufen', 'Revoke participant link')) : '') +
       button(published ? 'toggle-public' : 'share', active ?
         tr('Öffentliche Freigabe beenden', 'Stop public access') :
         tr('Öffentlichen Live-Link + QR erstellen', 'Create public live link + QR')) + '</fieldset>';
@@ -2156,7 +2160,18 @@
     const qrHost = document.getElementById('fc-qr'), note = document.getElementById('fc-qr-note');
     try {
       const qr = window.qrcode(0, 'L'); qr.addData(url); qr.make();
-      const img = document.createElement('img'); img.src = qr.createDataURL(4, 4);
+      const canvas = document.createElement('canvas'), modules = qr.getModuleCount(), cell = 4, margin = cell * 4;
+      canvas.width = canvas.height = modules * cell + margin * 2;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('QR image unavailable / QR-Bild nicht verfügbar');
+      context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#000';
+      for (let row = 0; row < modules; row++) {
+        for (let col = 0; col < modules; col++) {
+          if (qr.isDark(row, col)) context.fillRect(margin + col * cell, margin + row * cell, cell, cell);
+        }
+      }
+      const img = document.createElement('img'); img.src = canvas.toDataURL('image/png');
       img.alt = tr('QR zum Live-Nur-Lesen-Link', 'QR to the live read-only link');
       qrHost.appendChild(img);
       const downloadQr = document.createElement('a');
@@ -2165,6 +2180,7 @@
       downloadQr.textContent = tr('QR-Code herunterladen', 'Download QR code');
       qrHost.appendChild(downloadQr);
     } catch (error) {
+      console.error('Firmencup QR:', error);
       note.textContent = tr('QR konnte nicht erzeugt werden; der Nur-Lesen-Link kann kopiert werden.', 'Could not create QR; copy the read-only link instead.');
     }
   }
@@ -2186,13 +2202,15 @@
     notify(tr('Serverstand geladen. Der lokale Entwurf bleibt als unabhängige Kopie erhalten.', 'Server version loaded. The local draft remains as an independent copy.'));
   }
   async function pollPublic() {
-    if (!livePublic || document.visibilityState === 'hidden' || busy) return;
+    if (!livePublic || document.visibilityState === 'hidden' || busy || pollingPublic) return;
+    pollingPublic = true;
     try {
       const remote = await Server.get(params.get('eventId'), null, liveEtag);
       if (remote.notModified) return;
       if (remote.canEdit || !remote.event || remote.event.id !== event.id) throw new Error('Invalid public event response / Ungültige öffentliche Veranstaltungsantwort');
       const incoming = F.validate(remote.event, { publicSnapshot: true });
       if (remote.revision === liveRevision) { liveEtag = remote.etag; return; }
+      if (Number.isInteger(liveRevision) && remote.revision <= liveRevision) return;
       event = incoming;
       liveRevision = remote.revision;
       liveEtag = remote.etag;
@@ -2201,6 +2219,8 @@
     } catch (error) {
       console.error('Firmencup public refresh:', error);
       notify(tr('Live-Ansicht zeigt den letzten geladenen Stand; Aktualisierung fehlgeschlagen: ', 'Live view shows the last loaded state; refresh failed: ') + error.message, true);
+    } finally {
+      pollingPublic = false;
     }
   }
   async function pollEditor() {
@@ -2221,7 +2241,7 @@
         if (remote.revision <= binding.revision) return;
         const replacement = F.validate(remote.event, { publicSnapshot: true });
         replacement.revision = 0;
-        event = await Store.replace(replacement, { publicSnapshot: true });
+        event = await Store.replace(replacement, { publicSnapshot: true, expectedRevision: polledEvent.revision });
         binding = await Server.adopt(event.id, binding.id, binding.token, remote.revision, event, 'participant');
         render();
         notify(tr('Live-Stand aktualisiert · Revision ', 'Live state updated · revision ') + remote.revision);
@@ -2263,7 +2283,7 @@
       if (Server.fingerprint(event) === binding.syncedFingerprint) {
         const replacement = F.clone(remote.event);
         replacement.revision = 0;
-        event = await Store.replace(F.validate(replacement));
+        event = await Store.replace(F.validate(replacement), { expectedRevision: polledEvent.revision });
         binding = await Server.adopt(event.id, binding.id, binding.token, remote.revision, event);
         render();
         notify(tr('Änderungen eines anderen Geräts übernommen · Revision ', 'Changes from another device loaded · revision ') + remote.revision);
