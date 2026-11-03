@@ -1543,7 +1543,7 @@
       const opponent = a === id ? b : a, cup = m.phase === 'cup';
       const context = cup || m.pool !== view.pool ? matchContext(m, false) + ' ' : '';
       const what = '<span class="fc-agenda-heading"><strong class="fc-agenda-role">' +
-        (duty ? tr('Schiridienst:', 'Referee duty:') : tr('Spiel gegen', 'Match against')) + '</strong> ' +
+        (duty ? refereeIcon() + tr('Schiridienst:', 'Referee duty:') : tr('Spiel gegen', 'Match against')) + '</strong> ' +
         (context ? '<span class="fc-agenda-context">' + context + '</span>' : '') + '</span> ' +
         '<span class="fc-agenda-opponents">' + (duty ? matchLabel(m, cup ? null : m.pool, tr(' gegen ', ' vs ')) :
           esc(opponent ? teamIdentity(opponent) : tr('Gegner noch offen', 'Opponent pending')) +
@@ -2043,11 +2043,16 @@
       '<p id="fc-search-help" class="fc-note">' + tr('Suche: Gruppenverzeichnis und Spiele inkl. Schiridiensten. Gruppenfilter: nur Spielplan. Teamauswahl: nur Teamablauf.', 'Search: pool directory and fixtures including referee duties. Pool filter: fixtures only. Team selection: agenda only.') + '</p>' +
       '<div id="fc-next" role="status"></div></section>';
   }
+  function refereeIcon() {
+    return '<svg class="fc-referee-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+      '<path d="M10 8h11v5h-5a7 7 0 1 1-6-5Z"/><circle cx="9" cy="15" r="2.5"/><path d="M16 8v5M5 3l2 2m5-4v3m6-2-2 3"/></svg>';
+  }
   function refereeLabel(m, plain) {
     const mode = F.refereeMode(event);
-    if (plain) return mode === 'teams' ? tr('Schiri-Team: ', 'Referee team: ') + esc(teamIdentity(m.refereeTeam)) :
+    if (plain) return mode === 'teams' ? refereeIcon() + tr('Schiri-Team: ', 'Referee team: ') + esc(teamIdentity(m.refereeTeam)) :
       mode === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externer Schiri', 'External referee');
     return '<span class="fc-referee-duty fc-referee-duty-' + mode + '">' +
+      (mode === 'teams' ? refereeIcon() : '') +
       '<span>' + (mode === 'teams' ? tr('Schiri-Team: ', 'Referee team: ') + '<strong>' + esc(teamIdentity(m.refereeTeam)) + '</strong>' :
         mode === 'none' ? tr('Ohne Schiri · selbst geleitet', 'No referee · self-officiated') : tr('Externer Schiri', 'External referee')) +
       '</span></span>';
