@@ -1456,6 +1456,8 @@
 
     'ui.pair.player': 'Player {n}',
     'ui.pair.optional': 'Name (optional)',
+    'ui.pair.toggle': 'Players (optional)',
+    'ui.pair.toggleLabel': 'Players for team {n} (optional)',
     /* ── Spiel_Timer.html / core/match-timer-page.js (Einzelspiel-Timer, PRODUKTPLAN §6.5) ── */
     'timer.docTitle': 'CompetitionPilot – Score Counter – points, sets & match clock',
     'timer.title': 'Score Counter',

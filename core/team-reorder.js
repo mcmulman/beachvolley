@@ -76,6 +76,14 @@
     inputs.forEach(function (input, index) {
       var row = input.closest('.nrow-del, .nrow2, td.rname') || input.parentElement;
       row.classList.add('team-reorder-row');
+      if (container.id === 'nameGrid' && input.parentElement === row) {
+        var nameRow = document.createElement('label');
+        nameRow.className = 'nrow';
+        var nameNumber = row.querySelector('.nnum');
+        row.insertBefore(nameRow, input);
+        if (nameNumber) nameRow.appendChild(nameNumber);
+        nameRow.appendChild(input);
+      }
       var gender = row.querySelector('[data-gender-input]');
       if (gender) {
         var card = document.createElement('div');

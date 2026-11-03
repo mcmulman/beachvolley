@@ -1660,7 +1660,10 @@
     if (!TSport || !TSport.supportsPairMembers(record) || !record) return '';
     const members = TSport.pairMembers(record, team);
     const hasMembers = members.some(Boolean);
-    return '<div class="pair-editor">' + [0, 1].map(index =>
+    return '<details class="pair-details"><summary aria-label="'
+      + esc(tx('ui.pair.toggleLabel', 'Spieler:innen für Team {n} (optional)', { n: team })) + '">'
+      + esc(tx('ui.pair.toggle', 'Spieler:innen (optional)')) + '</summary>'
+      + '<div class="pair-editor">' + [0, 1].map(index =>
       '<label><span>' + esc(tx('ui.pair.player', 'Spieler:in {n}', { n: index + 1 })) + '</span>'
       + '<input type="text" maxlength="100" data-pair-team="' + esc(team)
       + '" data-pair-index="' + index + '" value="' + esc(members[index])
@@ -1668,7 +1671,7 @@
       + '" autocomplete="off" spellcheck="false"></label>').join('')
       + '<output data-pair-label="' + esc(team) + '"' + (hasMembers ? '' : ' hidden') + '>'
       + esc(TSport.teamLabel(record, team, participantWord() + ' ' + team))
-      + '</output></div>';
+      + '</output></div></details>';
   }
   function editParticipantName(record, input) {
     const before = JSON.stringify([record.teamNames, record.pairMembers]);
