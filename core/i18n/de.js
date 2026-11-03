@@ -16,6 +16,15 @@
   if (root && root.TI18n) root.TI18n.register('de', res);
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
+    'firmencup.landing.title': 'Deinen Firmencup planen',
+    'firmencup.landing.headline': 'Euer Firmencup. Einfach organisiert.',
+    'firmencup.landing.intro': 'Gestalte euren Turniertag – vom ersten Team bis zum letzten Ergebnis.',
+    'firmencup.landing.teams': 'Firmen und Teams organisieren',
+    'firmencup.landing.planning': 'Schritt für Schritt zum Spielplan',
+    'firmencup.landing.results': 'Ergebnisse im Blick behalten',
+    'firmencup.landing.name': 'Turniername',
+    'firmencup.landing.create': 'Firmencup anlegen',
+    'firmencup.landing.next': 'Danach legst du Firmen und Teams an.',
     'home.firmencup.title': 'Firmencup',
     'home.firmencup.desc': 'Gruppenphase + Baum: Firmencups spielen innerhalb ausgeglichener Gruppen von meist drei oder vier Teams Jeder-gegen-jeden. Danach entscheiden Titel- und Platzierungsbäume mit Sieger- und Verliererwegen standardmäßig alle Plätze; hintere Setzblöcke können ihre Plätze teilen. Alle Gruppensieger bleiben im Titelrennen; Freilose zählen nicht als Spiele. Bei 40 Teams sind beim Ausspielen aller Plätze sechs oder sieben Spiele je Team geplant; mit geteilten hinteren Plätzen weniger. Zwei oder drei Teams spielen nach einer Gruppe ein Finale bzw. Halbfinale und Finale. Gespielt wird auf Zeit, einheitlich oder getrennt für Vorrunde und Baumphase. Standard ist die Teamwertung; optional zählt je Firma der mittlere Endrang aller Teams oder ein ausgewähltes Team (Hausregeln, keine Verbandsfreigabe).',
     'home.firmencup.open': 'Firmencup öffnen',

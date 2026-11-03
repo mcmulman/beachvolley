@@ -904,7 +904,8 @@
   const defaults = { start: '13:00', minutes: 14, treeMinutes: 14, timingMode: 'uniform', groupCount: 0, placementMode: 'all', placementThrough: 0, change: 3, fields: 8, referees: 8, rest: 1, window: 360, refereeMode: 'teams', rankingMode: 'teams', tiePolicy: 'lead' };
   async function landing(expandMore) {
     const rows = await Store.list({ removal: true });
-    const landingTitle = tr('Firmencup erstellen/konfigurieren', 'Create / configure company cup');
+    const text = key => esc(window.TI18n.t('firmencup.landing.' + key));
+    const landingTitle = window.TI18n.t('firmencup.landing.title');
     document.getElementById('fc-heading').textContent = landingTitle;
     document.title = landingTitle + ' · CompetitionPilot';
     function deleteButton(row, index) {
@@ -936,16 +937,20 @@
     }
     const visibleRows = rows.slice(0, 3).map(localEntry).join('');
     const hiddenRows = rows.slice(3).map((row, index) => localEntry(row, index + 3)).join('');
-    app.innerHTML = '<section><h2>' + tr('Neu', 'New') + '</h2><form id="fc-create">' +
-      label('title', tr('Titel', 'Title'), tr('Mein Firmencup', 'My company cup')) +
-      '<button type="submit">' + tr('Turnierplanung starten', 'Start tournament planning') + '</button></form></section>' +
-      '<section><h2>' + tr('Gespeicherte Turniere (nur auf diesem Gerät)', 'Saved tournaments (on this device only)') + '</h2>' +
+    app.innerHTML = '<section class="fc-start" aria-labelledby="fc-start-heading"><div class="fc-start-copy">' +
+      '<h2 id="fc-start-heading">' + text('headline') + '</h2><p>' + text('intro') + '</p>' +
+      '<ul class="fc-start-benefits" role="list"><li>' + text('teams') + '</li><li>' + text('planning') +
+      '</li><li>' + text('results') + '</li></ul></div><form id="fc-create" aria-labelledby="fc-start-heading">' +
+      label('title', window.TI18n.t('firmencup.landing.name'), tr('Mein Firmencup', 'My company cup')) +
+      '<button type="submit" aria-describedby="fc-create-next">' + text('create') + '<span aria-hidden="true"> →</span></button>' +
+      '<p id="fc-create-next" class="fc-note">' + text('next') + '</p></form></section>' +
+      '<section class="fc-start-saved"><h2>' + tr('Gespeicherte Turniere (nur auf diesem Gerät)', 'Saved tournaments (on this device only)') + '</h2>' +
       '<p class="fc-note">' + tr('Löschen kann nicht rückgängig gemacht werden. Sicherungen enthalten Spieler:innen-Namen – privat aufbewahren.', 'Deletion cannot be undone. Backups include player names – keep them private.') + '</p>' +
       (!rows.length ? '<p class="fc-empty">' + tr('Noch kein Firmencup auf diesem Gerät. Beginne oben mit dem Titel.', 'No company cup on this device yet. Start with the title above.') + '</p>' : '') +
       visibleRows +
       (hiddenRows ? '<details class="fc-local-more"' + (expandMore ? ' open' : '') + '><summary>' + tr('Weitere Turniere anzeigen (' + (rows.length - 3) + ')', 'Show more tournaments (' + (rows.length - 3) + ')') +
         '</summary>' + hiddenRows + '</details>' : '') + '</section>' +
-      '<section><h2>' + tr('Firmencup-Sicherung wiederherstellen', 'Restore Firmencup backup') + '</h2><label>' + tr('JSON-Datei (eigener lokaler Datensatz)', 'JSON file (own local record)') +
+      '<section class="fc-start-restore"><h2>' + tr('Firmencup-Sicherung wiederherstellen', 'Restore Firmencup backup') + '</h2><label>' + tr('JSON-Datei (eigener lokaler Datensatz)', 'JSON file (own local record)') +
       '<input id="fc-restore" type="file" accept=".json,application/json"></label></section>';
     updateStatusAction();
     document.getElementById('fc-create').onsubmit = function (ev) {

@@ -15,6 +15,15 @@
   if (root && root.TI18n) root.TI18n.register('en', res);
 })(typeof globalThis !== 'undefined' ? globalThis : this, {
   messages: {
+    'firmencup.landing.title': 'Plan your company cup',
+    'firmencup.landing.headline': 'Your company cup. Simply organised.',
+    'firmencup.landing.intro': 'Shape your tournament day – from the first team to the final result.',
+    'firmencup.landing.teams': 'Organise companies and teams',
+    'firmencup.landing.planning': 'Build your schedule step by step',
+    'firmencup.landing.results': 'Keep track of results',
+    'firmencup.landing.name': 'Tournament name',
+    'firmencup.landing.create': 'Create company cup',
+    'firmencup.landing.next': 'Next, add your companies and teams.',
     'home.firmencup.title': 'Company cup',
     'home.firmencup.desc': 'Group stage + bracket: company cups play round robin within balanced pools, usually of three or four teams. Title and placement brackets then decide every place by default through winner and loser paths; lower seed bands can share their places. All pool winners remain in the title race; byes are not matches. With 40 teams, playing all places gives six or seven planned matches per team; sharing lower places gives fewer. Two or three teams play a final or semifinal and final after one pool. Matches are timed, uniformly or separately for groups and brackets. Team standings are the default; optional company standings use all teams’ mean final rank or one selected team (house rules, no federation approval).',
     'home.firmencup.open': 'Open company cup',

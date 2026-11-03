@@ -162,6 +162,30 @@ button.app-close:hover { background: #eef2f7; color: #1a3a5c; }
 .fc-local-info { column-gap: 8px; row-gap: 3px; }
 .fc-guide { padding: 10px 12px; border-left: 4px solid #1f6fa8; background: #edf4fa; line-height: 1.5; }
 .fc-empty { padding: 12px; border: 1px dashed #9eafc3; border-radius: 6px; color: #46576b; }
+@media screen {
+  .fc-start { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-gap: 24px; align-items: center; padding: 24px; border-top: 4px solid #176278; background: linear-gradient(120deg, #edf4fa, #f8fafd); }
+  .fc-start-copy { min-width: 0; }
+  .fc-start h2 { margin: 0 0 10px; color: #1a3a5c; font-size: 1.8rem; line-height: 1.2; }
+  .fc-start-copy > p { margin: 0 0 14px; max-width: 36em; color: #46576b; }
+  .fc-start-benefits { list-style: none; padding: 0; margin: 0; color: #1a3a5c; font-size: .95rem; }
+  .fc-start-benefits li { position: relative; padding-left: 20px; margin: 8px 0; line-height: 1.4; }
+  .fc-start-benefits li::before { content: ""; position: absolute; left: 0; top: .4em; width: 8px; height: 8px; border-radius: 50%; background: #176278; }
+  .fc-start #fc-create { min-width: 0; padding: 18px; border: 1px solid #ccd8e8; border-radius: 8px; background: #fff; }
+  .fc-start #fc-create label { margin: 0 0 12px; }
+  .fc-start #fc-create input { margin-top: 6px; }
+  .fc-start #fc-create button { width: 100%; margin: 0; font-weight: 700; background: #176278; border-color: #176278; }
+  .fc-start #fc-create button:hover { background: #1a3a5c; border-color: #1a3a5c; }
+  .fc-start #fc-create .fc-note { margin: 10px 0 0; }
+  .fc-start-saved > h2, .fc-start-restore > h2 { margin: 0 0 10px; color: #1a3a5c; font-size: 1.1rem; }
+  .fc-start-saved > .fc-note { margin: 0 0 12px; }
+  .fc-start-saved > .fc-empty { margin-bottom: 0; }
+  .fc-start-saved .fc-local-info a { display: inline-flex; align-items: center; min-height: 44px; }
+}
+@media screen and (max-width: 600px) {
+  .fc-start { grid-template-columns: minmax(0, 1fr); grid-gap: 16px; padding: 18px 14px; }
+  .fc-start h2 { font-size: 1.5rem; }
+  .fc-start #fc-create { padding: 14px; }
+}
 .fc-local-entry { min-height: 58px; padding: 6px 0; border-bottom: 1px solid #ccd8e8; display: flex; align-items: center; justify-content: space-between; gap: 12px; overflow-wrap: break-word; }
 .fc-local-info { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .fc-local-info a { font-weight: 600; }
