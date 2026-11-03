@@ -197,11 +197,8 @@
 .no-flexgap .appbar-actions > * + * { margin-left: 8px; }
 .no-flexgap .pill > * + * { margin-left: 6px; }
 .no-flexgap .pill > span:first-child { margin-left: 6px; }            /* Muster c */
-.no-flexgap .filterbar > *:not(:last-child),
 .no-flexgap .filterbar-desktop > *:not(:last-child) { margin-right: 8px; }
-.no-flexgap .filterbar > *,
 .no-flexgap .filterbar-desktop > * { margin-bottom: 6px; }
-.no-flexgap .filterbar,
 .no-flexgap .filterbar-desktop { margin-bottom: -6px; }
 .no-flexgap .mobile-filter-grid .mf-field > * + * { margin-top: 4px; }
 .no-flexgap .mobile-filter-grid .mf-field > select:first-child { margin-top: 4px; } /* Muster c */
@@ -216,10 +213,10 @@
 .no-flexgap .features > * { margin-bottom: 5px; }
 .no-flexgap .features { margin-bottom: -5px; }
 .no-flexgap .session-actions > * + * { margin-left: 8px; }
-@media (max-width: 560px) {
-  /* .filterbar laeuft hier ohne Umbruch als Scroll-Leiste */
-  .no-flexgap .filterbar > * { margin-bottom: 0; }
-  .no-flexgap .filterbar { margin-bottom: 0; }
+@media (max-width: 640px) {
+  /* Mobile Filter verwenden Grid mit nativem Abstand, auch in Safari 12. */
+  .no-flexgap .filterbar-desktop { margin-bottom: 0; }
+  .no-flexgap .filterbar-desktop > * { margin-right: 0; margin-bottom: 0; }
 }
 
 /* ══ Turnier-Auswahl-Overlay (core/turnier-resume-picker.js) ═══════════ */

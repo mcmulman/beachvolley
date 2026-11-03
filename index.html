@@ -342,7 +342,7 @@
       flex-wrap: wrap;
       gap: 6px 8px;
       justify-content: center;
-      padding: 12px 20px;
+      padding: 8px 20px;
       background: rgba(255, 255, 255, .92);
       -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
@@ -366,6 +366,43 @@
       max-width: 1032px;
     }
     .mobile-filter-grid { display: none; }
+    .format-search {
+      position: relative;
+      flex: 0 0 260px;
+      min-width: 0;
+    }
+    .format-search input {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      padding: 10px 44px 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 400;
+    }
+    .format-search-clear {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .format-search-clear:hover { color: var(--blue-dark); background: var(--blue-light); }
+    .format-search-clear:focus { outline: 2px solid var(--blue); outline-offset: -3px; }
+    .format-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+    .format-search input:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .format-search-empty { padding: 12px 0; color: var(--muted); }
     .mobile-filter-grid .mf-field {
       display: flex;
       flex-direction: column;
@@ -394,10 +431,26 @@
     @media (max-width: 640px) {
       .filterbar {
         display: block;
-        padding: 10px 12px;
+        width: auto;
+        margin-left: -20px;
+        margin-right: -20px;
+        padding: 8px 12px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
       }
-      .filterbar-desktop { display: none; }
-      /* Format-Auswahl breit, „Alle anzeigen“ rechts daneben (eine Zeile). */
+      .filterbar-desktop {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) minmax(0, 1.5fr);
+        grid-gap: 8px;
+      }
+      .filterbar-desktop > .filter-btn { display: none; }
+      .mobile-filter-grid .mf-field > span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
       .mobile-filter-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -405,6 +458,9 @@
         gap: 8px;
         align-items: end;
       }
+    }
+    @media (max-width: 560px) {
+      .filterbar-desktop { grid-template-columns: minmax(0, 1fr); }
     }
     .filter-label {
       font-size: 11px;
@@ -1148,6 +1204,15 @@
   </div>
 
   <div class="filterbar noprint">
+    <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
+    <div class="format-search">
+        <input id="formatSearch" type="search" autocomplete="off" aria-controls="formatCards"
+          aria-label="Turniertyp suchen" placeholder="Turniertyp suchen …"
+          data-i18n-attr="placeholder:home.search.placeholder;aria-label:home.search.label" oninput="applyMobileFilters()"
+          onkeydown="if (event.key === 'Escape') { event.preventDefault(); clearFormatSearch(); }">
+        <button id="formatSearchClear" class="format-search-clear" type="button" onclick="clearFormatSearch()" hidden
+          aria-label="Leeren" data-i18n-attr="aria-label:home.search.clear"><span aria-hidden="true">×</span></button>
+    </div>
     <div class="mobile-filter-grid" aria-label="Mobile Filter" data-i18n-attr="aria-label:home.filter.mobileAria">
       <label class="mf-field"><span data-i18n="home.filter.format">Format</span>
         <select id="mobileFormatFilter" class="mf-select" onchange="applyMobileFilters()">
@@ -1170,7 +1235,6 @@
       </label>
       <button class="filter-btn mf-reset" type="button" onclick="resetMobileFilters()" data-i18n="home.filter.showAll">Alle anzeigen</button>
     </div>
-    <div class="filterbar-desktop" role="group" aria-label="Format" data-i18n-attr="aria-label:home.filter.format">
       <button class="filter-btn active" aria-pressed="true" onclick="filter('all', this)" data-i18n="home.filter.all">Alle</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('rr', this)" data-i18n="home.format.rr">Jeder gegen Jeden</button>
       <button class="filter-btn" aria-pressed="false" onclick="filter('swiss', this)" data-i18n="home.format.swiss">Schweizer System</button>
@@ -1190,7 +1254,9 @@
   </div>
 
   <div class="section-label" data-i18n="home.sheets.label">Turnierformate</div>
-  <div class="grid">
+  <p id="formatSearchEmpty" class="format-search-empty noprint" role="status" hidden
+    data-i18n="home.search.empty">Keine passenden Turniertypen. Suche oder Formatfilter anpassen.</p>
+  <div class="grid" id="formatCards">
 
     <!-- ── Dynamische Universalbögen: eine Vorlage für jede Team- und Feldzahl ── -->
     <div class="card" data-tags="gruppen ko platzierung hauptrunde" data-doc="docs/format-gruppen-platzierungsrunde.html" data-i18n-attr="data-desc:home.card.gruppen.desc" data-desc="Innerhalb jeder Gruppe spielt jedes Team einmal gegen jedes andere. Danach ist eine Überkreuz-Platzierungsrunde, eine K.-o.-Runde oder eine zweite Gruppenphase wählbar; auch Platzierungsblöcke oder nur die Gruppenphase sind möglich. Der gewählte Modus bestimmt, wer weiterspielt und wie die Plätze ermittelt werden." data-sport-attr-variants="indoor tt">
@@ -1745,20 +1811,43 @@
   }
 
   function applyCardFilters(teamTag, formatTag) {
+    const search = document.getElementById('formatSearch');
+    const query = normalizeFormatSearch(search.value).split(/\s+/).filter(Boolean);
+    document.getElementById('formatSearchClear').hidden = !search.value;
+    let visible = 0;
     document.querySelectorAll('.card').forEach(card => {
       const tags = (card.dataset.tags || '').split(' ');
       const teamOk = !teamTag || tags.includes(teamTag);
       const formatOk = !formatTag || tags.includes(formatTag);
       const sportOk = typeof window.homeCardSportAllowed !== 'function'
         || window.homeCardSportAllowed(card, window.__BL_HOME_SPORT__ || 'volleyball.beach');
-      card.hidden = !(teamOk && formatOk && sportOk);
+      const header = card.querySelector('.card-header');
+      const badge = document.querySelector('.filterbar-desktop button[onclick="filter(\'' + tags[0] + '\', this)"]');
+      const text = normalizeFormatSearch((header ? header.textContent : '') + ' '
+        + (card.dataset.desc || '') + ' ' + tags.join(' ') + ' ' + (badge ? badge.textContent : ''));
+      const searchOk = query.every(word => text.includes(word));
+      card.hidden = !(teamOk && formatOk && sportOk && searchOk);
+      if (!card.hidden) visible += 1;
     });
+    document.getElementById('formatSearchEmpty').hidden = visible > 0;
+  }
+
+  function normalizeFormatSearch(value) {
+    return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\u00df/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  function clearFormatSearch() {
+    const search = document.getElementById('formatSearch');
+    search.value = '';
+    applyMobileFilters();
+    search.focus();
   }
 
   /* aria-pressed spiegelt den aktiven Filter (sonst nur per Farbe erkennbar). */
   function syncFilterPressed() {
     const format = document.getElementById('mobileFormatFilter').value || 'all';
-    document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(function (b) {
+    document.querySelectorAll('.filterbar-desktop > .filter-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('onclick') === "filter('" + format + "', this)");
       b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false');
     });
@@ -1766,7 +1855,7 @@
 
   function filter(tag, btn) {
     if (btn) {
-      document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filterbar-desktop > .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
     /* Mobile Auswahl mitführen, sonst stellt ein Sportwechsel einen alten Filter wieder her. */
@@ -1774,6 +1863,7 @@
     if (mobileFormat) mobileFormat.value = tag === 'all' ? '' : tag;
     syncFilterPressed();
     if (tag === 'all') {
+      document.getElementById('formatSearch').value = '';
       applyCardFilters('', '');
     } else {
       applyCardFilters('', tag);
@@ -1784,11 +1874,12 @@
     const formatEl = document.getElementById('mobileFormatFilter');
     const format = (formatEl && formatEl.value) || '';
     applyCardFilters('', format);
-    document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filterbar-desktop > .filter-btn').forEach(b => b.classList.remove('active'));
     syncFilterPressed();
   }
 
   function resetMobileFilters() {
+    document.getElementById('formatSearch').value = '';
     const format = document.getElementById('mobileFormatFilter');
     if (format) format.value = '';
     applyCardFilters('', '');
@@ -2546,8 +2637,9 @@
     }
 
     window.wizardJumpToTag = function (tag) {
+      document.getElementById('formatSearch').value = '';
       applyCardFilters('', tag);
-      document.querySelectorAll('.filterbar-desktop .filter-btn').forEach(b => {
+      document.querySelectorAll('.filterbar-desktop > .filter-btn').forEach(b => {
         b.classList.toggle('active', b.getAttribute('onclick') === "filter('" + tag + "', this)");
       });
       if (typeof syncFilterPressed === 'function') syncFilterPressed();
@@ -2749,7 +2841,7 @@
   function selectedFilter() {
     var mobile = document.getElementById('mobileFormatFilter');
     if (mobile && mobile.value) return mobile.value;
-    var active = document.querySelector('.filterbar-desktop .filter-btn.active');
+    var active = document.querySelector('.filterbar-desktop > .filter-btn.active');
     var match = active && /filter\('([^']+)'/.exec(active.getAttribute('onclick') || '');
     return match && match[1] !== 'all' ? match[1] : '';
   }
