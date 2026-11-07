@@ -563,9 +563,10 @@
     /* Jeder Slot wird mit dem Satzmodus SEINER Runde gebaut – eine bereits
        eingetragene Runde behält ihre Kästchen, auch wenn oben ein anderer
        Modus gewählt wird. */
-    const allRounds = B.slots.map(s => s.round).filter((r, i, a) => a.indexOf(r) === i);
+    const allRounds = TUI.roundsInSlots(B.slots);
+    const gridColumns = TUI.scheduleGridColumns(B.slots, S.config.fields);
     $('schedBody').innerHTML = B.slots
-      .map(s => TUI.scheduleBodyHtml([s], Object.assign(ctxFor(B.modeOfRound(s.round)), { allRounds }))).join('');
+      .map(s => TUI.scheduleBodyHtml([s], Object.assign(ctxFor(B.modeOfRound(s.round)), { allRounds, gridColumns }))).join('');
     $('roundbar').innerHTML = TUI.roundBarHtml(B.slots, roundFilter);
     buildTeamsTable();
     // ptsLabel: Wertung je Sieg aus dem Satzmodus ableiten
@@ -717,12 +718,10 @@
       TUI.paintStageMatch(td, m);
     });
     // Eingetragene Runden kennzeichnen (Paarung/Modus stehen fest)
-    B.rounds.forEach(rd => {
-      body.querySelectorAll('tr.rhead[data-round="'+rd.round+'"]')
-        .forEach(tr => {
-          tr.classList.toggle('is-frozen', !!rd.frozen);
-          tr.querySelectorAll('.rlabel').forEach(l => l.setAttribute('data-frozen-label', T('rs.round.frozen')));
-        });
+    body.querySelectorAll('tr.rhead[data-round]').forEach(tr => {
+      const rounds = (tr.getAttribute('data-rounds') || tr.getAttribute('data-round')).split(' ').map(Number);
+      tr.classList.toggle('is-frozen', rounds.some(r => B.rounds.some(rd => rd.round === r && rd.frozen)));
+      tr.querySelectorAll('.rlabel').forEach(l => l.setAttribute('data-frozen-label', T('rs.round.frozen')));
     });
   }
 
@@ -1141,8 +1140,8 @@
     $('capSched').textContent = T('sheet.schedule.title');
     $('capTeams').textContent = T('sheet.teams.caption');
     $('hintSched').innerHTML = TUI.scoreHintHtml({
-      screenAdd: isSwiss() ? T('rs.hint.screenAddSwiss') : T('rs.hint.screenAdd'),
-      printAdd: isSwiss() ? T('rs.hint.printAddSwiss') : ''
+      screenAdd: isSwiss() ? T('rs.hint.screenAddSwiss') : T('rs.hint.screenAdd') + ' ' + T('ui.round.courtPacking'),
+      printAdd: isSwiss() ? T('rs.hint.printAddSwiss') : T('ui.round.courtPacking')
     }) + ($('roundbar').querySelectorAll('[data-round-select] option').length > 2
       ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
     $('formatDoc').href = isSwiss()
@@ -1175,10 +1174,14 @@
 
   /* -------------------------------------------------------------- Aktionen */
   function save(){
-    if(S.config.planning && B) {
-      const locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning.locked);
-      if(Object.keys(locked).length) S.config.planning.locked = locked;
-      else delete S.config.planning.locked;
+    if(B && (S.config.mode === 'rr' || S.config.planning)) {
+      const locked = TPlanning.capture(B, TOutcome.withInputs(S), S.config.planning && S.config.planning.locked);
+      if(Object.keys(locked).length) {
+        if(!S.config.planning) S.config.planning = {};
+        S.config.planning.locked = locked;
+      } else if(S.config.planning) {
+        delete S.config.planning.locked;
+      }
     }
     S.sheet = storageSheetId(MODE);
     return TStore.save(S);
@@ -1224,8 +1227,22 @@
     save(); fillSelects(); structureKey=''; rebuild();
   }
   function onChange(){
+    const previousConfig = Object.assign({}, S.config);
+    const previousTitle = S.title;
     const prevTeams = S.config.teams;
     readConfig();
+    if(S.config.mode === 'rr' && S.config.teams === prevTeams){
+      try {
+        planFor(S.config);
+      } catch(error) {
+        S.config = previousConfig;
+        S.title = previousTitle;
+        fillSelects();
+        if(error.code !== 'infeasible') throw error;
+        alert(T('ui.round.configRejected'));
+        return;
+      }
+    }
     /* Teamzahl oder Spielmodus ändern die Paarungen von Grund auf – dann sind
        eingefrorene Runden gegenstandslos. Ergebnisse bleiben erhalten. */
     if(S.config.teams !== prevTeams){
@@ -1233,6 +1250,24 @@
       fillRoundCount();
       /* Feldauswahl an die neue Teamzahl anpassen (max. Teams/2 Spiele parallel). */
       S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
+    }
+    save(); structureKey=''; rebuild();
+  }
+
+  function updateAttendance(action){
+    const previousAbsent = S.absent.slice();
+    const previousPlanning = S.config.planning ? JSON.parse(JSON.stringify(S.config.planning)) : null;
+    action();
+    try {
+      planFor(S.config);
+    } catch(error) {
+      S.absent = previousAbsent;
+      if(previousPlanning) S.config.planning = previousPlanning;
+      else delete S.config.planning;
+      structureKey=''; rebuild();
+      if(error.code !== 'infeasible') throw error;
+      alert(T('ui.round.configRejected'));
+      return;
     }
     save(); structureKey=''; rebuild();
   }
@@ -1275,11 +1310,12 @@
     $('absentGrid').addEventListener('change', e => {
       const n = e.target.getAttribute && e.target.getAttribute('data-absent-input');
       if(!n) return;
-      const t = +n;
-      const i = S.absent.indexOf(t);
-      if(e.target.checked && i < 0) S.absent.push(t);
-      if(!e.target.checked && i >= 0) S.absent.splice(i,1);
-      save(); structureKey=''; rebuild();
+      updateAttendance(() => {
+        const t = +n;
+        const i = S.absent.indexOf(t);
+        if(e.target.checked && i < 0) S.absent.push(t);
+        if(!e.target.checked && i >= 0) S.absent.splice(i,1);
+      });
     });
 
     $('btnDrawStart').addEventListener('click', () => {
@@ -1323,7 +1359,7 @@
       S.teamNames = {}; S.pairMembers = {}; save(); structureKey=''; rebuild();
     });
     $('btnClearFields').addEventListener('click', () => { S.fieldNames = {}; save(); structureKey=''; rebuild(); });
-    $('btnClearAbsent').addEventListener('click', () => { TUI.clearTeamAbsences(S); save(); structureKey=''; rebuild(); });
+    $('btnClearAbsent').addEventListener('click', () => updateAttendance(() => TUI.clearTeamAbsences(S)));
 
     $('btnClearScores').addEventListener('click', () => {
       if(!confirm(T('sheet.confirm.clearScores'))) return;
@@ -1410,10 +1446,8 @@
       save();
       rebuild();   // baut nur neu, wenn sich die Struktur wirklich ändert
     };
-    onScore.setMode = () => {
-      const el = document.activeElement;
-      const td = el && el.closest ? el.closest('td.match') : null;
-      const m = td ? B.matchById[td.getAttribute('data-mid')] : null;
+    onScore.setMode = mid => {
+      const m = B.matchById[mid];
       const rd = m ? B.rounds.find(r => r.round === m.round) : null;
       return rd ? rd.setMode : S.config.setMode;
     };
