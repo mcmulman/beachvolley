@@ -925,7 +925,7 @@
   }
   .mobile-jumpbar .nbtn:focus { outline: 2px solid var(--app-blue); outline-offset: 2px; }
   body.has-section-jumpbar .schedule-roundbar {
-    top: calc(var(--app-bar-h, 54px) + 8px + 53px);
+    top: calc(var(--app-bar-h, 54px) + 8px + var(--section-nav-height, 53px));
   }
   @media (max-width: 960px) {
     #tserver-status .tserver-action { grid-template-columns:minmax(0,1fr); gap:4px; }
@@ -982,10 +982,19 @@
     .tournament-sheet .format-info-toggle { width: 100%; }
     .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
     .mobile-jumpbar { grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-gap: 4px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
       padding-left: 8px; padding-right: 8px;
       padding-left: calc(8px + env(safe-area-inset-left, 0px));
       padding-right: calc(8px + env(safe-area-inset-right, 0px)); }
-    .mobile-jumpbar .nbtn { min-width: 0; word-wrap: break-word; }
+    .mobile-jumpbar .nbtn { min-width: 0; min-height:44px; padding:2px;
+      font-size:11px; line-height:1.2; word-wrap: break-word; }
+    .mobile-jumpbar .nbtn svg { width:18px; height:18px; margin-bottom:2px; }
+    html.has-section-nav body.tournament-sheet {
+      padding-bottom:calc(var(--section-footer-height, 53px) + 24px) !important;
+    }
     .mobile-jumpbar.is-editing { display: none; }
   }
   @media (min-width: 641px) and (max-width: 960px) {
@@ -996,7 +1005,5 @@
   }
   @media (max-height: 480px) and (max-width: 960px) {
     .tournament-sheet .schedule-roundbar { position: static; }
-    .tournament-sheet .mobile-jumpbar { position: static; }
-    .tournament-sheet { padding-bottom: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   }
 }

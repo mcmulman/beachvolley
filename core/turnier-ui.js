@@ -2309,6 +2309,10 @@
       /* The root scroller owns scroll-padding; CSS reserves the bar per
          breakpoint for native focus/scrollIntoView reveal. */
       document.documentElement.classList.add('has-section-nav');
+      const height = bar.getClientRects().length ? bar.offsetHeight : 0;
+      const mobile = window.innerWidth <= 640;
+      document.documentElement.style.setProperty('--section-nav-height', height + 'px');
+      document.documentElement.style.setProperty('--section-footer-height', (mobile ? height : 0) + 'px');
     }
     /* Round bars are body-level sticky, so they stay over all later content.
        Their wrapped height feeds scroll-margin-top in turnier-base.css. */
@@ -2412,7 +2416,7 @@
         if (!el) return;
         const target = document.getElementById(el.getAttribute('data-jump'));
         if (target) {
-          const offset = Math.max(54 + (window.innerWidth > 640 ? 53 : 0), clearBand(target).top) + 24;
+          const offset = clearBand(target).top + 24;
           window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
           updateCurrent();
         }

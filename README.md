@@ -35,6 +35,8 @@
 
 ### Kompakte Feature-Übersicht
 
+- **Erreichbare Abschnittsnavigation:** Setup, Anleitung, Spielplan und Tabelle bleiben auf Tablet/Desktop oben angeheftet. Smartphones verwenden eine kompakte feste Footer-Leiste auch im Querformat, mit mindestens 44 px hohen Tasten und Abstand zur Geräte-Safe-Area. Platz am Seitenende und gemessene Scroll-Abstände halten Inhalte erreichbar; während der Smartphone-Eingabe weicht die Leiste der Tastatur. Im Druck entfällt sie.
+
 - **Normale Spielbögen immer lokal bearbeitbar:** Geteilte Standardbögen öffnen per Link, Code oder QR als bearbeitbare lokale Kopie, ohne Nur-Lese-Sperre für Punkte oder Konfiguration. Frühere schreibgeschützte Importe werden ohne Datenverlust von der Serverbindung gelöst. Nur ein ausdrücklich übertragener Bearbeitungsschlüssel ermöglicht das Aktualisieren des ursprünglichen Serverstands; das erneute Teilen einer Kopie erstellt einen eigenen Serverstand. Firmencup behält seine öffentlichen Nur-Lese-Links.
 
 - **Datensichere App-Aktualisierung für Runden-/Flex-Bögen:** Fehlende oder inkompatible Startmodule zeigen eine bedienbare Fehlermeldung mit „App aktualisieren“ statt eines unvollständig gestarteten Spielbogens. Online werden HTML und Skripte neu geladen; Turniere, Verwaltungsrechte und Sicherungen bleiben erhalten. Neue Offline-Caches laden App-Dateien unter Umgehung des alten HTTP-Caches.
@@ -195,6 +197,8 @@
 - **Company cup – reliable live persistence and withdrawal proofs:** Concurrent synchronization and permission changes run sequentially per local event, retaining distinct queued snapshots and failed requests' retry keys. For multiple withdrawal decisions concerning the same team, the lexicographically smallest fixture ID supplies the representative event-wide proof (note and original timestamp), independent of input order, device clocks or equal timestamps. Every individual note remains in its match decision. Correction/removal requires the correspondingly re-derived proof; live changes to recorded decisions remain blocked. Withdrawal still applies event-wide while at least one such decision exists. Local and server text limits count UTF-16 code units (non-BMP emoji count twice), not UTF-8 bytes.
 
 ### Compact Feature Highlights
+
+- **Reachable section navigation:** Setup, instructions, schedule and standings stay pinned at the top on tablets/desktops. Smartphones use a compact fixed footer even in landscape, with buttons at least 44 px high and device-safe-area spacing. Reserved page-end space and measured scroll offsets keep content reachable; during smartphone input the bar yields to the keyboard. It is omitted in print.
 
 - **Standard sheets are always locally editable:** Links, codes and QR codes open shared standard sheets as editable local copies, without read-only score or configuration locks. Earlier read-only imports are detached from their server binding without losing data. Only an explicitly transferred editing key allows updates to the original server version; sharing a copy again creates a separate server version. Company-cup public links remain read-only.
 
