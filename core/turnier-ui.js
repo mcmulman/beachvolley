@@ -14,15 +14,14 @@
   const api = factory(root,
     root.TC || (typeof require === 'function' ? require('./turnier-core.js') : null),
     root.TStore || (typeof require === 'function' ? require('./turnier-store.js') : null),
-    root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null),
-    root.TFormat || (typeof require === 'function' ? require('./turnier-format.js') : null)
+    root.TSport || (typeof require === 'function' ? require('./turnier-sport.js') : null)
   );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else {
     root.TUI = api;
     api.wireFormatInfo(root.document);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, TC, TStore, TSport, TFormat) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, TC, TStore, TSport) {
   'use strict';
 
   /* ------------------------------------------------------------ Hilfsmittel */
@@ -574,32 +573,8 @@
   /* Titel eines Zeitslots ("Halbfinale", "Runde 3 · Teil 1/2") – gemeinsam
      für Spielplan-Kopf und Zeitplan-Tabelle. */
   function slotTitle(s) {
-    if (s.rounds && s.rounds.length > 1) {
-      return tx('ui.round.mixed', 'Runden {rounds}', { rounds: s.rounds.join(' / ') });
-    }
     const base = s.title ? term(s.title) : tx('ui.round.n', 'Runde {n}', { n: s.round });
     return base + (s.of > 1 ? tx('ui.round.part', ' · Teil {part}/{of}', { part: s.part, of: s.of }) : '');
-  }
-
-  function roundsInSlots(slots) {
-    const rounds = [];
-    (slots || []).forEach(s => (s.rounds || [s.round]).forEach(r => {
-      if (rounds.indexOf(r) < 0) rounds.push(r);
-    }));
-    return rounds.sort((a, b) => a - b);
-  }
-
-  function scheduleGridColumns(slots, fields) {
-    let columns = Math.max(1, fields);
-    (slots || []).forEach(s => {
-      if (s.displayOnly) return;
-      const count = Math.max(fields, (s.matches || []).length);
-      let a = columns, b = count;
-      while (b) { const remainder = a % b; a = b; b = remainder; }
-      // HTML colspans are capped at 1000; partition that grid if counts vary widely.
-      columns = Math.min(1000, columns / a * count);
-    });
-    return columns;
   }
 
   function fmtTime(min) { return TC.fromMin(min); }
@@ -781,7 +756,6 @@
 
     return '<td class="match' + (isBye ? ' is-bye' : '') + (m.displayOnly ? ' is-display-only' : '') + '"'
       + (m.displayOnly ? ' colspan="' + ctx.fields + '"' : '')
-      + (!m.displayOnly && ctx.columnSpan > 1 ? ' colspan="' + ctx.columnSpan + '"' : '')
       + ' data-mid="' + esc(m.id) + '"'
       + (setMode != null ? ' data-set-mode="' + esc(setMode) + '"' : '')
       + (m.round != null ? ' data-round="' + m.round + '"' : '')
@@ -861,12 +835,12 @@
      slots: Ergebnis aus TC.assignSlots()/TC.computeSchedule()
      ctx:   {setMode, teamLabel, fieldLabel, resolve, fields, sectionTitle?}   */
   function scheduleBodyHtml(slots, ctx) {
-    const columns = ctx.gridColumns || scheduleGridColumns(slots, ctx.fields);
+    const nf = ctx.fields;
     let html = '';
     /* ctx.allRounds: alle Runden, wenn der Plan slotweise gebaut wird (sonst aus slots).
        ctx.roundNav === false: keine Pfeile (Abschnitt ohne Runden-Filter). */
     const roundList = ctx.allRounds ? ctx.allRounds.slice() : [];
-    if (!ctx.allRounds) roundList.push.apply(roundList, roundsInSlots(slots));
+    if (!ctx.allRounds) slots.forEach(s => { if (roundList.indexOf(s.round) < 0) roundList.push(s.round); });
     const withNav = ctx.roundNav !== false;
     const chevron = pts => '<svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="' + pts + '"/></svg>';
     const navBtn = (dir, round, disabled) => {
@@ -880,11 +854,6 @@
         + chevron(dir === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6') + '</button>';
     };
     slots.forEach(s => {
-      const nf = Math.max(ctx.fields, s.displayOnly ? 0 : (s.matches || []).length);
-      const slotCtx = Object.assign({}, ctx, { fields: columns });
-      const columnSpan = f => Math.floor((f + 1) * columns / nf) - Math.floor(f * columns / nf);
-      const roundAttrs = s.rounds && s.rounds.length > 1
-        ? ' data-rounds="' + esc(s.rounds.join(' ')) + '"' : '';
       const title = slotTitle(s);
       const ri = roundList.indexOf(s.round);
       const confirmBtn = '<button type="button" class="nbtn rconfirm noprint"'
@@ -892,8 +861,7 @@
         + ' data-round-confirm-slot="' + s.slot + '"'
         + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Aktuelles Feld validieren und zum nächsten Feld springen')) + '"'
         + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
-      const byes = s.rounds && s.rounds.length > 1 ? []
-        : (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
+      const byes = (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
       let meta = '<span class="rhead-meta">'
         + '<span class="rlabel">' + esc(title) + '</span>'
         + '<span class="rtime tt" data-slot="' + s.slot + '">'
@@ -907,7 +875,7 @@
           + '</span>';
       }
       meta += '</span>';
-      const head = '<td class="rhead-cell" colspan="' + columns + '">'
+      const head = '<td class="rhead-cell" colspan="' + nf + '">'
         + '<span class="rhead-content">'
         + meta
         + '<span class="rhead-actions">'
@@ -917,40 +885,32 @@
         + (s.displayOnly ? '' : confirmBtn)
         + '</span>'
         + '</span></td>';
-      html += '<tr class="rgap" data-round="' + s.round + '"' + roundAttrs + ' data-slot="' + s.slot + '" aria-hidden="true">'
-        + '<td class="rgap-cell" colspan="' + columns + '"></td></tr>';
-      html += '<tr class="rhead" data-round="' + s.round + '"' + roundAttrs + ' data-slot="' + s.slot + '">' + head + '</tr>';
+      html += '<tr class="rgap" data-round="' + s.round + '" data-slot="' + s.slot + '" aria-hidden="true">'
+        + '<td class="rgap-cell" colspan="' + nf + '"></td></tr>';
+      html += '<tr class="rhead" data-round="' + s.round + '" data-slot="' + s.slot + '">' + head + '</tr>';
 
       if (s.displayOnly) {
-        const matches = (s.matches || []).filter(Boolean);
+        const m = (s.matches || []).filter(Boolean)[0];
         html += '<tr class="fhead" data-round="' + s.round + '" data-slot="' + s.slot + '">'
-          + '<th scope="col" colspan="' + columns + '">' + esc(tx('ui.round.displayOnlyField', 'Kampfloses Ergebnis')) + '</th></tr>';
-        matches.forEach(m => {
-          html += '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">'
-            + matchCellHtml(Object.assign({}, m, {
-              field: 0, round: m.round != null ? m.round : s.round, slot: s.slot, displayOnly: true
-            }), slotCtx) + '</tr>';
-        });
-        if (!matches.length) html += '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">'
-          + '<td class="empty" colspan="' + columns + '"></td></tr>';
+          + '<th scope="col" colspan="' + nf + '">' + esc(tx('ui.round.displayOnlyField', 'Kampfloses Ergebnis')) + '</th></tr>'
+          + '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">'
+          + (m ? matchCellHtml(Object.assign({}, m, { field: 0, round: s.round, slot: s.slot, displayOnly: true }), ctx)
+            : '<td class="empty" colspan="' + nf + '"></td>')
+          + '</tr>';
         return;
       }
-      let fhead = '<tr class="fhead" data-round="' + s.round + '"' + roundAttrs + ' data-slot="' + s.slot + '">';
+      let fhead = '<tr class="fhead" data-round="' + s.round + '" data-slot="' + s.slot + '">';
       for (let f = 0; f < nf; f++) {
         const fl = esc(ctx.fieldLabel(f));
-        fhead += '<th scope="col" data-field="' + f + '" colspan="' + columnSpan(f) + '"><span class="fhead-label">' + fl + '</span></th>';
+        fhead += '<th scope="col" data-field="' + f + '"><span class="fhead-label">' + fl + '</span></th>';
       }
       html += fhead + '</tr>';
 
-      html += '<tr class="rmatches" data-round="' + s.round + '"' + roundAttrs + ' data-slot="' + s.slot + '">';
+      html += '<tr class="rmatches" data-round="' + s.round + '" data-slot="' + s.slot + '">';
       for (let f = 0; f < nf; f++) {
         const m = s.matches[f];
-        if (m) html += matchCellHtml(Object.assign({}, m, {
-          field: f, round: m.round != null ? m.round : s.round, slot: s.slot,
-          label: s.rounds && s.rounds.length > 1
-            ? tx('ui.round.n', 'Runde {n}', { n: m.round }) : m.label
-        }), Object.assign({}, slotCtx, { columnSpan: columnSpan(f) }));
-        else html += '<td class="empty" colspan="' + columnSpan(f) + '" data-col="' + f + '" data-field-label="'
+        if (m) html += matchCellHtml(Object.assign({}, m, { field: f, round: s.round, slot: s.slot }), ctx);
+        else html += '<td class="empty" data-col="' + f + '" data-field-label="'
           + esc(ctx.fieldLabel(f)) + '"></td>';
       }
       html += '</tr>';
@@ -1841,7 +1801,8 @@
      (div.schedule-roundbar > label>select, .nbtn-round, .state), damit alle
      Bögen dieselbe sticky Glass-Pill-Leiste zeigen.                          */
   function roundBarHtml(slots, active) {
-    const rounds = roundsInSlots(slots);
+    const rounds = [];
+    slots.forEach(s => { if (rounds.indexOf(s.round) < 0) rounds.push(s.round); });
     const cur = String(active == null ? 'all' : active);
     const idx = rounds.indexOf(parseInt(cur, 10));
     const atFirst = cur === 'all' || idx <= 0;
@@ -1887,13 +1848,12 @@
     if (!results) return null;
     let best = null;
     (slots || []).forEach(s => {
-      (s.matches || []).forEach(m => {
+      const filled = (s.matches || []).some(m => {
         if (!m || m.id == null) return false;
         const sets = results[m.id];
-        const filled = !!(sets && sets.some(set => set && (set[0] != null || set[1] != null)));
-        const round = m.round != null ? m.round : s.round;
-        if (filled && (best == null || round > best)) best = round;
+        return !!(sets && sets.some(set => set && (set[0] != null || set[1] != null)));
       });
+      if (filled && (best == null || s.round > best)) best = s.round;
     });
     return best;
   }
@@ -1922,7 +1882,8 @@
     const isNext = !!(fromBtn && fromBtn.hasAttribute && fromBtn.hasAttribute('data-round-next-from'));
     if (isPrev || isNext) {
       if (fromBtn.disabled) return null;
-      const roundsFrom = roundsInSlots(slots);
+      const roundsFrom = [];
+      slots.forEach(s => { if (roundsFrom.indexOf(s.round) < 0) roundsFrom.push(s.round); });
       const from = parseInt(fromBtn.getAttribute(isPrev ? 'data-round-prev-from' : 'data-round-next-from'), 10);
       const iTo = roundsFrom.indexOf(from) + (isPrev ? -1 : 1);
       if (roundsFrom.indexOf(from) < 0 || iTo < 0 || iTo >= roundsFrom.length) return null;
@@ -1930,7 +1891,8 @@
     }
     const btn = el.closest ? el.closest('[data-round-step]') : null;
     if (!btn || btn.disabled) return null;
-    const rounds = roundsInSlots(slots);
+    const rounds = [];
+    slots.forEach(s => { if (rounds.indexOf(s.round) < 0) rounds.push(s.round); });
     if (!rounds.length) return null;
     const step = parseInt(btn.getAttribute('data-round-step'), 10);
     if (String(active) === 'all') return String(step > 0 ? rounds[0] : rounds[rounds.length - 1]);
@@ -1954,8 +1916,7 @@
     }
     tbody.querySelectorAll('tr[data-round]').forEach(tr => {
       const r = tr.getAttribute('data-round');
-      const included = (tr.getAttribute('data-rounds') || r).split(' ');
-      tr.hidden = !(filter === 'all' || included.indexOf(String(filter)) >= 0);
+      tr.hidden = !(filter === 'all' || String(r) === String(filter));
     });
     markRoundStatus(tbody);
   }
@@ -1994,16 +1955,7 @@
     });
     tbody.querySelectorAll('tr[data-round]:not(.rgap)').forEach(tr => {
       const round = tr.getAttribute('data-round');
-      const included = (tr.getAttribute('data-rounds') || round).split(' ');
-      const summary = included.reduce((total, r) => {
-        const entry = rounds[r];
-        if (entry) {
-          total.open += entry.open;
-          total.invalid += entry.invalid;
-          total.checked = total.checked || entry.checked;
-        }
-        return total;
-      }, { open: 0, invalid: 0, checked: false });
+      const summary = rounds[round];
       const checked = !!(summary && summary.checked);
       const incomplete = summary && (summary.open > 0 || summary.invalid > 0);
       tr.classList.toggle('bl-round-invalid', checked && incomplete);
@@ -2021,8 +1973,7 @@
         const text = !checked ? '' : incomplete ? roundProblemsText(summary) : tx('ui.round.complete', 'Ergebnisse vollständig');
         status.hidden = !checked;
         status.disabled = !incomplete;
-        const problemRound = included.find(r => rounds[r] && (rounds[r].open || rounds[r].invalid)) || round;
-        status.setAttribute('data-round-errors', problemRound);
+        status.setAttribute('data-round-errors', round);
         const title = incomplete ? tx('ui.round.errorsJump', 'Zum ersten fehlenden oder ungültigen Ergebnis springen') : '';
         if (status.title !== title) status.title = title;
         const label = title ? text + '. ' + title : text;
@@ -2790,11 +2741,8 @@
     const focusNextFieldCard = fromTd => {
       if (!fromTd || !fromTd.getAttribute) return false;
       const round = fromTd.getAttribute('data-round');
-      const slot = fromTd.getAttribute('data-slot');
       if (!round) return focusNextCard(fromTd);
-      const list = cards().filter(td => slot != null
-        ? String(td.getAttribute('data-slot')) === String(slot)
-        : String(td.getAttribute('data-round')) === String(round));
+      const list = cards().filter(td => String(td.getAttribute('data-round')) === String(round));
       const currentCol = fromTd.getAttribute('data-col');
       const next = list
         .filter(td => currentCol != null && Number(td.getAttribute('data-col')) > Number(currentCol))
@@ -2919,16 +2867,14 @@
         const activeCard = document.activeElement && document.activeElement.closest
           ? document.activeElement.closest('td.match')
           : null;
-        const inSlot = td => td && (slot != null
-          ? String(td.getAttribute('data-slot')) === String(slot)
-          : String(td.getAttribute('data-round')) === String(round));
+        const inSlot = td => td && String(td.getAttribute('data-round')) === String(round)
+          && (slot == null || String(td.getAttribute('data-slot')) === String(slot));
         const lastCard = lastFocusedMatch && rootEl.querySelector('td.match[data-mid="' + lastFocusedMatch.getAttribute('data-mid') + '"]');
         const current = inSlot(lastCard)
           ? lastCard
           : (inSlot(activeCard) ? activeCard : null);
-        let td = current || rootEl.querySelector(slot != null
-          ? 'td.match[data-slot="' + slot + '"]'
-          : 'td.match[data-round="' + round + '"]');
+        let td = current || rootEl.querySelector('td.match[data-round="' + round + '"]'
+          + (slot == null ? '' : '[data-slot="' + slot + '"]'));
         if (!td) return;
         const mid = td.getAttribute('data-mid');
         const focused = document.activeElement;
@@ -3202,13 +3148,6 @@
      byes are omitted, while only fully dead MPP final matches are skipped. */
   function neededFieldsForPlan(plan, windowMin, setMode, maxFields) {
     if (plan.planning && typeof TPlanning !== 'undefined') return TPlanning.neededFields(plan, windowMin, maxFields);
-    if (plan.mode === 'rr' && plan.courtOptimized) {
-      for (let fields = 1; fields <= (maxFields || 10); fields++) {
-        const candidate = TFormat.buildRounds(Object.assign({}, plan.config, { fields }));
-        if (candidate.endMin - candidate.startMin <= windowMin) return fields;
-      }
-      return null;
-    }
     const rounds = planningRounds(plan, setMode);
     const minutes = rounds.map(entry => entry.minutes);
     if (!plan.groupRounds && (!minutes.length || minutes.every(value => value === minutes[0]))) {
@@ -3608,7 +3547,7 @@
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
-    scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
+    roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder

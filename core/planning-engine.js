@@ -12,7 +12,6 @@
          retime:  { time: 'HH:MM' } | { min: <Minuten> },
          rescheduled: { [matchId]: { time: 'HH:MM' } },
          teamDelays: { [teamId]: { time: 'HH:MM' } },
-         fillForward: true, // optional, nur feste Round-Robin-Paarungen
          blocked: [{ field, time } | { field, min } | { field, fromRound }],
          breaks:  [{ id, time | min, minutes }],
          locked:  { [matchId]: { startMin, endMin, field } }
@@ -24,12 +23,6 @@
        Ignorieren). King/Queen of the Court wird nicht unterstützt (TypeError).
      - fromRound zählt die Runden in Spielplan-Reihenfolge (1-basiert, über
        Gruppen- und Finalphase hinweg).
-     - Gepackte RR-Slots behalten m.round als logische Runde, s.rounds als
-       enthaltene Runden und roundByes als einmalige Freilos-Zuordnung.
-       Teamweise Rundenvorgänger bleiben auch bei Live-Änderungen verbindlich.
-     - Ein Lock mit Ergebniseingabe darf ein inzwischen entferntes Feld behalten.
-       Nur seine historische Slot-Zeile wird breiter; offene Spiele nutzen
-       ausschließlich die aktuell verfügbaren Felder.
 
    Safari 12: kein ?. / ?? / flatMap / Object.fromEntries.
    ========================================================================== */
@@ -66,10 +59,6 @@
     return Array.isArray(plan.slots) ? plan.slots.slice() : [];
   }
 
-  function packedRounds(plan) {
-    return !!plan && plan.mode === 'rr' && slots(plan).some(s => Array.isArray(s.rounds));
-  }
-
   function slotMinutes(s) {
     return Number.isFinite(s.minutes) && s.minutes > 0 ? s.minutes : (s.endMin - s.startMin);
   }
@@ -104,44 +93,20 @@
       : [{ source: 'slots', list: plan.slots || [] }];
     const rounds = [];
     const byKey = {};
-    function roundOf(src, s, round) {
-      const key = src.source + ':' + round;
+    sources.forEach(src => src.list.forEach(s => {
+      const key = src.source + ':' + s.round;
       let rd = byKey[key];
       if (!rd) {
-        rd = byKey[key] = { key: key, source: src.source, round: round, ordinal: rounds.length + 1, slots: [], items: [], bye: null, byes: [] };
+        rd = byKey[key] = { key: key, source: src.source, round: s.round, ordinal: rounds.length + 1, slots: [], items: [] };
         rounds.push(rd);
       }
-      if (rd.slots.indexOf(s) < 0) rd.slots.push(s);
-      return rd;
-    }
-    sources.forEach(src => src.list.forEach(s => {
-      (s.roundByes || []).forEach(b => {
-        const rd = roundOf(src, s, b.round);
-        rd.bye = b.bye != null ? b.bye : null;
-        rd.byes = (b.byes || []).slice();
-      });
-      if (s.displayOnly) { roundOf(src, s, s.round); return; }
+      rd.slots.push(s);
+      if (s.displayOnly) return;
       (s.matches || []).forEach((m, idx) => {
         if (!m) return;
-        const round = Array.isArray(s.rounds) && m.round != null ? m.round : s.round;
-        const rd = roundOf(src, s, round);
-        if (!Array.isArray(s.rounds) && rd.slots.length === 1) {
-          rd.bye = s.bye != null ? s.bye : null;
-          rd.byes = (s.byes || []).slice();
-        }
         rd.items.push({ m: m, id: m.id, field: idx, baseSlot: s, start: s.startMin, minutes: slotMinutes(s), rd: rd });
       });
     }));
-    if (packedRounds(plan) && Array.isArray(plan.rounds)) {
-      plan.rounds.forEach(source => {
-        const rd = byKey['slots:' + source.round];
-        if (!rd) return;
-        rd.bye = source.bye != null ? source.bye : null;
-        rd.byes = (source.byes || []).slice();
-      });
-    }
-    if (packedRounds(plan)) rounds.sort((a, b) => a.round - b.round);
-    rounds.forEach((rd, i) => { rd.ordinal = i + 1; });
     return rounds;
   }
 
@@ -194,7 +159,7 @@
       && !(p.locked && Object.keys(p.locked).length);
   }
 
-  function normalize(planning, base, F, rounds, results) {
+  function normalize(planning, base, F, rounds) {
     const p = planning || {};
     const ref = base.startMin;
     const teamsOf = teamKeysFn(base);
@@ -279,9 +244,8 @@
       if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) {
         throw fail(RangeError, 'invalid-lock', 'lock for ' + id + ' needs startMin < endMin');
       }
-      if (!Number.isInteger(f) || f < 0 || f >= Math.max(F, 10)
-        || (f >= F && !hasInput(results, id))) {
-        throw fail(RangeError, 'locked-field', 'locked match ' + id + ' uses an invalid historical field ' + f);
+      if (!Number.isInteger(f) || f < 0 || f >= F) {
+        throw fail(RangeError, 'locked-field', 'locked match ' + id + ' uses field ' + f + ' outside 0..' + (F - 1));
       }
       out.locked[id] = { startMin: s, endMin: e, field: f };
     });
@@ -326,11 +290,6 @@
     fixed.forEach((a, i) => {
       for (let j = i + 1; j < fixed.length; j++) {
         const b = fixed[j];
-        if ((norm.fillForward || packedRounds(base)) && a.teams.some(t => b.teams.indexOf(t) >= 0)
-          && ((a.ordinal < b.ordinal && a.endMin > b.startMin)
-            || (b.ordinal < a.ordinal && b.endMin > a.startMin))) {
-          throw fail(RangeError, 'locked-overlap', 'locked matches violate logical-round order');
-        }
         if (!overlaps(a.startMin, a.endMin, b.startMin, b.endMin)) continue;
         if (a.field === b.field) throw fail(RangeError, 'locked-overlap', 'locked matches ' + a.it.id + ' and ' + b.it.id + ' share field ' + a.field);
         if (a.teams.some(t => b.teams.indexOf(t) >= 0)) throw fail(RangeError, 'locked-overlap', 'locked matches ' + a.it.id + ' and ' + b.it.id + ' share a team');
@@ -367,7 +326,7 @@
     rounds.forEach(rd => { placed[rd.key] = []; });
     fixed.forEach(x => placed[x.it.rd.key].push({ it: x.it, startMin: x.startMin, endMin: x.endMin, field: x.field, locked: true }));
 
-    if (norm.fillForward || packedRounds(base)) {
+    if (norm.fillForward) {
       const allPlaced = fixed.slice();
       const floor = rounds.reduce((min, rd) => rd.items.reduce((roundMin, it) =>
         Math.min(roundMin, it.start), min), Infinity);
@@ -379,7 +338,7 @@
           norm.teamDelays[team] == null ? latest : Math.max(latest, norm.teamDelays[team]), -Infinity);
         pending.push({
           it: it, teams: teams,
-          earliest: Math.max(norm.fillForward ? floor : it.start, norm.retimeMin != null ? norm.retimeMin : -Infinity,
+          earliest: Math.max(floor, norm.retimeMin != null ? norm.retimeMin : -Infinity,
             norm.rescheduled[it.id] != null ? norm.rescheduled[it.id] : -Infinity, teamDelay)
         });
       }));
@@ -388,20 +347,11 @@
       let t = pending.length ? pending[0].earliest : floor;
       let guard = 0;
       while (pending.length) {
-        if (++guard > 100000) throw fail(RangeError, 'infeasible', 'no feasible forward schedule');
+        if (++guard > 100000) throw fail(Error, 'infeasible', 'no feasible forward schedule');
         const selected = [];
         for (let i = 0; i < pending.length; i++) {
           const p = pending[i], d = p.it.minutes;
           if (p.earliest > t || afterPauses(t, d) !== t) continue;
-          if (packedRounds(base) && (selected.some(x => x.it.minutes !== d
-            || x.it.baseSlot.setMode !== p.it.baseSlot.setMode)
-            || allPlaced.some(x => overlaps(t, t + d, x.startMin, x.endMin)
-              && x.it.baseSlot.setMode !== p.it.baseSlot.setMode))) continue;
-          const sharesTeam = x => p.teams.some(team => x.teams.indexOf(team) >= 0);
-          if (pending.some(x => x.it.rd.ordinal < p.it.rd.ordinal && sharesTeam(x))) continue;
-          if (allPlaced.some(x => sharesTeam(x)
-            && ((x.it.rd.ordinal < p.it.rd.ordinal && x.endMin > t)
-              || (x.it.rd.ordinal > p.it.rd.ordinal && x.startMin < t + d)))) continue;
           const field = [];
           for (let f = 0; f < F; f++) {
             if (fieldBlocked(norm.blocks, f, p.it.rd.ordinal, t, t + d)) continue;
@@ -435,7 +385,7 @@
         norm.blocks.forEach(b => {
           if (b.fromMin != null && b.fromMin > t && b.fromMin < next) next = b.fromMin;
         });
-        if (next === Infinity) throw fail(RangeError, 'infeasible', 'no field/team window for forward schedule');
+        if (next === Infinity) throw fail(Error, 'infeasible', 'no field/team window for forward schedule');
         t = next;
       }
       return { rounds: rounds, placed: placed };
@@ -524,11 +474,11 @@
         else groups.push({ startMin: x.startMin, endMin: x.endMin, items: [x] });
       });
       if (groups.length > rd.slots.length) splitRounds++;
+      const firstBase = rd.slots[0];
       groups.forEach((g, gi) => {
         const ref = g.items.slice().sort((a, b) => rd.items.indexOf(a.it) - rd.items.indexOf(b.it))[0].it.baseSlot;
         const matches = [];
-        const width = g.items.reduce((n, x) => Math.max(n, x.field + 1), F);
-        for (let f = 0; f < width; f++) matches.push(null);
+        for (let f = 0; f < F; f++) matches.push(null);
         g.items.forEach(x => {
           matches[x.field] = Object.assign({}, x.it.m, { field: x.field });
           if (!x.locked && (x.startMin !== x.it.start || x.field !== x.it.field)) moved++;
@@ -537,21 +487,12 @@
         const s = Object.assign({}, ref, {
           slot: slotNo, part: gi + 1, of: groups.length,
           startMin: g.startMin, endMin: g.endMin, minutes: g.endMin - g.startMin,
-          bye: gi === 0 ? rd.bye : null,
-          byes: gi === 0 ? rd.byes.slice() : [],
+          bye: gi === 0 ? (firstBase.bye != null ? firstBase.bye : null) : null,
+          byes: gi === 0 ? (firstBase.byes || []).slice() : [],
           matches: matches,
           baseSlot: ref.slot,
           lockedCount: g.items.filter(x => x.locked).length
         });
-        if (packedRounds(base) || norm.fillForward) {
-          s.round = rd.round;
-          s.rounds = [rd.round];
-          s.roundByes = gi === 0 ? [{ round: rd.round, bye: rd.bye, byes: rd.byes.slice() }] : [];
-          s.baseSlots = [];
-          g.items.forEach(x => {
-            if (s.baseSlots.indexOf(x.it.baseSlot.slot) < 0) s.baseSlots.push(x.it.baseSlot.slot);
-          });
-        }
         lists[rd.source].push(s);
       });
       rd.slots.filter(s => s.displayOnly).forEach(s => {
@@ -562,35 +503,11 @@
         }));
       });
     });
-    if ((norm.fillForward || packedRounds(base)) && lists.slots.length) {
-      lists.slots.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin || a.round - b.round);
-      const merged = [];
-      lists.slots.forEach(s => {
-        const prev = merged[merged.length - 1];
-        if (!s.displayOnly && prev && !prev.displayOnly
-          && prev.startMin === s.startMin && prev.endMin === s.endMin
-          && prev.setMode === s.setMode) {
-          s.matches.forEach((m, f) => {
-            if (!m) return;
-            while (prev.matches.length <= f) prev.matches.push(null);
-            if (prev.matches[f]) throw fail(RangeError, 'infeasible', 'packed matches share a field');
-            prev.matches[f] = m;
-          });
-          s.rounds.forEach(r => { if (prev.rounds.indexOf(r) < 0) prev.rounds.push(r); });
-          prev.roundByes = prev.roundByes.concat(s.roundByes);
-          s.baseSlots.forEach(n => { if (prev.baseSlots.indexOf(n) < 0) prev.baseSlots.push(n); });
-          prev.lockedCount += s.lockedCount;
-          prev.bye = null;
-          prev.byes = [];
-        } else merged.push(s);
-      });
-      lists.slots = merged;
-      lists.slots.forEach((s, i) => {
-        s.slot = i + 1;
-        s.matches.forEach(m => { if (m && m.slot != null) m.slot = s.slot; });
-      });
-    }
     const all = lists.grp.concat(lists.fin, lists.slots);
+    if (norm.fillForward && lists.slots.length) {
+      lists.slots.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin || a.round - b.round);
+      lists.slots.forEach((s, i) => { s.slot = i + 1; });
+    }
     const maxEnd = list => list.reduce((a, s) => Math.max(a, s.endMin), -Infinity);
     if (isFormatPlan(base)) {
       out.grpSlots = lists.grp;
@@ -636,7 +553,7 @@
   function planWith(base, config, results, planning, F) {
     if (isKingOfCourt(base)) throw fail(TypeError, 'unsupported', 'King/Queen of the Court is not supported');
     const rounds = baselineRounds(base);
-    const norm = normalize(planning, base, F, rounds, results);
+    const norm = normalize(planning, base, F, rounds);
     const trivial = norm.retimeMin == null && !Object.keys(norm.rescheduled).length
       && !Object.keys(norm.teamDelays).length
       && !norm.fillForward
@@ -672,8 +589,7 @@
   function signature(plan) {
     const out = {};
     slots(plan).forEach(s => (s.matches || []).forEach((m, f) => {
-      if (m) out[m.id] = (Array.isArray(s.rounds) && m.round != null ? m.round : s.round)
-        + '|' + s.startMin + '-' + s.endMin + '@' + f;
+      if (m) out[m.id] = s.round + '|' + s.startMin + '-' + s.endMin + '@' + f;
     }));
     return out;
   }
@@ -682,11 +598,6 @@
      der Builder (TC.assignSlots je Runde, Takt aus der Slot-Dauer). */
   function repartition(base, F) {
     if (!TC || typeof TC.assignSlots !== 'function') throw fail(Error, 'no-core', 'TC (turnier-core.js) required');
-    if (base && base._planningBase) {
-      const rebuilt = repartition(base._planningBase, F);
-      const config = Object.assign({}, base._planningConfig, { fields: F });
-      return planWith(rebuilt, config, base._planningResults || {}, base._planningInput || {}, F) || rebuilt;
-    }
     const rounds = baselineRounds(base);
     const opts = isFormatPlan(base) && typeof base.resolve === 'function' ? { teamOf: base.resolve } : {};
     const lists = { grp: [], fin: [], slots: [] };
@@ -696,11 +607,8 @@
       const first = rd.slots[0];
       const minutes = slotMinutes(first);
       const matches = rd.items.map(it => it.m);
-      TC.assignSlots([{ round: rd.round, matches: matches, bye: rd.bye, byes: rd.byes }], F, opts).forEach(s => {
+      TC.assignSlots([{ round: rd.round, matches: matches, bye: first.bye, byes: first.byes }], F, opts).forEach(s => {
         const meta = Object.assign({}, first);
-        delete meta.rounds;
-        delete meta.roundByes;
-        delete meta.baseSlots;
         lists[rd.source].push(Object.assign(meta, s, {
           slot: lists.grp.length + lists.fin.length + lists.slots.length + 1,
           startMin: cursor, endMin: cursor + minutes, minutes: minutes
@@ -715,10 +623,6 @@
     if (base.fields != null) out.fields = F;
     out.config = Object.assign({}, base.config, { fields: F });
     out.endMin = cursor;
-    if (packedRounds(base)) {
-      const norm = normalize({ fillForward: true }, out, F, baselineRounds(out));
-      return Object.assign({}, buildOutput(out, out.config, {}, F, norm, schedule(out, F, norm), {}));
-    }
     return out;
   }
 
@@ -732,12 +636,10 @@
     const cap = maxFields || 10;
     let minF = 1;
     (planning.blocked || []).forEach(b => { minF = Math.max(minF, b.field + 1); });
+    const locked = planning.locked || {};
     const known = signature(base);
-    Object.keys(planning.locked || {}).forEach(id => {
-      const lock = planning.locked[id];
-      if (known[id] != null && Number.isInteger(lock.field) && !hasInput(results, id)) {
-        minF = Math.max(minF, lock.field + 1);
-      }
+    Object.keys(locked).forEach(id => {
+      if (known[id] != null && Number.isInteger(locked[id].field)) minF = Math.max(minF, locked[id].field + 1);
     });
     for (let f = minF; f <= cap; f++) {
       const candidate = Object.assign({}, planning, {

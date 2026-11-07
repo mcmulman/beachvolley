@@ -222,27 +222,16 @@
     function rounds() {
       const plan = o.plan();
       const list = [];
-      const seen = {};
+      let previous = null;
       root.TPlanning.slots(plan).forEach(s => {
         // Final and group rounds may both be numbered from one.
         const source = plan.grpSlots && plan.grpSlots.indexOf(s) >= 0 ? 'grp' : 'fin';
-        const logicalRounds = Array.isArray(s.rounds) ? s.rounds : [s.round];
-        logicalRounds.forEach(round => {
-          const key = source + ':' + round;
-          if (seen[key]) return;
-          seen[key] = true;
-          let labelSlot = s;
-          if (Array.isArray(s.rounds)) {
-            labelSlot = Object.assign({}, s, { round: round, rounds: [round], part: 1, of: 1 });
-            delete labelSlot.title;
-          }
-          list.push({ ordinal: list.length + 1, round: round, label: root.TUI.slotTitle(labelSlot) });
-        });
+        const key = source + ':' + s.round;
+        if (key !== previous) {
+          list.push({ ordinal: list.length + 1, label: root.TUI.slotTitle(s) });
+          previous = key;
+        }
       });
-      if (plan.mode === 'rr' && root.TPlanning.slots(plan).some(s => Array.isArray(s.rounds))) {
-        list.sort((a, b) => a.round - b.round);
-        list.forEach((r, i) => { r.ordinal = i + 1; });
-      }
       return list;
     }
     function message(text) {
@@ -467,11 +456,6 @@
       const s = o.get();
       const oldPlanning = s.config.planning;
       const oldAbsent = (s.absent || []).slice();
-      function restoreStatusControl() {
-        const select = absentHost && absentHost.querySelector('[data-team-status="' + team + '"]');
-        if (select) select.value = oldAbsent.indexOf(team) >= 0 ? 'absent'
-          : oldPlanning && oldPlanning.teamDelays && oldPlanning.teamDelays[team] ? 'late' : 'available';
-      }
       const next = oldPlanning ? JSON.parse(JSON.stringify(oldPlanning))
         : { blocked: [], breaks: [], rescheduled: {}, locked: {} };
       next.teamDelays = next.teamDelays || {};
@@ -499,9 +483,7 @@
       try { o.build(config, Object.assign({}, s, { absent: absent, config: config })); }
       catch (e) {
         if (!e.code) throw e;
-        restoreStatusControl();
-        if (status === 'late' && errorTarget) errorTarget.textContent = errorText(e);
-        else root.alert(errorText(e));
+        if (errorTarget) errorTarget.textContent = errorText(e); else message(errorText(e));
         return;
       }
       busy = true;
@@ -514,7 +496,6 @@
         s.absent = oldAbsent;
         if (oldPlanning) s.config.planning = oldPlanning;
         else delete s.config.planning;
-        restoreStatusControl();
         return;
       }
       o.rebuild(); refresh();

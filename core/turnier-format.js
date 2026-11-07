@@ -1341,64 +1341,6 @@
   }
   function maxSwissRounds(n) { return Math.max(1, n - (n % 2 === 0 ? 1 : 0)); }
 
-  function packRoundRobinSlots(source, fields, startMin) {
-    const pending = [];
-    const metadata = {};
-    source.forEach(s => {
-      if (s.displayOnly) return;
-      if (!metadata[s.round]) metadata[s.round] = s;
-      s.matches.filter(Boolean).forEach(m => pending.push(Object.assign({}, m, {
-        round: m.round != null ? m.round : s.round,
-        setMode: s.setMode
-      })));
-    });
-    const packed = [];
-    let cursor = startMin;
-    const capacity = Math.max(1, fields | 0);
-    while (pending.length) {
-      const seen = new Set();
-      const selected = [];
-      const mode = pending[0].setMode;
-      pending.forEach(m => {
-        // Only each team's earliest outstanding fixture may enter this wave.
-        if (selected.length < capacity && m.setMode === mode && !seen.has(m.a) && !seen.has(m.b)) {
-          selected.push(m);
-        }
-        seen.add(m.a);
-        seen.add(m.b);
-      });
-      const rounds = selected.map(m => m.round).filter((r, i, list) => list.indexOf(r) === i).sort((a, b) => a - b);
-      const minutes = TC.modeMinutes(mode);
-      packed.push(Object.assign({}, metadata[rounds[0]], {
-        round: rounds[0], rounds: rounds,
-        startMin: cursor, endMin: cursor + minutes, minutes: minutes, setMode: mode,
-        matches: selected
-      }));
-      selected.forEach(m => pending.splice(pending.indexOf(m), 1));
-      cursor += minutes;
-    }
-    const roundEnd = {};
-    packed.forEach(s => s.rounds.forEach(r => { roundEnd[r] = s.endMin; }));
-    source.filter(s => s.displayOnly).forEach(s => {
-      const at = Object.keys(roundEnd).reduce((end, r) => +r <= s.round ? Math.max(end, roundEnd[r]) : end, startMin);
-      packed.push(Object.assign({}, s, { startMin: at, endMin: at }));
-    });
-    packed.sort((a, b) => a.startMin - b.startMin || Number(!a.displayOnly) - Number(!b.displayOnly));
-    const appearances = {};
-    packed.forEach(s => (s.rounds || [s.round]).forEach(r => {
-      appearances[r] = (appearances[r] || 0) + 1;
-    }));
-    const parts = {};
-    packed.forEach((s, i) => {
-      s.slot = i + 1;
-      (s.rounds || [s.round]).forEach(r => { parts[r] = (parts[r] || 0) + 1; });
-      s.part = parts[s.round];
-      s.of = appearances[s.round];
-      s.matches = s.matches.map((m, field) => m ? Object.assign({}, m, { field, slot: s.slot }) : null);
-    });
-    return { slots: packed, endMin: cursor };
-  }
-
   function buildRounds(cfg) {
     const c = Object.assign({
       mode: 'rr', teams: 8, fields: 2, rounds: null, setMode: '21',
@@ -1729,7 +1671,7 @@
       const per = TC.modeMinutes(rd.setMode);
       TC.assignSlots(schedulable.length ? [Object.assign({}, rd, { matches: schedulable })] : [], c.fields).forEach(s => {
         slots.push(Object.assign({}, s, {
-          slot: slots.length + 1, title: rd.title, setMode: rd.setMode,
+          slot: slots.length + 1, title: rd.title,
           startMin: cursor, endMin: cursor + per, minutes: per
         }));
         cursor += per;
@@ -1742,23 +1684,17 @@
       const displayOnly = awarded.concat(byesWithOutcome);
       TC.assignSlots(displayOnly.length ? [Object.assign({}, rd, { matches: displayOnly })] : [], c.fields)
         .forEach(s => slots.push(Object.assign({}, s, {
-          slot: slots.length + 1, title: rd.title, setMode: rd.setMode, displayOnly: true,
+          slot: slots.length + 1, title: rd.title, displayOnly: true,
           startMin: cursor, endMin: cursor, minutes: 0,
           matches: s.matches.map(m => Object.assign({}, m, { displayOnly: true }))
         })));
       const annulledCards = rd.matches.filter(m => m.bye == null && m.dead && m.annulled);
       TC.assignSlots(annulledCards.length ? [Object.assign({}, rd, { matches: annulledCards })] : [], c.fields)
         .forEach(s => slots.push(Object.assign({}, s, {
-          slot: slots.length + 1, title: rd.title, setMode: rd.setMode,
+          slot: slots.length + 1, title: rd.title,
           startMin: cursor, endMin: cursor, minutes: 0, displayOnly: true
         })));
     });
-    if (c.mode === 'rr') {
-      const packed = packRoundRobinSlots(slots, c.fields, startMin);
-      slots.splice(0, slots.length);
-      packed.slots.forEach(s => slots.push(s));
-      cursor = packed.endMin;
-    }
     const endMin = cursor;
 
     /* --- Endstand & Hinweise ---------------------------------------------- */
@@ -1807,7 +1743,7 @@
     rounds.forEach(rd => rd.matches.forEach(m => matchById[m.id] = m));
 
     return {
-      config: c, mode: c.mode, rounds, slots, startMin, endMin, courtOptimized: c.mode === 'rr',
+      config: c, mode: c.mode, rounds, slots, startMin, endMin,
       table, tableUpto, rankUpto, placements, pairs: pairsOut,
       complete, rankingComplete, provisional: !complete, perGame: table.perGame,
       warnings, notes, withdrawal, absent: Array.from(absent), activeTeams: active,
