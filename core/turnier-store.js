@@ -64,10 +64,18 @@
   function detachServerInView(view, sheet) {
     view.removeItem(SERVER_PREFIX + sheet);
   }
+  function editableServerBindingInView(view, sheet) {
+    const binding = serverBindingInView(view, sheet);
+    if (binding && binding.readOnly) {
+      detachServerInView(view, sheet);
+      return null;
+    }
+    return binding;
+  }
   function serverBinding(sheet) {
-    return getItem(SERVER_PREFIX + sheet).then(function (raw) {
-      try { return JSON.parse(raw || 'null'); } catch (e) { return null; }
-    });
+    return transaction(function (view) {
+      return editableServerBindingInView(view, sheet);
+    }, { tracked: false });
   }
 
   function storageEvent(name, detail) {
@@ -984,8 +992,7 @@
      Transaktion. data = Momentaufnahme des Turniers. */
   function saveInView(view, data, sheetId, baseRevision, nowIso) {
     if (data && data._sportBlocked) return { ok: false, code: 'unsupported-sport' };
-    const binding = serverBindingInView(view, sheetId);
-    if (binding && binding.readOnly) return { ok: false, code: 'server-readonly' };
+    editableServerBindingInView(view, sheetId);
     const key = keyFor(sheetId);
     const current = view.getItem(key);
     let currentRevision = 0;
@@ -1065,8 +1072,8 @@
       const original = view.getItem(keyFor(sheetId));
       const validExisting = original != null && parseRecord(original, sheetId).ok;
       const res = loadInView(view, sheetId, cfgDefaults, true);
-      const binding = serverBindingInView(view, sheetId);
-      res.readOnly = !!(binding && binding.readOnly);
+      editableServerBindingInView(view, sheetId);
+      res.readOnly = false;
       res.sportBlocked = !!res.sportBlocked;
       res.fromFormat = view.getItem(ORIGIN_PREFIX + sheetId) === 'format';
       if (validExisting && !res.issue && !res.readOnly && view.getItem(NEW_UI_PREFIX + sheetId) === '1') {
@@ -1432,8 +1439,7 @@
   function restorePrevious(sheetId) {
     const stamp = Date.now();
     return transaction(function (view) {
-      const binding = serverBindingInView(view, sheetId);
-      if (binding && binding.readOnly) return { ok: false, code: 'server-readonly' };
+      editableServerBindingInView(view, sheetId);
       const previous = view.getItem(backupKeyFor(sheetId));
       const current = view.getItem(keyFor(sheetId));
       const parsedPrev = previous == null ? { ok: false } : parseRecord(previous, sheetId);

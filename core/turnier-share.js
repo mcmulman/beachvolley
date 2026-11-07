@@ -208,7 +208,10 @@
     await TStore.whenIdle();
     let binding = await TStore.transaction(function (view) {
       let b = TStore.serverBindingInView(view, o.sheet);
-      if (b && b.readOnly) throw new Error(tx('server.readonly', 'Schreibgeschützte Serveransicht'));
+      if (b && b.readOnly) {
+        TStore.detachServerInView(view, o.sheet);
+        b = null;
+      }
       if (!b) {
         b = { instance: secret(), token: secret(), revision: 0, id: null };
         bindInView(view, o.sheet, b);
@@ -298,33 +301,7 @@
     });
   }
 
-  let readonlyObserver = null;
-  let readonlyActive = false;
   let statusOpts = null;
-  function lockServerView() {
-    readonlyActive = true;
-    function allowed(el) {
-      return el.closest && el.closest('#tserver-status, #' + MODAL_ID + ', .schedule-roundbar, .mobile-jumpbar, .app-bar, .format-info-toggle, .cfg-actions-toggle');
-    }
-    function disable() {
-      if (!readonlyActive) return;
-      document.querySelectorAll('input, select, textarea, button').forEach(function (el) {
-        if (allowed(el)) return;
-        if (el.tagName !== 'BUTTON' || !/^(btnShare|btnPrint|btnToggle\w*)$/.test(el.id)) el.disabled = true;
-      });
-    }
-    if (!readonlyObserver) {
-      readonlyObserver = new MutationObserver(disable);
-      readonlyObserver.observe(document.body, { childList: true, subtree: true });
-      ['input', 'change'].forEach(function (event) {
-        document.addEventListener(event, function (e) {
-          if (readonlyActive && !allowed(e.target)) { e.preventDefault(); e.stopImmediatePropagation(); }
-        }, true);
-      });
-    }
-    disable();
-  }
-
   async function renderServerStatus(o) {
     if (typeof document === 'undefined' || !o || !o.sheet) return;
     statusOpts = o;
@@ -340,9 +317,7 @@
     const dirty = b.published !== snapshotSignature(await readSnapshot(o));
     const status = document.createElement('p');
     status.className = 'tserver-status-message';
-    status.textContent = (b.readOnly
-      ? tx('server.readonly', 'Schreibgeschützte Serveransicht')
-      : dirty
+    status.textContent = (dirty
         ? tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')
         : tx('server.bound', 'Verbunden. Änderungen werden lokal gespeichert; über „Teilen“ veröffentlichst du sie auf dem Server.'));
     bar.appendChild(status);
@@ -368,12 +343,11 @@
       location.hash = SERVER_PREFIX + b.id + (b.token ? '&edit=' + b.token : '');
       location.reload();
     });
-    if (!b.readOnly) action('server.transfer', 'server.transferHint', 'Bearbeitungslink anzeigen',
+    action('server.transfer', 'server.transferHint', 'Bearbeitungslink anzeigen',
       'Zeigt den geheimen Link zur Bearbeitung in einem anderen Browser. Nur mit Mitorganisatoren teilen.',
       function () { openTransfer(o); });
     const config = document.getElementById('configSection');
     (config || document.body).appendChild(bar);
-    if (b.readOnly) lockServerView();
   }
 
   /* =================================================== Offline-Kodierung */
@@ -792,7 +766,7 @@
       tx('share.result.title', 'Link zum Teilen'),
       '<p class="tshare-hint">' + escapeHtml(code
         ? (o && o.serverUpdated ? tx('server.updated', 'Aktualisiert – Link, Code und QR bleiben gleich. ') : '')
-          + tx('server.result', 'Serverlink erstellt. Öffentlicher Link, Code und QR öffnen eine schreibgeschützte Ansicht.')
+          + tx('server.result', 'Serverlink erstellt. Link, Code und QR öffnen eine bearbeitbare lokale Kopie. Änderungen dieser Kopie verändern den ursprünglichen Serverstand nicht.')
         : tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
         (o && o.serverDirty ? ' ' + escapeHtml(tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')) : '') +
         (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
@@ -1127,12 +1101,12 @@
             || typeof full.protected !== 'boolean' || !full.snapshot || typeof full.snapshot !== 'object') {
           throw new Error(tx('server.protocol', 'Der Server unterstützt das aktuelle Turnierformat nicht. Bitte Backend aktualisieren.'));
         }
-        const binding = {
+        const binding = token && full.canEdit ? {
           instance: secret(), id: id, revision: full.revision,
-          readOnly: !(token && full.canEdit),
-          token: token && full.canEdit ? token : null,
+          readOnly: false,
+          token: token,
           published: snapshotSignature(full.snapshot)
-        };
+        } : null;
         return confirmAndApplySnapshot(info, full.snapshot, opts, binding);
       }
       const err = r.err;
@@ -1210,6 +1184,8 @@
       'Geteiltes Turnier gefunden: "{info}".\n\n'
       + 'Übernehmen? Das aktuelle Turnier auf diesem Gerät wird vorher automatisch\n'
       + 'gesichert und bleibt über die Startseite abrufbar.', { info: info })
+      + (!binding ? '\n\n' + tx('share.localCopyHint',
+        'Du kannst diesen Bogen auf diesem Gerät bearbeiten. Änderungen bleiben in deiner lokalen Kopie; der ursprüngliche Serverstand bleibt unverändert.') : '')
     );
     if (!ok) { clearHash(); return Promise.resolve(false); }
     if (typeof TArchive === 'undefined' || !TArchive.importSnapshot) {

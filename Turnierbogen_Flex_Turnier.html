@@ -268,7 +268,85 @@
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
-<script src="core/app-startup.js?v=324"></script>
+<script>
+(function (root) {
+  'use strict';
+  var shown = false;
+  function text(de, en) {
+    return document.documentElement.lang === 'en' ? en : de;
+  }
+  function fail(error) {
+    if (shown) return;
+    shown = true;
+    console.error('App startup failed:', error);
+    var overlay = document.createElement('div');
+    overlay.id = 'app-startup-error';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'app-startup-title');
+    overlay.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;background:#fff;overflow:auto;padding:24px;box-sizing:border-box;color:#172b4d;';
+    var title = document.createElement('h2');
+    title.id = 'app-startup-title';
+    title.textContent = text('App konnte nicht gestartet werden', 'The app could not start');
+    var description = document.createElement('p');
+    description.textContent = text(
+      'App-Dateien fehlen, sind veraltet oder konnten nicht geladen werden. Bitte online aktualisieren. Gespeicherte Turniere und Verwaltungsrechte bleiben erhalten.',
+      'App files are missing, outdated or could not be loaded. Please update online. Saved tournaments and management access will be preserved.');
+    var detail = document.createElement('p');
+    detail.textContent = error.message;
+    var status = document.createElement('p');
+    status.setAttribute('role', 'status');
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = text('App aktualisieren', 'Update app');
+    button.style.cssText = 'min-height:44px;padding:12px 20px;font-size:16px;';
+    button.addEventListener('click', function () {
+      button.disabled = true;
+      status.textContent = text('App-Dateien werden aktualisiert ...', 'Updating app files ...');
+      var urls = [location.href.split('#')[0]];
+      Array.prototype.forEach.call(document.scripts, function (script) {
+        if (script.src && new URL(script.src).origin === location.origin) urls.push(script.src);
+      });
+      Promise.all(urls.map(function (url) {
+        return fetch(url, { cache: 'reload', credentials: 'same-origin' }).then(function (response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + new URL(url).pathname);
+          return response.text();
+        });
+      })).then(function () {
+        if (!('serviceWorker' in navigator)) return;
+        return navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          return Promise.all(registrations.filter(function (registration) {
+            return registration.scope === new URL('./', location.href).href;
+          }).map(function (registration) { return registration.update(); }));
+        });
+      }).then(function () {
+        var url = new URL(location.href);
+        url.searchParams.set('_appUpdate', String(Date.now()));
+        location.replace(url.href);
+      }).catch(function (failure) {
+        console.error('App update failed:', failure);
+        status.textContent = text('Aktualisierung fehlgeschlagen. Bitte Verbindung prüfen und erneut versuchen. ',
+          'Update failed. Please check your connection and try again. ') + failure.message;
+        button.disabled = false;
+      });
+    });
+    [title, description, detail, button, status].forEach(function (node) { overlay.appendChild(node); });
+    document.body.appendChild(overlay);
+    button.focus();
+  }
+  function check(requirements) {
+    var missing = requirements.filter(function (path) {
+      var value = root;
+      path.split('.').forEach(function (part) { value = value ? value[part] : undefined; });
+      return typeof value !== 'function';
+    });
+    if (!missing.length) return true;
+    fail(new Error(text('Inkompatible App-Dateien: ', 'Incompatible app files: ') + missing.join(', ')));
+    return false;
+  }
+  root.TAppStartup = { check: check, fail: fail };
+})(window);
+</script>
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-outcome.js"></script>
 <script src="core/turnier-stage.js"></script>
