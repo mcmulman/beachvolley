@@ -2305,12 +2305,12 @@
       if (!document.body) return;
       /* Width only: focus changes must not move the sticky round bar
          between mousedown and mouseup. */
-      document.body.classList.toggle('has-section-jumpbar', window.innerWidth > 640);
+      document.body.classList.toggle('has-section-jumpbar', window.innerWidth > 1024);
       /* The root scroller owns scroll-padding; CSS reserves the bar per
          breakpoint for native focus/scrollIntoView reveal. */
       document.documentElement.classList.add('has-section-nav');
       const height = bar.getClientRects().length ? bar.offsetHeight : 0;
-      const mobile = window.innerWidth <= 640;
+      const mobile = window.innerWidth <= 1024;
       document.documentElement.style.setProperty('--section-nav-height', height + 'px');
       document.documentElement.style.setProperty('--section-footer-height', (mobile ? height : 0) + 'px');
     }
@@ -2421,19 +2421,31 @@
           updateCurrent();
         }
       });
+      let pointerDown = false;
       function editing() {
         const el = document.activeElement;
         const active = el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
           && !el.disabled && !el.readOnly && !/^(checkbox|radio|button)$/.test(el.type);
+        if (pointerDown && !active && bar.classList.contains('is-editing')) return;
         bar.classList.toggle('is-editing', !!active);
         syncLayoutClass();
       }
       document.addEventListener('focusin', editing);
       document.addEventListener('focusout', function () { setTimeout(editing, 0); });
-      let pointerDown = false;
-      const pointerState = down => () => { pointerDown = down; };
+      const pointerState = down => event => {
+        if (down) pointerDown = true;
+        else {
+          setTimeout(function () {
+            pointerDown = false;
+            editing();
+          }, event.type.indexOf('touch') === 0 ? 350 : 0);
+        }
+      };
       ['mousedown', 'touchstart'].forEach(type => document.addEventListener(type, pointerState(true), true));
       ['mouseup', 'touchend', 'touchcancel'].forEach(type => document.addEventListener(type, pointerState(false), true));
+      document.addEventListener('click', function () {
+        setTimeout(function () { pointerDown = false; editing(); }, 0);
+      }, true);
       document.addEventListener('focusin', e => {
         const target = e.target;
         if (pointerDown || !target || target === document.body || !target.getClientRects) return;

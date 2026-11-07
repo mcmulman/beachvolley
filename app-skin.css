@@ -927,6 +927,48 @@
   body.has-section-jumpbar .schedule-roundbar {
     top: calc(var(--app-bar-h, 54px) + 8px + var(--section-nav-height, 53px));
   }
+  @media (max-width: 1024px) {
+    .mobile-jumpbar {
+      position:fixed;
+      top:auto;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:999;
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      grid-gap:4px;
+      margin:0;
+      padding:4px 8px;
+      padding-left:calc(8px + env(safe-area-inset-left, 0px));
+      padding-right:calc(8px + env(safe-area-inset-right, 0px));
+      padding-bottom:calc(4px + env(safe-area-inset-bottom, 0px));
+      border-top:2px solid #b5c9e0;
+      border-bottom:0;
+      background:#fff;
+      box-shadow:0 -4px 14px rgba(26,58,92,.12);
+    }
+    .mobile-jumpbar .nbtn {
+      min-width:0;
+      min-height:44px;
+      padding:2px;
+      font-size:11px;
+      line-height:1.2;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      white-space:normal;
+    }
+    .mobile-jumpbar .nbtn svg { width:18px; height:18px; margin:0 0 2px; }
+    .mobile-jumpbar.is-editing, html body.score-editing .mobile-jumpbar { display:none; }
+    html.has-section-nav { scroll-padding-top:72px; scroll-padding-bottom:calc(var(--section-footer-height, 53px) + 12px); }
+    html.has-section-nav body.tournament-sheet { padding-bottom:calc(var(--section-footer-height, 53px) + 24px) !important; }
+    html.has-section-nav body:not(.score-editing) #bl-toast {
+      bottom:calc(var(--section-footer-height, 54px) + 12px);
+      z-index:1000;
+    }
+  }
   @media (max-width: 960px) {
     #tserver-status .tserver-action { grid-template-columns:minmax(0,1fr); gap:4px; }
     .tournament-sheet {
@@ -981,21 +1023,6 @@
     .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; font-size: 16px; color: var(--app-blue-dark); }
     .tournament-sheet .format-info-toggle { width: 100%; }
     .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
-    .mobile-jumpbar { grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-gap: 4px;
-      padding-top: 4px;
-      padding-bottom: 4px;
-      padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-      padding-left: 8px; padding-right: 8px;
-      padding-left: calc(8px + env(safe-area-inset-left, 0px));
-      padding-right: calc(8px + env(safe-area-inset-right, 0px)); }
-    .mobile-jumpbar .nbtn { min-width: 0; min-height:44px; padding:2px;
-      font-size:11px; line-height:1.2; word-wrap: break-word; }
-    .mobile-jumpbar .nbtn svg { width:18px; height:18px; margin-bottom:2px; }
-    html.has-section-nav body.tournament-sheet {
-      padding-bottom:calc(var(--section-footer-height, 53px) + 24px) !important;
-    }
-    .mobile-jumpbar.is-editing { display: none; }
   }
   @media (min-width: 641px) and (max-width: 960px) {
     .tournament-sheet .table-scroll.is-wide { overflow-x: auto; }

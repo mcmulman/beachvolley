@@ -35,7 +35,7 @@
 
 ### Kompakte Feature-Übersicht
 
-- **Erreichbare Abschnittsnavigation:** Setup, Anleitung, Spielplan und Tabelle bleiben auf Tablet/Desktop oben angeheftet. Smartphones verwenden eine kompakte feste Footer-Leiste auch im Querformat, mit mindestens 44 px hohen Tasten und Abstand zur Geräte-Safe-Area. Platz am Seitenende und gemessene Scroll-Abstände halten Inhalte erreichbar; während der Smartphone-Eingabe weicht die Leiste der Tastatur. Im Druck entfällt sie.
+- **Erreichbare Abschnittsnavigation:** Setup, Anleitung, Spielplan und Tabelle bleiben auf Desktop oben angeheftet. Smartphones und Tablets bis 1024 px verwenden eine kompakte feste Footer-Leiste auch im Querformat, mit mindestens 44 px hohen Tasten und Abstand zur Geräte-Safe-Area. Platz am Seitenende und gemessene Scroll-Abstände halten Inhalte erreichbar; während der Eingabe weicht die Footer-Leiste der Tastatur. Im Druck entfällt sie.
 
 - **Normale Spielbögen immer lokal bearbeitbar:** Geteilte Standardbögen öffnen per Link, Code oder QR als bearbeitbare lokale Kopie, ohne Nur-Lese-Sperre für Punkte oder Konfiguration. Frühere schreibgeschützte Importe werden ohne Datenverlust von der Serverbindung gelöst. Nur ein ausdrücklich übertragener Bearbeitungsschlüssel ermöglicht das Aktualisieren des ursprünglichen Serverstands; das erneute Teilen einer Kopie erstellt einen eigenen Serverstand. Firmencup behält seine öffentlichen Nur-Lese-Links.
 
@@ -198,7 +198,7 @@
 
 ### Compact Feature Highlights
 
-- **Reachable section navigation:** Setup, instructions, schedule and standings stay pinned at the top on tablets/desktops. Smartphones use a compact fixed footer even in landscape, with buttons at least 44 px high and device-safe-area spacing. Reserved page-end space and measured scroll offsets keep content reachable; during smartphone input the bar yields to the keyboard. It is omitted in print.
+- **Reachable section navigation:** Setup, instructions, schedule and standings stay pinned at the top on desktops. Smartphones and tablets up to 1024 px use a compact fixed footer even in landscape, with buttons at least 44 px high and device-safe-area spacing. Reserved page-end space and measured scroll offsets keep content reachable; during input the footer bar yields to the keyboard. It is omitted in print.
 
 - **Standard sheets are always locally editable:** Links, codes and QR codes open shared standard sheets as editable local copies, without read-only score or configuration locks. Earlier read-only imports are detached from their server binding without losing data. Only an explicitly transferred editing key allows updates to the original server version; sharing a copy again creates a separate server version. Company-cup public links remain read-only.
 
