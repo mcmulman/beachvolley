@@ -35,6 +35,8 @@
 
 ### Kompakte Feature-Übersicht
 
+- **Datensichere App-Aktualisierung für Runden-/Flex-Bögen:** Fehlende oder inkompatible Startmodule zeigen eine bedienbare Fehlermeldung mit „App aktualisieren“ statt eines unvollständig gestarteten Spielbogens. Online werden HTML und Skripte neu geladen; Turniere, Verwaltungsrechte und Sicherungen bleiben erhalten. Neue Offline-Caches laden App-Dateien unter Umgehung des alten HTTP-Caches.
+
 - **Freie Sicht bei Abschnitts- und Fokussprüngen:** Kopf-, Abschnitts- und Rundenleisten werden beim Hinscrollen berücksichtigt. Ein geometrischer Fokus-Fallback hält Bedienelemente auch ohne wirksame Scroll-Abstandsregeln sichtbar; normales Scrollen und Pointer-Fokus bleiben unverändert.
 
 - **Wiederholbare Livefreigabe:** Freigabeänderungen werden vor dem Versand separat gesichert. Nach einer verlorenen Serverantwort wird dieselbe Änderung bestätigt statt einen weiteren Schlüssel zu erzeugen; Ergebnisübertragungen bleiben davon getrennt. Das Erneuern oder Widerrufen der eigenen Adminfreigabe sperrt die private Ansicht.
@@ -191,6 +193,8 @@
 - **Company cup – reliable live persistence and withdrawal proofs:** Concurrent synchronization and permission changes run sequentially per local event, retaining distinct queued snapshots and failed requests' retry keys. For multiple withdrawal decisions concerning the same team, the lexicographically smallest fixture ID supplies the representative event-wide proof (note and original timestamp), independent of input order, device clocks or equal timestamps. Every individual note remains in its match decision. Correction/removal requires the correspondingly re-derived proof; live changes to recorded decisions remain blocked. Withdrawal still applies event-wide while at least one such decision exists. Local and server text limits count UTF-16 code units (non-BMP emoji count twice), not UTF-8 bytes.
 
 ### Compact Feature Highlights
+
+- **Data-safe app updates for round/Flex sheets:** Missing or incompatible startup modules show an actionable error with “Update app” instead of a partially started tournament sheet. HTML and scripts are refreshed online; tournaments, management access and backups are preserved. New offline caches fetch app files while bypassing the old HTTP cache.
 
 - **Unobstructed section and focus navigation:** Header, section and round bars are accounted for when revealing content. A geometric focus fallback keeps controls visible when native scroll-clearance rules are ineffective; ordinary scrolling and pointer focus remain unchanged.
 

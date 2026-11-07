@@ -1,7 +1,7 @@
 /* Beach-Volleyball Turniervorlagen – Service Worker
    Ermöglicht vollständigen Offline-Betrieb (PWA).
    Bei Änderungen an den Seiten die CACHE_VERSION erhöhen. */
-const CACHE_VERSION = 'beachl-turniere-v323';
+const CACHE_VERSION = 'beachl-turniere-v324';
 
 /* Alle App-Ressourcen (self-contained HTML, keine externen Abhängigkeiten). */
 const PRECACHE = [
@@ -48,6 +48,7 @@ const PRECACHE = [
   './core/compat-flexgap.css',
   './core/turnier-archive.js',
   './core/turnier-core.js',
+  './core/app-startup.js',
   './core/turnier-outcome.js',
   './core/turnier-format.js',
   './core/turnier-resume-picker.js',
@@ -91,7 +92,8 @@ const PRECACHE = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then(cache => cache.addAll(PRECACHE))
+      .then(cache => cache.addAll(PRECACHE.map(url =>
+        new Request(new URL(url, self.location.href), { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });

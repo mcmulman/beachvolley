@@ -243,6 +243,7 @@
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
+<script src="core/app-startup.js?v=324"></script>
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-outcome.js"></script>
 <script src="core/turnier-stage.js"></script>
@@ -252,7 +253,7 @@
 <script src="core/turnier-archive.js"></script>
 <script src="core/qrcode-generator.js"></script>
 <script src="core/turnier-share.js"></script>
-<script src="core/turnier-ui.js"></script>
+<script src="core/turnier-ui.js?v=324"></script>
 <script src="core/team-reorder.js"></script>
 <script src="core/format-switch.js"></script>
 <script src="core/planning-engine.js"></script>
@@ -260,6 +261,9 @@
 <script>
 (async function(){
   'use strict';
+  if (!TAppStartup.check(['TI18n.t', 'TC.modeDef', 'TFormat.build', 'TStore.load',
+    'TResumePicker.maybePrompt', 'TUI.roundsInSlots', 'TUI.scheduleGridColumns',
+    'TPlanning.apply', 'TPlanning.capture', 'TFormatSwitch.mount'])) return;
   /* DE/EN-Prototyp: statische Texte vor dem ersten Zeichnen übersetzen. */
   const T = TI18n.t, term = TI18n.term;
   const setModeLabel = id => T('setMode.' + TC.modeDef(id).id);
@@ -1461,13 +1465,7 @@
   rebuild();
   TFormatSwitch.mount({ get: () => S });
 })().catch(function(err){
-  console.error(err);
-  const box = document.createElement('div');
-  box.className = 'notebox noprint';
-  box.setAttribute('role', 'alert');
-  const fallback = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
-  box.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('sheet.loadError') : fallback;
-  document.body.insertBefore(box, document.body.firstChild);
+  TAppStartup.fail(err);
 });
 </script>
 
