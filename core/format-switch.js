@@ -45,37 +45,41 @@
     const target = targetFor(targetId), base = sourceBase(source && source.sheet);
     const notices = [];
     const note = (key, params) => notices.push({ key: 'formatSwitch.' + key, params: params || {} });
-    const blocked = key => { note(key || 'invalid'); return { blocked: true, notices: notices }; };
+    const blocked = (key, params) => { note(key, params); return { blocked: true, notices: notices }; };
+    const invalid = field => blocked('invalidSetting', { field: 'formatSwitch.field.' + field });
     if (!target || !targetFor(base) || targetId === base || !object(source.config)) return blocked('invalidTarget');
     const sourceProfile = Sport ? Sport.recordSport(source) : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
     if (!sourceProfile.ok || (Sport && !Sport.supportsFormat(sourceProfile.profile.id, targetId))) return blocked('invalidTarget');
     const profile = Sport && Sport.get(sourceProfile.profile.id, sourceProfile.profile.version);
     const modes = profile ? profile.modeIds : beachModes;
     const c = source.config, cfg = defaults(target, sourceProfile.profile.id);
-    if (profile && c.rankingProfile != null && profile.rankingProfiles.indexOf(c.rankingProfile) < 0) return blocked();
+    if (profile && c.rankingProfile != null && profile.rankingProfiles.indexOf(c.rankingProfile) < 0) return invalid('rankingProfile');
     if (c.customSetTarget != null
-        && (!Number.isInteger(c.customSetTarget) || c.customSetTarget < 11 || c.customSetTarget > 50)) return blocked();
+        && (!Number.isInteger(c.customSetTarget) || c.customSetTarget < 11 || c.customSetTarget > 50)) return invalid('customSetTarget');
     if (c.modeMinutes != null && (!object(c.modeMinutes)
         || Object.keys(c.modeMinutes).some(mode => !modes.includes(mode)
-          || !integer(c.modeMinutes[mode], 1, 360)))) return blocked();
+          || !integer(c.modeMinutes[mode], 1, 360)))) return invalid('modeMinutes');
     if (c.rankingProfile != null) cfg.rankingProfile = c.rankingProfile;
     if (c.customSetTarget != null) cfg.customSetTarget = c.customSetTarget;
     if (c.modeMinutes && Object.keys(c.modeMinutes).length) cfg.modeMinutes = copy(c.modeMinutes);
     const sourcePeople = base === 'kingqueen', targetPeople = targetId === 'kingqueen';
-    if ((source.stageDecisions || []).length) return blocked();
+    if (source.stageDecisions != null
+        && (!Array.isArray(source.stageDecisions) || source.stageDecisions.length)) return blocked('stageDecisions');
     const sourceCourt = base === 'koc', targetCourt = targetId === 'koc';
     const count = sourcePeople ? c.men + c.women : c.teams;
-    if (!integer(count, 2, 128) || (sourcePeople && (!integer(c.men, 0, 16) || !integer(c.women, 0, 16)))) return blocked();
-    if (!time(c.startTime) || (c.endTime != null && !time(c.endTime))) return blocked();
-    if (c.rounds != null && !integer(c.rounds, 1, 256)) return blocked();
-    if (sourceCourt && !integer(c.roundMinutes, 1, 128)) return blocked();
-    if (!sourceCourt && !modes.includes(c.setMode)) return blocked();
+    if (!integer(count, 2, 128) || (sourcePeople && (!integer(c.men, 0, 16) || !integer(c.women, 0, 16)))) return invalid('participants');
+    if (!time(c.startTime)) return invalid('startTime');
+    if (c.endTime != null && !time(c.endTime)) return invalid('endTime');
+    if (c.rounds != null && !integer(c.rounds, 1, 256)) return invalid('rounds');
+    if (sourceCourt && !integer(c.roundMinutes, 1, 128)) return invalid('roundMinutes');
+    if (!sourceCourt && !modes.includes(c.setMode)) return invalid('setMode');
     const names = source.teamNames || {}, fields = source.fieldNames || {};
-    if (!object(names) || !object(fields)
-        || !Object.keys(names).every(k => /^[1-9]\d*$/.test(k) && typeof names[k] === 'string')
-        || !Object.keys(fields).every(k => /^\d+$/.test(k) && typeof fields[k] === 'string')) return blocked();
+    if (!object(names) || !Object.keys(names).every(k => /^[1-9]\d{0,2}$/.test(k) && +k <= 128
+        && typeof names[k] === 'string' && names[k].length <= 500)) return invalid('teamNames');
+    if (!object(fields) || !Object.keys(fields).every(k => /^(0|[1-9]\d{0,2})$/.test(k) && +k <= 128
+        && typeof fields[k] === 'string' && fields[k].length <= 500)) return invalid('fieldNames');
     const sport = Sport ? Sport.recordSport(source) : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
-    if (!sport.ok) return blocked('invalid');
+    if (!sport.ok) return invalid('sport');
     const tournament = {
       title: source.title || '',
       sport: Sport ? Sport.value(sport.profile) : { id: 'volleyball.beach', version: 1 },
@@ -96,7 +100,7 @@
       cfg.teams = count;
       if (Object.keys(names).some(k => +k > count && names[k])) return blocked('extraNames');
       tournament.teamNames = copy(names);
-      if (Sport && !Sport.validatePairMembers(source)) return blocked('invalid');
+      if (Sport && !Sport.validatePairMembers(source)) return invalid('pairMembers');
       if (source.pairMembers) tournament.pairMembers = copy(source.pairMembers);
     }
     cfg.startTime = c.startTime;
@@ -104,7 +108,7 @@
     else if (targetCourt && c.endTime != null) note('noEnd', { time: c.endTime });
     else if (!targetCourt) note('newEnd', { time: cfg.endTime });
     const sourceFields = sourceCourt ? c.courts : c.fields;
-    if (!integer(sourceFields, 1, 10)) return blocked();
+    if (!integer(sourceFields, 1, 10)) return invalid('fields');
     const maxFields = targetCourt ? 5 : Math.max(1, Math.min(10, Math.floor((targetPeople ? (cfg.men + cfg.women) / 2 : cfg.teams) / 2)));
     if (sourceFields > maxFields) {
       if (!targetPeople) {
@@ -127,16 +131,16 @@
     if (copyRounds) {
       if (c.rounds != null) {
         const maxRounds = count - (count % 2 === 0 ? 1 : 0);
-        if (!integer(c.rounds, 2, maxRounds)) return blocked();
+        if (!integer(c.rounds, 2, maxRounds)) return blocked('roundRange', { count: c.rounds, min: 2, max: maxRounds });
         cfg.rounds = c.rounds;
       }
     } else if (c.rounds != null && c.rounds !== cfg.rounds) {
       note('rounds', { count: c.rounds, target: cfg.rounds == null ? 'auto' : cfg.rounds });
     }
     if (grouped(base) && grouped(targetId)) {
-      if (c.groups !== 'auto' && !integer(c.groups, 2, 6)) return blocked();
-      if (!['none', 'placement', 'blocks', 'ko', 'main'].includes(c.finalMode)) return blocked();
-      if (c.finalSetMode && !modes.includes(c.finalSetMode)) return blocked();
+      if (c.groups !== 'auto' && !integer(c.groups, 2, 6)) return invalid('groups');
+      if (!['none', 'placement', 'blocks', 'ko', 'main'].includes(c.finalMode)) return invalid('finalMode');
+      if (c.finalSetMode && !modes.includes(c.finalSetMode)) return invalid('finalSetMode');
       cfg.groups = c.groups;
       cfg.finalMode = c.finalMode;
       cfg.finalSetMode = c.finalSetMode || '';
@@ -164,7 +168,7 @@
     params.set('id', id);
     if (target.mode) params.set('mode', target.mode);
     if (sportId && sportId !== 'volleyball.beach') params.set('sport', sportId);
-    return target.file + '?' + params.toString();
+    return target.file + '?' + params.toString() + '#configSection';
   }
   function fileFor(target, sportId) {
     const params = new URLSearchParams();
@@ -217,7 +221,7 @@
         sheet: sheet, keys: [S.PREFIX + sheet], empty: true,
         fresh: () => Object.assign(S.emptyTournament(sheet, {}), copy(mapped.tournament))
       }, mapped.tournament.title);
-      if (!A.validTournamentRecord(result.tournament, sheet)) throw new Error('formatSwitch.invalid');
+      if (!A.validTournamentRecord(result.tournament, sheet)) throw new Error('formatSwitch.targetInvalid');
       S.markNewInView(view, sheet, 'format');
       view.setItem(RETURN_PREFIX + sheet, JSON.stringify({
         sheet: source.sheet, target: sourceBase(source.sheet), sport: sourceSport.profile.id
@@ -236,6 +240,7 @@
     const t = (key, params) => I.t('formatSwitch.' + key, params);
     const noticeText = n => {
       const params = Object.assign({}, n.params);
+      if (typeof params.field === 'string' && params.field.indexOf('formatSwitch.field.') === 0) params.field = I.t(params.field);
       if (modes.includes(params.mode)) params.mode = I.t('setMode.' + params.mode);
       if (params.target === 'auto') params.target = t('automatic');
       return I.t(n.key, params);
@@ -247,6 +252,11 @@
     box.innerHTML = '<label for="formatSwitchTarget"></label><div class="format-switch-controls"><select id="formatSwitchTarget"></select><button type="button" class="nbtn" id="btnFormatSwitch"></button></div><p id="formatSwitchNotice" role="status"></p>';
     box.querySelector('label').textContent = t('label');
     const select = box.querySelector('select'), button = box.querySelector('button'), status = box.querySelector('p');
+    function showNotice(text, error) {
+      status.textContent = text;
+      status.classList.toggle('is-error', !!error);
+      status.setAttribute('role', error ? 'alert' : 'status');
+    }
     select.add(new Option(t('choose'), ''));
     const base = sourceBase(opts.get().sheet);
     targets.filter(target => target.id !== base && (!profile || Sport.supportsFormat(profile.id, target.id))).forEach(target => {
@@ -254,7 +264,7 @@
       select.add(new Option(label, target.id));
     });
     button.textContent = t('button');
-    status.textContent = t('hint');
+    showNotice(t('hint'), false);
     function place() {
       const setup = section.querySelector('[data-cfg-options]') || section.querySelector('.cfg-action-groups')
         || section.querySelector('.cfg-setup-content') || section;
@@ -270,7 +280,8 @@
     new MutationObserver(refresh).observe(section, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly'] });
     select.addEventListener('change', () => {
       const mapped = map(opts.get(), select.value);
-      status.textContent = select.value ? mapped.notices.map(noticeText).join(' ') || t('hint') : t('hint');
+      showNotice(select.value ? mapped.notices.map(noticeText).join(' ') || t('hint') : t('hint'),
+        !!select.value && mapped.blocked);
     });
     button.addEventListener('click', async () => {
       if (readOnly() || button.disabled) return;
@@ -278,12 +289,23 @@
       button.disabled = true;
       try {
         await S.whenIdle();
-        if (S.hasUnsavedWork()) { status.textContent = t('saveError'); return; }
-        if (readOnly()) { status.textContent = t('readonly'); return; }
+        if (S.hasUnsavedWork()) { showNotice(t('saveError'), true); return; }
+        if (readOnly()) { showNotice(t('readonly'), true); return; }
         const source = copy(opts.get()), mapped = map(source, targetId);
-        if (mapped.blocked) { status.textContent = mapped.notices.map(noticeText).join(' '); return; }
-        const invalid = Array.from(section.querySelectorAll('input')).find(input => !input.disabled && !input.checkValidity());
-        if (invalid) { status.textContent = t('invalid'); invalid.reportValidity(); return; }
+        if (mapped.blocked) { showNotice(mapped.notices.map(noticeText).join(' '), true); return; }
+        const invalid = Array.from(section.querySelectorAll('input')).find(input => !input.disabled
+          && !input.readOnly && input.type !== 'hidden'
+          && !input.closest('[data-team-delay-editor], .planning-form')
+          && !input.checkValidity());
+        if (invalid) {
+          const label = invalid.labels && invalid.labels[0];
+          const field = (label && label.textContent.trim()) || invalid.getAttribute('aria-label')
+            || invalid.title || invalid.name || invalid.id || t('field.configuration');
+          showNotice(t('invalidInput', { field: field, reason: invalid.validationMessage }), true);
+          invalid.reportValidity();
+          return;
+        }
+        showNotice(mapped.notices.map(noticeText).join(' ') || t('hint'), false);
         if (mapped.notices.length && !root.confirm(mapped.notices.map(noticeText).join('\n') + '\n\n' + t('confirm'))) return;
         const result = await create(source, targetId, mapped);
         const current = opts.get();
@@ -296,7 +318,7 @@
       } catch (error) {
         root.console.error('Format switch failed', error);
         const key = /^formatSwitch\./.test(error.message) ? error.message : 'formatSwitch.saveError';
-        status.textContent = I.t(key);
+        showNotice(I.t(key), true);
       } finally { button.disabled = false; }
     });
     S.getItem(RETURN_PREFIX + opts.get().sheet).then(raw => {
@@ -312,9 +334,32 @@
       box.appendChild(link);
     }).catch(error => {
       root.console.error('Format return failed', error);
-      status.textContent = t('saveError');
+      showNotice(t('saveError'), true);
     });
     refresh();
+    if (root.location.hash === '#configSection') {
+      const observer = new MutationObserver(revealSettings);
+      function revealSettings() {
+        const content = section.querySelector('.cfg-setup-content');
+        if (!content || !root.TSheetEditors || !root.TSheetEditors.scrollToPanel) return;
+        observer.disconnect();
+        root.requestAnimationFrame(() => root.requestAnimationFrame(() => {
+          if (content.hidden) {
+            const toggle = section.querySelector('.cfg-setup-toggle');
+            if (toggle) toggle.click();
+          }
+          const heading = section.querySelector('.cfgcard-head');
+          if (heading) {
+            heading.setAttribute('tabindex', '-1');
+            heading.focus({ preventScroll: true });
+          }
+          root.TSheetEditors.scrollToPanel(section);
+          root.history.replaceState(root.history.state, '', root.location.pathname + root.location.search);
+        }));
+      }
+      observer.observe(section, { childList: true, subtree: true });
+      revealSettings();
+    }
   }
   return { targets: targets, map: map, mount: mount };
 });

@@ -55,6 +55,8 @@
 
 - **Turniergebundene Counter-Ergebnisse:** Zur Übernahme müssen Turnierdatei, Turnier-ID, Modus und Sport übereinstimmen. Ein Ergebnis für einen anderen Bogen bleibt vorgemerkt und wird dort nicht eingetragen.
 
+- **Verständlicher Turnierformwechsel:** Unausgefüllte optionale Planungsentwürfe, etwa Verspätungszeiten, verhindern keinen Formatwechsel. Tatsächlich ungültige Einstellungen und nicht übertragbare Sonderentscheidungen werden mit konkretem Grund rot angezeigt.
+
 - **Gezielte Speicherbuchhaltung:** Änderungen an einem Turnier verarbeiten für die Revisionspflege nur geänderte Datensätze statt sämtliche Turnierstände erneut zu parsen. Atomare Speicherung, Sicherungen und Konflikterkennung bleiben erhalten; die Datenbank wird weiterhin vollständig eingelesen.
 
 - **Firmencup-Einstieg:** Eine kompakte Startkarte zeigt den Nutzen für Firmen, Teams, Spielplanung und Ergebnisse. Klar beschrifteter Turniername und „Firmencup anlegen“ führen in die bestehende Planung; lokale Turniere und die JSON-Wiederherstellung bleiben direkt darunter erreichbar.
@@ -225,6 +227,8 @@
 - **Clear compact Score Counter:** Transferring results to the tournament sheet, undo, swapping sides, new game, reset and ending a set retain visible text labels instead of icon-only controls. Labels can wrap on narrow displays.
 
 - **Tournament-bound Counter results:** Result transfer requires matching sheet, tournament ID, mode and sport. A result belonging to another tournament remains pending and is not entered there.
+
+- **Clear format switching:** Empty optional planning drafts, such as delayed-arrival times, do not prevent switching formats. Actual invalid settings and unsupported special decisions show a specific reason in red.
 
 - **Scoped save bookkeeping:** Revision maintenance processes changed records rather than reparsing every stored tournament. Atomic persistence, backups and conflict detection remain intact; database snapshots still read the complete store.
 
