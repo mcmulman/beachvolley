@@ -1194,8 +1194,8 @@
   function setupPlayerLabel(side, i) {
     return el.setupPlayer[side][i].value.replace(/^\s+|\s+$/g, '') || tx('timer.serve.player', 'Spieler {n}', { n: i + 1 });
   }
-  /* Satzbeginn im Entwurf: kein Team vorgewählt (erneutes Antippen hebt die
-     Wahl auf), erste Person je Team = gespeicherte Wahl bzw. Spieler 1. */
+  /* Satzbeginn im Entwurf: gespeicherte Wahl, bei neuen Spielen Standard-
+     Eröffnung. Erneutes Antippen hebt die Teamwahl auf. */
   function renderSetupServe() {
     var on = setupDraft.serveShown;
     renderOnOff(el.setupServe, el.setupServeState, on);
@@ -1231,7 +1231,8 @@
   }
   /* Aus den Einstellungen erneut geöffnet: „Abbrechen“ statt „Überspringen“. */
   function openSetup(fromSettings, isNewMatch) {
-    var setupState = isNewMatch && !returnTarget && state.match ? TM.setMatch(state, null, null) : state;
+    var setupState = isNewMatch ? TM.clearServe(state) : state;
+    if (isNewMatch && !returnTarget && setupState.match) setupState = TM.setMatch(setupState, null, null);
     var info = TM.ruleInfo(setupState);
     el.setupText.hidden = !!fromSettings && !isNewMatch;
     el.setupTitle.textContent = isNewMatch
@@ -1248,7 +1249,8 @@
       : tx('timer.setup.skip', 'Überspringen');
     setupDraft = { target: info.target, wins: info.wins, decider: info.decider, twoPoint: info.twoPoint,
       serveShown: state.serveShown === true, canStart: !!isNewMatch || TM.canStartServe(state), isNewMatch: !!isNewMatch,
-      fromMatch: !!setupState.match, begin: isNewMatch ? null : state.serve, first: firstPicks() };
+      fromMatch: !!setupState.match, begin: setupState.serve,
+      first: isNewMatch ? { a: setupState.first.a, b: setupState.first.b } : firstPicks() };
     el.setupName.a.value = state.names.a;
     el.setupName.b.value = state.names.b;
     ['a', 'b'].forEach(function (side) {

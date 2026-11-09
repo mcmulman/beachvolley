@@ -17,9 +17,9 @@
    das aufschlagende Team, bleibt dieselbe Person; holt das andere Team
    den Aufschlag zurück, schlägt dort der Partner der zuletzt
    aufschlagenden Person auf (feste Reihenfolge je Satz). Wer einen Satz
-   eröffnet, wird gewählt (Münzwurf) und nie aus dem Spielstand geraten;
-   Satzende und Zurücksetzen machen alles wieder offen (Spielernamen
-   bleiben). −1/Direkteingabe können den Verlauf nicht rekonstruieren →
+   eröffnet, ist frei wählbar: Neue Spiele beginnen mit Seite A und Spieler 1
+   je Team, ebenso jeder neue Satz (Spielernamen bleiben).
+   Nie aus dem Spielstand geraten. −1/Direkteingabe können den Verlauf nicht rekonstruieren →
    offen und bekannte Reihenfolgen unbekannt (außer die Korrektur stellt
    genau den vorigen Stand wieder her).
 
@@ -84,7 +84,7 @@
   }
 
   function create() {
-    return {
+    var s = {
       v: VERSION,
       status: 'idle',
       accumulatedMs: 0,
@@ -102,13 +102,12 @@
       switchPts: 0,
       rules: defaultRules(),
       setupDone: false,
-      serve: null,
-      sp: emptyServePair(),
-      first: emptyServePair(),
       players: { a: ['', ''], b: ['', ''] },
-      serveShown: false,
+      serveShown: true,
       match: null
     };
+    clearSetServe(s);
+    return s;
   }
   function defaultRules() { return { target: 21, wins: 2, decider: 15, twoPoint: true }; }
   function copyRules(r) { return { target: r.target, wins: r.wins, decider: r.decider, twoPoint: r.twoPoint !== false }; }
@@ -117,7 +116,6 @@
   function cleanServe(v) { return v === 'a' || v === 'b' ? v : null; }
   function cleanFirst(v) { return v === 0 || v === 1 ? v : null; }
   function cleanSp(v) { return v === 0 || v === 1 || v === -1 ? v : null; }
-  function emptyServePair() { return { a: null, b: null }; }
   function servePair(p, clean) {
     p = p && typeof p === 'object' ? p : {};
     return { a: clean(p.a), b: clean(p.b) };
@@ -155,9 +153,9 @@
     n.first = { a: v[3], b: v[4] };
   }
   function clearSetServe(n) {
-    n.serve = null;
-    n.sp = emptyServePair();
-    n.first = emptyServePair();
+    n.serve = 'a';
+    n.sp = { a: 0, b: null };
+    n.first = { a: 0, b: 0 };
   }
 
   function clone(s) {
@@ -397,7 +395,7 @@
     n.sets[s.score.a > s.score.b ? 'a' : 'b'] += 1;
     n.setHistory.push(copyPair(s.score));
     n.score = { a: 0, b: 0 };
-    /* Jeder Satz wird neu eröffnet: Aufschlag und Reihenfolgen neu wählen. */
+    /* Jeder Satz beginnt mit der frei änderbaren Standard-Eröffnung. */
     clearSetServe(n);
     return n;
   }
@@ -468,7 +466,6 @@
     if (v) sp[v] = f[v] === null ? -1 : f[v];
     if (s.serve === v && s.first.a === f.a && s.first.b === f.b && s.sp.a === sp.a && s.sp.b === sp.b) return s;
     var n = clone(s);
-    clearSetServe(n);
     n.first = f;
     n.sp = sp;
     n.serve = v;
@@ -507,8 +504,8 @@
     n.players[side][idx] = v;
     return n;
   }
-  /* Neue Teams (z. B. aus dem Turnierbogen): Aufschlag, Reihenfolgen und
-     Spielernamen leeren; die Anzeige-Einstellung bleibt. */
+  /* Neue Teams (z. B. aus dem Turnierbogen): Standard-Eröffnung, Spielernamen
+     leeren; die Anzeige-Einstellung bleibt. */
   function clearServe(s) {
     var n = clone(s);
     clearSetServe(n);

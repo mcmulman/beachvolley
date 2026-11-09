@@ -49,6 +49,8 @@
 
 - **Aufschlagsymbol im Score Counter:** Ein Ball auf der +1-Taste kennzeichnet das aufschlagende Team zusätzlich zur bestehenden Personenmarkierung. Es folgt Aufschlagwechseln, Seitenwechseln und Rückgängig; bei ausgeschalteter Anzeige oder offenem Aufschlag bleibt es verborgen.
 
+- **Aufschlag ohne Pflichtauswahl:** Neue Spiele und Sätze beginnen mit Team 1, Spieler 1; Team 2 beginnt seinen ersten eigenen Aufschlag ebenfalls mit Spieler 1. Team und Reihenfolge bleiben anpassbar. Gespeicherte Spielstände, bewusst offene Aufschläge nach Korrekturen und die gewählte Sichtbarkeit werden nicht durch Startvorgaben überschrieben.
+
 - **Verständliche Kompaktansicht im Score Counter:** Ergebnisübernahme ins Turnierblatt, Rückgängig, Seiten tauschen, Neu, Zurücksetzen und Satz beenden behalten sichtbare Textbeschriftungen statt reiner Symbole. Die Beschriftungen dürfen auch auf schmalen Displays umbrechen.
 
 - **Turniergebundene Counter-Ergebnisse:** Zur Übernahme müssen Turnierdatei, Turnier-ID, Modus und Sport übereinstimmen. Ein Ergebnis für einen anderen Bogen bleibt vorgemerkt und wird dort nicht eingetragen.
@@ -217,6 +219,8 @@
 ## 🇬🇧 Features (English)
 
 - **Serving indicator in the Score Counter:** A ball on the +1 button identifies the serving team alongside the existing player marker. It follows service changes, side swaps and undo, and stays hidden when service display is off or the server is unknown.
+
+- **Service without mandatory setup:** New matches and sets start with Team 1, player 1; Team 2 also starts its first service with player 1. The team and order remain adjustable. Saved matches, deliberately unknown servers after corrections and the selected display visibility are not overwritten by startup defaults.
 
 - **Clear compact Score Counter:** Transferring results to the tournament sheet, undo, swapping sides, new game, reset and ending a set retain visible text labels instead of icon-only controls. Labels can wrap on narrow displays.
 
