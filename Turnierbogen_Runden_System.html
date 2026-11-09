@@ -1485,21 +1485,25 @@
       if(teams.length < 2){ alert(T('rs.alert.exportMin')); return; }
       const table = B.table;
       const ranked = correctedRanking();
-      const house = ['beach-house', 'indoor-3-2-1-0', 'indoor-hobby', 'table-tennis-hobby']
-        .includes(S.config.rankingProfile);
       const complete = !!table.complete;
       const valid = ranked.length === teams.length && ranked.every(e =>
         e.supported && e.resolved && !e.shared && Number.isInteger(e.place) && e.place >= 1
         && e.place <= teams.length && teams.includes(e.team))
         && new Set(ranked.map(e => e.place)).size === teams.length
         && new Set(ranked.map(e => e.team)).size === teams.length;
-      if (!valid || (!house && !complete)) {
+      if (!valid) {
         alert(T(S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
           ? 'sport.ranking.swissExportBlocked' : 'ranking.export.unresolved'));
         return;
       }
       const doExport = () => {
-        if(!complete && !confirm(T('rs.confirm.exportIncomplete'))) return;
+        if (!complete) {
+          const ranking = ranked.map(e => T('rs.confirm.exportIncompleteRow', {
+            place: e.place,
+            team: TSport.teamLabel(S, e.team, 'Team ' + e.team)
+          })).join('\n');
+          if (!confirm(T('rs.confirm.exportIncomplete', { ranking }))) return;
+        }
         const rankedOrder = ranked.map(e => e.team);
         const names = rankedOrder.map(t => TSport.teamLabel(S, t, 'Team ' + t));
         const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(names)))));
