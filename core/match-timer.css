@@ -98,6 +98,7 @@
 }
 /* Fokus/scrollIntoView landen über der angedockten Footer-Leiste statt dahinter. */
 html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-area-inset-bottom, 0px))) + 12px); }
+.mt-settings, .mt-settings * { scroll-margin-top: var(--mt-header-clearance, calc(64px + env(safe-area-inset-top, 0px))); }
 .mt-card {
   background: #fff;
   border: 1px solid #ccd8e8;

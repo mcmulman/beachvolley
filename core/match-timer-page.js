@@ -394,6 +394,7 @@
     if (open) {
       el.settings.scrollIntoView({ block: 'nearest' });
       el.setupOpen.focus();
+      revealBelowHeader(el.settings);
     } else {
       hideResetConfirm(false);
       el.settingsToggle.focus();
@@ -648,12 +649,26 @@
     }
   }
   function syncDockMetrics() {
+    if (el.bar && el.bar.offsetHeight > 0) {
+      var sticky = /sticky|fixed/.test(root.getComputedStyle(el.bar).position);
+      doc.documentElement.style.setProperty('--mt-header-clearance', sticky ? Math.ceil(el.bar.offsetHeight) + 8 + 'px' : '0px');
+    }
     if (!el.dockedControls) return 0;
     var height = el.dockedControls.getBoundingClientRect().height;
     if (height > 0 && !doc.body.classList.contains('mt-keyboard-open')) {
       doc.documentElement.style.setProperty('--mt-dock-height', Math.max(124, Math.ceil(height)) + 'px');
     }
     return height;
+  }
+  /* Safari 12 ignores scroll-margin during focus/scrollIntoView. Correct only
+     covered targets, never ordinary scrolling or focus inside a modal. */
+  function revealBelowHeader(target) {
+    if (modal || !target || !el.settings.contains(target) || !target.getClientRects().length ||
+        !el.bar || !el.bar.offsetHeight || root.matchMedia('print').matches) return;
+    if (!/sticky|fixed/.test(root.getComputedStyle(el.bar).position)) return;
+    var top = el.bar.getBoundingClientRect().bottom + 8;
+    var rect = target.getBoundingClientRect();
+    if (rect.top < top) root.scrollBy(0, rect.top - top);
   }
   function renderTransfer() {
     var wasHidden = el.transfer.hidden;
@@ -1651,6 +1666,9 @@
       doc.body.classList.toggle('mt-keyboard-open', !!textInput);
     }
     doc.addEventListener('focusin', updateKeyboardVisibility);
+    doc.addEventListener('focusin', function () {
+      revealBelowHeader(doc.activeElement);
+    });
     doc.addEventListener('focusout', function () { setTimeout(updateKeyboardVisibility, 0); });
     el.reset.addEventListener('click', function () {
       if (el.resetConfirm.hidden) showResetConfirm(); else hideResetConfirm(true);

@@ -47,9 +47,11 @@
     const note = (key, params) => notices.push({ key: 'formatSwitch.' + key, params: params || {} });
     const blocked = (key, params) => { note(key, params); return { blocked: true, notices: notices }; };
     const invalid = field => blocked('invalidSetting', { field: 'formatSwitch.field.' + field });
-    if (!target || !targetFor(base) || targetId === base || !object(source.config)) return blocked('invalidTarget');
+    if (!target || !targetFor(base) || targetId === base) return blocked('invalidTarget');
+    if (!object(source.config)) return invalid('configuration');
     const sourceProfile = Sport ? Sport.recordSport(source) : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
-    if (!sourceProfile.ok || (Sport && !Sport.supportsFormat(sourceProfile.profile.id, targetId))) return blocked('invalidTarget');
+    if (!sourceProfile.ok) return invalid('sport');
+    if (Sport && !Sport.supportsFormat(sourceProfile.profile.id, targetId)) return blocked('invalidTarget');
     const profile = Sport && Sport.get(sourceProfile.profile.id, sourceProfile.profile.version);
     const modes = profile ? profile.modeIds : beachModes;
     const c = source.config, cfg = defaults(target, sourceProfile.profile.id);
@@ -216,7 +218,7 @@
       } while (view.getItem(S.PREFIX + sheet) != null || view.getItem(S.SERVER_PREFIX + sheet) != null);
         const sourceSport = Sport ? Sport.recordSport(parsed.data)
           : { ok: true, profile: { id: 'volleyball.beach', version: 1 } };
-      if (!sourceSport.ok) throw new Error('formatSwitch.invalid');
+      if (!sourceSport.ok) throw new Error('formatSwitch.invalidSport');
       const result = A.startNewInView(view, {
         sheet: sheet, keys: [S.PREFIX + sheet], empty: true,
         fresh: () => Object.assign(S.emptyTournament(sheet, {}), copy(mapped.tournament))
@@ -295,6 +297,7 @@
         if (mapped.blocked) { showNotice(mapped.notices.map(noticeText).join(' '), true); return; }
         const invalid = Array.from(section.querySelectorAll('input')).find(input => !input.disabled
           && !input.readOnly && input.type !== 'hidden'
+          // Planning editors contain optional drafts, not the saved configuration being copied.
           && !input.closest('[data-team-delay-editor], .planning-form')
           && !input.checkValidity());
         if (invalid) {
@@ -342,6 +345,10 @@
       function revealSettings() {
         const content = section.querySelector('.cfg-setup-content');
         if (!content || !root.TSheetEditors || !root.TSheetEditors.scrollToPanel) return;
+        const nameInput = doc.querySelector('[data-name-input]');
+        const namePanel = nameInput && nameInput.closest('.namepanel, #rosterSection');
+        // Initial roster expansion also scrolls; let it finish before landing on settings.
+        if (namePanel && !namePanel.querySelector('.section-toggle-close')) return;
         observer.disconnect();
         root.requestAnimationFrame(() => root.requestAnimationFrame(() => {
           if (content.hidden) {
@@ -357,7 +364,7 @@
           root.history.replaceState(root.history.state, '', root.location.pathname + root.location.search);
         }));
       }
-      observer.observe(section, { childList: true, subtree: true });
+      observer.observe(doc.body, { childList: true, subtree: true });
       revealSettings();
     }
   }

@@ -46,6 +46,7 @@
     'formatSwitch.invalidInput': 'Das Eingabefeld „{field}“ ist ungültig: {reason} Bitte die Eingabe korrigieren. Es wurde nichts geändert.',
     'formatSwitch.stageDecisions': 'Der gespeicherte Stand enthält manuelle Phasenentscheidungen oder ungültige Phasenentscheidungsdaten. Ein Formatwechsel wird dafür noch nicht unterstützt. Das bisherige Turnier bleibt unverändert.',
     'formatSwitch.targetInvalid': 'Die übertragenen Einstellungen ergeben keinen gültigen Zielstand. Der Wechsel wurde ohne Änderungen abgebrochen. Bitte die Einstellungen der bisherigen Turnierform prüfen.',
+    'formatSwitch.invalidSport': 'Das gespeicherte Sportprofil der bisherigen Turnierform ist ungültig. Der Wechsel wurde ohne Änderungen abgebrochen.',
     'formatSwitch.roundRange': 'Die gespeicherte Rundenzahl {count} ist im Schweizer Ziel nicht möglich (erlaubt: {min}–{max}). Bitte zuerst die Rundenzahl korrigieren.',
     'formatSwitch.field.configuration': 'Konfiguration',
     'formatSwitch.field.sport': 'Sportprofil',

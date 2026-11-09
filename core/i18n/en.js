@@ -45,6 +45,7 @@
     'formatSwitch.invalidInput': 'The input field “{field}” is invalid: {reason} Please correct the input. Nothing has been changed.',
     'formatSwitch.stageDecisions': 'The saved tournament contains manual stage decisions or invalid stage-decision data. Switching formats is not yet supported for these records. The previous tournament remains unchanged.',
     'formatSwitch.targetInvalid': 'The transferred settings do not form a valid target record. The switch was cancelled without changes. Please check the previous format’s settings.',
+    'formatSwitch.invalidSport': 'The saved sport profile of the previous tournament is invalid. The switch was cancelled without changes.',
     'formatSwitch.roundRange': 'The saved round count {count} is not supported in the Swiss target (allowed: {min}–{max}). Please correct the round count first.',
     'formatSwitch.field.configuration': 'Configuration',
     'formatSwitch.field.sport': 'Sport profile',
