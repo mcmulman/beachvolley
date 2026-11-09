@@ -11,6 +11,22 @@
 > each profile has passed its sport-specific review. The existing volleyball mark remains the
 > shared app icon.
 >
+> **Web-/PWA-Icons:** `icon.svg` ist die gemeinsame Vorlage. Normale PNG-Icons
+> behalten dessen transparente Ecken; das Apple-Touch-Icon hat einen vollflächigen
+> Hintergrund. Eigene Android-Maskable-Icons halten das komplette Ballmotiv innerhalb
+> der sicheren Kreisfläche. Neu erzeugen: `node test/generate-app-icons.mjs`
+> vom Repository-Stamm. Alle Icon-Dateien, Manifest und Service Worker gemeinsam
+> veröffentlichen. Bereits installierte Homescreen-Icons können bis zur
+> Aktualisierung durch das Betriebssystem oder einer erneuten Installation alt bleiben.
+>
+> **Web/PWA icons:** `icon.svg` is the shared source. Standard PNG icons preserve
+> its transparent corners; the Apple touch icon uses a full-bleed background.
+> Separate Android maskable icons keep the complete ball mark inside the safe circle.
+> Regenerate with `node test/generate-app-icons.mjs` from the repository root.
+> Deploy all icon files, the manifest and service worker together. Previously installed
+> home-screen icons may remain unchanged until the operating system updates them or
+> the app is reinstalled.
+>
 > **Mehrsport (in Entwicklung):** Web-Profile für Beachvolleyball, Hallenvolleyball und
 > Tischtennis (Einzel/Doppel) sind vorhanden. Begrenzte, optionale DTTB-WO-D7.5- und ITTF-
 > Statutes-2026-§3.7.5-Profile werten normales Rundlauf-/Qualifikationsspiel; die ITTF-Wertung
