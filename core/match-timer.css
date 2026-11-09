@@ -267,6 +267,7 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
 @-webkit-keyframes mt-flash { 0% { background: #ffe58a; } 100% { background: transparent; } }
 @keyframes mt-flash { 0% { background: #ffe58a; } 100% { background: transparent; } }
 .mt-plus {
+  position: relative;
   display: block;
   width: 100%;
   min-height: 88px;
@@ -280,6 +281,17 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   cursor: pointer;
   touch-action: manipulation;
 }
+.mt-team-serve {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  color: #ffd84d;
+  pointer-events: none;
+}
+.mt-plus-label { position: relative; z-index: 1; display: block; }
 .mt-corr { display: flex; align-items: stretch; margin-top: 8px; }
 .mt-minus {
   flex: 0 0 auto;
@@ -336,7 +348,7 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   .mt-pl { width: auto; }
   .mt-pl + .mt-pl { margin-top: 0; margin-left: 6px; }
 }
-.mt-mk { display: -webkit-box; display: flex; -webkit-box-pack: center; justify-content: center; flex: 0 0 auto; width: 16px; margin-right: 6px; }
+.mt-mk { display: -webkit-box; display: flex; -webkit-box-pack: center; justify-content: center; flex: 0 0 auto; width: 20px; margin-right: 6px; }
 .mt-mk svg, .mt-mk-q { display: none; }
 .mt-mk-q { font-weight: 800; line-height: 16px; }
 .is-now > .mt-mk .mt-mk-now, .mt-mk.is-now .mt-mk-now,
@@ -529,7 +541,7 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   .mt .mt-actions {
     position: -webkit-sticky;
     position: sticky;
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     z-index: 20;
@@ -1080,9 +1092,10 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   grid-gap: 6px; gap: 6px; margin-top: 6px;
 }
 .mt.is-compact .mt-actions > .mt-toggle {
-  flex: 1 1 0; flex-direction: row; min-height: 44px; margin: 0; padding: 6px;
+  flex: 1 1 0; flex-direction: column; min-height: 44px; margin: 0; padding: 4px 2px;
+  font-size: 12px; line-height: 1.2;
 }
-.mt.is-compact .mt-actions > #mt-end-set { flex: 1 1 0; flex-direction: column; padding: 4px 2px; font-size: 12px; line-height: 1.1; }
+.mt.is-compact .mt-actions > #mt-end-set { line-height: 1.1; }
 .mt.is-compact .mt-actions > #mt-end-set .mt-ic { margin: 0; }
 .mt.is-compact .mt-actions > #mt-end-set .mt-ic svg { width: 16px; height: 16px; }
 .mt.is-compact .mt-actions > #mt-end-set .mt-tl { margin-top: 2px; }
@@ -1093,16 +1106,16 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
 .mt.is-compact .mt-actions .mt-ic,
 .mt.is-compact .mt-btn .mt-ic,
 .mt.is-compact .mt-reset-toolbar .mt-ic { margin: 0; }
-/* Labels remain available to screen readers when only the SVG is shown. */
-.mt.is-compact .mt-actions > .mt-toggle:not(#mt-end-set) .mt-tl,
-.mt.is-compact .mt-reset-toolbar .mt-tl,
+.mt.is-compact .mt-actions .mt-tl,
+.mt.is-compact .mt-reset-toolbar .mt-tl { margin-top: 2px; }
+.mt.is-compact .mt-actions .mt-ic svg,
+.mt.is-compact .mt-reset-toolbar .mt-ic svg { width: 16px; height: 16px; }
 .mt.is-compact .mt-transfer > span:not(.mt-ic) {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  min-width: 0; max-width: 100%; overflow-wrap: break-word; word-wrap: break-word;
 }
 .mt.is-compact .mt-reset-toolbar { justify-content: flex-end; margin-top: 6px; }
-.mt.is-compact .mt-reset-toolbar > #mt-reset {
-  flex: 0 0 44px; min-height: 44px; padding: 6px;
+.mt.is-compact .mt-reset-toolbar > .mt-toggle {
+  flex: 1 1 0; flex-direction: column; min-height: 44px; padding: 4px 2px;
 }
 .mt.is-compact .mt-transfer { min-height: 44px; margin-top: 6px; }
 .mt.is-compact .mt-sets { margin-top: 4px; font-size: 14px; }
@@ -1111,6 +1124,14 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
 .mt.is-compact .mt-cur-bar:not([hidden]) + .mt-sides { margin-top: 6px; }
 .mt.is-compact .mt-match-score { font-size: 28px; }
 .mt.is-compact .mt-match-name { font-size: 15px; }
+@media (max-width: 320px) {
+  .mt-plus { min-height: 56px; padding: 4px 4px 4px 36px; font-size: 22px; text-align: right; }
+  .mt-team-serve { left: 4px; width: 28px; height: 28px; margin-top: -14px; }
+}
+@media (max-width: 180px) {
+  .mt-plus { padding-left: 30px; font-size: 18px; }
+  .mt-team-serve { width: 24px; height: 24px; margin-top: -12px; }
+}
 #mt-set-won-end { background: #0a7d2c; }
 .mt-actions > #mt-end-set.is-ready { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0a7d2c; -webkit-animation: mt-ready 1.6s ease-in-out infinite; animation: mt-ready 1.6s ease-in-out infinite; }
 @-webkit-keyframes mt-ready { 50% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(10, 125, 44, .25); } }
@@ -1161,7 +1182,7 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   .mt.is-compact .mt-short { font-size: 12px; }
   /* Watch: beide Spieler bleiben sichtbar, nur kompakter. */
   .mt-pl { padding: 2px 4px; font-size: 12px; }
-  .mt-mk { width: 12px; margin-right: 3px; }
+  .mt-mk { width: 20px; margin-right: 3px; }
   .mt-match { grid-column-gap: 6px; }
   .mt-match-name { font-size: 13px; }
   .mt-match-score { font-size: 24px; }
@@ -1174,6 +1195,7 @@ html { scroll-padding-bottom: calc(var(--mt-dock-height, calc(124px + env(safe-a
   }
 }
 @media (max-width: 180px) {
+  .mt-mk { width: 12px; }
   .mt.is-compact .mt-time { font-size: 26px; }
 }
 

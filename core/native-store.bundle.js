@@ -3171,8 +3171,9 @@
         } catch (error) {
           throw nativeFailure(error, "print-unavailable");
         }
-        const pdf = result && (result.pdf === "file" || result.pdf === "dialog") ? result.pdf : "";
-        return { print: !!(result && result.print), pdf };
+        const print = !!(result && result.print);
+        const pdf = result && (result.pdf === "file" || result.pdf === "dialog" && print) ? result.pdf : "";
+        return { print, pdf };
       },
       /* { jobName, orientation } → Promise<{ status: 'completed' | 'cancelled' }>
          'completed' means the job was handed to a printer/PDF target. */
@@ -3319,11 +3320,11 @@
 
   // src/native-store.js
   var getPlatform = () => Capacitor.getPlatform();
-  globalThis.TNativeStorage = createSqliteKvStorage({
+  window.TNativeStorage = createSqliteKvStorage({
     createConnection: () => new SQLiteConnection(CapacitorSQLite),
     isNativePlatform: () => Capacitor.isNativePlatform()
   });
-  globalThis.TNativeFiles = createNativeBackupFiles({
+  window.TNativeFiles = createNativeBackupFiles({
     Filesystem,
     Directory,
     Encoding,
@@ -3331,13 +3332,13 @@
     FilePicker,
     getPlatform
   });
-  globalThis.TNativeShare = createNativeLinkShare({ Share });
-  globalThis.TNativePrint = createNativePrint({
+  window.TNativeShare = createNativeLinkShare({ Share });
+  window.TNativePrint = createNativePrint({
     Printer: registerPlugin(PRINT_PLUGIN),
     Share,
     Filesystem,
     Directory,
     getPlatform
   });
-  globalThis.TNativeApp = createNativeAppLifecycle({ App, getPlatform });
+  window.TNativeApp = createNativeAppLifecycle({ App, getPlatform });
 })();

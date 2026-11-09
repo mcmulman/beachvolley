@@ -275,6 +275,34 @@
   function text(de, en) {
     return document.documentElement.lang === 'en' ? en : de;
   }
+  // Keep this fallback identical in both sheets: recovery cannot depend on a loaded module.
+  function containRecoveryFocus(overlay, button) {
+    overlay.tabIndex = -1;
+    function focusRecovery() {
+      (button.disabled ? overlay : button).focus();
+    }
+    // Recovery only exits by reloading; background state never needs restoring.
+    function suppressBackground() {
+      Array.prototype.forEach.call(document.body.children, function (node) {
+        if (node === overlay) return;
+        node.setAttribute('aria-hidden', 'true');
+        node.setAttribute('inert', '');
+      });
+    }
+    // Safari 12 has no inert: trap keyboard and programmatic background focus.
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Tab') return;
+      event.preventDefault();
+      focusRecovery();
+    }, true);
+    document.addEventListener('focusin', function (event) {
+      if (!overlay.contains(event.target)) focusRecovery();
+    }, true);
+    focusRecovery();
+    suppressBackground();
+    // Nested additions inherit suppression; only new body children need handling.
+    new MutationObserver(suppressBackground).observe(document.body, { childList: true });
+  }
   function fail(error) {
     if (shown) return;
     shown = true;
@@ -302,6 +330,7 @@
     button.style.cssText = 'min-height:44px;padding:12px 20px;font-size:16px;';
     button.addEventListener('click', function () {
       button.disabled = true;
+      overlay.focus();
       status.textContent = text('App-Dateien werden aktualisiert ...', 'Updating app files ...');
       var urls = [location.href.split('#')[0]];
       Array.prototype.forEach.call(document.scripts, function (script) {
@@ -328,11 +357,12 @@
         status.textContent = text('Aktualisierung fehlgeschlagen. Bitte Verbindung prüfen und erneut versuchen. ',
           'Update failed. Please check your connection and try again. ') + failure.message;
         button.disabled = false;
+        button.focus();
       });
     });
     [title, description, detail, button, status].forEach(function (node) { overlay.appendChild(node); });
     document.body.appendChild(overlay);
-    button.focus();
+    containRecoveryFocus(overlay, button);
   }
   function check(requirements) {
     var missing = requirements.filter(function (path) {

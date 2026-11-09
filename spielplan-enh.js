@@ -639,8 +639,17 @@
      bleiben; vor dem Drucken-Knopf eingereiht, nur am Bildschirm. */
   function timerHref() {
     var page = String(location.pathname || '').split('/').pop() || 'index.html';
-    var href = 'Spiel_Timer.html?from=' + encodeURIComponent(page + (location.search || ''));
     var sport = document.body && document.body.getAttribute('data-sport');
+    var from = page + (location.search || '');
+    if (sport) {
+      try {
+        var returnUrl = new URL(from, location.href);
+        if (sport === 'volleyball.beach') returnUrl.searchParams.delete('sport');
+        else returnUrl.searchParams.set('sport', sport);
+        from = page + returnUrl.search;
+      } catch (e) { /* der bestehende Rückweg bleibt nutzbar */ }
+    }
+    var href = 'Spiel_Timer.html?from=' + encodeURIComponent(from);
     return sport && sport !== 'volleyball.beach' ? href + '&sport=' + encodeURIComponent(sport) : href;
   }
   function timerEnabled() {
@@ -711,6 +720,39 @@
      damit Bogen-Logik, Speichern und Prüfung unverändert greifen). */
   var RESULT_KEY = 'BEACHL.timerResult';
   var RESULT_MAX_AGE = 30 * 60000;
+  function timerIdentity(value, current) {
+    var url, params;
+    try {
+      url = new URL(value, location.href);
+      params = new URLSearchParams(url.search);
+    } catch (e) { return null; }
+    var page = url.pathname.split('/').pop();
+    var mode = params.get('mode');
+    var base = null;
+    if (page === 'Turnierbogen_Doppel_KO_System.html') base = 'de-flex';
+    else if (page === 'Turnierbogen_Flex_Turnier.html') base = mode === 'rr' ? 'flex_rr' : 'flex_swiss';
+    else if (page === 'Turnierbogen_Gruppen_Finalrunde.html') base = 'gruppen-final';
+    else if (page === 'Turnierbogen_King_Queen.html') base = 'kingqueen';
+    else if (page === 'Turnierbogen_King_Queen_of_the_Court.html') base = 'koc';
+    else if (page === 'Turnierbogen_KO_System.html') base = 'ko-flex';
+    else if (page === 'Turnierbogen_Modified_Pool_Play.html') base = 'mpp';
+    else if (page === 'Turnierbogen_Runden_System.html') base = mode === 'swiss' ? 'runden_swiss' : 'runden_rr';
+    if (!base) return null;
+
+    var id = params.get('id');
+    var sheet = !id || id === '_base_' ? base : base + '.' + id.replace(/[^A-Za-z0-9_-]/g, '');
+    if (current && window.TStore && typeof window.TStore.sheetIdFrom === 'function') {
+      sheet = window.TStore.sheetIdFrom(base);
+    }
+    var sport = current && document.body && document.body.getAttribute('data-sport')
+      || params.get('sport') || 'volleyball.beach';
+    return page + '|' + sheet + '|' + sport;
+  }
+  function sameTimerIdentity(from) {
+    var source = timerIdentity(from, false);
+    var current = timerIdentity((location.pathname || '') + (location.search || ''), true);
+    return !!source && source === current;
+  }
   function readTimerResult() {
     var raw = null;
     try { raw = window.localStorage && window.localStorage.getItem(RESULT_KEY); } catch (e) { return null; }
@@ -722,9 +764,8 @@
       clearTimerResult();
       return null;
     }
-    var page = String(location.pathname || '').split('/').pop() || 'index.html';
     var from = String(r.from || '');
-    if (from !== page + (location.search || '') && from.split('?')[0] !== page) return null;
+    if (!sameTimerIdentity(from)) return null;
     return r;
   }
   function clearTimerResult() {
@@ -872,8 +913,7 @@
   function currentTimerHref() {
     try {
       var saved = JSON.parse(window.localStorage.getItem('BEACHL.matchTimer') || 'null');
-      var page = String(location.pathname || '').split('/').pop() + (location.search || '');
-      if (saved && saved.match && saved.match.source === page) {
+      if (saved && saved.match && sameTimerIdentity(saved.match.source)) {
         var cards = document.querySelectorAll('td.match[data-mid]');
         for (var i = 0; i < cards.length; i++) {
           if (cards[i].getAttribute('data-mid') === saved.match.ref) return matchTimerHref(cards[i]) || timerHref();

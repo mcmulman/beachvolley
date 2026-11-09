@@ -22,6 +22,9 @@
 
    Alle speicherbezogenen Funktionen sind asynchron (Promise). Die reinen
    Hilfsfunktionen (setScore, normalize …) bleiben synchron.
+   Transaktionen behalten die vollständige Schlüssel/Wert-Momentaufnahme;
+   Revisionspflege parst nur Stände mit geändertem Datensatz, Backup oder
+   Revisionsmarker, nicht die unbeteiligten Turniere.
    Kein DOM-Zugriff außer Events/localStorage(lesen)/IndexedDB und dem
    Nachladen des nativen Bundles in der App (loadNativeBundle; es enthält
    auch die Dateiablage für Sicherungen, siehe turnier-backup.js).
@@ -667,19 +670,30 @@
       view.keys().forEach(function (key) { before[key] = view.getItem(key); });
       const result = callback(view);
       if (result && typeof result.then === 'function') return result;
-      Object.keys(before).concat(view.keys()).forEach(function (key) {
+      const keys = new Set(Object.keys(before).concat(view.keys()));
+      keys.forEach(function (key) {
         if (key.indexOf(PREFIX) !== 0) return;
         const sheet = key.slice(PREFIX.length);
-        if (before[key] != null && view.getItem(key) == null) detachServerInView(view, sheet);
+        const current = view.getItem(key);
+        const backupKey = backupKeyFor(sheet);
+        const revisionKey = REVISION_PREFIX + sheet;
+        const backupBefore = before[backupKey] === undefined ? null : before[backupKey];
+        const revisionBefore = before[revisionKey] === undefined ? null : before[revisionKey];
+        /* Backup-/Markenänderungen können die Revisionsgrenze auch bei
+           unverändertem Live-Stand beeinflussen (z.B. beim Import). */
+        if (before[key] === current && backupBefore === view.getItem(backupKey)
+            && revisionBefore === view.getItem(revisionKey)) return;
+        if (before[key] != null && current == null) detachServerInView(view, sheet);
         const parsed = before[key] == null ? { ok: false } : parseRecord(before[key], sheet);
         const revision = parsed.ok ? Number(parsed.data._revision) || 0 : 0;
         const highWater = Math.max(revision, revisionInView(view, sheet));
-        if (highWater > 0 || (before[key] != null && view.getItem(key) == null)
-            || view.getItem(REVISION_PREFIX + sheet) != null) {
-          view.setItem(REVISION_PREFIX + sheet, String(highWater));
+        if (highWater > 0 || (before[key] != null && current == null)
+            || view.getItem(revisionKey) != null) {
+          view.setItem(revisionKey, String(highWater));
+          keys.add(revisionKey);
         }
       });
-      Object.keys(before).concat(view.keys()).forEach(function (key) {
+      keys.forEach(function (key) {
         if (before[key] === view.getItem(key) || (before[key] === undefined && view.getItem(key) == null)) return;
         changed = true;
         if (key.indexOf(PREFIX) === 0) sheets[key.slice(PREFIX.length)] = true;

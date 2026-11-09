@@ -47,6 +47,14 @@
 
 ## 🇩🇪 Features (Deutsch)
 
+- **Aufschlagsymbol im Score Counter:** Ein Ball auf der +1-Taste kennzeichnet das aufschlagende Team zusätzlich zur bestehenden Personenmarkierung. Es folgt Aufschlagwechseln, Seitenwechseln und Rückgängig; bei ausgeschalteter Anzeige oder offenem Aufschlag bleibt es verborgen.
+
+- **Verständliche Kompaktansicht im Score Counter:** Ergebnisübernahme ins Turnierblatt, Rückgängig, Seiten tauschen, Neu, Zurücksetzen und Satz beenden behalten sichtbare Textbeschriftungen statt reiner Symbole. Die Beschriftungen dürfen auch auf schmalen Displays umbrechen.
+
+- **Turniergebundene Counter-Ergebnisse:** Zur Übernahme müssen Turnierdatei, Turnier-ID, Modus und Sport übereinstimmen. Ein Ergebnis für einen anderen Bogen bleibt vorgemerkt und wird dort nicht eingetragen.
+
+- **Gezielte Speicherbuchhaltung:** Änderungen an einem Turnier verarbeiten für die Revisionspflege nur geänderte Datensätze statt sämtliche Turnierstände erneut zu parsen. Atomare Speicherung, Sicherungen und Konflikterkennung bleiben erhalten; die Datenbank wird weiterhin vollständig eingelesen.
+
 - **Firmencup-Einstieg:** Eine kompakte Startkarte zeigt den Nutzen für Firmen, Teams, Spielplanung und Ergebnisse. Klar beschrifteter Turniername und „Firmencup anlegen“ führen in die bestehende Planung; lokale Turniere und die JSON-Wiederherstellung bleiben direkt darunter erreichbar.
 
 ### Kompakte Feature-Übersicht
@@ -207,6 +215,14 @@
 ---
 
 ## 🇬🇧 Features (English)
+
+- **Serving indicator in the Score Counter:** A ball on the +1 button identifies the serving team alongside the existing player marker. It follows service changes, side swaps and undo, and stays hidden when service display is off or the server is unknown.
+
+- **Clear compact Score Counter:** Transferring results to the tournament sheet, undo, swapping sides, new game, reset and ending a set retain visible text labels instead of icon-only controls. Labels can wrap on narrow displays.
+
+- **Tournament-bound Counter results:** Result transfer requires matching sheet, tournament ID, mode and sport. A result belonging to another tournament remains pending and is not entered there.
+
+- **Scoped save bookkeeping:** Revision maintenance processes changed records rather than reparsing every stored tournament. Atomic persistence, backups and conflict detection remain intact; database snapshots still read the complete store.
 
 - **Company cup welcome:** A compact start card highlights company/team organisation, schedule planning and results. A clearly labelled tournament name and “Create company cup” lead into the existing setup; local tournaments and JSON restore remain directly accessible below.
 

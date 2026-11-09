@@ -2311,8 +2311,10 @@
       document.documentElement.classList.add('has-section-nav');
       const height = bar.getClientRects().length ? bar.offsetHeight : 0;
       const mobile = window.innerWidth <= 1024;
-      document.documentElement.style.setProperty('--section-nav-height', height + 'px');
-      document.documentElement.style.setProperty('--section-footer-height', (mobile ? height : 0) + 'px');
+      const style = document.documentElement.style;
+      const navHeight = height + 'px', footerHeight = (mobile ? height : 0) + 'px';
+      if (style.getPropertyValue('--section-nav-height') !== navHeight) style.setProperty('--section-nav-height', navHeight);
+      if (style.getPropertyValue('--section-footer-height') !== footerHeight) style.setProperty('--section-footer-height', footerHeight);
     }
     /* Round bars are body-level sticky, so they stay over all later content.
        Their wrapped height feeds scroll-margin-top in turnier-base.css. */
@@ -2401,11 +2403,11 @@
       bar.__jumpBarWired = true;
       let framePending = false;
       const scheduleUpdate = () => {
-        syncLayoutClass();
         if (framePending) return;
         framePending = true;
         window.requestAnimationFrame(() => {
           framePending = false;
+          syncLayoutClass();
           updateCurrent();
         });
       };

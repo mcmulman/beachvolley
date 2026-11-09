@@ -507,6 +507,14 @@
         b.title = chipLabel(marks[i], side, i);
       });
       el.card[side].classList.toggle('is-serving', shown && !!v && v.side === side);
+      var marker = el.plus[side].querySelector('.mt-team-serve');
+      if (!marker) {
+        marker = el.pl[side][0].querySelector('.mt-mk-now').cloneNode(true);
+        marker.setAttribute('class', 'mt-team-serve');
+        el.plus[side].appendChild(marker);
+      }
+      marker.style.display = shown && v && v.side === side ? 'block' : 'none';
+      el.plus[side].title = shown && v && v.side === side ? serveSentence() : '';
       el.serveTeam[side].textContent = name;
       [0, 1].forEach(function (i) {
         var input = el.player[side][i];
@@ -914,7 +922,9 @@
       el.short[side].textContent = name;
       if (doc.activeElement !== el.name[side]) el.name[side].value = state.names[side];
       if (doc.activeElement !== el.direct[side]) el.direct[side].value = String(state.score[side]);
-      el.plus[side].setAttribute('aria-label', tx('timer.plusAria', '+1 für {name}', { name: name }));
+      var server = TM.server(state);
+      el.plus[side].setAttribute('aria-label', tx('timer.plusAria', '+1 für {name}', { name: name }) +
+        (state.serveShown && server && server.side === side ? '. ' + serveSentence() : ''));
       el.minus[side].setAttribute('aria-label', tx('timer.minusAria', '−1 Korrektur für {name}', { name: name }));
       el.minus[side].disabled = state.score[side] <= 0;
       el.plus[side].disabled = state.score[side] >= TM.MAX_SCORE;
