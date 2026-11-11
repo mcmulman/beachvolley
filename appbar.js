@@ -135,10 +135,8 @@
       content.id = 'configSetup' + index;
       grid.parentNode.insertBefore(content, grid);
       content.appendChild(grid);
-      var result = card.querySelector('.cfgresult');
-      if (result) content.appendChild(result);
       var summary = document.getElementById('modeSummary');
-      if (summary) content.appendChild(summary);
+      if (summary) card.appendChild(summary);
       var actions = card.querySelector('.cfg-action-content');
       if (actions) content.appendChild(actions);
 

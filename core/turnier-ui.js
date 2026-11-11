@@ -2298,19 +2298,34 @@
       + btn(t.standings || 'standingsSection', 'standings', tx('ui.jump.standings', 'Tabelle'));
   }
 
+  /* Pinch zoom only changes the visual viewport. A fixed footer stays
+     attached to the layout viewport and would float unscaled over the
+     zoomed page, so it is hidden while the page scale differs from 1. */
+  function isPinchZoomed(viewport) {
+    const scale = viewport && Number(viewport.scale);
+    return !!scale && isFinite(scale) && Math.abs(scale - 1) > 0.01;
+  }
+
   /* Ein delegierter Listener genuegt fuer die ganze Leiste. */
   function wireJumpBar(bar) {
     if (!bar) return;
     function syncLayoutClass() {
       if (!document.body) return;
+      /* iOS reports the zoomed visual width as innerWidth; breakpoints
+         follow the layout viewport like the CSS media queries. */
+      const zoomed = isPinchZoomed(window.visualViewport);
+      const layoutWidth = zoomed ? document.documentElement.clientWidth : window.innerWidth;
       /* Width only: focus changes must not move the sticky round bar
          between mousedown and mouseup. */
-      document.body.classList.toggle('has-section-jumpbar', window.innerWidth > 1024);
+      document.body.classList.toggle('has-section-jumpbar', layoutWidth > 1024);
       /* The root scroller owns scroll-padding; CSS reserves the bar per
          breakpoint for native focus/scrollIntoView reveal. */
       document.documentElement.classList.add('has-section-nav');
+      const mobile = layoutWidth <= 1024;
+      /* visibility keeps the measured height, so the footer reservation
+         does not shift content while zoomed. */
+      document.documentElement.classList.toggle('section-nav-zoomed', mobile && zoomed);
       const height = bar.getClientRects().length ? bar.offsetHeight : 0;
-      const mobile = window.innerWidth <= 1024;
       const style = document.documentElement.style;
       const navHeight = height + 'px', footerHeight = (mobile ? height : 0) + 'px';
       if (style.getPropertyValue('--section-nav-height') !== navHeight) style.setProperty('--section-nav-height', navHeight);
@@ -2338,6 +2353,7 @@
       chrome.forEach(el => {
         if (!el || !el.getClientRects().length || el.contains(target)) return;
         const style = getComputedStyle(el), r = el.getBoundingClientRect();
+        if (style.visibility === 'hidden') return;
         if (style.position === 'fixed') {
           if (r.top < window.innerHeight / 2) top = Math.max(top, r.bottom);
           else bottom = Math.min(bottom, r.top);
@@ -2413,6 +2429,9 @@
       };
       window.addEventListener('scroll', scheduleUpdate, false);
       window.addEventListener('resize', scheduleUpdate, false);
+      /* Pinch zoom fires only visualViewport resize; scale back to 1
+         must restore the footer at once. */
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleUpdate, false);
       bar.addEventListener('click', e => {
         const el = e.target.closest ? e.target.closest('[data-jump]') : null;
         if (!el) return;
@@ -2450,7 +2469,7 @@
       }, true);
       document.addEventListener('focusin', e => {
         const target = e.target;
-        if (pointerDown || !target || target === document.body || !target.getClientRects) return;
+        if ((pointerDown && e.isTrusted) || !target || target === document.body || !target.getClientRects) return;
         window.requestAnimationFrame(() => revealFocused(target));
       });
       const roundbarObserver = new MutationObserver(syncRoundbarClearance);
@@ -3627,7 +3646,7 @@
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
+    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };

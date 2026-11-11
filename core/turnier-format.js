@@ -2478,7 +2478,7 @@
     const scheduleComplete = rounds.length > 0 && rounds.every(rd => rd.complete);
     const rankingComplete = scheduleComplete
       && menRanked.length + womenRanked.length === active.length
-      && menRanked.concat(womenRanked).every(entry => entry.resolved);
+      && menRanked.concat(womenRanked).every(entry => entry.supported && !entry.unresolved);
     const complete = scheduleComplete && rankingComplete;
     const perGame = active.length > 1 && perGameFor(active);
 

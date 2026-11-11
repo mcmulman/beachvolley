@@ -965,6 +965,8 @@
     }
     .mobile-jumpbar .nbtn svg { width:18px; height:18px; margin:0 0 2px; }
     .mobile-jumpbar.is-editing, html body.score-editing .mobile-jumpbar { display:none; }
+    /* Pinch zoom: the layout-viewport footer would not scale with the page. */
+    html.section-nav-zoomed .mobile-jumpbar { visibility:hidden; pointer-events:none; }
     html.has-section-nav { scroll-padding-top:72px; scroll-padding-bottom:calc(var(--section-footer-height, 53px) + 12px); }
     html.has-section-nav body.tournament-sheet { padding-bottom:calc(var(--section-footer-height, 53px) + 24px) !important; }
     html.has-section-nav body:not(.score-editing) #bl-toast {
