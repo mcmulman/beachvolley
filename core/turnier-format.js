@@ -2078,8 +2078,9 @@
     const c = Object.assign({
       players: 12, men: null, women: null, fields: 2, rounds: 4,
       startTime: '10:00', setMode: '21',
-      results: {}, genders: {}, levels: {}, absent: []
+      results: {}, genders: {}, levels: {}, absent: [], mixedTeamsOnly: false
     }, cfg || {});
+    c.mixedTeamsOnly = c.mixedTeamsOnly === true;
 
     const warnings = [], notes = [];
 
@@ -2141,7 +2142,11 @@
        Paarungslogik, nicht aus der Verwaltung).                          */
     const absentSet = new Set((c.absent || []).map(Number));
     const active = all.filter(t => !absentSet.has(t));
-    if (active.length < 4) {
+    const activeMen = active.filter(t => genders[t] === 'm');
+    const activeWomen = active.filter(t => genders[t] === 'f');
+    if (c.mixedTeamsOnly && Math.min(activeMen.length, activeWomen.length) < 2) {
+      warnings.push('Nur Mixed-Teams: Für mindestens ein 2-gegen-2-Match sind jeweils mindestens zwei aktive Herren und Damen nötig.');
+    } else if (active.length < 4) {
       warnings.push('Zu wenige aktive Teilnehmer:innen (mind. 4 nötig, damit ein 2-gegen-2-Match möglich ist).');
     }
 
@@ -2201,10 +2206,9 @@
        bekommt (z.B. bei je 2x N2/N3/N4/N5: N5+N2 und N4+N3, beide Ø3,5).   */
     const sortKey = sortKeyFor(active);
 
-    /* Ranking-basierte Sitzordnung. Geschlecht spielt bei der TEAM-Bildung
-       keine Rolle - "King & Queen" ist als Mixed-Event gedacht: Teams duerfen
-       aus Herren, Damen oder gemischt bestehen, nur die END-Rangliste wird
-       getrennt nach Geschlecht gefuehrt (kein gemeinsames Mixed-Ranking). */
+    /* Ranking-basierte Sitzordnung. Im freien Modus spielt Geschlecht bei der
+       Team-Bildung keine Rolle; im Mixed-Modus wird es eine harte Bedingung.
+       Die END-Rangliste bleibt in beiden Varianten nach Geschlecht getrennt. */
     let order = active.slice().sort(sortKey);
 
     /* Wiederholungsvermeidung (analog TC.genSwissRound()'s "played"-Set):
@@ -2280,6 +2284,32 @@
       return { teams, hadRepeat };
     }
 
+    function formMixedTeams(pool) {
+      const remaining = pool.slice();
+      const teams = [];
+      let hadRepeat = false;
+      while (remaining.length >= 2) {
+        const a = remaining.shift();
+        let idx = -1;
+        for (let i = remaining.length - 1; i >= 0; i--) {
+          if (genders[remaining[i]] !== genders[a]
+            && !partnerHistory.has(partnerKey(a, remaining[i]))) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx === -1) {
+          for (let i = remaining.length - 1; i >= 0; i--) {
+            if (genders[remaining[i]] !== genders[a]) { idx = i; break; }
+          }
+          hadRepeat = true;
+        }
+        if (idx === -1) break;
+        teams.push([a, remaining.splice(idx, 1)[0]]);
+      }
+      return { teams, hadRepeat };
+    }
+
     /* Gegner-Zuordnung nach demselben Prinzip: Teams treten in der
        Reihenfolge ihrer Gesamtstaerke gegeneinander an (staerkstes Team
        gegen das naechstbeste usw.), aber ein 4er-Spieler-Set, das schon
@@ -2304,7 +2334,7 @@
     }
 
     /* Eingefrorene Runden (c.fixedRounds[r] = { matches:[[teamA,teamB],…],
-       bye:[…] }): sobald eine Runde ein Ergebnis hat, speichert der Bogen
+       byePlayers:[…] }): sobald eine Runde ein Ergebnis hat, speichert der Bogen
        ihre Besetzung. Ohne das würde jede spätere Änderung (Ausfall, Niveau,
        Rundenzahl) auch GESPIELTE Runden neu auslosen und die eingetragenen
        Ergebnisse anderen Teams zuordnen (Prinzip wie fixedCourts/fixedPairs). */
@@ -2317,28 +2347,63 @@
 
     for (let r = 1; r <= want; r++) {
       const fx = fixedRounds[r];
-      let matchedTeamPairs, byePlayer = null, byeTeam = null, idle = [];
+      let matchedTeamPairs, byePlayer = null, byeTeam = null, idle = [], byePlayers = [];
       if (validFixed(fx)) {
         matchedTeamPairs = fx.matches.map(p => [p[0].map(Number), p[1].map(Number)]);
         const fixedBye = [];
-        if (fx.byePlayer != null) { byePlayer = +fx.byePlayer; fixedBye.push(byePlayer); }
-        if (Array.isArray(fx.byeTeam) && fx.byeTeam.length === 2) { byeTeam = fx.byeTeam.map(Number); fixedBye.push(...byeTeam); }
+        function addFixedBye(player) {
+          const id = Number(player);
+          if (all.indexOf(id) >= 0 && fixedBye.indexOf(id) < 0) fixedBye.push(id);
+        }
+        if (Array.isArray(fx.byePlayers)) {
+          byePlayers = fx.byePlayers.map(Number).filter(x => all.indexOf(x) >= 0);
+          byePlayers.forEach(addFixedBye);
+        } else {
+          if (fx.byePlayer != null) { byePlayer = +fx.byePlayer; addFixedBye(byePlayer); }
+          if (Array.isArray(fx.byeTeam) && fx.byeTeam.length === 2) {
+            byeTeam = fx.byeTeam.map(Number);
+            byeTeam.forEach(addFixedBye);
+          }
+        }
         /* idle: Personen, deren Spiel nach "Spieler löschen" entfallen ist –
            sie pausieren in dieser bereits gespielten Runde. */
         if (Array.isArray(fx.idle)) {
           idle = fx.idle.map(Number).filter(x => all.indexOf(x) >= 0 && fixedBye.indexOf(x) < 0);
-          fixedBye.push(...idle);
+          idle.forEach(addFixedBye);
         }
         fixedBye.forEach(p => { byeCount[p] = byesOf(p) + 1; });
       } else {
       const pool = order.slice();
-      if (pool.length % 2 === 1) {
-        const idx = pickByeCandidate(pool, p => [p]);
-        byePlayer = pool.splice(idx, 1)[0];
-        byeCount[byePlayer] = byesOf(byePlayer) + 1;
+      let rawTeams, teamRepeat;
+      if (c.mixedTeamsOnly) {
+        const menPool = pool.filter(p => genders[p] === 'm');
+        const womenPool = pool.filter(p => genders[p] === 'f');
+        const playersPerGender = Math.min(menPool.length, womenPool.length);
+        function removeByes(group) {
+          const selected = group.slice();
+          while (selected.length > playersPerGender) {
+            const idx = pickByeCandidate(selected, p => [p]);
+            const player = selected.splice(idx, 1)[0];
+            byePlayers.push(player);
+            byeCount[player] = byesOf(player) + 1;
+          }
+          return selected;
+        }
+        const playing = new Set(removeByes(menPool).concat(removeByes(womenPool)));
+        const playingPool = pool.filter(p => playing.has(p));
+        const formed = formMixedTeams(playingPool);
+        rawTeams = formed.teams;
+        teamRepeat = formed.hadRepeat;
+      } else {
+        if (pool.length % 2 === 1) {
+          const idx = pickByeCandidate(pool, p => [p]);
+          byePlayer = pool.splice(idx, 1)[0];
+          byeCount[byePlayer] = byesOf(byePlayer) + 1;
+        }
+        const formed = formTeams(pool);
+        rawTeams = formed.teams;
+        teamRepeat = formed.hadRepeat;
       }
-
-      const { teams: rawTeams, hadRepeat: teamRepeat } = formTeams(pool);
       const teams = rawTeams;
       if (teamRepeat) {
         notes.push('Runde ' + r + ': Bei mindestens einem Team war keine komplett neue '
@@ -2399,16 +2464,19 @@
       const byeList = [];
       if (byePlayer != null) byeList.push(byePlayer);
       if (byeTeam) byeList.push(byeTeam[0], byeTeam[1]);
+      byePlayers.forEach(p => { if (byeList.indexOf(p) < 0) byeList.push(p); });
       idle.forEach(p => byeList.push(p));
       if (byeList.length) notes.push('Runde ' + r + ': ' + byeList.map(p => 'Spieler ' + p).join(', ') + ' pausiert(en) ('
-        + (idle.length ? 'Spiel nach Löschen einer Person entfallen' : 'ungerade Teilnehmerzahl') + ').');
+        + (idle.length ? 'Spiel nach Löschen einer Person entfallen'
+          : c.mixedTeamsOnly ? 'Mixed-Team-Regel' : 'ungerade Teilnehmerzahl') + ').');
 
       const hasInput = matches.some(m => {
         const raw = c.results[m.id];
         return Array.isArray(raw) && raw.some(s => Array.isArray(s) ? s.some(v => v !== '' && v != null) : (s !== '' && s != null));
       });
       rounds.push({ round: r, title: 'Runde ' + r, matches, bye: byeList, complete: roundComplete,
-        frozen: hasInput, byePlayer, byeTeam: byeTeam ? byeTeam.slice() : null, idle: idle.slice() });
+        frozen: hasInput, byePlayer, byeTeam: byeTeam ? byeTeam.slice() : null,
+        byePlayers: byeList.slice(), idle: idle.slice() });
 
       if (roundComplete) {
         order = active.slice().sort(sortKey);
@@ -2484,6 +2552,7 @@
 
     return {
       config: c, rounds, slots, startMin, endMin, perGame, gameMinutes, fields,
+      mixedTeamsOnly: c.mixedTeamsOnly,
       men: menRanked, women: womenRanked,
       menPerGame, womenPerGame, complete, rankingComplete, provisional: !complete,
       warnings, notes, playerCount: total, menCount, womenCount,

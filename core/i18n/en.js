@@ -456,6 +456,7 @@
     'ui.jump.print': 'Print',
     'ui.mode.prefix': 'Mode:',
     'kq.summary': '{count} players · rotating teams of 2 · individual ranking · {mode}',
+    'kq.summary.mixed': '{count} players · mixed teams only · individual ranking · {mode}',
     'kotc.summary': 'Court ladder · {teams} teams · {rounds} timed rounds of {minutes} min',
     'ui.format.details': 'Scoring & details',
     'ui.section.guideShow': 'Show quick guide',
@@ -1325,15 +1326,20 @@
     'kq.sub': 'Mixed event · individual players · 2 vs 2 with rotating team partners · separate men’s/women’s rankings',
     'kq.docInfo': '{n} players',
     'kq.guide.principle': 'Everyone enters <b>individually</b>. The app forms changing pairs using standings, levels and previous partnerships. Mixed-gender teams are possible but not required; partnerships may repeat.',
+    'kq.guide.principleMixed': 'Everyone enters <b>individually</b>. Each team has exactly one person from each player category (men and women). The app forms partnerships using standings, levels and previous teams; partnerships may repeat.',
     'kq.guide.levelLabel': 'Level:',
     'kq.guide.level': 'Each player has a level from N2 to N5. Ordering uses standings points, then point difference and level. Team formation searches from opposite ends of that order for unused partnerships; equal team strength is not guaranteed.',
     'kq.guide.flowText': 'Call pairings according to the timetable, play the matches and enter the results.',
     'kq.guide.scoringLabel': 'Scoring per player:',
     'kq.guide.scoring': 'Win = 2 points, draw = 1, loss = 0 (counts for <em>both</em> team members individually). With unequal match counts, points and ball difference are compared per match. Remaining ties share a rank. There are <b>two separate rankings</b>: King (men) and Queen (women) – no mixed ranking.',
     'kq.guide.bye': 'With an odd number of participants, one player or one team automatically sits out.',
+    'kq.guide.byeMixed': 'Excess players or one complete mixed team when the number of teams is odd sit out; breaks are distributed as fairly as possible.',
     'kq.cfg.titleLabel': 'Tournament title',
     'kq.cfg.men': '♂ Men',
     'kq.cfg.women': '♀ Women',
+    'kq.cfg.teamModeLabel': 'Team mode',
+    'kq.cfg.teamModeFree': 'Open teams (same-gender teams allowed)',
+    'kq.cfg.teamModeMixed': 'Mixed teams only (one person from each category)',
     'kq.cfg.rounds': 'Rounds',
     'kq.cfg.fields': 'Courts',
     'kq.cfg.setMode': 'Set format',
@@ -1372,6 +1378,7 @@
     'kq.standings.women': 'Queen – Women',
     'kq.standings.overall': 'Overall ranking',
     'kq.legend': '<strong>Rule:</strong> every round, balancing teams of 2 players are formed (strongest + weakest of the current ranking – level only affects pairings), and the teams play 2 vs 2. The points of the team result count for <em>both</em> team members individually (win = 2, draw = 1, loss = 0; ties use ball difference; with unequal match counts both are compared per match). Remaining ties share a rank. There are <strong>separate individual rankings</strong> (King = men, Queen = women) – no combined mixed ranking. With an odd number of participants, one player or one team automatically sits out each round.',
+    'kq.legend.mixed': '<strong>Rule:</strong> each team has exactly one person from the men’s and one from the women’s category. Teams play 2 vs. 2; standings, level and previous partnerships guide pairings. The team result counts for <em>both</em> members individually (win = 2, draw = 1, loss = 0; with unequal match counts points are compared per match). Separate King/Queen individual rankings remain. Excess players and one complete team when the number of mixed teams is odd sit out as fairly as possible.',
     'kq.alert.minPlayers': 'At least {n} players are required.',
     'kq.confirm.clearNames': 'Reset all entered names? Levels, withdrawals and results are kept.',
     'kq.confirm.clearAbsent': 'Reset withdrawals and delays? All players will be present and ready to play again.',
@@ -2110,7 +2117,7 @@
     'home.card.koc.feat4': 'separate format, not King & Queen',
 
     /* ── Card "King & Queen" ── */
-    'home.card.kingqueen.desc': 'Enter individually and play 2v2 with changing partners. The app forms teams using standings, skill levels and previous partnerships; mixed-gender teams are possible but not required. Both teammates receive the shared match result, with separate King and Queen individual standings at the end.',
+    'home.card.kingqueen.desc': 'Enter individually and play 2v2 with changing partners. By default, same-gender and mixed teams are allowed; you can optionally require mixed teams only. Both teammates receive the shared match result, with separate King and Queen individual standings at the end.',
     'home.card.kingqueen.tag': 'Custom event · individual scoring',
     'home.card.kingqueen.sub': 'Changing pairs · separate King/Queen standings',
     'home.card.kingqueen.stat1': 'from 4 players, any mix of men/women',
@@ -2260,6 +2267,9 @@
 
   /* Exact engine labels (display only; stored data stays German). */
   terms: {
+    'Nur Mixed-Teams: Für mindestens ein 2-gegen-2-Match sind jeweils mindestens zwei aktive Herren und Damen nötig.':
+      'Mixed teams only: at least two active men and two active women are needed for a 2v2 match.',
+    'Mixed-Team-Regel': 'mixed-team rule',
     'KO-System': 'Knockout',
     /* Tournament types shown in the home page list of saved tournaments. */
     'Doppel-KO-System': 'Double elimination',

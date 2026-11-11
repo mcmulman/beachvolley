@@ -105,7 +105,7 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span id="g-principle" data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
     <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen nach dem Zeitplan aufrufen, Spiele austragen und die Ergebnisse eintragen.</span></li>
@@ -128,6 +128,12 @@
     <div class="cfgfield-row">
       <label class="cfgfield"><span class="cfg-lbl" data-i18n="kq.cfg.men">♂ Herren</span><select id="menCount"></select></label>
       <label class="cfgfield"><span class="cfg-lbl" data-i18n="kq.cfg.women">♀ Damen</span><select id="womenCount"></select></label>
+      <label class="cfgfield cfgfield--wide"><span class="cfg-lbl" data-i18n="kq.cfg.teamModeLabel">Team-Modus</span>
+        <select id="teamMode">
+          <option value="free" data-i18n="kq.cfg.teamModeFree">Freie Teams (auch gleichgeschlechtlich)</option>
+          <option value="mixed" data-i18n="kq.cfg.teamModeMixed">Nur Mixed-Teams (je eine Person aus beiden Kategorien)</option>
+        </select>
+      </label>
       <label class="cfgfield" id="roundCountField"><span class="cfg-lbl"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> <span data-i18n="kq.cfg.rounds">Runden</span></span>
         <select id="roundCount"></select>
       </label>
@@ -252,7 +258,7 @@
   const SHEET = TStore.sheetIdFrom('kingqueen');
   const $ = id => document.getElementById(id);
 
-  const DEFAULTS = { men:4, women:4, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', levels:{} };
+  const DEFAULTS = { men:4, women:4, mixedTeamsOnly:false, rounds:4, fields:2, startTime:'10:00', endTime:'14:00', levels:{} };
   const SHEET_FILE = 'Turnierbogen_King_Queen.html';
   const SHEET_TYPE = 'King & Queen';
 
@@ -287,6 +293,7 @@
   TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => paint() });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
   S.config.levels = S.config.levels || {};
+  S.config.mixedTeamsOnly = S.config.mixedTeamsOnly === true;
 
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
@@ -310,7 +317,7 @@
 
   let B = null;
   let structureKey = '';
-  const configControls = ['menCount', 'womenCount', 'roundCount', 'fieldCount', 'setMode', 'startTime', 'endTime'];
+  const configControls = ['menCount', 'womenCount', 'teamMode', 'roundCount', 'fieldCount', 'setMode', 'startTime', 'endTime'];
   function readOnly(){ return !!TStore.initialUiState().readOnly; }
   function structureLocked(){ return TStore.anyResults(S); }
   function guardStructure(){
@@ -364,10 +371,13 @@
     }
     m.value = String(S.config.men);
     w.value = String(S.config.women);
+    $('teamMode').value = S.config.mixedTeamsOnly ? 'mixed' : 'free';
     rc.value = String(S.config.rounds);
     /* Feldauswahl richtet sich nach der maximal moeglichen Zahl gleichzeitiger
        Spiele (= Anzahl 2er-Teams / 2) - genau wie bei den anderen Boegen. */
-    const teamsForFields = Math.floor((getMenCount() + getWomenCount()) / 2);
+    const teamsForFields = S.config.mixedTeamsOnly
+      ? Math.min(getMenCount(), getWomenCount())
+      : Math.floor((getMenCount() + getWomenCount()) / 2);
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
     sm.value = S.config.setMode;
     $('startTime').value = S.config.startTime || '10:00';
@@ -380,6 +390,7 @@
     S.frozen = {};
     S.config.men = getMenCount();
     S.config.women = getWomenCount();
+    S.config.mixedTeamsOnly = $('teamMode').value === 'mixed';
     S.config.rounds = +$('roundCount').value;
     S.config.fields = +$('fieldCount').value;
     S.config.setMode = $('setMode').value;
@@ -393,6 +404,7 @@
     const s = state || S;
     return TPlanning.apply(TFormat.buildKingQueen({
       men: c.men, women: c.women,
+      mixedTeamsOnly: c.mixedTeamsOnly === true,
       rounds: c.rounds, fields: c.fields,
       startTime: c.startTime, setMode: c.setMode,
       levels: c.levels, absent: s.absent, results: s.results,
@@ -411,7 +423,7 @@
     B.rounds.forEach(rd => {
       if(rd.frozen && !S.frozen[rd.round]){
         S.frozen[rd.round] = { matches: rd.matches.map(m => [m.teamA.slice(), m.teamB.slice()]),
-          byePlayer: rd.byePlayer, byeTeam: rd.byeTeam };
+          byePlayer: rd.byePlayer, byeTeam: rd.byeTeam, byePlayers: (rd.bye || []).slice() };
         changed = true;
       } else if(!rd.frozen && S.frozen[rd.round]){
         delete S.frozen[rd.round]; changed = true;
@@ -609,9 +621,10 @@
   }
 
   function paintGuide(){
+    $('g-principle').innerHTML = T(S.config.mixedTeamsOnly ? 'kq.guide.principleMixed' : 'kq.guide.principle');
     $('g-level').textContent = T('kq.guide.level');
     $('g-mode').textContent = modeLabel(S.config.setMode) + '.';
-    $('g-bye').textContent = T('kq.guide.bye');
+    $('g-bye').textContent = T(S.config.mixedTeamsOnly ? 'kq.guide.byeMixed' : 'kq.guide.bye');
   }
 
   function paintNotices(){
@@ -626,9 +639,9 @@
   }
 
   function paintLegend(){
-    $('h-legend').innerHTML = T('kq.legend');
+    $('h-legend').innerHTML = T(S.config.mixedTeamsOnly ? 'kq.legend.mixed' : 'kq.legend');
     $('modeSummary').innerHTML = '<b>' + esc(T('ui.mode.prefix')) + '</b> '
-      + esc(T('kq.summary', {
+      + esc(T(S.config.mixedTeamsOnly ? 'kq.summary.mixed' : 'kq.summary', {
         count: getMenCount() + getWomenCount(),
         mode: modeLabel(S.config.setMode)
       }));
@@ -699,11 +712,21 @@
       $(id).addEventListener('change', () => {
         if(!readConfig()) return;
         /* Feldauswahl an die neue Teilnehmerzahl anpassen (max. Teams/2 Spiele parallel). */
-        const teamsForFields = Math.floor((getMenCount() + getWomenCount()) / 2);
+        const teamsForFields = S.config.mixedTeamsOnly
+          ? Math.min(getMenCount(), getWomenCount())
+          : Math.floor((getMenCount() + getWomenCount()) / 2);
         S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
         S.config.fields = +$('fieldCount').value;
         save(); structureKey=''; rebuild();
       });
+    });
+    $('teamMode').addEventListener('change', () => {
+      if(!readConfig()) return;
+      const teamsForFields = S.config.mixedTeamsOnly
+        ? Math.min(getMenCount(), getWomenCount())
+        : Math.floor((getMenCount() + getWomenCount()) / 2);
+      S.config.fields = TUI.fillFieldSelect($('fieldCount'), teamsForFields, S.config.fields);
+      save(); structureKey=''; rebuild();
     });
     ['roundCount','fieldCount','setMode','startTime','endTime'].forEach(id => {
       $(id).addEventListener('change', () => { if(!readConfig()) return; save(); structureKey=''; rebuild(); });
