@@ -141,10 +141,15 @@
     }
     if (grouped(base) && grouped(targetId)) {
       if (c.groups !== 'auto' && !integer(c.groups, 2, 6)) return invalid('groups');
-      if (!['none', 'placement', 'blocks', 'ko', 'main'].includes(c.finalMode)) return invalid('finalMode');
+      if (c.finalMode === 'ko-all-places' && targetId === 'mpp') {
+        note('finalFormat');
+      } else if (!['none', 'placement', 'blocks', 'ko', 'ko-all-places', 'main'].includes(c.finalMode)) {
+        return invalid('finalMode');
+      } else {
+        cfg.finalMode = c.finalMode;
+      }
       if (c.finalSetMode && !modes.includes(c.finalSetMode)) return invalid('finalSetMode');
       cfg.groups = c.groups;
-      cfg.finalMode = c.finalMode;
       cfg.finalSetMode = c.finalSetMode || '';
     } else if (c.finalSetMode && c.finalSetMode !== c.setMode) {
       note('finalMode', { mode: c.finalSetMode });
@@ -157,7 +162,7 @@
     if (!targetCourt && ['ko-flex', 'de-flex'].includes(targetId) && ['2x15', '2x21'].includes(cfg.setMode)) {
       cfg.setMode += 'tb';
       note('decidingMode', { mode: cfg.setMode });
-    } else if (grouped(targetId) && ['placement', 'blocks', 'ko'].includes(cfg.finalMode)
+    } else if (grouped(targetId) && ['placement', 'blocks', 'ko', 'ko-all-places'].includes(cfg.finalMode)
         && ['2x15', '2x21'].includes(cfg.finalSetMode || cfg.setMode)) {
       note('finalDecidingMode', { mode: (cfg.finalSetMode || cfg.setMode) + 'tb' });
     }

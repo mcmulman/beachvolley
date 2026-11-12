@@ -361,6 +361,7 @@
   }
   const DEFAULTS = { teams:8, fields:4, groups:'auto',
     finalMode:'placement', startTime:'10:00', endTime:'14:30' };
+  const FINAL_MODES = TFormat.FINAL_MODES.filter(mode => mode.id !== 'ko-all-places');
   let S = await TStore.load(SHEET, DEFAULTS);
   if (S._sportBlocked) return;
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
@@ -371,6 +372,10 @@
   TC.configureProfile(S.sport.id, S.config.customSetTarget, S.config.rankingProfile, S.config.modeMinutes);
   TUI.configureProfile(S.sport.id, { getTournament: () => S, repaint: () => rebuild(), outcomes: true });
   if(typeof TShare !== 'undefined' && await TShare.applyPendingShare(archiveOpts())) return;
+  if (S.config.finalMode === 'ko-all-places') {
+    S.config.finalMode = 'placement';
+    await TStore.save(S);
+  }
   /* "Tabelle korrigieren" – siehe core/turnier-ui.js initManualEditing(). */
   const MSTD = TUI.initManualEditing(document, {
     get: () => S,
@@ -386,7 +391,7 @@
       fields: TStore.urlInt(1, 10),
       groups: v => (v === 'auto' ? 'auto' : TStore.urlInt(2, 6)(v)),
       setMode: TStore.urlOneOf(TC.modesForProfile(S.sport.id).map(m => m.id)),
-      finalMode: TStore.urlOneOf(TFormat.FINAL_MODES.map(m => m.id))
+      finalMode: TStore.urlOneOf(FINAL_MODES.map(m => m.id))
   })) TStore.save(S);
   let B = null;                 // aktueller Aufbau (TFormat.build)
   let structureKey = '';
@@ -423,7 +428,7 @@
       g.add(new Option(T('mpp.cfg.groupsAuto'), 'auto'));
       for(let n=2;n<=6;n++) g.add(new Option(T('mpp.groupsN', { n: n }), n));
 
-      TFormat.FINAL_MODES.forEach(m => $('finalMode').add(new Option(term(m.label), m.id)));
+      FINAL_MODES.forEach(m => $('finalMode').add(new Option(term(m.label), m.id)));
       TC.modesForProfile(S.sport.id).forEach(m => $('setMode').add(new Option(TUI.modeOptionLabel(m.id), m.id)));
       $('finalSetMode').add(new Option(T('mpp.cfg.finalSetModeSame'), ''));
       TC.modesForProfile(S.sport.id).forEach(m => $('finalSetMode').add(new Option(TUI.modeOptionLabel(m.id), m.id)));

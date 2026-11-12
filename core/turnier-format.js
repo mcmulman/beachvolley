@@ -107,12 +107,74 @@
   }
 
   const FINAL_MODES = [
-    { id: 'placement', label: 'Über-Kreuz-Platzierungsrunde (jedes Team spielt weiter)' },
-    { id: 'ko', label: 'KO-Runde mit Spiel um Platz 3' },
-    { id: 'main', label: 'Hauptrunde (zweite Gruppenphase über Kreuz)' },
-    { id: 'none', label: 'Keine Finalrunde – nur Gruppenphase' },
-    { id: 'blocks', label: 'Platzierungsblöcke (Rangliste in Blöcke geteilt, jeder Block spielt um seine Plätze)' }
+    { id: 'placement', label: 'Überkreuz – Titelrunde mit 4 Teams' },
+    { id: 'ko', label: 'KO – nur qualifizierte Teams' },
+    { id: 'ko-all-places', label: 'KO nach Setzung – alle Plätze' },
+    { id: 'main', label: 'Zweite Gruppenphase – obere/untere Gruppe' },
+    { id: 'none', label: 'Nur Gruppenphase' },
+    { id: 'blocks', label: 'Platzierungsgruppen nach Rangliste' }
   ];
+
+  /* Presentation only: pairings and byes always come from the generated plan. */
+  function describeFinalMode(mode, plan, t, term) {
+    let label = term(mode.label);
+    const summary = t('gf.finalMode.summary.' + mode.id);
+    const details = [];
+    if (mode.id === 'placement' || mode.id === 'ko' || mode.id === 'main') {
+      details.push(t('gf.finalMode.detail.' + mode.id));
+    }
+    if ((mode.id === 'ko' || mode.id === 'ko-all-places') && plan && plan.bracket) {
+      const rounds = plan.bracket.titleRounds || plan.bracket.rounds;
+      const opening = rounds[0].matches;
+      const games = opening.filter(match => match.a.k !== 'bye' && match.b.k !== 'bye');
+      const byes = opening.filter(match => (match.a.k === 'bye') !== (match.b.k === 'bye'));
+      const cross = mode.id === 'ko-all-places'
+        && plan.groupNames.length === 2 && !plan.absent.length;
+      if (cross && games.length && games.every(match => match.a.k === 'rank' && match.b.k === 'rank')) {
+        const ranks = games.map(match => [match.a.place, match.b.place].sort((a, b) => a - b));
+        const pairs = ranks.filter((pair, index) =>
+          ranks.findIndex(other => other[0] === pair[0] && other[1] === pair[1]) === index)
+          .sort((a, b) => a[0] - b[0])
+          .map(pair => t('gf.finalMode.rankPair', { a: pair[0], b: pair[1] })).join(' / ');
+        label = t(byes.length ? 'gf.finalMode.crossAdvance' : 'gf.finalMode.crossRound', {
+          pairs, round: term(rounds[byes.length ? 1 : 0].label)
+        });
+      }
+      const six = cross && plan.groupNames.every(group => plan.groups[group].length === 3);
+      if (six) {
+        const crosses = games.slice().sort((a, b) => a.name.localeCompare(b.name));
+        const ref = value => {
+          if (value.k === 'rank') return value.group + value.place;
+          const match = opening.find(item => item.id === value.match);
+          if (match && (match.a.k === 'bye' || match.b.k === 'bye')) {
+            return ref(match.a.k === 'bye' ? match.b : match.a);
+          }
+          return t('gf.finalMode.winner', {
+            match: 'K' + (crosses.findIndex(item => item.id === value.match) + 1)
+          });
+        };
+        const pair = match => t('gf.finalMode.pair', { a: ref(match.a), b: ref(match.b) });
+        details.push(t('gf.finalMode.crossSix', {
+          k1: pair(crosses[0]), k2: pair(crosses[1]),
+          sf1: pair(rounds[1].matches[0]), sf2: pair(rounds[1].matches[1])
+        }));
+      } else {
+        if (games.length) details.push(t('gf.finalMode.crossOpening', {
+          pairs: games.map(match => term(TC.refLabel(match.a)) + ' – '
+            + term(TC.refLabel(match.b))).join('; ')
+        }));
+        if (byes.length) details.push(t('gf.finalMode.crossByes', {
+          teams: byes.map(match => term(TC.refLabel(match.a.k === 'bye' ? match.b : match.a))).join(', ')
+        }));
+      }
+    }
+    if (plan && plan.groupNames.length > 2
+        && (plan.config.rankingProfile || TC.activeRanking()) === 'beach-house'
+        && ['placement', 'ko', 'ko-all-places', 'main'].indexOf(mode.id) >= 0) {
+      details.push(t('qualification.rule'));
+    }
+    return { label, summary, detail: details.join(' ') };
+  }
 
   /* ==========================================================================
      Aufbau
@@ -562,7 +624,8 @@
        satz werden deshalb für solche Runden auf die Entscheidungssatz-Variante
        angehoben. Sichtbar als Hinweis, nicht still.                          */
     const wantedFinMode = c.finalSetMode || c.setMode;
-    const needsWinner = (finalMode === 'placement' || finalMode === 'ko');
+    const needsWinner = (finalMode === 'placement' || finalMode === 'ko'
+      || finalMode === 'ko-all-places');
     let finMode = wantedFinMode;
     if (needsWinner) {
       const up = { '2x15': '2x15tb', '2x21': '2x21tb' }[wantedFinMode];
@@ -617,7 +680,8 @@
     /* Löst die Seiten eines Spiels auf und trägt Sieger/Verlierer nach, damit
        Folgespiele (KO-Baum, Über-Kreuz) direkt weiterverdrahtet werden. */
     function resolveMatch(m, modeId) {
-      if (m.mppLoserAware || (finalMode === 'placement' && m.places)) {
+      if (m.mppLoserAware || (finalMode === 'placement' && m.places)
+          || (finalMode === 'ko-all-places' && m.placement)) {
         const deadA = isDeadLoserRef(m.a), deadB = isDeadLoserRef(m.b);
         if (deadA) m.a = { k: 'bye' };
         if (deadB) m.b = { k: 'bye' };
@@ -706,6 +770,7 @@
     let finalTitle = '';
     let placementBlocks = null;
     let bracket = null;
+    const bracketPlacements = [];
     let mainTables = null;
     let mainGroups = null;
 
@@ -722,7 +787,7 @@
       if (!slot || slot.k === 'bye') return [];
       return slot.groups || (slot.group ? [slot.group] : []);
     }
-    function avoidFirstRoundPoolRematches(list) {
+    function avoidFirstRoundPoolRematches(list, keepByes) {
       const half = list.length / 2;
       const upper = list.slice(0, half), lower = list.slice(half);
       const definite = (a, b) => {
@@ -731,6 +796,33 @@
       };
       const possible = (a, b) => slotPools(a).some(g => slotPools(b).includes(g));
       function search(conflicts) {
+        /* Der größere All-Teams-Baum braucht eine beschränkte Suche:
+           bipartites Matching statt faktorieller Permutationsversuche.
+           Freilospositionen bleiben dabei fest bei den höchsten Seeds. */
+        if (keepByes) {
+          const assigned = new Array(half).fill(-1);
+          function match(i, seen) {
+            const natural = half - 1 - i;
+            const order = lower.map((_, j) => j)
+              .sort((a, b) => Math.abs(a - natural) - Math.abs(b - natural) || b - a);
+            for (const j of order) {
+              if (seen[j] || conflicts(upper[i], lower[j])
+                  || (lower[j].k === 'bye') !== (lower[natural].k === 'bye')) continue;
+              seen[j] = true;
+              if (assigned[j] < 0 || match(assigned[j], seen)) {
+                assigned[j] = i;
+                return true;
+              }
+            }
+            return false;
+          }
+          for (let i = 0; i < half; i++) {
+            if (!match(i, new Array(half).fill(false))) return null;
+          }
+          const newLower = new Array(half);
+          assigned.forEach((i, j) => { newLower[half - 1 - i] = lower[j]; });
+          return upper.concat(newLower);
+        }
         const used = new Array(half).fill(false), pick = new Array(half);
         function step(i) {
           if (i === half) return true;
@@ -796,6 +888,29 @@
       finalRounds = bracket.rounds.map(r => ({
         round: r.round, title: r.label, matches: r.matches, byes: []
       }));
+    } else if (finalMode === 'ko-all-places') {
+      finalTitle = 'KO – alle Teams, alle Plätze';
+      const slots = seedSlots();
+      let size = 1;
+      while (size < slots.length) size *= 2;
+      while (slots.length < size) slots.push({ k: 'bye' });
+      if (names.length > 2 && size >= 4) {
+        const avoided = avoidFirstRoundPoolRematches(slots, true);
+        slots.splice(0, slots.length, ...avoided.slots);
+        if (avoided.remaining) {
+          warnings.push('KO-Runde: Mindestens eine Erstrundenpaarung kann ein Wiedersehen aus derselben Gruppe sein.');
+        }
+      }
+
+      bracket = TC.genClassificationBracket(slots, { idPrefix: 'koall' });
+      finalRounds = bracket.rounds.map(round => ({
+        round: round.round, title: round.label, matches: round.matches.slice(), byes: []
+      }));
+      bracketPlacements.push.apply(bracketPlacements, bracket.placements);
+      if (bracket.byes > 0) {
+        warnings.push(bracket.byes + ' Freilos im K.-o.-Baum – sie sind keine Spiele und erzeugen keine Platzierungsverlierer.');
+      }
+
     } else if (finalMode === 'doubleko') {
       /* Doppel-K.-o.-System (Double Elimination). Nur ohne Gruppenphase
          sinnvoll (koOnly) – siehe docs/format-double-elimination.html.
@@ -936,6 +1051,20 @@
           m.name = m.places ? 'Spiel um Platz 3' : (a === 'F' ? 'Finale' : a + (++i));
         });
       });
+    } else if (finalMode === 'ko-all-places' && bracket) {
+      bracket.titleRounds.forEach(r => {
+        const cross = all.length === 6 && names.length === 2
+          && groupSizes[names[0]] === 3 && groupSizes[names[1]] === 3 && r.round === 1;
+        r.matches.forEach((m, i) => {
+          m.name = cross && m.a.k !== 'bye' && m.b.k !== 'bye'
+            ? 'Kreuzspiel ' + (m.a.group === names[0] ? 1 : 2)
+            : r.label + (r.matches.length > 1 ? ' ' + (i + 1) : '');
+          m.label = m.name;
+        });
+      });
+      finalRounds.forEach(rd => rd.matches.forEach(m => {
+        if (!m.name) m.name = m.label || (TC.refLabel(m.a) + ' : ' + TC.refLabel(m.b));
+      }));
     } else if (finalMode === 'doubleko' && bracket) {
       /* Grand Final/Reset tragen bereits einen sprechenden Titel (m.label).
          Gewinner-Runde nutzt dieselben Abkuerzungen wie das reine KO-System,
@@ -991,7 +1120,9 @@
       rounds.forEach(rd => {
         const mode = rd.setMode || fallbackMode;
         const matches = rd.matches.filter(m => isDefaultDecision(m)
-          || (m.bye != null && canOfferDefault(m.setMode || mode)));
+            || (m.bye != null && canOfferDefault(m.setMode || mode))
+            || (finalMode === 'ko-all-places'
+              && !m.dead && ((m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye'))));
         if (matches.length) out.push({ round: rd.round, title: rd.title, setMode: mode, matches: matches });
       });
       return out;
@@ -1017,7 +1148,10 @@
     const grpEnd = grpSlots.length ? grpSlots[grpSlots.length - 1].endMin : startMin;
     appendDisplayOnly(grpSlots, grpRounds, grpEnd, c.setMode);
     const timedFinalRounds = finalRounds.map(rd => Object.assign({}, rd, {
-      matches: rd.matches.filter(m => m.bye == null && !m.dead && !mppFullyDead.has(m.id) && !isDefaultDecision(m))
+      matches: rd.matches.filter(m => m.bye == null && !m.dead && !mppFullyDead.has(m.id)
+        && !isDefaultDecision(m)
+        && !(finalMode === 'ko-all-places'
+          && ((m.a && m.a.k === 'bye') || (m.b && m.b.k === 'bye'))))
     })).filter(rd => rd.matches.length);
     const finSlotsRaw = TC.assignSlots(timedFinalRounds, c.fields, { teamOf });
     let scheduleCursor = grpEnd;
@@ -1031,6 +1165,19 @@
     });
     const endMin = finSlots.length ? finSlots[finSlots.length - 1].endMin : grpEnd;
     appendDisplayOnly(finSlots, finalRounds, scheduleCursor, finMode, round => titleOfRound(finalRounds, round));
+    if (finalMode === 'ko-all-places') {
+      const timed = finSlots.filter(slot => !slot.displayOnly);
+      finSlots.filter(slot => slot.displayOnly).forEach(slot => {
+        const first = timed.find(s => s.round === slot.round);
+        const at = first ? first.startMin : timed.filter(s => s.round < slot.round)
+          .reduce((end, s) => Math.max(end, s.endMin), grpEnd);
+        slot.startMin = at;
+        slot.endMin = at;
+      });
+      finSlots.sort((a, b) => a.round - b.round || a.startMin - b.startMin
+        || Number(!a.displayOnly) - Number(!b.displayOnly));
+      finSlots.forEach((slot, index) => { slot.slot = index + 1; });
+    }
 
     function titleOfRound(rounds, r) {
       const rd = rounds.find(x => x.round === r);
@@ -1052,7 +1199,7 @@
     const finalRankingComplete = !mainTables || Object.keys(mainTables).every(n =>
       mainTables[n].rankingComplete);
     const qualificationRequired = !koOnly
-      && ['placement', 'ko', 'main'].indexOf(finalMode) >= 0;
+      && ['placement', 'ko', 'ko-all-places', 'main'].indexOf(finalMode) >= 0;
     const qualificationComplete = !qualificationRequired
       || (qualification.complete && !placementResolution.pending);
     const placedTeams = placements.map(entry => entry.team).filter(team => team != null);
@@ -1108,6 +1255,21 @@
             if (winnerOf[m.id] != null) out.push({ place: m.places[0], team: winnerOf[m.id], source: src });
             if (loserOf[m.id] != null) out.push({ place: m.places[1], team: loserOf[m.id], source: src });
           });
+        });
+      } else if (finalMode === 'ko-all-places' && bracket) {
+        const settledWithoutTeam = ref => {
+          if (!ref || (ref.k !== 'win' && ref.k !== 'lose')) return false;
+          return ref.match in winnerOf && (ref.k === 'win'
+            ? winnerOf[ref.match] == null
+            : loserOf[ref.match] == null);
+        };
+        bracketPlacements.forEach(row => {
+          const team = resolve(row.ref);
+          if (team != null) {
+            out.push({ place: row.place, team, source: row.source });
+          } else if (!settledWithoutTeam(row.ref)) {
+            out.push({ place: row.place, team: null, source: row.source, unresolved: true });
+          }
         });
       } else if (finalMode === 'ko' && bracket) {
         const rc = bracket.rounds.length;
@@ -2568,5 +2730,5 @@
 
   return { build, buildRounds, buildKingOfCourt, buildKingQueen, autoGroupCount, mppGroupCount,
            defaultSwissRounds, maxSwissRounds, defaultKqRounds, kqCourtLabel,
-           FINAL_MODES, ROUND_MODES, GROUP_NAMES, blocksToRounds, KQ_LEVELS, KQ_LEVEL_DEFAULT };
+           FINAL_MODES, describeFinalMode, ROUND_MODES, GROUP_NAMES, blocksToRounds, KQ_LEVELS, KQ_LEVEL_DEFAULT };
 });

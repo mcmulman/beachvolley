@@ -525,6 +525,82 @@
     return 'Runde ' + r;
   }
 
+  /* Vollständige Klassifikation: jeder Ausscheidungsrunde folgt ein eigener
+     Baum für ihre echten Verlierer, rekursiv auch für dessen Verlierer.
+     Leere Rasterplätze haben keinen Verlierer und verbrauchen keinen Rang. */
+  function genClassificationBracket(seeds, opts) {
+    const o = opts || {};
+    const prefix = o.idPrefix || 'class';
+    const rounds = [], placements = [], titleRounds = [];
+    const ranges = {};
+    let size = 1;
+    while (size < seeds.length) size *= 2;
+
+    function classify(refs, firstPlace, offset, id, title, directSource) {
+      const live = refs.filter(ref => ref && ref.k !== 'bye');
+      if (!live.length) return;
+      if (live.length === 1) {
+        placements.push({ place: firstPlace, ref: live[0],
+          source: directSource || 'Platz ' + firstPlace + ' ohne Platzierungsspiel' });
+        return;
+      }
+      const tree = genBracket(refs, { idPrefix: id, thirdPlace: false });
+      const populated = {};
+      tree.rounds.forEach((rd, index) => {
+        const round = offset + index + 1;
+        if (!rounds[round - 1]) {
+          rounds[round - 1] = { round, label: roundLabel(Math.log2(size), round), matches: [] };
+        }
+        rd.matches.forEach(m => {
+          ['a', 'b'].forEach(side => {
+            const ref = m[side];
+            if (ref.k === 'win' && populated[ref.match] === false) m[side] = { k: 'bye' };
+          });
+          const sides = [m.a, m.b].filter(ref => ref.k !== 'bye');
+          populated[m.id] = sides.length > 0;
+          const previous = sides.map(ref => ranges[ref.match] || { lo: 0, hi: 0 });
+          ranges[m.id] = {
+            lo: previous.length ? Math.min.apply(null, previous.map(r => r.lo)) + (sides.length === 2 ? 1 : 0) : 0,
+            hi: previous.length ? Math.max.apply(null, previous.map(r => r.hi)) + (sides.length === 2 ? 1 : 0) : 0
+          };
+          m.round = round;
+          m.placement = !title;
+          if (!title) {
+            m.label = 'Platzierung ' + firstPlace + '–' + (firstPlace + live.length - 1)
+              + ' – ' + rd.label + (rd.matches.length > 1 ? ' ' + (rd.matches.indexOf(m) + 1) : '');
+          }
+          rounds[round - 1].matches.push(m);
+        });
+        if (title) titleRounds.push(rd);
+      });
+      const final = tree.rounds[tree.rounds.length - 1].matches[0];
+      if (final.a.k !== 'bye' && final.b.k !== 'bye') final.places = [firstPlace, firstPlace + 1];
+      if (!title) final.label = 'Spiel um Platz ' + firstPlace + '/' + (firstPlace + 1);
+      const source = title ? 'Finale' : final.label;
+      placements.push({ place: firstPlace, ref: { k: 'win', match: final.id }, source });
+      let nextPlace = firstPlace + 1;
+      for (let r = tree.rounds.length - 1; r >= 0; r--) {
+        const losers = tree.rounds[r].matches
+          .filter(m => m.a.k !== 'bye' && m.b.k !== 'bye')
+          .map(m => ({ k: 'lose', match: m.id }));
+        classify(losers, nextPlace, offset + r + 1, id + '_p' + nextPlace, false,
+          r === tree.rounds.length - 1 ? source : null);
+        nextPlace += losers.length;
+      }
+    }
+
+    classify(seeds, 1, 0, prefix, true);
+    const terminalRanges = placements.map(row => ranges[row.ref.match] || { lo: 0, hi: 0 });
+    return {
+      size, byes: size - seeds.filter(ref => ref && ref.k !== 'bye').length,
+      rounds, titleRounds, placements: placements.sort((a, b) => a.place - b.place),
+      gameRange: {
+        lo: terminalRanges.length ? Math.min.apply(null, terminalRanges.map(r => r.lo)) : 0,
+        hi: terminalRanges.length ? Math.max.apply(null, terminalRanges.map(r => r.hi)) : 0
+      }
+    };
+  }
+
   /* --- 3.4b Doppel-K.-o.-Baum (Double Elimination) --------------------------
      Zusaetzlich zum reinen Single-Elimination-Baum (genBracket) eine
      Gewinner-Runde (WB) + Verlierer-Runde (LB) + Grand Final mit
@@ -1729,7 +1805,7 @@
     modesForProfile, configureProfile, activeProfile, activeRanking, modeMinutes, setCustomTarget,
     modeDef, isMulti, hasDecidingSet, targetForSet,
     setValid, computeResult, decidingSetNeeded,
-    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genDoubleBracket, genPlacement,
+    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genClassificationBracket, genDoubleBracket, genPlacement,
     genModifiedPoolPlay,
     kqValidScore, kqComputeRoundResult, kqCourtMatches, kqNextCourts, kqInitialCourts,
     bracketSeedOrder, pairKey, roundLabel,

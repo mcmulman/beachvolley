@@ -35,6 +35,12 @@
     .notebox.is-warn { border-left-color:#b35c00; background:#fff6ec; }
     .notebox ul { margin:3px 0; padding-left:18px; }
     .final-empty { color:#666; font-style:italic; padding:8px 0; }
+    .final-mode-label { position:relative; padding-right:44px; }
+    #btnFinalModeInfo { position:absolute; right:0; bottom:0; min-width:44px; min-height:44px; padding:0; border:0; background:transparent; color:#1f4e79; font:700 18px Georgia,serif; cursor:pointer; }
+    #btnFinalModeInfo span { position:absolute; right:12px; bottom:0; display:inline-block; width:20px; line-height:20px; border:1px solid currentColor; border-radius:50%; }
+    #finalModeDialog h3 { margin:16px 0 4px; font-size:14px; }
+    #finalModeDialog p { margin:0; font-size:13px; line-height:1.5; }
+    #finalModeDialog [aria-current="true"] { border-left:3px solid #1f4e79; padding-left:10px; }
     .placelist td.pl { width:40px; background:var(--bg); font-weight:bold; white-space:nowrap; text-align:center; }
     .placelist td.nm { text-align:left; }
     .placelist td.src { font-size:11px; color:#555; }
@@ -133,9 +139,13 @@
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--wide"><span data-i18n="gf.cfg.finalMode">Finalrunde</span>
+    <div class="cfgfield cfgfield--wide">
+      <div class="final-mode-label">
+        <label for="finalMode" data-i18n="gf.cfg.finalMode">Finalsystem</label>
+        <button type="button" id="btnFinalModeInfo" aria-label="Finalmodi erklärt" aria-haspopup="dialog" aria-expanded="false" aria-controls="finalModeDialog" data-i18n-attr="aria-label:gf.finalMode.info"><span aria-hidden="true">i</span></button>
+      </div>
       <select id="finalMode"></select>
-    </label>
+    </div>
     <label class="cfgfield cfgfield--mode"><span data-i18n="gf.cfg.setMode">Vorrunde</span>
       <select id="setMode"></select>
     </label>
@@ -579,6 +589,7 @@
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    const finalDescriptions = describeFinalModes();
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -620,8 +631,8 @@
     paintTrack();
     paintNotices();
     qualification.paint();
-    paintSummary();
-    paintGuide();
+    paintSummary(finalDescriptions);
+    paintGuide(finalDescriptions[S.config.finalMode]);
     applyDocTitle();
   }
 
@@ -858,6 +869,10 @@
   function finalPerTeam(){
     const mode = S.config.finalMode;
     if (mode === 'none') return { lo:0, hi:0, name:T('gf.perTeam.nameFinal'), note:T('gf.perTeam.noteNone') };
+    if (mode === 'ko-all-places') {
+      const range = B.bracket.gameRange;
+      return { lo:range.lo, hi:range.hi, name:T('gf.perTeam.nameKoAll'), note:T('gf.perTeam.noteKoAll') };
+    }
     if (mode === 'placement') {
       /* Über-Kreuz-Block: 4er-Block = Kreuzspiel + Platzierungsspiel (2),
          3er-Block = jeder gegen jeden (2), 2er-Block = ein Platzspiel (1),
@@ -898,7 +913,8 @@
   }
 
   function perTeamGames(){
-    const grp = B.groupNames.map(g => Math.max(0, B.groups[g].length - 1));
+    const grp = B.groupNames.map(g => Math.max(0, B.groups[g].filter(team =>
+      S.config.finalMode !== 'ko-all-places' || !B.absent.includes(team)).length - 1));
     const gLo = grp.length ? Math.min.apply(null, grp) : 0;
     const gHi = grp.length ? Math.max.apply(null, grp) : 0;
     const fin = finalPerTeam();
@@ -923,10 +939,13 @@
       { time: TC.fromMin(B.endMin), text: T('gf.timeplan.evaluation') }, B.planningPauses);
   }
 
-  function paintSummary(){
+  function paintSummary(finalDescriptions){
     const c = S.config;
-    const grpGames = B.groupRounds.reduce((a,r)=>a+r.matches.length,0);
-    const finGames = B.finalRounds.reduce((a,r)=>a+r.matches.length,0);
+    const grpGames = B.groupRounds.reduce((a,r)=>a+r.matches.filter(m =>
+      c.finalMode !== 'ko-all-places' || (m.bye == null && !m.dead)).length,0);
+    const finGames = B.finalRounds.reduce((a,r)=>a+r.matches.filter(m =>
+      m.bye == null && !m.dead
+        && !(m.a && m.a.k === 'bye') && !(m.b && m.b.k === 'bye')).length,0);
     $('rv-groups').textContent = B.groupNames.length;
     TUI.fillKpiNote('rv-groupsNote', T('ui.kpi.groupSizes', { sizes: B.groupNames.map(g=>B.groups[g].length).join(' / ') }));
     $('rv-grpGames').textContent = grpGames;
@@ -963,10 +982,13 @@
 
     const crit = B.groupNames.length ? B.groupTables[B.groupNames[0]].criteria : null;
     $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, crit);
-    const fm = TFormat.FINAL_MODES.find(m => m.id === c.finalMode);
+    Array.from($('finalMode').options).forEach(option => {
+      const description = finalDescriptions[option.value];
+      if (description) option.textContent = description.label;
+    });
     const E = k => TUI.esc(T(k));
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + TUI.esc(T('gf.groupsN', { n: B.groupNames.length })) + ' · '
-      + TUI.esc(fm ? term(fm.label) : '') + ' · ' + E('sheet.legend.perGame') + ' '
+      + TUI.esc(finalDescriptions[c.finalMode].label) + ' · ' + E('sheet.legend.perGame') + ' '
       + '<span class="rmode">' + TUI.esc(modeLabel(c.setMode)) + '</span>'
       + ' ' + E('gf.legend.rule');
     TUI.syncModeSummary(document);
@@ -985,7 +1007,7 @@
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ standings: 'standingsSection', schedule: 'scheduleSection' });
   }
 
-  function paintGuide(){
+  function paintGuide(description){
     const isBlocks = S.config.finalMode === 'blocks';
     const sizes = B.groupNames.map(g=>B.groups[g].length).join('/');
     $('g-groups').textContent = isBlocks
@@ -993,23 +1015,8 @@
       : T('gf.guide.groups', { n: B.groupNames.length, sizes: sizes });
     const md = TC.modeDef(S.config.setMode);
     $('g-mode').textContent = T('gf.guide.mode', { mode: modeLabel(md.id), win: md.target+1, lose: md.target-1 });
-    const fm = TFormat.FINAL_MODES.find(m => m.id === S.config.finalMode);
-    const fmLabel = fm ? term(fm.label) : '';
-    let txt = fmLabel;
-    if(S.config.finalMode === 'placement'){
-      txt = T('gf.guide.finalPlacement', { mode: fmLabel });
-    } else if(S.config.finalMode === 'ko'){
-      txt = T('gf.guide.finalKo', { mode: fmLabel });
-    } else if(S.config.finalMode === 'main'){
-      txt = T('gf.guide.finalMain', { mode: fmLabel });
-    } else if(isBlocks){
-      txt = T('gf.guide.finalBlocks');
-    }
-    $('g-final').textContent = txt;
-    if (B.groupNames.length > 2 && (S.config.rankingProfile || TC.activeRanking()) === 'beach-house'
-        && ['placement', 'ko', 'main'].includes(S.config.finalMode)) {
-      $('g-final').textContent += ' ' + T('qualification.rule');
-    }
+    $('g-final').textContent = description.label + ' – '
+      + [description.summary, description.detail].filter(Boolean).join(' ');
     $('g-games').textContent = perTeamGames().body;
   }
 
@@ -1085,8 +1092,62 @@
     if(btn) btn.classList.toggle('active', !p.hidden);
   }
 
+  function describeFinalModes(forPopup){
+    const descriptions = {};
+    TFormat.FINAL_MODES.forEach(mode => {
+      let plan = mode.id === S.config.finalMode ? B : null;
+      // Only the all-places selector has a plan-dependent label.
+      if (!plan && (forPopup || (mode.id === 'ko-all-places'
+          && B.groupNames.length === 2 && !B.absent.length))) {
+        plan = planFor(Object.assign({}, S.config, { finalMode: mode.id }));
+      }
+      descriptions[mode.id] = TFormat.describeFinalMode(mode, plan, T, term);
+    });
+    return descriptions;
+  }
+
+  function showFinalModeInfo(){
+    if ($('finalModeInfoOverlay')) return;
+    const descriptions = describeFinalModes(true);
+    const opener = $('btnFinalModeInfo');
+    const overlay = document.createElement('div');
+    overlay.id = 'finalModeInfoOverlay';
+    overlay.className = 'outcome-overlay noprint';
+    overlay.innerHTML = '<div id="finalModeDialog" class="outcome-dialog" role="dialog" aria-modal="true" aria-labelledby="finalModeInfoTitle" tabindex="-1">'
+      + '<h2 id="finalModeInfoTitle">' + TUI.esc(T('gf.finalMode.info')) + '</h2>'
+      + TFormat.FINAL_MODES.map(mode => '<section'
+        + (mode.id === S.config.finalMode ? ' aria-current="true"' : '') + '><h3>'
+        + TUI.esc(descriptions[mode.id].label) + '</h3><p>'
+        + TUI.esc([descriptions[mode.id].summary, descriptions[mode.id].detail]
+          .filter(Boolean).join(' ')) + '</p></section>').join('')
+      + '<div class="outcome-actions"><button type="button" id="btnCloseFinalModeInfo">'
+      + TUI.esc(T('feedback.close')) + '</button></div></div>';
+    const close = () => {
+      overlay.remove();
+      opener.setAttribute('aria-expanded', 'false');
+      opener.focus();
+    };
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    overlay.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        $('btnCloseFinalModeInfo').focus();
+      }
+    });
+    document.body.appendChild(overlay);
+    $('btnCloseFinalModeInfo').addEventListener('click', close);
+    opener.setAttribute('aria-expanded', 'true');
+    $('finalModeDialog').focus();
+  }
+
   let planningActions;
   function wire(){
+    $('btnFinalModeInfo').addEventListener('click', showFinalModeInfo);
     planningActions = TPlanningActions.mount({ get: () => S, plan: () => B, build: planFor,
       save: () => save(), rebuild: () => { structureKey = ''; rebuild(); } });
     ['teamCount','groupCount','fieldCount','finalMode','setMode','finalSetMode','startTime','endTime']
