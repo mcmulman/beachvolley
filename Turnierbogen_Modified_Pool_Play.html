@@ -118,6 +118,7 @@
   <a href="docs/format-modified-pool-play.html" target="_blank" style="font-size:12px;color:#1f4e79;font-weight:600;text-decoration:none;padding:4px 10px;border:1px solid #1f4e79;border-radius:4px" data-i18n="sheet.formatInfo">Format-Info</a>
 </div>
 
+<main class="sheet-content">
 <h1 id="h-title" data-i18n="mpp.title">Modified Pool Play (MPP)</h1>
 
 <!-- ======================= SEITE 1 ======================= -->
@@ -1167,7 +1168,8 @@
   box.setAttribute('role', 'alert');
   const fallback = 'Das Turnier konnte nicht geladen werden. Bitte Speicherzugriff prüfen und die Seite erneut laden.';
   box.textContent = (typeof TI18n !== 'undefined') ? TI18n.t('sheet.loadError') : fallback;
-  document.body.insertBefore(box, document.body.firstChild);
+  var content = document.querySelector('main.sheet-content');
+  content.insertBefore(box, content.firstChild);
 });
 </script>
 
@@ -1186,6 +1188,7 @@ if(!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&wi
     <span class="footer-amazon"><span data-i18n="chrome.supportProject">· Unterstütze das Projekt:</span> <a href="https://link.amazon/B0gYzgUZo" target="_blank" rel="nofollow noopener sponsored" data-i18n="chrome.amazonLink">kaufe bei Amazon ein</a></span>
   </div>
 </footer>
+</main>
 <style>
   .footer-print-only { display: none; }
   @media print {

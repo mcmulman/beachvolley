@@ -7,6 +7,10 @@
     position: -webkit-sticky;
     position: sticky;
     top: 0;
+    /* Body spans the page; constrained content lives in a sibling main. */
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
     z-index: 200;
     display: flex;
     align-items: center;
@@ -114,7 +118,11 @@
     -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
   }
   @media (max-width: 960px) {
-    .app-bar { padding-left: 10px; padding-right: 10px; }
+    .app-bar {
+      padding-left: 10px; padding-right: 10px;
+      padding-left: calc(10px + env(safe-area-inset-left, 0px));
+      padding-right: calc(10px + env(safe-area-inset-right, 0px));
+    }
   }
   @media (max-width: 767px) {
     .app-bar__back, .app-bar__btn { min-width: 44px; }
@@ -130,7 +138,7 @@
       padding: 0;
     }
     .app-bar .cfg-actions-primary > .nbtn + .nbtn { margin-left: 8px; }
-    .app-bar__actions .cfg-actions-primary .lbl {
+    .app-bar__actions .lbl {
       display: block;
       position: absolute;
       width: 1px;

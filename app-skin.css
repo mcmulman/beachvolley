@@ -61,31 +61,25 @@
      responsive Layout der Bögen unverändert (wichtig für Mobil/Tablet). */
   @media (min-width: 1360px) {
     html { background: #eef2f7; }
-    body {
+    body { padding-bottom: 0; }
+    .sheet-content {
       box-sizing: border-box;
-      width: min(var(--sheet-w), calc(100vw - 40px));
-      max-width: 100%;
+      width: calc(100% - 40px);
+      max-width: var(--sheet-w);
       margin-left: auto !important;
       margin-right: auto !important;
       background: #fff;
       box-shadow: 0 10px 44px rgba(26, 58, 92, .13);
       padding-left: 28px !important;
       padding-right: 28px !important;
+      padding-left: calc(28px + env(safe-area-inset-left, 0px)) !important;
+      padding-right: calc(28px + env(safe-area-inset-right, 0px)) !important;
       /* clamp() erst ab Safari 13.1 (AGENTS.md §7b) - Zeile davor ist der
          Fallback fuer aeltere iPads, wird von modernen Browsern ueberschrieben. */
-      padding-left: clamp(20px, 2.2vw, 40px) !important;
-      padding-right: clamp(20px, 2.2vw, 40px) !important;
+      padding-left: calc(clamp(20px, 2.2vw, 40px) + env(safe-area-inset-left, 0px)) !important;
+      padding-right: calc(clamp(20px, 2.2vw, 40px) + env(safe-area-inset-right, 0px)) !important;
       padding-bottom: 48px !important;
       min-height: 100vh;
-    }
-    /* App-Leiste randlos an die Kartenkanten ziehen */
-    .app-bar {
-      /* Fallback fuer Safari < 13.1 ohne clamp() (AGENTS.md §7b) - danach
-         von modernen Browsern ueberschrieben. */
-      margin-left: -28px;
-      margin-right: -28px;
-      margin-left: calc(-1 * clamp(20px, 2.2vw, 40px));
-      margin-right: calc(-1 * clamp(20px, 2.2vw, 40px));
     }
     /* Schweizer-Bögen: innere .page-Fläche die einheitliche Kartenbreite füllen
        lassen, damit sie nicht schmaler als die übrigen Bögen wirken. */
@@ -238,11 +232,11 @@
           Gruppenphase …) → 16px, blauer Akzentbalken
        3) Tabellen-Label = <caption>             → 14px, uppercase, Akzent
      Ausgenommen: Kurzanleitung (.guide h2) und Runden-Divider (.tt). */
-  body > h1 ~ h1,
+  .sheet-content > h1 ~ h1,
   .page > h1 ~ h1,
   section > h1 ~ h1,
   .rounds-page > h1,
-  body > h2:not(.tt):not(.guide),
+  .sheet-content > h2:not(.tt):not(.guide),
   .page > h2:not(.tt):not(.guide),
   .panel > h2:not(.tt) {
     color: var(--app-blue-dark);
@@ -255,11 +249,11 @@
   }
   /* Body-Abschnitte brauchen Luft nach oben/unten; Panel-Header nutzen die
      Panel-Polsterung und bleiben ohne zusätzliche Ränder. */
-  body > h1 ~ h1,
+  .sheet-content > h1 ~ h1,
   .page > h1 ~ h1,
   section > h1 ~ h1,
   .rounds-page > h1,
-  body > h2:not(.tt):not(.guide),
+  .sheet-content > h2:not(.tt):not(.guide),
   .page > h2:not(.tt):not(.guide) {
     margin: 22px 0 10px;
   }
@@ -976,7 +970,7 @@
   }
   @media (max-width: 960px) {
     #tserver-status .tserver-action { grid-template-columns:minmax(0,1fr); gap:4px; }
-    .tournament-sheet {
+    .tournament-sheet > .sheet-content {
       padding-left: 10px; padding-right: 10px;
       padding-left: calc(10px + env(safe-area-inset-left, 0px));
       padding-right: calc(10px + env(safe-area-inset-right, 0px));

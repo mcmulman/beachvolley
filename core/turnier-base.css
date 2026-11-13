@@ -29,7 +29,7 @@
   body {
     font-family: Arial, Helvetica, sans-serif;
     color:#111; font-size:13px; line-height:1.3;
-    padding:10mm;
+    padding:0;
   }
   h1 { font-size:19px; margin:0 0 3px; }
   .sport-profile-label { margin:0 0 8px; color:#475569; font-size:12px; font-weight:700; }
@@ -358,10 +358,16 @@
     
 @media screen {
       body {
-        padding: 12mm 14mm;
+        width: 100%;
+        padding: 0 0 12mm;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         color: #1a1a2e;
         line-height: 1.4;
+      }
+      .sheet-content {
+        padding: 0 14mm;
+        padding-left: calc(14mm + env(safe-area-inset-left, 0px));
+        padding-right: calc(14mm + env(safe-area-inset-right, 0px));
       }
       h1 {
         font-size: 20px;
@@ -478,7 +484,13 @@
 }
 @media screen and (max-width: 640px) {
       body {
-        padding: 10px 10px calc(68px + env(safe-area-inset-bottom, 0px));
+        padding: 0 0 calc(68px + env(safe-area-inset-bottom, 0px));
+      }
+      .sheet-content {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-left: calc(10px + env(safe-area-inset-left, 0px));
+        padding-right: calc(10px + env(safe-area-inset-right, 0px));
       }
       .row {
         flex-direction: column;
