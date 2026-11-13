@@ -66,6 +66,8 @@
 
 - **Firmencup-Einstieg:** Eine kompakte Startkarte zeigt den Nutzen für Firmen, Teams, Spielplanung und Ergebnisse. Klar beschrifteter Turniername und „Firmencup anlegen“ führen in die bestehende Planung; lokale Turniere und die JSON-Wiederherstellung bleiben direkt darunter erreichbar.
 
+- **Erreichbare Format-Infos und Marken-Navigation:** Alle acht Turnierbögen bieten einen direkten, mindestens 44 px hohen Link zur vollständigen Format-Erklärung in der Kurzanleitung. So bleibt die Dokumentation auch auf schmalen Displays erreichbar, wenn der Info-Knopf in der Kopfleiste ausgeblendet ist. Das Startseitenlogo hat auch mobil eine mindestens 44 px breite Trefferfläche, ohne das sichtbare Motiv zu vergrößern.
+
 ### Kompakte Feature-Übersicht
 
 - **Erreichbare Abschnittsnavigation:** Setup, Anleitung, Spielplan und Tabelle bleiben auf Desktop oben angeheftet. Smartphones und Tablets bis 1024 px verwenden eine kompakte feste Footer-Leiste auch im Querformat, mit mindestens 44 px hohen Tasten und Abstand zur Geräte-Safe-Area. Platz am Seitenende und gemessene Scroll-Abstände halten Inhalte erreichbar; während der Eingabe weicht die Footer-Leiste der Tastatur. Im Druck entfällt sie.
@@ -250,6 +252,8 @@
 - **Company cup welcome:** A compact start card highlights company/team organisation, schedule planning and results. A clearly labelled tournament name and “Create company cup” lead into the existing setup; local tournaments and JSON restore remain directly accessible below.
 
 - **Company cup – reliable live persistence and withdrawal proofs:** Concurrent synchronization and permission changes run sequentially per local event, retaining distinct queued snapshots and failed requests' retry keys. For multiple withdrawal decisions concerning the same team, the lexicographically smallest fixture ID supplies the representative event-wide proof (note and original timestamp), independent of input order, device clocks or equal timestamps. Every individual note remains in its match decision. Correction/removal requires the correspondingly re-derived proof; live changes to recorded decisions remain blocked. Withdrawal still applies event-wide while at least one such decision exists. Local and server text limits count UTF-16 code units (non-BMP emoji count twice), not UTF-8 bytes.
+
+- **Reachable format documentation and brand navigation:** All eight tournament sheets provide a direct, at least 44px-high link to the full format explanation in the guide. Documentation stays reachable on narrow displays when the header Info button is hidden. The homepage logo also has a touch target at least 44px wide on mobile without enlarging the visible mark.
 
 ### Compact Feature Highlights
 

@@ -426,7 +426,7 @@
         if (id.length > 200 || !/^[A-Za-z0-9_.-]+$/.test(id)) return false;
         if (court) {
           if (!Array.isArray(result) || result.length !== 2
-              || !result.every(v => integer(v, 0, maxScore))) return false;
+              || !result.every(v => v === null || integer(v, 0, maxScore))) return false;
           continue;
         }
         if (!Array.isArray(result) || result.length > maxSets

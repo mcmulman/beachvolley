@@ -65,6 +65,14 @@
     /* The inline guide remains available; leave room for the primary header actions. */
     .tournament-sheet .app-bar__info { display:none; }
   }
+  .guide-format-doc {
+    display:inline-flex; align-items:center; min-height:44px; max-width:100%;
+    margin:8px 0; padding:8px 12px; border:1px solid #1f4e79; border-radius:6px;
+    color:#1f4e79; font-weight:700; text-decoration:none; overflow-wrap:break-word;
+  }
+  .guide-format-doc:hover { background:#f0f4f9; }
+  .guide-format-doc:focus { outline:3px solid #f2a900; outline-offset:2px; }
+  @media print { .guide-format-doc { display:none !important; } }
 
   /* Standings */
   .stand td { height:40px; }

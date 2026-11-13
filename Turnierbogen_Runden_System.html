@@ -117,6 +117,7 @@
     <li><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="rs.guide.trackText">Nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren – so ist der Zwischenstand ohne Gerät ablesbar.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
+  <a class="guide-format-doc" id="guideFormatDoc" href="docs/format-jeder-gegen-jeden.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
     <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
   </button>
@@ -1257,8 +1258,10 @@
       printAdd: isSwiss() ? T('rs.hint.printAddSwiss') : T('ui.round.courtPacking')
     }) + ($('roundbar').querySelectorAll('[data-round-select] option').length > 2
       ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
-    $('formatDoc').href = isSwiss()
+    const formatDocHref = isSwiss()
       ? 'docs/format-schweizer-system.html' : 'docs/format-jeder-gegen-jeden.html';
+    $('formatDoc').href = formatDocHref;
+    $('guideFormatDoc').href = formatDocHref;
     $('absentHint').textContent = isSwiss()
       ? T('rs.hint.absentSwiss')
       : T('rs.hint.absentRr');
