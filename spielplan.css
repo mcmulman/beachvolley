@@ -1529,6 +1529,12 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
     white-space: normal;
     cursor: pointer;
   }
+  .bl-round-warnings > .bl-round-warnings-close {
+    display: inline-block;
+    width: auto;
+    background: #fff;
+    text-align: center;
+  }
   .bl-round-warnings > button:focus { outline: 2px solid #1f6fa8; outline-offset: 2px; }
   .sched > tbody > tr.rgap > td {
     height: 24px;

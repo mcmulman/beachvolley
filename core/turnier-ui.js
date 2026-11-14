@@ -2094,8 +2094,12 @@
     });
     let warnings = wrapper.nextElementSibling;
     if (!warnings || !warnings.classList.contains('bl-round-warnings')) warnings = null;
-    const problems = Object.keys(rounds).filter(round => rounds[round].checked
+    const allProblems = Object.keys(rounds).filter(round => rounds[round].checked
       && (rounds[round].open || rounds[round].invalid));
+    /* Weggeklickte Hinweise bleiben aus, bis die Runde wieder in Ordnung war. */
+    const dismissed = wrapper.__dismissedRounds || (wrapper.__dismissedRounds = {});
+    Object.keys(dismissed).forEach(round => { if (allProblems.indexOf(round) < 0) delete dismissed[round]; });
+    const problems = allProblems.filter(round => !dismissed[round]);
     if (!warnings && problems.length) {
       warnings = document.createElement('div');
       warnings.className = 'bl-round-warnings noprint';
@@ -2108,13 +2112,26 @@
           + tx('ui.round.errorsJump', 'Zum ersten fehlenden oder ungültigen Ergebnis springen'))
         + '"><span aria-hidden="true">!</span> '
         + esc(tx('ui.round.n', 'Runde {n}', { n: round }) + ': ' + roundProblemsText(rounds[round]))
-        + '</button>').join('');
+        + '</button>').join('')
+        + (problems.length ? '<button type="button" class="bl-round-warnings-close" aria-label="'
+          + esc(tx('ui.round.dismiss', 'Hinweise ausblenden')) + '">'
+          + esc(tx('ui.round.dismiss', 'Hinweise ausblenden')) + ' ×</button>' : '');
       warnings.hidden = !problems.length;
       if (warnings.innerHTML !== html) warnings.innerHTML = html;
     }
     if (warnings && !warnings.__roundWarningWired) {
       warnings.__roundWarningWired = true;
       warnings.addEventListener('click', event => {
+        const dismiss = event.target.closest ? event.target.closest('.bl-round-warnings-close') : null;
+        if (dismiss) {
+          event.preventDefault();
+          const hide = wrapper.__dismissedRounds;
+          Array.prototype.forEach.call(warnings.querySelectorAll('[data-round-warning]'), b => {
+            hide[b.getAttribute('data-round-warning')] = true;
+          });
+          warnings.hidden = true;
+          return;
+        }
         const button = event.target.closest ? event.target.closest('[data-round-warning]') : null;
         if (!button) return;
         event.preventDefault();

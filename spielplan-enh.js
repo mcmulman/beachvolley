@@ -31,14 +31,18 @@
   var SAVED = tx('enh.saved', '✓ gespeichert');
 
   var css = ''
-    + '#bl-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);'
-    + 'background:#0a7d2c;color:#fff;padding:8px 16px;border-radius:8px;font:600 13px system-ui,Arial,sans-serif;'
-    + 'box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}'
-    + '#bl-toast.error{background:#a61b1b;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
-    + '#bl-toast.warning{background:#8a4b08;max-width:min(90vw,620px);text-align:center;pointer-events:auto}'
-    + '#bl-toast button{margin-left:10px;padding:5px 9px;border:1px solid currentColor;border-radius:5px;'
-    + 'min-height:44px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
-    + '#bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}'
+    + '#bl-toast{position:fixed;left:8px;right:8px;bottom:22px;max-width:640px;margin:0 auto;transform:translateY(16px);'
+    + 'display:flex;align-items:center;background:#0a7d2c;color:#fff;padding:6px 8px 6px 14px;border-radius:8px;'
+    + 'font:600 13px system-ui,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;'
+    + 'transition:opacity .2s,transform .2s;z-index:80}'
+    + '#bl-toast.error{background:#a61b1b;pointer-events:auto}'
+    + '#bl-toast.warning{background:#8a4b08;pointer-events:auto}'
+    + '#bl-toast button{flex:0 0 auto;margin-left:10px;padding:4px 10px;border:1px solid currentColor;border-radius:5px;'
+    + 'min-height:40px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
+    + '#bl-toast button:first-of-type{margin-left:auto}'
+    + '#bl-toast .bl-toast-close{margin-left:4px;min-width:44px;padding:0 10px;border-color:transparent;'
+    + 'background:transparent;color:#fff;font-size:24px;line-height:1}'
+    + '#bl-toast.show{opacity:1;transform:translateY(0)}'
     + '@media screen{td.bl-open .psets{background:#eaf2fb;border-bottom:3px solid #7d9fc4;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
     /* ⏱ je offenem Spiel: spiegelt den ✓-Knopf links neben den Kaestchen. */
@@ -67,6 +71,26 @@
   toast.id = 'bl-toast';
   toast.textContent = SAVED;
   var toastT = null, armed = false, undoSequence = 0, undoBusy = false;
+  function hideToast() {
+    clearTimeout(toastT);
+    toast.classList.remove('show', 'error', 'warning');
+    while (toast.firstChild) toast.removeChild(toast.firstChild);
+    toast.textContent = SAVED;
+  }
+  /* Meldungen mit Aktion oder Fehler muessen sich schliessen lassen, damit sie
+     keine Bedienelemente dauerhaft verdecken. */
+  function addClose() {
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'bl-toast-close';
+    close.textContent = '\u00d7';
+    close.setAttribute('aria-label', tx('enh.dismiss', 'Meldung schließen'));
+    close.addEventListener('click', hideToast);
+    toast.appendChild(close);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && toast.classList.contains('show') && toast.querySelector('.bl-toast-close')) hideToast();
+  });
   function showToast() {
     if (!toast.isConnected && document.body) document.body.appendChild(toast);
     while (toast.firstChild) toast.removeChild(toast.firstChild);
@@ -112,6 +136,7 @@
         });
       });
       toast.appendChild(button);
+      addClose();
       toast.classList.remove('error', 'warning');
       toast.classList.add('show');
       if (revealScore) revealScore();
@@ -139,6 +164,7 @@
       window.location.href = url;
     });
     toast.appendChild(button);
+    addClose();
     toast.classList.remove('error', 'warning');
     toast.classList.add('show');
     clearTimeout(toastT);
@@ -172,6 +198,7 @@
       });
       toast.appendChild(restore);
     }
+    addClose();
     toast.classList.remove('error', 'warning');
     toast.classList.add(kind, 'show');
     if (revealScore) revealScore();

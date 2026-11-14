@@ -210,6 +210,17 @@
     message.setAttribute('aria-live', error ? 'assertive' : 'polite');
     reserveStatusSpace();
   }
+  const messageClose = document.createElement('button');
+  messageClose.type = 'button';
+  messageClose.id = 'fc-message-close';
+  messageClose.textContent = '\u00d7';
+  messageClose.setAttribute('aria-label', tr('Meldung schließen', 'Close message'));
+  messageClose.addEventListener('click', function () {
+    message.textContent = '';
+    statusBar.className = '';
+    reserveStatusSpace();
+  });
+  message.parentNode.insertBefore(messageClose, message.nextSibling);
   function clearSuccessNotice() {
     if (!statusBar.classList.contains('fc-success')) return;
     message.textContent = '';
