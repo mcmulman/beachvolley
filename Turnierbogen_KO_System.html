@@ -781,6 +781,7 @@
 
     const onScore = (mid, set, side, val) => {
       TStore.setScore(S, mid, set, side, val);
+      TUI.pruneDecidingSet(S, mid, set, B.finalSetMode);
       save();
       compute();
       /* Ein Ergebnis entscheidet, wer weiterkommt – dadurch ändern sich die

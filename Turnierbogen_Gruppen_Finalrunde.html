@@ -678,6 +678,7 @@
       TUI.paintByeCard(td, { winner: bye ? m.bye : null }, ctx);
       const note = td.querySelector('[data-note]');
       if(note && m.needsDecision) note.textContent = T('gf.match.needsDecision');
+      if(m.needsDecision) td.setAttribute('data-needs-decision', ''); else td.removeAttribute('data-needs-decision');
     });
   }
 
@@ -1271,6 +1272,8 @@
         delete S.config.qualificationOrder;
       }
       TStore.setScore(S, mid, set, side, val);
+      const isGrp = B.groupMatches && Object.keys(B.groupMatches).some(g => B.groupMatches[g].some(m => m.id === mid));
+      TUI.pruneDecidingSet(S, mid, set, isGrp ? S.config.setMode : B.finalSetMode);
       save();
       compute();
       paint();

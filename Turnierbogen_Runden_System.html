@@ -1563,6 +1563,8 @@
 
     const onScore = (mid, set, side, val) => {
       TStore.setScore(S, mid, set, side, val);
+      const pm = B.matchById[mid], pr = pm ? B.rounds.find(r => r.round === pm.round) : null;
+      TUI.pruneDecidingSet(S, mid, set, pr ? pr.setMode : S.config.setMode);
       save();
       rebuild();   // baut nur neu, wenn sich die Struktur wirklich ändert
     };

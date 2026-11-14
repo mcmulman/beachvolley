@@ -607,9 +607,16 @@
       // Freilos-Zustand
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
+      /* Entscheidungssatz (Satz 3) nur freigeben, wenn Satz 1+2 gueltig 1:1
+         stehen - sonst zaehlt das leere TB-Feld bei 2:0 als "noch offen". */
+      const res = S.results[id];
+      const s1 = res && res[0], s2 = res && res[1];
+      const decidingNotNeeded = TC.hasDecidingSet(ctx.setMode) && s1 && s2
+        && !TC.decidingSetNeeded(s1[0], s1[1], s2[0], s2[1], ctx.setMode);
       td.querySelectorAll('input.score').forEach(inp => {
-        inp.disabled = open || bye || (body.id === 'schedGrpBody' && TUI.finalsStarted(B, S));
         const set = +inp.getAttribute('data-set');
+        inp.disabled = open || bye || (body.id === 'schedGrpBody' && TUI.finalsStarted(B, S))
+          || (set === 3 && decidingNotNeeded);
         const side = inp.getAttribute('data-side');
         const v = (S.results[id] && S.results[id][set-1]) ? S.results[id][set-1][side==='a'?0:1] : null;
         if(document.activeElement !== inp) inp.value = (v == null ? '' : v);
@@ -620,6 +627,7 @@
       TUI.paintByeCard(td, { winner: bye ? m.bye : null }, ctx);
       const note = td.querySelector('[data-note]');
       if(note && m.needsDecision) note.textContent = T('mpp.match.needsDecision');
+      if(m.needsDecision) td.setAttribute('data-needs-decision', ''); else td.removeAttribute('data-needs-decision');
     });
   }
 
@@ -1142,9 +1150,10 @@
         delete S.config.qualificationOrder;
       }
       TStore.setScore(S, mid, set, side, val);
+      const isGrp = B.groupMatches && Object.keys(B.groupMatches).some(g => B.groupMatches[g].some(m => m.id === mid));
+      TUI.pruneDecidingSet(S, mid, set, isGrp ? S.config.setMode : B.finalSetMode);
       save();
-      compute();
-      paint();
+      rebuild();   // baut nur neu, wenn sich die Struktur wirklich ändert (Final-Spiele werden erst nach der Gruppenphase real)
     };
     onScore.setMode = () => S.config.setMode;
     const onScoreFin = (mid, set, side, val) => onScore(mid, set, side, val);

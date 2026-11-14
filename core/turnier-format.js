@@ -625,7 +625,7 @@
        angehoben. Sichtbar als Hinweis, nicht still.                          */
     const wantedFinMode = c.finalSetMode || c.setMode;
     const needsWinner = (finalMode === 'placement' || finalMode === 'ko'
-      || finalMode === 'ko-all-places');
+      || finalMode === 'ko-all-places' || finalMode === 'doubleko');
     let finMode = wantedFinMode;
     if (needsWinner) {
       const up = { '2x15': '2x15tb', '2x21': '2x21tb' }[wantedFinMode];
@@ -718,7 +718,12 @@
     }
 
     /* Gruppenspiele auflösen (a/b sind dort bereits Teamnummern). */
-    grpRounds.forEach(rd => rd.matches.forEach(m => resolveMatch(m, c.setMode)));
+    grpRounds.forEach(rd => rd.matches.forEach(m => {
+      resolveMatch(m, c.setMode);
+      /* In der Gruppe ist ein Remis (1:1 Sätze) ein gültiges Ergebnis – nur
+         die KO-Spiele des MPP-Brackets (stage) brauchen einen Sieger. */
+      if (!m.stage) delete m.needsDecision;
+    }));
 
     /* MPP-Bracket-Gruppen: der Platz ergibt sich direkt aus der Bracket-
        Position (Sieger/Verlierer des Gewinner-/Verliererspiels) statt aus
@@ -992,7 +997,11 @@
 
     finalRounds.forEach(rd => {
       rd.setMode = (rd.matches || []).map(m => m.setMode).find(Boolean) || finMode;
-      rd.matches.forEach(m => resolveMatch(m, finMode));
+      rd.matches.forEach(m => {
+        resolveMatch(m, finMode);
+        /* Hauptrunde = Round-Robin: ein Remis ist dort ein gültiges Ergebnis. */
+        if (finalMode === 'main') delete m.needsDecision;
+      });
     });
 
     /* Schiedsrichterrotation ist eine optionale Volleyball-Veranstaltungsregel,
@@ -1405,7 +1414,11 @@
     const allMatches = [];
     grpRounds.forEach(rd => rd.matches.forEach(m => allMatches.push(m)));
     finalRounds.forEach(rd => rd.matches.forEach(m => allMatches.push(m)));
-    if (allMatches.some(m => m.needsDecision)) {
+    if (grpRounds.some(rd => rd.matches.some(m => m.needsDecision))) {
+      warnings.push('Ein Spiel der Platzierungs-/Kreuzspiele endete unentschieden – hier muss ein '
+        + 'Entscheidungssatz gespielt oder der Satzmodus mit Entscheidungssatz gewählt werden; '
+        + 'die Gruppe bleibt bis dahin offen.');
+    } else if (allMatches.some(m => m.needsDecision)) {
       warnings.push('Ein Spiel der Finalrunde endete unentschieden – hier muss ein '
         + 'Entscheidungssatz gespielt oder der Satzmodus mit Entscheidungssatz gewählt werden.');
     }

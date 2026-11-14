@@ -1370,6 +1370,18 @@
     return { isEditing, toolbarHtml };
   }
 
+  /* Entscheidungssatz verwerfen, sobald Satz 1+2 ihn unnoetig machen
+     (z. B. Satz 2 nachtraeglich von 1:1 auf 2:0 geaendert). */
+  function pruneDecidingSet(state, matchId, setNo, modeId) {
+    if (setNo >= 3 || !modeId || !TC.hasDecidingSet(modeId)) return;
+    const r = state.results[matchId];
+    if (!r || !r[2] || (r[2][0] == null && r[2][1] == null) || !r[0] || !r[1]) return;
+    const t = TC.modeDef(modeId).target;
+    if (!TC.setValid(r[0][0], r[0][1], t) || !TC.setValid(r[1][0], r[1][1], t)) return;
+    if (TC.decidingSetNeeded(r[0][0], r[0][1], r[1][0], r[1][1], modeId)) return;
+    r[2] = [null, null];
+  }
+
   function finalsStarted(plan, state) {
     return plan.finalRounds.some(round => round.matches.some(match => {
       const score = state.results[match.id];
@@ -1972,7 +1984,10 @@
     tbody.querySelectorAll('td.match[data-round]').forEach(td => {
       const round = td.getAttribute('data-round');
       const active = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
-      const needed = active.length > 0 || (!td.classList.contains('is-bye') && !!td.querySelector('input.score'));
+      /* Gesperrte Spiele mit Ergebnis (Vorrunde nach Finalstart) sind erledigt, nicht offen. */
+      const shown = td.querySelector('[data-score="a"]');
+      const lockedDone = !active.length && !!shown && shown.textContent !== '';
+      const needed = !lockedDone && (active.length > 0 || (!td.classList.contains('is-bye') && !!td.querySelector('input.score')));
       const confirmed = tbody.__confirmedMatches && tbody.__confirmedMatches.has(td.getAttribute('data-mid'));
       const checked = confirmed || (begun[round] && tbody.__checkedMatches
         && tbody.__checkedMatches.has(td.getAttribute('data-mid')));
@@ -1980,7 +1995,8 @@
       if (required) td.setAttribute('data-score-required', '');
       else td.removeAttribute('data-score-required');
       markScoreInputs(td, td.getAttribute('data-set-mode'));
-      const invalid = active.some(inp => inp.classList.contains('invalid'))
+      const undecided = td.hasAttribute('data-needs-decision');
+      const invalid = undecided || active.some(inp => inp.classList.contains('invalid'))
         || (needed && !active.length && required);
       const complete = !needed || (active.length > 0 && active.every(inp => String(inp.value || '').trim() !== '') && !invalid);
       td.classList.toggle('bl-match-invalid', invalid);
@@ -3643,7 +3659,7 @@
     esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
-    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, pruneDecidingSet, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
