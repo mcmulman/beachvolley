@@ -470,6 +470,7 @@
       .stand .pl { display: none; }
       /* Endstand-Listen haben kein Badge am Namen – Platz-Spalte bleibt sichtbar. */
       .stand.placelist .pl { display: table-cell; white-space: nowrap; text-align: center; }
+      .stand.placelist .nm { justify-content: flex-start; }
       .stand .screen-place {
         display: inline-block;
         min-width: 26px;

@@ -221,8 +221,12 @@
 
 <h2 data-i18n="ko.bracket.title">Turnierbaum</h2>
 <p class="input-hint hint-top"><span class="only-screen" data-i18n="ko.bracket.hintScreen">Der Turnierbaum füllt sich automatisch mit: Wer ein Spiel im Spielplan gewinnt, rückt in die nächste Spalte.</span><span class="only-print" data-i18n="ko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des Baums eintragen. Die Verlierer der letzten Runde teilen sich den Platzbereich dieser Runde.</span></p>
-<div class="table-scroll is-wide">
+<div class="bracket-view-bar noprint"><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
+<div class="table-scroll is-wide" id="bracketListBox">
   <div class="bracket" id="bracketBox"></div>
+</div>
+<div id="bracketTreeBox" hidden>
+  <div class="table-scroll"><div class="bracket brtree" id="treeBox"></div></div>
 </div>
 
 <h2 data-i18n="ko.eval.title">Auswertung</h2>
@@ -436,6 +440,8 @@
       html += '</div>';
     });
     $('bracketBox').innerHTML = html;
+    $('treeBox').innerHTML = TUI.bracketTreeHtml(B.finalRounds);
+    TUI.wireBracketTree(document);
   }
 
   /* ------------------------------------------------------------- Anzeige */
@@ -522,6 +528,7 @@
         el.classList.toggle('is-win', won);
       });
     });
+    TUI.paintBracketColumns($('treeBox'), B.matchById, ctxFor(B.finalSetMode));
   }
 
   function paintPlacements(){

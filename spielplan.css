@@ -335,6 +335,10 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .sched .rnd .rbye { display:block; font-size:9.5px; font-weight:normal; color:#7a5a00; margin-top:2px; }
 .table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action: pan-x pan-y; }
 .table-scroll table { min-width:100%; }
+/* Dauerhaft sichtbare Scrollleiste: zeigt auf Touch-Geraeten, dass Tabelle/Baum seitlich weitergeht. */
+.table-scroll::-webkit-scrollbar { -webkit-appearance:none; height:8px; }
+.table-scroll::-webkit-scrollbar-track { background:#e8edf5; border-radius:4px; }
+.table-scroll::-webkit-scrollbar-thumb { background:#7f95b3; border-radius:4px; }
 .mobile-schedule-title { display:none; }
 /* Runden-Navigator: das am haeufigsten genutzte Bedienelement waehrend des
    Turniers (Wechsel zur naechsten Runde) - deshalb sticky an der App-Leiste.
@@ -1297,6 +1301,24 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
   .rank-badge.rank-top.rank-3 { background: #f6e0cd; color: #7a441a; box-shadow: 0 0 0 1.5px #d3a06e inset; }
 }
 
+/* Gruppentabellen: "Team N" und Name untereinander, Rang-Badge rechts daneben
+   (statt alles in einer Zeile). Spezifischer als die .stand .nm-Flex-Regeln
+   der einzelnen Bögen. */
+table.stand td.nm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-column-gap: 8px;
+  column-gap: 8px;
+  align-items: center;
+  align-content: center;
+  /* Als Grid ist die Zelle keine Tabellenzelle mehr: feste 40px schnitten
+     dreizeilige Namen ab. Mindesthöhe statt Höhe laesst die Zeile wachsen. */
+  height: auto;
+  min-height: 40px;
+}
+table.stand td.nm > * { grid-column: 1; }
+table.stand td.nm > .screen-place { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
+
 @media screen and (max-width: 640px) {
   .central-table { table-layout: auto; }
   .central-table th, .central-table td { font-size: 7px; height: auto; padding: 3px 2px; }
@@ -1313,19 +1335,6 @@ tr.example-row.ex-end > td { border-bottom: 3px double #1f4e79; }
      (width:0 + min-width:100%), sondern wird gekürzt. */
   .stand .nm .t-nm,
   .teams .name .t-nm { width: 0; min-width: 100%; }
-  /* Gruppentabellen: "Team N" und Name untereinander, Rang-Badge rechts daneben
-     (statt alles in einer Zeile). Spezifischer als die .stand .nm-Flex-Regeln
-     der einzelnen Bögen. */
-  table.stand td.nm {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-column-gap: 8px;
-    column-gap: 8px;
-    align-items: center;
-    align-content: center;
-  }
-  table.stand td.nm > * { grid-column: 1; }
-  table.stand td.nm > .screen-place { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
   /* Gruppeneinteilung: Teamliste je Gruppe darf umbrechen. */
   #groupOverview td.name { white-space: normal; overflow-wrap: break-word; word-wrap: break-word; }
 }
@@ -1703,3 +1712,49 @@ td.match[data-outcome="invalid"] .outcome-note { color:#b00020; }
 .outcome-error { color:#b00020; margin:6px 0; min-height:1em; }
 .outcome-actions button { min-height:40px; margin:4px 8px 0 0; padding:6px 14px; font:inherit; }
 @media print { .outcome-btn, .outcome-overlay { display:none !important; } }
+
+/* Turnierbaum mit Verbindungslinien (TUI.bracketTreeHtml): Karten fester Groesse
+   absolut positioniert; Masse muessen zu BR_W/BR_H in core/turnier-ui.js passen. */
+.bracket.brtree { display:block; }
+.brtree-in { position:relative; }
+.bracket.brtree .brhead { position:absolute; top:0; box-sizing:border-box; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.bracket.brtree .brm { position:absolute; z-index:1; box-sizing:border-box; width:156px; height:50px;
+  min-height:0; overflow:hidden; background:#fff; cursor:pointer; }
+.bracket.brtree .brm:focus { outline:2px solid #1f4e79; outline-offset:1px; }
+.bracket.brtree .brm:focus:not(:focus-visible) { outline:none; }
+.bracket.brtree .brm:focus-visible { outline:2px solid #1f4e79; outline-offset:1px; }
+.brtree-lines { position:absolute; top:0; left:0; z-index:0; pointer-events:none; }
+.brtree-lines path { fill:none; stroke:#5d6d85; stroke-width:2; }
+.brtree-lines path.loser { stroke-dasharray:4 3; stroke:#8a98ab; stroke-width:1.5; }
+.bracket-view-bar { display:flex; margin:10px 0; }
+.bracket-view-bar .bracket-view-btn { display:flex; align-items:center; flex:1 1 auto; justify-content:center; gap:10px; min-height:48px;
+  font-size:15px; font-weight:700; color:#fff; background:#1f4e79; border:1px solid #1f4e79; border-radius:8px; }
+.bracket-view-bar .bracket-view-btn[hidden] { display:none; }
+.bracket-view-bar .bracket-view-btn:hover { background:#173b5c; }
+.bracket-view-bar .bracket-view-btn:focus-visible { outline:3px solid #8ab4f8; outline-offset:2px; }
+@media print {
+  #bracketListBox[hidden] { display:block !important; }
+  #bracketTreeBox { display:none !important; }
+}
+.bracket-view-bar[hidden] { display:none; }
+.brtrees .brtree + .brtree { margin-top:20px; }
+/* Kartenstil des Baums, unabhaengig von seiteneigenem .bracket-CSS (Gruppen/MPP) */
+.bracket.brtree .brhead { font-size:11px; font-weight:bold; text-transform:uppercase;
+  letter-spacing:.4px; color:#1f4e79; border-bottom:1px solid #1f4e79; padding-bottom:2px; }
+.bracket.brtree .brm { border:1px solid #999; border-radius:3px; font-size:12px;
+  display:flex; flex-direction:column; }
+.bracket.brtree .brm.is-p3 { border-style:dashed; }
+.bracket.brtree .brm .brname { flex:none; height:14px; line-height:14px; font-size:10px; color:#666; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bracket.brtree .brm .brside { flex:1; padding:0 4px; display:flex; align-items:center; justify-content:space-between; }
+.bracket.brtree .brm .brside + .brside { border-top:1px solid #ddd; }
+.bracket.brtree .brm .brside .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bracket.brtree .brm .brside .s { font-variant-numeric:tabular-nums; color:#333; font-weight:bold; margin-left:4px; }
+.bracket.brtree .brm .brside.is-win { background:#eaf5ea; font-weight:bold; }
+.bracket.brtree .brm.is-draw { border-color:#b26a00; background:#fff6e5; }
+.bracket.brtree .brm.is-next { border-color:#1f4e79; box-shadow:0 0 0 2px #9cc0e5; }
+
+.bl-invalid-hint { margin:4px 6px 6px; font-size:12px; font-weight:600; color:#8a1111; text-align:center; }
+/* Endstand: "Team N" und Teamname stehen direkt nebeneinander (kein Auseinanderziehen). */
+.stand.placelist .nm .t-nm { display:inline-block; width:auto; min-width:0; max-width:100%; vertical-align:baseline; }
+.stand.placelist td.nm { justify-content:flex-start; }

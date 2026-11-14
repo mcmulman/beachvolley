@@ -665,27 +665,152 @@
   /* Turnierbaum-Spalten (Gewinner-/Verlierer-Runde, Grand Final …) als
      Spaltenraster – gemeinsames Markup fuer alle Bracket-Bögen (KO-System,
      Doppel-KO-System). rounds: [{title|label, matches:[{id,name,places,reset}]}] */
+  function bracketCardHtml(m, extra) {
+    const cls = 'brm' + (m.places ? ' is-p3' : '') + (m.reset ? ' is-reset' : '');
+    return '<div class="' + cls + '" data-br="' + esc(m.id) + '"' + (extra || '') + '>'
+      + '<div class="brname">' + esc(term(m.name || '')) + '</div>'
+      + '<div class="brside" data-br-side="a"><span class="n"></span><span class="s"></span></div>'
+      + '<div class="brside" data-br-side="b"><span class="n"></span><span class="s"></span></div>'
+      + '</div>';
+  }
+
   function bracketColumnsHtml(rounds) {
     let html = '';
     (rounds || []).forEach(rd => {
       html += '<div class="brcol"><div class="brhead">' + esc(term(rd.title || rd.label || '')) + '</div>';
-      (rd.matches || []).forEach(m => {
-        const cls = 'brm' + (m.places ? ' is-p3' : '') + (m.reset ? ' is-reset' : '');
-        html += '<div class="' + cls + '" data-br="' + esc(m.id) + '">'
-          + '<div class="brname">' + esc(term(m.name || '')) + '</div>'
-          + '<div class="brside" data-br-side="a"><span class="n"></span><span class="s"></span></div>'
-          + '<div class="brside" data-br-side="b"><span class="n"></span><span class="s"></span></div>'
-          + '</div>';
-      });
+      (rd.matches || []).forEach(m => { html += bracketCardHtml(m); });
       html += '</div>';
     });
     return html;
+  }
+
+  /* Baumansicht: dieselben Karten wie bracketColumnsHtml, aber jede Paarung
+     steht mittig zwischen den Spielen, aus denen ihre Teams kommen
+     ({k:'win'} im Verweis), mit Verbindungslinien. Reine Rechenlayout-
+     Geometrie mit fester Kartengroesse (keine Messung, kein Resize-Handler);
+     Verlierer-Verweise ({k:'lose'}) bleiben Text auf der Karte.
+     Die Huelle braucht die Klassen "bracket brtree" (spielplan.css); Befuellen
+     und Anzeige uebernimmt paintBracketColumns(). Gleiche rounds-Struktur. */
+  const BR_W = 156, BR_H = 50, BR_GAP = 48, BR_ROW = 58, BR_HEAD = 24;
+  const BR_YA = 24, BR_YB = 41; /* Mitte der Teamzeilen in der Karte (passt zu .brm in spielplan.css) */
+  function bracketTreeHtml(rounds) {
+    rounds = (rounds || []).filter(rd => rd.matches && rd.matches.length);
+    if (!rounds.length) return '';
+    const byId = {}, col = {}, kids = {}, used = {}, slot = {}, colMax = {};
+    rounds.forEach((rd, c) => rd.matches.forEach(m => { byId[m.id] = m; col[m.id] = c; }));
+    Object.keys(byId).forEach(id => {
+      kids[id] = [byId[id].a, byId[id].b]
+        .filter(ref => ref && ref.k === 'win' && byId[ref.match] && col[ref.match] < col[id])
+        .map(ref => ref.match);
+      kids[id].forEach(k => { used[k] = true; });
+    });
+    let next = 0;
+    function place(id) {
+      if (slot[id] != null) return;
+      if (!kids[id].length) slot[id] = next++;
+      else {
+        kids[id].forEach(place);
+        slot[id] = kids[id].reduce((sum, k) => sum + slot[k], 0) / kids[id].length;
+      }
+      colMax[col[id]] = Math.max(colMax[col[id]] == null ? -1 : colMax[col[id]], slot[id]);
+    }
+    for (let c = rounds.length - 1; c >= 0; c--) {
+      const open = rounds[c].matches.filter(m => !used[m.id] && slot[m.id] == null);
+      open.filter(m => kids[m.id].length).forEach(m => place(m.id));
+      /* Spiel ohne Vorgaenger (z. B. Spiel um Platz 3): direkt unter dem
+         Spiel derselben Spalte statt am Baumende. */
+      open.filter(m => !kids[m.id].length).forEach(m => {
+        if (colMax[c] == null) place(m.id);
+        else { slot[m.id] = colMax[c] + 1; colMax[c] = slot[m.id]; }
+      });
+    }
+    let maxSlot = 0;
+    Object.keys(slot).forEach(id => { maxSlot = Math.max(maxSlot, slot[id]); });
+    const width = rounds.length * (BR_W + BR_GAP) - BR_GAP;
+    const height = BR_HEAD + (maxSlot + 1) * BR_ROW;
+    const cx = c => c * (BR_W + BR_GAP);
+    const cy = id => BR_HEAD + slot[id] * BR_ROW + BR_ROW / 2;
+    let html = '<div class="brtree-in" style="width:' + width + 'px;height:' + height + 'px">';
+    let wpath = '', lpath = '';
+    rounds.forEach((rd, c) => {
+      html += '<div class="brhead" style="left:' + cx(c) + 'px;width:' + BR_W + 'px">'
+        + esc(term(rd.title || rd.label || '')) + '</div>';
+      rd.matches.forEach(m => {
+        html += bracketCardHtml(m, ' role="button" tabindex="0" style="left:' + cx(c) + 'px;top:' + Math.round(cy(m.id) - BR_H / 2) + 'px"');
+        /* Gewinner-Wege (durchgezogen) und Verlierer-Wege (gestrichelt): Start-/Zielhoehe
+           setzt paintBracketColumns (Zeile des Siegers bzw. Verlierers -> Seite des Zielspiels). */
+        [['a', m.a], ['b', m.b]].forEach(pr => {
+          const ref = pr[1], win = !!ref && ref.k === 'win';
+          if (!ref || !(win ? kids[m.id].indexOf(ref.match) >= 0 : ref.k === 'lose' && byId[ref.match] && col[ref.match] < c)) return;
+          const k = ref.match;
+          const xm = cx(c) - (win ? BR_GAP / 2 + 6 : pr[0] === 'a' ? 10 : 20);
+          const p = '<path class="' + (win ? 'winner' : 'loser') + '" data-from="' + esc(k) + '" data-to="' + esc(m.id)
+            + '" data-side="' + pr[0] + '" data-x1="' + (cx(col[k]) + BR_W) + '" data-x2="' + cx(c) + '" data-xm="' + xm + '"/>';
+          if (win) wpath += p; else lpath += p;
+        });
+      });
+    });
+    return html + '<svg class="brtree-lines" width="' + width + '" height="' + height
+      + '" aria-hidden="true" focusable="false">'
+      + wpath + lpath + '</svg></div>';
+  }
+
+  /* Baeume fuer Bögen mit Gruppenphase (Gruppen+Finalrunde, Modified Pool
+     Play): nur dort, wo wirklich ein Baum entsteht.
+       ko        – ein Baum aus finalRounds
+       placement – je 4er-Block ein Mini-Baum (Kreuz-Spiele -> Platzierungs-
+                   spiele); 3er-Runden und Einzelspiele haben keine Zweige.
+     Alle anderen Finalmodi liefern '' (kein Baum, Knopf bleibt versteckt).
+     plan = Ergebnis von TFormat.plan(). */
+  function bracketTreesHtml(plan) {
+    if (!plan) return '';
+    let groups = [];
+    /* Platzhalter-Paarungen (beide Seiten Freilos, z. B. MPP vor der Gruppenphase)
+       fehlen auch in der Liste und bilden keine Karten. */
+    const empty = m => m.a && m.b && m.a.k === 'bye' && m.b.k === 'bye';
+    if (plan.finalMode === 'ko' && plan.finalRounds) {
+      groups = [plan.finalRounds.map(rd => Object.assign({}, rd, { matches: rd.matches.filter(m => !empty(m)) }))];
+    }
+    else if (plan.finalMode === 'placement' && plan.placementBlocks) {
+      plan.placementBlocks.forEach(bl => {
+        const cross = bl.matches.filter(m => m.stage === 'cross');
+        const finals = bl.matches.filter(m => m.stage === 'final').map(m => Object.assign({}, m, {
+          name: m.places ? tx('ui.match.places', 'um Platz {places}', { places: m.places.join('/') })
+            : (m.a && m.a.k === 'win' ? tx('ui.tree.winnersMatch', 'Sieger-Spiel')
+              : m.a && m.a.k === 'lose' ? tx('ui.tree.losersMatch', 'Verlierer-Spiel') : m.name)
+        }));
+        if (cross.length && finals.length) groups.push([
+          { title: 'Über-Kreuz', matches: cross },
+          { title: 'Entscheidung', matches: finals }
+        ]);
+      });
+    }
+    return groups.map(rounds => {
+      const html = bracketTreeHtml(rounds);
+      return html ? '<div class="bracket brtree">' + html + '</div>' : '';
+    }).join('');
   }
 
   /* Traegt Teamnamen/Ergebnisse in ein per bracketColumnsHtml() erzeugtes
      Skelett ein. container: DOM-Element mit .brm-Kindern; matchById: {id:m}. */
   function paintBracketColumns(container, matchById, ctx) {
     if (!container) return;
+    /* Linienhoehen rechnerisch aus der festen Kartenposition (kein Layout-Lesen,
+       funktioniert auch im ausgeblendeten Baum). */
+    const lineY = (box, side) => parseFloat(box.style.top) + (side === 'a' ? BR_YA : side === 'b' ? BR_YB : BR_H / 2);
+    const cards = {};
+    container.querySelectorAll('.brm[data-br]').forEach(box => { cards[box.getAttribute('data-br')] = box; });
+    container.querySelectorAll('.brtree-lines path[data-from]').forEach(pa => {
+      const from = cards[pa.getAttribute('data-from')], to = cards[pa.getAttribute('data-to')];
+      if (!from || !to) return;
+      const src = matchById[pa.getAttribute('data-from')];
+      const w = src && src.result ? src.result.winner : null;
+      const isW = pa.getAttribute('class') === 'winner';
+      const y1 = lineY(from, w === 'a' || w === 'b' ? (isW ? w : (w === 'a' ? 'b' : 'a')) : null);
+      pa.setAttribute('d', 'M' + pa.getAttribute('data-x1') + ' ' + y1 + 'H' + pa.getAttribute('data-xm')
+        + 'V' + lineY(to, pa.getAttribute('data-side')) + 'H' + pa.getAttribute('data-x2'));
+    });
+    let nextMarked = false;
     container.querySelectorAll('.brm').forEach(box => {
       const m = matchById[box.getAttribute('data-br')];
       if (!m) return;
@@ -693,12 +818,42 @@
         const side = pair[0], ref = pair[1], team = pair[2];
         const el = box.querySelector('[data-br-side="' + side + '"]');
         if (!el) return;
-        el.querySelector('.n').textContent = sideLabel(ref, team, ctx);
+        const label = sideLabel(ref, team, ctx);
+        el.querySelector('.n').textContent = label;
+        el.querySelector('.n').title = label;
         const r = m.result;
         el.querySelector('.s').textContent = r ? String(side === 'a' ? r.aSets : r.bSets) : '';
         const won = m.bye != null ? (m.bye === team) : !!(r && r.winner === side);
         el.classList.toggle('is-win', won);
       });
+      if (box.getAttribute('role') === 'button') {
+        const r = m.result, names = ['a', 'b'].map(sd => box.querySelector('[data-br-side="' + sd + '"] .n').textContent);
+        box.setAttribute('aria-label', [term(m.name || ''), names[0] + (r ? ' ' + r.aSets : '') + ' : ' + (r ? r.bSets + ' ' : '') + names[1]]
+          .filter(Boolean).join(', '));
+        /* Satzgleichstand ohne Ergebnis (Entscheidungssatz/Remis offen): Karte kennzeichnen. */
+        let drawn = false;
+        if (!r && m.bye == null) {
+          const td = box.ownerDocument.querySelector('td.match[data-mid="' + box.getAttribute('data-br') + '"]');
+          const sets = td ? td.querySelectorAll('.sset') : [];
+          let wa = 0, wb = 0;
+          for (let i = 0; i < sets.length; i++) {
+            const f = sets[i].querySelectorAll('input.score');
+            if (f.length !== 2 || f[0].value === '' || f[1].value === '') continue;
+            const x = parseInt(f[0].value, 10), y = parseInt(f[1].value, 10);
+            if (x > y) wa++; else if (y > x) wb++;
+          }
+          drawn = wa > 0 && wa === wb;
+        }
+        box.classList.toggle('is-draw', drawn);
+        const nm = box.querySelector('.brname');
+        if (nm) {
+          if (nm.__base == null) nm.__base = nm.textContent;
+          nm.textContent = nm.__base + (drawn ? ' – ' + tx('ui.tree.draw', 'Entscheidung offen') : '');
+        }
+        const ready = !r && m.bye == null && m.ta != null && m.tb != null;
+        if (ready && !nextMarked) { nextMarked = true; box.classList.add('is-next'); }
+        else box.classList.remove('is-next');
+      }
     });
   }
 
@@ -1000,7 +1155,7 @@
     if (!td) return;
     const boxes = {};
     const requireComplete = td.hasAttribute('data-score-required');
-    let invalid = false;
+    let invalid = false, hintTarget = 0, hintComplete = true;
     td.querySelectorAll('input.score').forEach(inp => {
       if (inp.getAttribute('data-match-closed') === '1') {
         inp.disabled = false;
@@ -1016,12 +1171,22 @@
       if (!a || !b || a.disabled || b.disabled) return;
       const ra = String(a.value || '').trim(), rb = String(b.value || '').trim();
       if (!requireComplete && ra === '' && rb === '') return;
+      if (ra === '' && rb === '' && +set === 3 && boxes[1] && boxes[2] && a.getAttribute('placeholder') === 'TB') {
+        /* Entscheidungssatz ist nach 2:0 ueberfluessig und darf leer bleiben. */
+        const v = k => /^[0-9]+$/.test(String(k.value || '').trim()) ? Number(k.value) : null;
+        const x1 = v(boxes[1].a), y1 = v(boxes[1].b), x2 = v(boxes[2].a), y2 = v(boxes[2].b);
+        const t1 = +boxes[1].a.closest('.sset').getAttribute('data-target') || 0;
+        const t2 = +boxes[2].a.closest('.sset').getAttribute('data-target') || 0;
+        if (x1 != null && y1 != null && x2 != null && y2 != null && TC.setValid(x1, y1, t1) && TC.setValid(x2, y2, t2)
+            && (x1 > y1) === (x2 > y2)) return;
+      }
       const column = a.closest('.sset');
       const target = (column && +column.getAttribute('data-target')) || TC.targetForSet(setMode, +set);
       const complete = /^[0-9]+$/.test(ra) && /^[0-9]+$/.test(rb);
       const va = Number(ra), vb = Number(rb);
       if ((!complete && (requireComplete || (ra !== '' && !/^[0-9]+$/.test(ra)) || (rb !== '' && !/^[0-9]+$/.test(rb))))
           || (complete && !TC.setValid(va, vb, target))) {
+        if (!invalid) { hintTarget = target; hintComplete = complete; }
         invalid = true;
         [a, b].forEach(inp => {
           inp.classList.add('invalid');
@@ -1032,6 +1197,18 @@
       } else if (va > vb) a.classList.add('win');
       else if (vb > va) b.classList.add('win');
     });
+    /* Sichtbarer Grund statt nur roter Kaestchen (nur bei vollstaendig eingegebenem, aber unmoeglichem Satz). */
+    let hint = td.querySelector('.bl-invalid-hint');
+    if (invalid && hintComplete && hintTarget) {
+      if (!hint) {
+        hint = td.ownerDocument.createElement('div');
+        hint.className = 'bl-invalid-hint noprint';
+        hint.setAttribute('role', 'status');
+        td.appendChild(hint);
+      }
+      hint.textContent = tx('ui.score.invalidHint', 'Ungültiger Satz: Sieger braucht {target} Punkte (ab {tie} Punkten 2 Punkte Vorsprung).',
+        { target: hintTarget, tie: hintTarget - 1 });
+    } else if (hint) hint.parentNode.removeChild(hint);
     const def = TC.modeDef(setMode);
     if (def.matchWins) {
       let aWins = 0, bWins = 0, decided = false;
@@ -1058,6 +1235,11 @@
         }
       });
     }
+    /* Ueberfluessige (gesperrte) Satzfelder nach entschiedenem Spiel nie rot markieren. */
+    td.querySelectorAll('input.score[data-match-closed="1"]').forEach(inp => {
+      inp.classList.remove('invalid');
+      inp.removeAttribute('aria-invalid');
+    });
     if (requireComplete && !invalid) td.removeAttribute('data-score-required');
   }
 
@@ -2186,7 +2368,9 @@
       else if (saved === '1') initial = true;
     } catch (e) {}
 
+    let current = initial;
     function setExpanded(expanded, save, focus) {
+      current = expanded;
       content.hidden = !expanded;
       trigger.hidden = expanded;
       close.hidden = !expanded;
@@ -2213,7 +2397,75 @@
     trigger.addEventListener('click', function () { setExpanded(true, true, true); });
     close.addEventListener('click', function () { setExpanded(false, true, true); });
     setExpanded(initial, false, false);
-    return { trigger, close, setExpanded };
+    return { trigger, close, setExpanded, restore: function () { setExpanded(current); } };
+  }
+
+  /* Baumansicht (#bracketTreeBox) per Knopf #btnBracketTree einblenden, per
+     x wieder ausblenden – dann steht die Spaltenliste (#bracketListBox) da.
+     Tipp auf ein Spiel im Baum springt zu dessen Ergebnisfeldern. Idempotent. */
+  function wireBracketTree(doc, hasTree) {
+    if (!doc) return;
+    const content = doc.getElementById('bracketTreeBox');
+    const list = doc.getElementById('bracketListBox');
+    const treeBtn = doc.getElementById('btnBracketTree');
+    if (!content || !treeBtn) return;
+    const first = !content.__bracketToggle;
+    if (first) {
+      content.__bracketToggle = wireSectionToggle(content, treeBtn, content, {
+        closeFirst: true,
+        collapsedContent: list,
+        defaultExpanded: false,
+        preferenceId: 'bracket-tree',
+        showKey: 'ui.section.bracketTreeShow',
+        hideKey: 'ui.section.bracketTreeHide',
+        showText: 'Baumansicht einblenden',
+        hideText: 'Baumansicht ausblenden'
+      });
+      const eye = treeBtn.querySelector('.section-toggle-eye');
+      if (eye) {
+        treeBtn.classList.add('bracket-view-btn');
+        eye.setAttribute('width', '22'); eye.setAttribute('height', '22');
+        eye.innerHTML = '<rect x="2" y="9" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/><path d="M8 12h4M12 6v12M12 6h4M12 18h4"/>';
+      }
+    }
+    const tg = content.__bracketToggle;
+    /* Modus ohne Baum: Knopf, x und Baum weg, Liste sichtbar; der gewaehlte
+       Zustand bleibt erhalten und kehrt mit dem Baum zurueck. */
+    if (hasTree === false && tg) {
+      treeBtn.parentNode.hidden = true;
+      content.hidden = true;
+      tg.close.hidden = true;
+      if (list) list.hidden = false;
+    } else if (hasTree && tg) {
+      treeBtn.parentNode.hidden = false;
+      tg.restore();
+    }
+    /* Beim Einblenden zum naechsten offenen Spiel scrollen (schmale Bildschirme). */
+    const scrollToNext = () => {
+      const nexts = content.querySelectorAll('.brm.is-next');
+      for (let i = 0; i < nexts.length; i++) {
+        const sc = nexts[i].closest('.table-scroll');
+        if (!sc || sc.scrollWidth <= sc.clientWidth) continue;
+        sc.scrollLeft = Math.max(0, nexts[i].offsetLeft - (sc.clientWidth - nexts[i].offsetWidth) / 2);
+      }
+    };
+    const later = fn => (root.requestAnimationFrame || setTimeout)(fn);
+    if (!first) return;
+    later(() => { if (!content.hidden) scrollToNext(); });
+    treeBtn.addEventListener('click', () => later(scrollToNext));
+    function jump(event) {
+      const box = event.target.closest ? event.target.closest('.brm[data-br]') : null;
+      if (!box) return;
+      const card = doc.querySelector('td.match[data-mid="' + box.getAttribute('data-br') + '"]');
+      if (!card) return;
+      root.scrollTo(0, Math.max(0, (root.pageYOffset || 0) + card.getBoundingClientRect().top - root.innerHeight / 3));
+      const inputs = card.querySelectorAll('input.score:not([disabled])');
+      if (inputs.length) inputs[0].focus();
+    }
+    content.addEventListener('click', jump);
+    content.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); jump(event); }
+    });
   }
 
   function wireFormatInfo(doc) {
@@ -3674,12 +3926,12 @@
     surfaceLabel,
     unitWord,
     esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
-    bracketColumnsHtml, paintBracketColumns,
+    bracketColumnsHtml, bracketTreeHtml, bracketTreesHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, pruneDecidingSet, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
+    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };

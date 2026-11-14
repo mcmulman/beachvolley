@@ -258,6 +258,10 @@
       <tbody id="schedFinBody"></tbody>
     </table>
   </div>
+  <div class="bracket-view-bar noprint" id="bracketViewBar" hidden><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
+  <div id="bracketTreeBox" hidden>
+    <div class="table-scroll brtrees" id="treeBox"></div>
+  </div>
 </div>
 
 <!-- ======================= SEITE 2 ======================= -->
@@ -387,7 +391,7 @@
   let B = null;                 // aktueller Aufbau (TFormat.build)
   let structureKey = '';
   const qualification = TUI.mountFinalQualification($('qualificationBox'), {
-    get: () => S, plan: () => B, label: t => 'Team ' + t + ' · ' + labeler()(t),
+    get: () => S, plan: () => B, label: t => { const n = labeler()(t); return n === TUI.makeLabeler({})(t) ? n : 'Team ' + t + ' · ' + n; },
     save: () => save(), rebuild: () => rebuild()
   });
   let roundFilter = 'all';
@@ -551,7 +555,11 @@
       $('schedFinBody').innerHTML = TUI.scheduleBodyHtml(B.finSlots, Object.assign(cf, { roundNav: false }));
       $('capFin').textContent = T('gf.schedule.finalCaption', { title: term(B.finalTitle) });
       $('mobileFinTitle').textContent = T('gf.schedule.finalCaption', { title: term(B.finalTitle) });
+      $('treeBox').innerHTML = TUI.bracketTreesHtml(B);
+      TUI.wireBracketTree(document, !!$('treeBox').innerHTML);
     } else {
+      $('treeBox').innerHTML = '';
+      TUI.wireBracketTree(document, false);
       $('finalSection').hidden = true;
       $('schedFinBody').innerHTML = '';
     }
@@ -616,6 +624,7 @@
     // Spielkarten
     paintSection($('schedGrpBody'), S.config.setMode);
     paintSection($('schedFinBody'), B.finalSetMode);
+    TUI.paintBracketColumns($('treeBox'), B.matchById, ctxFor(B.finalSetMode));
 
     // Feldnamen
     document.querySelectorAll('table.sched th[data-field]').forEach(th => {

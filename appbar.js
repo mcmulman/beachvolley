@@ -135,10 +135,23 @@
       content.id = 'configSetup' + index;
       grid.parentNode.insertBefore(content, grid);
       content.appendChild(grid);
+      // Info strip stays visible when collapsed; actions follow it and collapse with the form.
+      var after = content;
+      function place(el) { card.insertBefore(el, after.nextSibling); after = el; }
+      var result = card.querySelector('.cfgresult');
+      if (result) {
+        place(result);
+        var hint = card.querySelector(':scope > .input-hint');
+        while (hint) {
+          var nextHint = hint.nextElementSibling;
+          place(hint);
+          hint = nextHint && nextHint.matches('.input-hint') ? nextHint : null;
+        }
+      }
       var summary = document.getElementById('modeSummary');
-      if (summary) card.appendChild(summary);
+      if (summary) place(summary);
       var actions = card.querySelector('.cfg-action-content');
-      if (actions) content.appendChild(actions);
+      if (actions) place(actions);
 
       var head = card.querySelector('.cfgcard-head');
       if (!head) {
@@ -169,7 +182,8 @@
       if (window.TI18n && window.TI18n.active()) window.TI18n.apply(head);
       if (window.TUI && window.TUI.wireSectionToggle) {
         sectionToggles.push(window.TUI.wireSectionToggle(content, reveal, head, {
-          relatedContent: Array.prototype.slice.call(document.querySelectorAll('#rosterSection, #rosterActions')),
+          relatedContent: (actions ? [actions] : []).concat(
+            Array.prototype.slice.call(document.querySelectorAll('#rosterSection, #rosterActions'))),
           preferenceId: 'setup-' + index,
           showKey: 'ui.section.configShow',
           hideKey: 'ui.section.configHide',
@@ -421,7 +435,7 @@
     document.addEventListener('click', function (event) {
       var button = event.target.closest
         && event.target.closest('.section-toggle-open, #btnToggleNames, #btnToggleFields, #btnToggleAbsent, #btnToggleDropout');
-      if (!button) return;
+      if (!button || button.id === 'btnBracketTree') return;
       var panel = null;
       if (button.classList.contains('section-toggle-open')) {
         var panelId = (button.getAttribute('aria-controls') || '').split(/\s+/)[0];

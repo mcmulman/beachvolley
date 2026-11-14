@@ -234,11 +234,22 @@
 
 <h2 data-i18n="dko.bracket.title">Turnierbaum</h2>
 <p class="input-hint hint-top"><span class="only-screen" data-i18n="dko.bracket.hintScreen">Der Turnierbaum füllt sich automatisch mit: Wer ein Spiel im Spielplan gewinnt, rückt in die nächste Spalte auf.</span><span class="only-print" data-i18n="dko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des jeweiligen Baums eintragen.</span></p>
-<div class="table-scroll is-wide">
+<div class="bracket-view-bar noprint"><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
+<div class="table-scroll is-wide" id="bracketListBox">
   <div class="bracket-title" data-i18n="dko.bracket.wb">Gewinner-Runde</div>
   <div class="bracket" id="bracketWB"></div>
   <div class="bracket-title" data-i18n="dko.bracket.lb">Verlierer-Runde</div>
   <div class="bracket" id="bracketLB"></div>
+</div>
+<div id="bracketTreeBox" hidden>
+  <div class="table-scroll">
+    <div class="bracket-title" data-i18n="dko.bracket.wb">Gewinner-Runde</div>
+    <div class="bracket brtree" id="treeWB"></div>
+    <div class="bracket-title" data-i18n="dko.bracket.lb">Verlierer-Runde</div>
+    <div class="bracket brtree" id="treeLB"></div>
+  </div>
+</div>
+<div class="table-scroll is-wide">
   <div class="bracket-title" data-i18n="dko.bracket.gf">Grand Final</div>
   <p class="reset-hint" id="resetHint"></p>
   <div class="bracket" id="bracketGF"></div>
@@ -463,6 +474,9 @@
     const bracket = B.bracket;
     $('bracketWB').innerHTML = TUI.bracketColumnsHtml(bracket.wbRounds);
     $('bracketLB').innerHTML = TUI.bracketColumnsHtml(bracket.lbRounds);
+    $('treeWB').innerHTML = TUI.bracketTreeHtml(bracket.wbRounds);
+    $('treeLB').innerHTML = TUI.bracketTreeHtml(bracket.lbRounds);
+    TUI.wireBracketTree(document);
     if(bracket.grandFinal){
       const finalColumns = [];
       if (bracket.thirdPlace) finalColumns.push({ title: T('dko.bracket.third'), matches: [bracket.thirdPlace] });
@@ -562,6 +576,8 @@
     const ctx = ctxFor(B.finalSetMode);
     TUI.paintBracketColumns($('bracketWB'), B.matchById, ctx);
     TUI.paintBracketColumns($('bracketLB'), B.matchById, ctx);
+    TUI.paintBracketColumns($('treeWB'), B.matchById, ctx);
+    TUI.paintBracketColumns($('treeLB'), B.matchById, ctx);
     TUI.paintBracketColumns($('bracketGF'), B.matchById, ctx);
     const rh = $('resetHint');
     if(B.bracket && B.bracket.grandFinal){
