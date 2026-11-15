@@ -884,6 +884,9 @@
      nur mit engerem Zellen-Innenabstand ohne seitliches Scrollen. */
   @media (max-width: 380px) {
     table.stand th, table.stand td { padding-left: 3px; padding-right: 3px; }
+    table.stand th { font-size: 10px; letter-spacing: 0; }
+    table.stand .pl { width: 28px; }
+    table.stand .nm { min-width: 80px; }
   }
   /* King & Queen: zwei Spielkarten nebeneinander – am Handy etwas schmalere
      Ergebnisfelder, damit Kästchen + OK-Knopf in die Karte passen; unter

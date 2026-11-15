@@ -162,9 +162,9 @@
     }
     var text = isLocked
       ? tx('ui.team.moveLocked', 'Reihenfolge gesperrt: Ergebnisse, fixierte Runden oder Tabellenkorrekturen vorhanden.')
-      : tx('ui.team.moveHint', 'Pfeile ändern die Startposition / Setzliste.');
+      : '';
     if (hint.textContent !== text) hint.textContent = text;
-    var hidden = !inputs.length || inputs.every(function (input) { return input.disabled; });
+    var hidden = !text || !inputs.length || inputs.every(function (input) { return input.disabled; });
     if (hint.hidden !== hidden) hint.hidden = hidden;
   }
   root.TTeamReorder = { enhance: enhance };

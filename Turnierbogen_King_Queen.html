@@ -108,8 +108,6 @@
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span id="g-principle" data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
     <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="kq.guide.flowText">Paarungen nach dem Zeitplan aufrufen, Spiele austragen und die Ergebnisse eintragen.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-king-queen.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
@@ -206,7 +204,6 @@
 
 <h2 class="mobile-section-heading" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
 <p class="legend mode-summary noprint ux-entry-mode-summary" data-entry-mode-summary></p>
-<p class="input-hint only-screen ux-score-controls-hint" data-i18n="ui.hint.scoreControls">Beide Werte eintragen. Mit dem sichtbaren OK oder Enter auf der Tastatur geht es zum nächsten Ergebnis.</p>
 <div id="roundsContainer"></div>
 
 <!-- ======================= SEITE 2 ======================= -->
@@ -232,7 +229,7 @@
   </div>
 </div>
 
-<div class="legend" id="h-legend"></div>
+<div class="legend only-print" id="h-legend"></div>
 
 <script src="core/turnier-core.js"></script>
 <script src="core/turnier-outcome.js"></script>
@@ -604,10 +601,7 @@
       const tbl = $(tblId);
       const manual = TStore.getManualStandings(S, tableKey);
       const editable = MSTD.isEditing(tableKey);
-      const nameHint = tableKey === 'kq-men'
-        ? '<span class="cap-hint only-screen ux-name-edit-hint">' + TUI.esc(T('ui.hint.captionNames')) + '</span>'
-        : '';
-      tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span>' + nameHint + '</caption>'
+      tbl.innerHTML = '<caption><span class="cap-title">' + captionText + '</span></caption>'
         + TUI.standingsTableHtml(ranked, ctx, { manual, editable,
           perGame: tableKey === 'kq-men' ? !!B.menPerGame : !!B.womenPerGame });
       const hint = $(hintId);
@@ -625,7 +619,6 @@
   function paintGuide(){
     $('g-principle').innerHTML = T(S.config.mixedTeamsOnly ? 'kq.guide.principleMixed' : 'kq.guide.principle');
     $('g-level').textContent = T('kq.guide.level');
-    $('g-mode').textContent = modeLabel(S.config.setMode) + '.';
     $('g-bye').textContent = T(S.config.mixedTeamsOnly ? 'kq.guide.byeMixed' : 'kq.guide.bye');
   }
 

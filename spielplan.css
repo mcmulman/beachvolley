@@ -1460,10 +1460,12 @@ tr.ex-start > td[rowspan] { border-bottom: 3px double #1f4e79; }
 /* Blockvariante fuer ganze Anleitungs-Bloecke (z. B. eine komplette <ol>),
    damit Online- und Druck-Anleitung wirklich getrennte Texte sein koennen. */
 .only-screen.blk { display: block; }
+li.only-screen { display: list-item; }
 @media print {
   .only-screen, .only-screen.blk { display: none !important; }
   .only-print { display: inline; }
-  .only-print.blk { display: block; }
+  .only-print.blk, div.only-print, p.only-print { display: block; }
+  li.only-print { display: list-item; }
 }
 
 /* ============================================================

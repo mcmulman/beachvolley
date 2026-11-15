@@ -108,14 +108,13 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="gf.guide.groupsLabel">Vorrunde:</span> <span id="g-groups">–</span> <span data-i18n="gf.guide.groupsText">In jeder Gruppe spielt jeder gegen jeden.</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.modeLabel">Pro Spiel:</span> <span id="g-mode">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Paarungen laut Plan aufrufen, alle Felder spielen gleichzeitig, danach das Ergebnis in die Kästchen eintragen.</span></li>
+    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Ergebnis pro Spiel im Spielplan eintragen – alles Weitere rechnet automatisch.</span></li>
     <li><span class="hi" data-i18n="gf.guide.scoringLabel">Wertung in der Gruppe:</span> <span data-i18n="gf.guide.scoringText">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0.
       Bei Gleichstand entscheidet die Ball-Differenz, dann der direkte Vergleich, dann die erzielten Ballpunkte. Verbleibende Gleichstände teilen den Platz; nötige Losentscheide werden gesondert erfasst.
       Der Entscheidungssatz zählt nur für Sieg/Niederlage, nicht für die Ball-Differenz.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span id="g-final">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="gf.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
+    <li class="only-print"><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="gf.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-gruppen-platzierungsrunde.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
@@ -226,7 +225,7 @@
 <div class="row" id="livebox">
   <div style="flex:0 0 46%">
     <table class="teams">
-      <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span></caption>
+      <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span></caption>
       <tbody id="teamsBody"></tbody>
     </table>
   </div>
@@ -268,20 +267,7 @@
 <div class="page-break"></div>
 
 <h1 id="standingsSection" data-i18n="gf.standings.title">Gruppenauswertung</h1>
-<p class="sub" data-i18n="gf.standings.sub">Nach jeder Vorrunden-Runde: Ergebnis in die Spielplan-Kästchen (Seite 1) eintragen, dann hier Punkte und Ball-Differenz nachführen.</p>
-
-<!-- Nur Bildschirm: im Druck steht die Ausfuellanleitung als .cap-hint unter dem
-     jeweiligen Tabellentitel (hintGroups, trackHint, hintFin, hintRank). -->
-<div class="guide only-screen blk" id="sheet2Guide">
-  <h2 data-i18n="gf.sheet2.title">So arbeitest du mit Seite 2 (online)</h2>
-  <ol>
-    <li><span class="hi" data-i18n="gf.sheet2.enterLabel">Vorrunde eintragen:</span> <span data-i18n="gf.sheet2.enterText">Alle Satzergebnisse auf Seite 1 in die Spielkarten tippen – mehr ist nicht nötig.</span></li>
-    <li><span class="hi" data-i18n="gf.sheet2.groupsLabel">Gruppentabellen lesen:</span> <span data-i18n="gf.sheet2.groupsText">Punkte, Ball-Differenz und Platz berechnet der Bogen automatisch; bis zum ersten Ergebnis bleiben die Tabellen leer.</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="gf.sheet2.trackText">Die kumulierten Werte je Runde schreiben sich selbst fort – nur zur Kontrolle da.</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span data-i18n="gf.sheet2.finalText">Die Paarungen erscheinen automatisch, sobald die Vorrunde entschieden ist. Ergebnisse ebenfalls auf Seite 1 eintragen.</span></li>
-    <li><span class="hi" data-i18n="gf.sheet2.placeLabel">Endstand:</span> <span data-i18n="gf.sheet2.placeText">Wird laufend aus den Finalspielen abgeleitet – die Spalte „entschieden durch“ zeigt, woher der Platz kommt.</span></li>
-  </ol>
-</div>
+<p class="sub only-print blk" data-i18n="gf.standings.sub">Nach jeder Vorrunden-Runde: Ergebnis in die Spielplan-Kästchen (Seite 1) eintragen, dann hier Punkte und Ball-Differenz nachführen.</p>
 
 <h2 data-i18n="gf.groupTables.title">Gruppentabellen</h2>
 <p class="input-hint hint-top hint-section" id="hintGroups"></p>
@@ -297,12 +283,12 @@
 <div id="mainTables"></div>
 
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
-  <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub" id="finalStandingsSub"></span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
+  <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub only-print" id="finalStandingsSub"></span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 
-<div class="legend" id="h-legend"></div>
+<div class="legend only-print" id="h-legend"></div>
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
@@ -699,15 +685,15 @@
       const E = k => TUI.esc(T(k));
       let th = '<thead><tr>'
         + '<th class="pl">' + E('sheet.place.colPlace') + '</th><th class="nm">' + E('sheet.place.colTeam') + '</th>'
-        + '<th>' + E('gf.table.games') + '</th><th>' + E('gf.table.won') + '</th>'
-        + (showDraw ? '<th>' + E('gf.table.draw') + '</th>' : '') + '<th>' + E('gf.table.lost') + '</th>'
-        + '<th>' + E('gf.table.pts') + '</th><th>' + E('gf.table.balls') + '</th><th>' + E('gf.table.diff') + '</th>'
+        + '<th>' + E('ui.stand.gamesFull') + '</th><th>' + E('ui.stand.wonFull') + '</th>'
+        + (showDraw ? '<th>' + E('ui.stand.drawnFull') + '</th><th>' + E('ui.stand.lostFull') + '</th>' : '')
+        + '<th>' + E('ui.stand.ptsFull') + '</th><th>' + E('ui.stand.balls') + '</th><th>' + E('ui.stand.diffFull') + '</th>'
         + '</tr></thead><tbody>';
       teams.forEach(t => {
         th += '<tr>'
           + '<td class="pl"></td>'
           + '<td class="nm">' + TUI.teamNameHtml(t, S, S.absent.includes(t)) + '</td>'
-          + '<td></td><td></td>' + (showDraw ? '<td></td>' : '') + '<td></td><td></td><td></td><td></td>'
+          + '<td></td><td></td>' + (showDraw ? '<td></td><td></td>' : '') + '<td></td><td></td><td></td>'
           + '</tr>';
       });
       return th + '</tbody>';
@@ -739,8 +725,8 @@
         + '</caption>'
         + (hasResult
             ? TUI.standingsTableHtml(t.ranked, ctx, { perGame:t.perGame, showDraw: showDraw,
-                editable, manual: TStore.getManualStandings(S, key),
-                rankBadge: true, isFinal: !!t.complete, placeOffset })
+                editable, manual: TStore.getManualStandings(S, key), groupCols: true,
+                rankBadge: false, isFinal: !!t.complete, placeOffset })
             : emptyGroupTableHtml(B.groups[g] || []))
         + '</table></div>';
     });
@@ -753,7 +739,7 @@
         : T('gf.groups.hintScreenEmpty', { criteria: baseHint }),
       T('gf.groups.hintPrint', { criteria: baseHint }));
     $('hintRank').innerHTML = TUI.hintHtml(
-      T('gf.place.hintScreen'),
+      '',
       T('gf.place.hintPrint'));
   }
 
@@ -978,10 +964,8 @@
       message: B.endMin > TC.toMin(c.endTime) ? T('gf.notice.overEnd', { end: TC.fromMin(B.endMin), planned: c.endTime }) : '' });
     $('capGrp').textContent = T('gf.schedule.grpCaption', { mode: modeLabel(c.setMode) });
     $('hintGrp').innerHTML = TUI.scoreHintHtml({
-      screenAdd: T('gf.schedule.grpScreenAdd'),
       printAdd: T('gf.schedule.grpPrintAdd')
-    }) + ($('roundbarGrp').querySelectorAll('[data-round-select] option').length > 2
-      ? '<span class="only-screen ux-round-filter-hint">' + T('ui.roundbar.hint') + '</span>' : '');
+    });
     $('hintFin').innerHTML = B.finSlots.length
       ? TUI.scoreHintHtml({
           screenAdd: T('gf.schedule.finScreenAdd'),
@@ -989,7 +973,7 @@
         })
       : '';
     $('trackHint').innerHTML = TUI.hintHtml(
-      T('gf.track.hintScreen'),
+      '',
       T('gf.track.hintPrint'));
 
     const crit = B.groupNames.length ? B.groupTables[B.groupNames[0]].criteria : null;
@@ -1025,8 +1009,6 @@
     $('g-groups').textContent = isBlocks
       ? T('gf.guide.groupsBlocks', { n: B.groupNames.length, sizes: sizes })
       : T('gf.guide.groups', { n: B.groupNames.length, sizes: sizes });
-    const md = TC.modeDef(S.config.setMode);
-    $('g-mode').textContent = T('gf.guide.mode', { mode: modeLabel(md.id), win: md.target+1, lose: md.target-1 });
     $('g-final').textContent = description.label + ' – '
       + [description.summary, description.detail].filter(Boolean).join(' ');
     $('g-games').textContent = perTeamGames().body;

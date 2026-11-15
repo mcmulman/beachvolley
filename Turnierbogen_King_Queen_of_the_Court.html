@@ -195,29 +195,24 @@
 <div id="noticeBox"></div>
 
 <table class="teams">
-  <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span><span class="cap-hint only-screen ux-name-edit-hint" data-i18n="ui.hint.captionNames">Namen über den Stift neben dieser Überschrift bearbeiten.</span></caption>
+  <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span></caption>
   <tbody id="teamsBody"></tbody>
 </table>
 
 <div class="noprint schedule-roundbar" id="roundbarKq"></div>
 <h2 class="mobile-section-heading noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
 <p class="legend mode-summary noprint ux-entry-mode-summary" data-entry-mode-summary></p>
-<p class="input-hint only-screen ux-round-filter-hint" id="roundFilterHint" data-i18n="ui.roundbar.hint" hidden>Eine Runde auswählen, um den Spielplan zu fokussieren; „Alle Runden“ zeigt ihn wieder vollständig.</p>
-<p class="input-hint only-screen ux-score-controls-hint" data-i18n="ui.hint.scoreControls">Beide Werte eintragen. Mit dem sichtbaren OK oder Enter auf der Tastatur geht es zum nächsten Ergebnis.</p>
 <div id="ladderSection"></div>
-
-<p class="input-hint" id="inputHint" data-i18n="kotc.inputHint">Ergebnis = Punkte, die in der Rundenzeit erzielt wurden (kein
-  Zielwert, kein 2-Punkte-Zwang). Unentschieden ist zulässig.</p>
 
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
 <h1 id="standingsSection" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</h1>
-<p class="sub" data-i18n="kotc.standings.sub">Nach jeder Runde: Ergebnisse auf Seite 1 eintragen, hier die kumulierten Punkte kontrollieren.</p>
+<p class="sub" data-i18n="kotc.standings.sub">Nach jeder Runde: Ergebnisse im Spielplan eintragen, hier die kumulierten Punkte kontrollieren.</p>
 
 <div class="kq-final-table-wrap">
   <table class="stand kq-final-table" id="placeTable">
-    <caption><span class="cap-title" id="placeCaption" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</span><span class="cap-hint" id="hintFinal"></span></caption>
+    <caption><span class="cap-title" id="placeCaption" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</span></caption>
     <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
     <tbody id="placeBody"></tbody>
   </table>
@@ -485,7 +480,6 @@
     $('ladderSection').innerHTML = html;
     const slotsLike = B.rounds.map(rd => ({ round: rd.round, title: T('ui.round.n', { n: rd.round }) }));
     $('roundbarKq').innerHTML = TUI.roundBarHtml(slotsLike, roundFilter);
-    $('roundFilterHint').hidden = $('roundbarKq').querySelectorAll('[data-round-select] option').length <= 2;
     applyKqRoundFilter(roundFilter);
   }
 

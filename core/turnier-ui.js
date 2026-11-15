@@ -1292,14 +1292,16 @@
     const isNonBeach = activeSport && activeSport.id !== 'volleyball.beach';
     const pointLabel = !isNonBeach ? tx('ui.stand.balls', 'Bälle')
       : tx('ui.criteria.points', 'Punkte');
-    const diffLabel = !isNonBeach ? tx('ui.stand.diff', 'Diff')
+    const diffLabel = !isNonBeach ? (o.groupCols ? tx('ui.stand.diffFull', 'Differenz') : tx('ui.stand.diff', 'Diff'))
       : isTableTennis ? tx('ui.criteria.pointsDiff', 'Punktedifferenz')
         : tx('ui.criteria.bd', 'Ball-Differenz');
     let html = '<thead><tr>'
       + '<th class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th class="nm">' + participantWord() + '</th>'
-      + '<th>' + tx('ui.stand.games', 'Sp.') + '</th><th>' + tx('ui.stand.won', 'S') + '</th>'
-      + (o.showDraw ? '<th>' + tx('ui.stand.drawn', 'U') + '</th>' : '') + '<th>' + tx('ui.stand.lost', 'N') + '</th>'
-      + '<th>' + tx('ui.stand.pts', 'Pkt') + perSfx + '</th>'
+      + '<th>' + (o.groupCols ? tx('ui.stand.gamesFull', 'Spiele') : tx('ui.stand.games', 'Sp.')) + '</th>'
+      + '<th>' + (o.groupCols ? tx('ui.stand.wonFull', 'Siege') : tx('ui.stand.won', 'S')) + '</th>'
+      + (o.showDraw ? '<th>' + (o.groupCols ? tx('ui.stand.drawnFull', 'Unentschieden') : tx('ui.stand.drawn', 'U')) + '</th>' : '')
+      + (o.groupCols && !o.showDraw ? '' : '<th>' + (o.groupCols ? tx('ui.stand.lostFull', 'Niederlagen') : tx('ui.stand.lost', 'N')) + '</th>')
+      + '<th>' + (o.groupCols ? tx('ui.stand.ptsFull', 'Punkte') : tx('ui.stand.pts', 'Pkt')) + perSfx + '</th>'
       + (isNonBeach ? '<th>' + unitWord() + '</th>' : '')
       + '<th>' + pointLabel + '</th>'
       + '<th>' + diffLabel + perSfx + '</th>'
@@ -1343,7 +1345,7 @@
 
       html += '<td>' + s.games + '</td><td>' + s.won + '</td>'
         + (o.showDraw ? '<td>' + s.drawn + '</td>' : '')
-        + '<td>' + s.lost + '</td>';
+        + (o.groupCols && !o.showDraw ? '' : '<td>' + s.lost + '</td>');
 
       if (editable) {
         html += '<td class="mstd-cell' + (row.dPts ? ' is-manual' : '') + '"><b>' + ptsDisp + '</b>'
@@ -1700,8 +1702,8 @@
      Fassung ist fuer sich vollstaendig – es gibt keinen gemeinsamen
      Satzanfang, der in nur einem Medium Sinn ergibt.                       */
   function hintHtml(screenText, printText) {
-    return '<span class="only-screen">' + screenText + '</span>'
-      + '<span class="only-print">' + printText + '</span>';
+    return (screenText ? '<span class="only-screen">' + screenText + '</span>' : '')
+      + (printText ? '<span class="only-print">' + printText + '</span>' : '');
   }
 
   /* Anleitung fuer die Ergebnis-Kaestchen im Spielplan.
@@ -1713,10 +1715,8 @@
     const o = opts || {};
     const sets = o.sets ? o.sets + ' – ' : '';
     const add = t => (t ? ' ' + t : '');
-    const screen = tx('ui.hint.screen', 'So trägst du ein: {sets}'
-      + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
-      + 'Ein niedriger Einzelwert (mindestens 2 unter dem Satzziel) ergänzt das Gegenfeld bis zum Ziel; '
-      + 'manuell gesetzte Werte bleiben. Weiter mit „:“/Enter oder dem OK-Knopf.', { sets: sets })
+    const screen = tx('ui.hint.screen', 'Niedriger Einzelwert (mind. 2 unter Satzziel) ergänzt das Gegenfeld automatisch; '
+      + 'manuell gesetzte Werte bleiben.')
       + add(o.screenAdd);
     const print = tx('ui.hint.print', 'So ausfüllen: {sets}'
       + 'linkes Kästchen = linkes Team, rechtes Kästchen = rechtes Team. '
