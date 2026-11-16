@@ -198,7 +198,7 @@
   .team-del { -webkit-appearance:none; appearance:none; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border:1px solid #e3b4b4; background:#fff; color:#b42318; border-radius:6px; cursor:pointer; }
   .team-del:hover:not(:disabled) { background:#fdecec; border-color:#b42318; }
   .team-del:disabled { opacity:.35; cursor:not-allowed; }
-  .namepanel .ngrid:has(.nrow-del) { grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
+  .namepanel #nameGrid.ngrid { grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
   .ngrid .nrow-del { display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px; min-width:0; }
   .ngrid .nrow-del > label { flex:1 1 auto; min-width:0; }
   #nameGrid .pair-details { flex:0 0 100%; order:5; min-width:0; }
@@ -1027,12 +1027,20 @@
   html body #rosterSection > div { min-width:0; }
   html body #rosterSection table.roster, html body #rosterSection table.roster tbody { display:block; }
   html body #rosterSection table.roster thead { display:none; }
-  html body #rosterSection table.roster tr { display:flex; flex-wrap:wrap; margin-bottom:10px; }
+  html body #rosterSection table.roster tr {
+    display:flex; flex-wrap:wrap; align-items:center; margin-bottom:10px; padding:6px 6px 2px;
+    border:1px solid var(--app-line, #cdd8e6); border-radius:var(--app-radius-sm, 8px); background:#fff;
+  }
+  html body #rosterSection table.roster tr:focus-within { border-color:#8ba8c7; box-shadow:0 0 0 2px rgba(31,78,121,.08); }
+  html body #rosterSection table.roster td.rname.team-reorder-row { padding:0; border:0; border-radius:0; background:transparent; }
+  html body #rosterSection table.roster td.rlevel { margin-left:26px; }
   html body #rosterSection table.roster td.num, html body #rosterSection table.roster td.rdel { display:none; }
   html body #rosterSection table.roster td.rname { flex:1 1 100%; }
   html body #rosterSection table.roster td.rlevel,
   html body #rosterSection table.roster td.rabsent { display:flex; align-items:center; width:auto; border:0; padding:4px 6px; }
-  html body #rosterSection table.roster td.rlevel select { min-height:40px; }
+  html body #rosterSection table.roster td.rlevel select, html body #rosterSection table.roster td.rabsent select { min-height:40px; max-width:100%; }
+  html body #rosterSection table.roster td.rmore { flex:1 1 100%; min-width:0; padding:0 6px 4px; border:0; }
+  html body #rosterSection table.roster td.rmore .team-delay-editor, html body #rosterSection table.roster td.rmore .team-arrival-actions { margin:2px 0 4px; }
   html body #rosterSection .team-editor-field-label { display:flex; align-items:center; gap:0; color:#40536b; font-size:12px; }
   html body #rosterSection .team-editor-field-label > span { margin-right:6px; }
   html body #rosterSection .team-editor-field-label input { min-width:20px; min-height:20px; }
@@ -1057,7 +1065,7 @@
   html body .team-reorder { height:44px; }
   html body .team-reorder .team-move { height:44px; min-height:44px; width:44px; min-width:44px; }
   html body #nameGrid .team-reorder-row .team-del, html body #rosterSection .rname .team-del { height:44px; min-height:44px; width:44px; min-width:44px; }
-  html body #nameGrid .ngender, html body #rosterSection table.roster td.rlevel select { height:44px; min-height:44px; }
+  html body #nameGrid .ngender, html body #rosterSection table.roster td.rlevel select, html body #rosterSection table.roster td.rabsent select { height:44px; min-height:44px; }
   html body #namepanel .nactions .nbtn, html body #rosterActions .nbtn { min-height:44px; }
 }
 @media print { .team-reorder, .team-reorder-hint { display:none !important; } }
@@ -1107,37 +1115,36 @@
   html body #absentpanel .panel-checks label { font-size:13px; line-height:1.25; overflow-wrap:anywhere; cursor:pointer; }
   html body #absentpanel .panel-checks input[type=checkbox] { flex:0 0 auto; width:18px; height:18px; margin:0; }
   html body #absentpanel .absent-row .team-del { width:32px; height:32px; }
-  html body #absentpanel .team-status-card, html body #rosterActions .team-status-card {
+  html body #absentpanel .team-status-card {
     display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name delete" "status badge" "arrival arrival" "editor editor";
     align-items:center; justify-content:stretch; gap:4px; padding:7px; min-height:0;
   }
-  html body #absentpanel .team-status-name, html body #rosterActions .team-status-name { grid-area:name; min-width:0; overflow-wrap:anywhere; font-size:13px; }
-  html body #absentpanel .team-status-select, html body #rosterActions .team-status-select { grid-area:status; min-width:0; }
-  html body #absentpanel .team-status-select select, html body #rosterActions .team-status-select select { box-sizing:border-box; width:100%; min-width:0; min-height:36px; font:inherit; }
-  html body #absentpanel .team-status-badge, html body #rosterActions .team-status-badge { grid-area:badge; justify-self:end; padding:3px 7px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
-  html body #absentpanel .team-status-badge.is-available, html body #rosterActions .team-status-badge.is-available { color:#17633a; background:#e9f7ee; }
-  html body #absentpanel .team-status-badge.is-late, html body #rosterActions .team-status-badge.is-late { color:#805300; background:#fff3d4; }
-  html body #absentpanel .team-status-badge.is-absent, html body #rosterActions .team-status-badge.is-absent { color:#9b1c1c; background:#fdeaea; }
-  html body #absentpanel .team-status-card > .team-del, html body #rosterActions .team-status-card > .team-del { grid-area:delete; width:30px; height:30px; }
-  html body #absentpanel .team-delay-editor, html body #rosterActions .team-delay-editor { grid-area:editor; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-top:6px; border-top:1px solid #e5eaf1; }
-  html body #absentpanel .team-arrival-actions, html body #rosterActions .team-arrival-actions {
+  html body #absentpanel .team-status-name { grid-area:name; min-width:0; overflow-wrap:anywhere; font-size:13px; }
+  html body #absentpanel .team-status-select, html body #rosterSection .team-status-select { grid-area:status; min-width:0; }
+  html body #absentpanel .team-status-select select, html body #rosterSection .team-status-select select { box-sizing:border-box; width:100%; min-width:0; min-height:36px; font:inherit; }
+  html body #absentpanel .team-status-badge { grid-area:badge; justify-self:end; padding:3px 7px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  html body #absentpanel .team-status-badge.is-available { color:#17633a; background:#e9f7ee; }
+  html body #absentpanel .team-status-badge.is-late { color:#805300; background:#fff3d4; }
+  html body #absentpanel .team-status-badge.is-absent { color:#9b1c1c; background:#fdeaea; }
+  html body #absentpanel .team-status-card > .team-del { grid-area:delete; width:30px; height:30px; }
+  html body #absentpanel .team-delay-editor, html body #rosterSection .team-delay-editor { grid-area:editor; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding-top:6px; border-top:1px solid #e5eaf1; }
+  html body #absentpanel .team-arrival-actions, html body #rosterSection .team-arrival-actions {
     grid-area:arrival; min-width:0; padding-top:6px; border-top:1px solid #e5eaf1;
   }
-  html body #absentpanel .team-arrival-buttons, html body #rosterActions .team-arrival-buttons {
+  html body #absentpanel .team-arrival-buttons, html body #rosterSection .team-arrival-buttons {
     display:flex; flex-wrap:wrap; gap:6px;
   }
-  html body #absentpanel .team-arrival-actions .nbtn, html body #rosterActions .team-arrival-actions .nbtn {
+  html body #absentpanel .team-arrival-actions .nbtn, html body #rosterSection .team-arrival-actions .nbtn {
     flex:1 1 125px; min-height:44px; margin:0; padding:6px 9px; white-space:normal;
   }
-  html body #absentpanel .team-arrival-actions p, html body #rosterActions .team-arrival-actions p {
+  html body #absentpanel .team-arrival-actions p, html body #rosterSection .team-arrival-actions p {
     margin:5px 0 0; color:#526174; font-size:11px; line-height:1.35;
   }
-  html body #absentpanel .team-delay-editor[hidden], html body #rosterActions .team-delay-editor[hidden] { display:none !important; }
-  html body #absentpanel .team-delay-editor label, html body #rosterActions .team-delay-editor label { display:flex; flex:1 1 125px; flex-direction:column; gap:3px; min-width:0; color:#334155; font-size:12px; }
-  html body #absentpanel .team-delay-editor input, html body #rosterActions .team-delay-editor input { box-sizing:border-box; width:100%; min-height:40px; font:inherit; }
-  html body #absentpanel .team-delay-editor .nbtn, html body #rosterActions .team-delay-editor .nbtn { min-height:40px; margin:0; padding:6px 9px; white-space:normal; }
-  html body #absentpanel .team-delay-editor .planning-error, html body #rosterActions .team-delay-editor .planning-error { flex-basis:100%; }
-  html body #rosterActions > .panel-checks { flex:1 1 100%; }
+  html body #absentpanel .team-delay-editor[hidden], html body #rosterSection .team-delay-editor[hidden] { display:none !important; }
+  html body #absentpanel .team-delay-editor label, html body #rosterSection .team-delay-editor label { display:flex; flex:1 1 125px; flex-direction:column; gap:3px; min-width:0; color:#334155; font-size:12px; }
+  html body #absentpanel .team-delay-editor input, html body #rosterSection .team-delay-editor input { box-sizing:border-box; width:100%; min-height:40px; font:inherit; }
+  html body #absentpanel .team-delay-editor .nbtn, html body #rosterSection .team-delay-editor .nbtn { min-height:40px; margin:0; padding:6px 9px; white-space:normal; }
+  html body #absentpanel .team-delay-editor .planning-error, html body #rosterSection .team-delay-editor .planning-error { flex-basis:100%; }
   html body #absentpanel > .nactions {
     display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 12px; align-self:stretch; margin:0;
   }
@@ -1236,10 +1243,21 @@
   html body #absentpanel .panel-checks > label, html body #absentpanel .absent-row { min-height:44px; padding-top:0; padding-bottom:0; }
   html body #absentpanel .absent-row .team-del { width:44px; min-width:44px; height:44px; min-height:44px; }
   html body #absentpanel .panel-checks input[type=checkbox] { width:22px; height:22px; }
-  html body #absentpanel .team-status-select select, html body #rosterActions .team-status-select select,
-  html body #absentpanel .team-delay-editor input, html body #rosterActions .team-delay-editor input,
-  html body #absentpanel .team-delay-editor .nbtn, html body #rosterActions .team-delay-editor .nbtn { min-height:44px; }
+  html body #absentpanel .team-status-select select, html body #rosterSection .team-status-select select,
+  html body #absentpanel .team-delay-editor input, html body #rosterSection .team-delay-editor input,
+  html body #absentpanel .team-delay-editor .nbtn, html body #rosterSection .team-delay-editor .nbtn { min-height:44px; }
   html body #absentpanel .nactions .nbtn { min-height:44px; }
+}
+/* Schmale Phones: Status-Auswahl über die volle Kartenbreite, Papierkorb in der Kopfzeile. */
+@media screen and (max-width:480px) {
+  html body #absentpanel .team-status-card {
+    grid-template-columns:minmax(0,1fr) auto auto;
+    grid-template-areas:"name badge delete" "status status status" "arrival arrival arrival" "editor editor editor";
+  }
 }
 .planning-match-meta { display:block; font-size:10px; }
 .timeplan .planning-pause { color:#334155; font-style:italic; }
+
+@media screen { .team-list-folded { display:none !important; } }
+/* Nur fuer Screenreader (Ueberschriften-Navigation), optisch unsichtbar. */
+.sr-only { position:absolute !important; width:1px; height:1px; margin:-1px !important; padding:0 !important; border:0 !important; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }

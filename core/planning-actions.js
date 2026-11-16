@@ -468,7 +468,7 @@
       const oldPlanning = s.config.planning;
       const oldAbsent = (s.absent || []).slice();
       function restoreStatusControl() {
-        const select = absentHost && absentHost.querySelector('[data-team-status="' + team + '"]');
+        const select = document.querySelector('[data-team-status="' + team + '"]');
         if (select) select.value = oldAbsent.indexOf(team) >= 0 ? 'absent'
           : oldPlanning && oldPlanning.teamDelays && oldPlanning.teamDelays[team] ? 'late' : 'available';
       }
@@ -774,7 +774,7 @@
       const cards = document.getElementById('roundsContainer');
       if (cards) {
         let box = document.getElementById('planningTimeplan');
-        if (!box) { box = document.createElement('div'); box.id = 'planningTimeplan'; cards.parentNode.insertBefore(box, cards); }
+        if (!box) { box = document.createElement('div'); box.id = 'planningTimeplan'; box.className = 'sheet-card'; cards.parentNode.insertBefore(box, cards); }
         box.innerHTML = root.TUI.timeTableHtml(root.TPlanning.slots(plan), { time: root.TUI.fmtTime(plan.endMin), text: tx('end') }, plan.planningPauses);
         root.TPlanning.slots(plan).forEach(slot => slot.matches.forEach((m, f) => {
           if (!m) return;

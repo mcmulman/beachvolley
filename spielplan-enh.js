@@ -43,6 +43,11 @@
     + '#bl-toast .bl-toast-close{margin-left:4px;min-width:44px;padding:0 10px;border-color:transparent;'
     + 'background:transparent;color:#fff;font-size:24px;line-height:1}'
     + '#bl-toast.show{opacity:1;transform:translateY(0)}'
+    /* Telefon/Tablet: Speicher-Hinweis als kleine Pille rechts unten statt Vollbreite. */
+    + '@media screen and (max-width:960px){#bl-toast:not(.error):not(.warning){left:auto;right:8px;margin:0;'
+    + 'width:auto;max-width:min(260px,calc(100% - 16px));padding:2px 2px 2px 10px;font-size:12px;border-radius:999px}'
+    + '#bl-toast:not(.error):not(.warning) button:first-of-type{margin-left:8px}'
+    + '#bl-toast:not(.error):not(.warning) .bl-toast-close{margin-left:0}}'
     + '@media screen{td.bl-open .psets{background:#eaf2fb;border-bottom:3px solid #7d9fc4;'
     + 'border-radius:6px;padding:6px 4px}td.bl-done{opacity:1}}'
     /* ⏱ je offenem Spiel: spiegelt den ✓-Knopf links neben den Kaestchen. */
@@ -145,7 +150,7 @@
         toast.classList.remove('show');
         while (toast.firstChild) toast.removeChild(toast.firstChild);
         toast.textContent = SAVED;
-      }, 10000);
+      }, 5000);
     });
   }
   function showArchiveUndo(detail) {

@@ -118,7 +118,7 @@
       if (row.tagName === 'TD') {
         var playerRow = row.parentElement;
         remove = playerRow.querySelector('.team-del');
-        [['.rlevel', 'kq.col.level', 'Niveau'], ['.rabsent', 'kq.btn.absent', 'Person ausgefallen']].forEach(function (item) {
+        [['.rlevel', 'kq.col.level', 'Niveau'], ['.rabsent', 'kq.col.absent', 'Status']].forEach(function (item) {
           var cell = playerRow.querySelector(item[0]);
           var field = cell.querySelector('input, select');
           if (field && !cell.querySelector('.team-editor-field-label')) {

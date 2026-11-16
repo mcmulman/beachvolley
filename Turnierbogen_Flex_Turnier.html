@@ -227,7 +227,7 @@
 
 <div id="noticeBox"></div>
 
-<div class="row">
+<div class="row sheet-card">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
       <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" id="capTeams" data-i18n="sheet.teams.caption">Teams</span></caption>
@@ -238,10 +238,10 @@
 </div>
 
 <div class="noprint schedule-roundbar" id="roundbar"></div>
-<div class="table-scroll is-wide" id="scheduleSection">
+<div class="table-scroll is-wide sheet-card" id="scheduleSection">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="sched">
-    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
+    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span></caption>
     <thead id="schedHead"></thead>
     <tbody id="schedBody"></tbody>
   </table>
@@ -255,17 +255,17 @@
 <p class="sub" id="standingsSub"><span class="only-screen"></span><span class="only-print" data-i18n="flex.standings.print">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
 
 <p class="input-hint hint-top" id="hintRank"></p>
-<div class="table-scroll" id="standTableWrap">
+<div class="table-scroll sheet-card" id="standTableWrap">
   <table class="stand" id="standTable"></table>
 </div>
 
-<div class="table-scroll is-track" id="trackWrap">
+<div class="table-scroll is-track sheet-card" id="trackWrap">
   <table class="track" id="trackTable" data-mstd-key="final">
     <tbody id="trackBody"></tbody>
   </table>
 </div>
 
-<div class="legend only-print" id="h-legend"></div>
+<div class="legend" id="h-legend" hidden></div>
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
@@ -869,6 +869,8 @@
     paintTrack();
     const ranked = correctedRanking();
     const final = rankingFinished(ranked);
+    const noResultYet = isSwiss() && !B.rounds.some(rd => rd.matches.some(m => m.result));
+    $('rankingStatus').hidden = noResultYet;
     $('rankingStatus').textContent = T(final ? 'ranking.status.final' : 'ranking.status.provisional');
     $('rankingStatus').setAttribute('data-ranking-status', final ? 'final' : 'provisional');
     paintNotices();
@@ -1263,14 +1265,14 @@
       if (ptsCell) {
         ptsCell.classList.toggle('is-manual', !!dPts);
         ptsCell.innerHTML = editableSwiss
-          ? '<b>' + (basePts + dPts) + '</b>'
+          ? '<b>' + TUI.fmtNum(basePts + dPts) + '</b>'
             + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (dPts || '') + '" placeholder="±0" title="' + TUI.esc(T('flex.manual.deltaTitle')) + '">'
-          : '<b>' + (basePts + dPts) + '</b>' + TUI.manualDeltaBadge(T('flex.manual.pts'), dPts);
+          : '<b>' + TUI.fmtNum(basePts + dPts) + '</b>' + TUI.manualDeltaBadge(T('flex.manual.pts'), dPts);
       }
       if (diffCell) {
         diffCell.classList.toggle('is-manual', !!dBd);
         const eff = baseBd + dBd;
-        const fmtd = (eff > 0 ? '+' : '') + eff;
+        const fmtd = (eff > 0 ? '+' : '') + TUI.fmtNum(eff);
         diffCell.innerHTML = editableSwiss
           ? fmtd + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (dBd || '') + '" placeholder="±0" title="' + TUI.esc(T('flex.manual.deltaTitle')) + '">'
           : fmtd + TUI.manualDeltaBadge(T('flex.manual.bd'), dBd);
@@ -1285,14 +1287,19 @@
        Eingabe bleiben die Zeilen stehen, nur der Platz-Badge zeigt schon den
        korrigierten Wert (siehe oben), damit nichts waehrend der Eingabe
        herumspringt. */
-    if (!editableSwiss) {
-      const tbody = standEl.querySelector('tbody');
-      if (tbody) {
+    const tbody = standEl.querySelector('tbody');
+    if (tbody) {
+      if (!editableSwiss) {
         effOrder.forEach(t => {
           const row = document.getElementById('ctr_' + t);
           if (row) tbody.appendChild(row);
         });
       }
+      /* Ausgefallene Teams stehen nicht in der Wertung: ans Ende, ausgegraut. */
+      allTeams().filter(t => !placeMap[t]).forEach(t => {
+        const row = document.getElementById('ctr_' + t);
+        if (row) { row.classList.add('is-withdrawn-row'); tbody.appendChild(row); }
+      });
     }
   }
 
@@ -1352,7 +1359,7 @@
       ? T('flex.absent.hintSwiss')
       : T('flex.absent.hintRr');
 
-    $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, B.table.criteria);
+    $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, B.table.criteria, B.rounds.some(r => r.bye != null));
     const E = k => TUI.esc(T(k));
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + TUI.esc(term(modeLabel()))
       + ' · ' + TUI.esc(T('flex.rounds.n', { n: B.rounds.length })) + ' · ' + E('flex.legend.noKo') + ' · ' + E('sheet.legend.perGame') + ' '

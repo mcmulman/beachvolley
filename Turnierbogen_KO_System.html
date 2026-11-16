@@ -157,7 +157,6 @@
     <div class="cfgres-item is-primary"><span class="cfgres-lbl" data-i18n="ko.kpi.duration">Zeitbedarf</span> <span class="cfgres-val" id="rv-duration">–</span> <span class="cfgres-val cfgres-val--sub" id="rv-durationNote" hidden></span></div>
   </div>
 
-  <p class="input-hint" id="gamesBreakdown"></p>
 
   <div class="cfgcard-actions">
     <button type="button" class="nbtn" id="btnToggleNames"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> <span data-i18n="ko.btn.names">Team / Namen</span></button>
@@ -193,7 +192,7 @@
 
 <div id="noticeBox"></div>
 
-<div class="row">
+<div class="row sheet-card">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
       <caption data-team-caption-key="ko.teams.caption"><span class="cap-title" data-i18n="ko.teams.caption">Teams</span><span class="cap-hint only-print" data-i18n="sheet.teams.seedHint">Nr. 1 = Favorit.</span></caption>
@@ -204,10 +203,10 @@
 </div>
 
 <div class="noprint schedule-roundbar" id="roundbar"></div>
-<div class="table-scroll is-wide" id="scheduleSection">
+<div class="table-scroll is-wide sheet-card" id="scheduleSection">
   <p class="mobile-schedule-title noprint" data-i18n="ko.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="schedFin">
-    <caption><span class="cap-title" id="capFin">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
+    <caption><span class="cap-title" id="capFin">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintFin"></span></caption>
     <thead id="schedFinHead"></thead>
     <tbody id="schedFinBody"></tbody>
   </table>
@@ -218,6 +217,7 @@
 
 <h1 id="standingsSection" data-i18n="ko.standings.title">Turnierbaum &amp; Endstand</h1>
 
+<div class="sheet-card">
 <h2 data-i18n="ko.bracket.title">Turnierbaum</h2>
 <p class="input-hint hint-top only-print"><span class="only-print" data-i18n="ko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des Baums eintragen. Die Verlierer der letzten Runde teilen sich den Platzbereich dieser Runde.</span></p>
 <div class="bracket-view-bar noprint"><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
@@ -227,16 +227,19 @@
 <div id="bracketTreeBox" hidden>
   <div class="table-scroll"><div class="bracket brtree" id="treeBox"></div></div>
 </div>
+</div>
 
 <h2 data-i18n="ko.eval.title">Auswertung</h2>
 
+<div class="sheet-card">
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
   <caption><span class="cap-title" data-i18n="ko.place.caption">Endstand</span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
   <thead><tr><th class="pl" data-i18n="ko.place.colPlace">Pl.</th><th class="nm" data-i18n="ko.place.colTeam">Team</th><th data-i18n="ko.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
+</div>
 
-<div class="legend only-print" id="h-legend"></div>
+<div class="legend" id="h-legend" hidden></div>
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
@@ -576,7 +579,6 @@
     const body = T('ko.perTeam.main', { label: label, hi: hi })
       + (S.config.thirdPlace !== false ? T('ko.perTeam.third') : '')
       + (byeTeams ? T('ko.perTeam.byes', { count: byeTeams }) : T('ko.perTeam.end'));
-    $('gamesBreakdown').textContent = T('ko.perTeam.prefix') + body;
     const gg = $('g-games');
     if (gg) gg.textContent = body;
   }

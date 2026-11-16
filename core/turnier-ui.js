@@ -608,6 +608,14 @@
     return (n > 0 ? '+' : '') + n;
   }
 
+  /* Höchstens 2 Nachkommastellen, ohne Nullen; im Deutschen mit Dezimalkomma. */
+  function fmtNum(n) {
+    if (n == null || !Number.isFinite(Number(n))) return '';
+    const r = String(Math.round(Number(n) * 100) / 100);
+    const I = i18n();
+    return I && I.lang && I.lang() === 'en' ? r : r.replace('.', ',');
+  }
+
   function teamNameHtml(team, teamNames, absent, originPlan) {
     const n = team == null ? '' : String(team).trim();
     const absentHtml = '<span class="abt">' + esc(tx('ui.absent', 'ausgefallen')) + '</span>';
@@ -691,7 +699,7 @@
      Verlierer-Verweise ({k:'lose'}) bleiben Text auf der Karte.
      Die Huelle braucht die Klassen "bracket brtree" (spielplan.css); Befuellen
      und Anzeige uebernimmt paintBracketColumns(). Gleiche rounds-Struktur. */
-  const BR_W = 156, BR_H = 50, BR_GAP = 48, BR_ROW = 58, BR_HEAD = 24;
+  const BR_W = 190, BR_H = 50, BR_GAP = 48, BR_ROW = 58, BR_HEAD = 24;
   const BR_YA = 24, BR_YB = 41; /* Mitte der Teamzeilen in der Karte (passt zu .brm in spielplan.css) */
   function bracketTreeHtml(rounds) {
     rounds = (rounds || []).filter(rd => rd.matches && rd.matches.length);
@@ -1045,8 +1053,8 @@
       const confirmBtn = '<button type="button" class="nbtn rconfirm noprint"'
         + ' data-round-confirm="' + s.round + '"'
         + ' data-round-confirm-slot="' + s.slot + '"'
-        + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Aktuelles Feld validieren und zum nächsten Feld springen')) + '"'
-        + ' title="' + esc(tx('ui.round.confirmTitle', 'Aktuelles Feld validieren und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
+        + ' aria-label="' + esc(tx('ui.round.confirmAria', 'Weiter zur nächsten Runde')) + '"'
+        + ' title="' + esc(tx('ui.round.confirmTitle', 'Weiter zur nächsten Runde')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
       const byes = s.rounds && s.rounds.length > 1 ? []
         : (s.byes && s.byes.length) ? s.byes : (s.bye != null ? [s.bye] : []);
       let meta = '<span class="rhead-meta">'
@@ -1055,11 +1063,12 @@
         + (s.displayOnly ? esc(tx('ui.round.displayOnly', 'Wertung · keine Spielzeit'))
           : s.startMin != null ? esc(fmtTime(s.startMin) + '–' + fmtTime(s.endMin)) : '')
         + '</span>'
-        + '<span class="rmode">' + esc(tx('setMode.' + (s.setMode || ctx.setMode), ctx.modeLabel || '')) + '</span>';
+        + (s.setMode && s.setMode !== ctx.setMode
+          ? '<span class="rmode">' + esc(tx('setMode.' + s.setMode, ctx.modeLabel || '')) + '</span>' : '');
       if (byes.length) {
-        meta += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' '
+        meta += '<span class="rbye">' + esc(tx('ui.round.sittingOut', 'spielfrei:')) + ' <span>'
           + byes.map(t => '<span data-team="' + esc(t) + '">' + esc(ctx.teamLabel(t)) + '</span>').join(', ')
-          + '</span>';
+          + '</span></span>';
       }
       meta += '</span>';
       const head = '<td class="rhead-cell" colspan="' + columns + '">'
@@ -1393,7 +1402,7 @@
     const p = Number(place);
     const fin = o.final === true;
     const topCls = p >= 1 && p <= 3 ? ' rank-top rank-' + p : '';
-    const medal = !o.shared && RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
+    const medal = !o.noMedal && !o.shared && RANK_MEDALS[p] ? RANK_MEDALS[p] + ' ' : '';
     const label = (o.prefix || '') + p + '.' + (o.shared ? '=' : '');
     const kind = o.title || (fin ? tx('ui.rank.final', 'Endplatzierung')
       : o.final === false ? tx('ui.rank.live', 'Aktueller Platz (laufend)') : tx('ui.rank.place', 'Platz'));
@@ -1962,6 +1971,28 @@
     }
     return html;
   }
+  /* Status select and late-arrival action shared by the status panel and
+     sheets that embed the status in the team card (King & Queen roster). */
+  function teamStatusSelectHtml(t, label, status, allowDelay, lateTime) {
+    return '<select data-team-status="' + esc(t) + '" aria-label="'
+      + esc(tx('ui.team.status.label', 'Teamstatus für {label}', { label: label })) + '"' + (allowDelay ? '' : ' data-no-delay')
+      + '><option value="available"' + (status === 'available' ? ' selected' : '') + '>'
+      + esc(tx('ui.team.status.available', 'Dabei')) + '</option>'
+      + (allowDelay ? '<option value="late"' + (status === 'late' ? ' selected' : '') + '>'
+        + esc(lateTime ? tx('ui.team.status.late', 'Verspätet ab {time}', { time: lateTime })
+          : tx('ui.team.status.lateOption', 'Verspätet')) + '</option>' : '')
+      + '<option value="absent"' + (status === 'absent' ? ' selected' : '') + '>'
+      + esc(tx('ui.team.status.absent', 'Ausgefallen')) + '</option></select>';
+  }
+  function teamArrivalActionsHtml(status, allowDelay) {
+    return allowDelay && status === 'late'
+      ? '<div class="team-arrival-actions" data-team-arrival-actions>'
+        + '<div class="team-arrival-buttons">'
+        + '<button type="button" class="nbtn" data-team-arrival-confirm>' + esc(tx('ui.team.arrival.confirm', 'Ankunft bestätigen')) + '</button>'
+        + '</div><p>' + esc(tx('ui.team.arrival.hint',
+          'Setzt das Team auf „Dabei“ und plant offene Spiele ab jetzt neu.')) + '</p></div>'
+      : '';
+  }
   function absentPanelHtml(teams, absent, ctx, opts) {
     const set = new Set(absent || []);
     const o = opts || {};
@@ -1973,28 +2004,14 @@
       const isAbsent = set.has(t);
       const status = isAbsent ? 'absent' : delay ? 'late' : 'available';
       const allowDelay = o.teamDelay !== false;
-      const arrivalActions = allowDelay && status === 'late'
-        ? '<div class="team-arrival-actions" data-team-arrival-actions>'
-          + '<div class="team-arrival-buttons">'
-          + '<button type="button" class="nbtn" data-team-arrival-confirm>' + esc(tx('ui.team.arrival.confirm', 'Ankunft bestätigen')) + '</button>'
-          + '</div><p>' + esc(tx('ui.team.arrival.hint',
-            'Setzt das Team auf „Dabei“ und plant offene Spiele ab jetzt neu.')) + '</p></div>'
-        : '';
       const card = '<div class="absent-row team-status-card" data-team-status-card="' + esc(t) + '">'
         + '<strong class="team-status-name">' + esc(label) + '</strong>'
-        + '<label class="team-status-select cfgfield"><select data-team-status="' + esc(t) + '" aria-label="'
-        + esc(tx('ui.team.status.label', 'Teamstatus für {label}', { label: label })) + '"' + (allowDelay ? '' : ' data-no-delay')
-        + '><option value="available"' + (status === 'available' ? ' selected' : '') + '>'
-        + esc(tx('ui.team.status.available', 'Dabei')) + '</option>'
-        + (allowDelay ? '<option value="late"' + (status === 'late' ? ' selected' : '') + '>'
-          + esc(tx('ui.team.status.lateOption', 'Verspätet')) + '</option>' : '')
-        + '<option value="absent"' + (status === 'absent' ? ' selected' : '') + '>'
-        + esc(tx('ui.team.status.absent', 'Ausgefallen')) + '</option></select></label>'
+        + '<label class="team-status-select cfgfield">' + teamStatusSelectHtml(t, label, status, allowDelay) + '</label>'
         + '<span class="team-status-badge is-' + status + '" data-team-status-badge>'
         + esc(tx('ui.team.status.' + status, status === 'late' ? 'Verspätet · {time}' : status === 'absent' ? 'Ausgefallen' : 'Dabei',
           status === 'late' ? { time: delay } : undefined)) + '</span>'
         + (o.removable ? teamDelBtnHtml(t, label, canRemove) : '')
-        + arrivalActions
+        + teamArrivalActionsHtml(status, allowDelay)
         + (allowDelay ? teamDelayEditorHtml(delay, status === 'late') : '')
         + '</div>';
       return card;
@@ -2066,7 +2083,7 @@
         + (allActive ? ' roundall-active' : '') + '" data-round-all'
         + ' aria-pressed="' + allActive + '"'
         + ' title="' + esc(tx('ui.roundbar.allTitle', 'Alle Runden gleichzeitig anzeigen')) + '">'
-        + ICON_LAYERS + ' ' + esc(allActive ? tx('ui.roundbar.single', 'Einzelne Runde') : tx('ui.roundbar.allRounds', 'Alle Runden'))
+        + ICON_LAYERS + ' <span class="nbtn-round-txt">' + esc(allActive ? tx('ui.roundbar.single', 'Einzelne Runde') : tx('ui.roundbar.allRounds', 'Alle Runden')) + '</span>'
         + '</button>'
       + '<span class="state" aria-live="polite">' + esc(state) + '</span>';
   }
@@ -2164,6 +2181,7 @@
         !inp.disabled && String(inp.value || '').trim() !== '')) begun[td.getAttribute('data-round')] = true;
     });
     tbody.querySelectorAll('td.match[data-round]').forEach(td => {
+      if (td.classList.contains('is-reset-locked')) return; /* ungenutztes Reset-Spiel: weder offen noch erledigt */
       const round = td.getAttribute('data-round');
       const active = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
       /* Gesperrte Spiele mit Ergebnis (Vorrunde nach Finalstart) sind erledigt, nicht offen. */
@@ -2190,6 +2208,10 @@
         else summary.invalid++;
       }
     });
+    /* Vollständig ausgefüllte Runden gelten als geprüft; die letzte hat keinen Nachfolger, der sie öffnet. */
+    Object.keys(rounds).forEach(r => {
+      if (begun[r] && !rounds[r].open && !rounds[r].invalid) rounds[r].checked = true;
+    });
     tbody.querySelectorAll('tr[data-round]:not(.rgap)').forEach(tr => {
       const round = tr.getAttribute('data-round');
       const included = (tr.getAttribute('data-rounds') || round).split(' ');
@@ -2202,23 +2224,27 @@
         }
         return total;
       }, { open: 0, invalid: 0, checked: false });
-      const checked = !!(summary && summary.checked);
+      const unused = !!tbody.querySelector('tr.rmatches[data-round="' + round + '"] td.match.is-reset-locked');
+      const checked = !!(summary && summary.checked) && !unused;
       const incomplete = summary && (summary.open > 0 || summary.invalid > 0);
       tr.classList.toggle('bl-round-invalid', checked && incomplete);
       tr.classList.toggle('bl-round-valid', checked && !incomplete);
+      const confirmButton = tr.querySelector('.rconfirm[data-round-confirm]');
+      if (confirmButton) confirmButton.classList.toggle('is-ready', checked && !incomplete);
       const head = tr.querySelector('.rhead-meta');
       if (!head) return;
       let status = head.querySelector('.bl-round-status');
-      if (checked && !status) {
+      if ((checked || unused) && !status) {
         status = document.createElement('button');
         status.type = 'button';
         status.className = 'bl-round-status noprint';
         head.appendChild(status);
       }
       if (status) {
-        const text = !checked ? '' : incomplete ? roundProblemsText(summary) : tx('ui.round.complete', 'Ergebnisse vollständig');
-        status.hidden = !checked;
+        const text = unused ? tx('ui.round.notNeeded', 'Nicht nötig') : !checked ? '' : incomplete ? roundProblemsText(summary) : tx('ui.round.complete', 'Ergebnisse vollständig');
+        status.hidden = !checked && !unused;
         status.disabled = !incomplete;
+        status.classList.toggle('is-neutral', unused);
         const problemRound = included.find(r => rounds[r] && (rounds[r].open || rounds[r].invalid)) || round;
         status.setAttribute('data-round-errors', problemRound);
         const title = incomplete ? tx('ui.round.errorsJump', 'Zum ersten fehlenden oder ungültigen Ergebnis springen') : '';
@@ -2492,16 +2518,6 @@
     const legend = doc.getElementById('h-legend');
     const summary = doc.getElementById('modeSummary');
     if (legend && summary) summary.innerHTML = legend.innerHTML;
-    syncEntryModeSummary(doc);
-  }
-
-  function syncEntryModeSummary(doc) {
-    if (!doc) return;
-    const summary = doc.getElementById('modeSummary');
-    if (!summary) return;
-    doc.querySelectorAll('[data-entry-mode-summary]').forEach(target => {
-      target.innerHTML = summary.innerHTML;
-    });
   }
 
   /* ============================================ 8b. WERTUNG UND TIE-BREAKER
@@ -2509,7 +2525,7 @@
      Bogen nie eine andere Wertung behauptet als die, nach der gerechnet wird
      (AGENTS.md §4). Unentschieden erscheint nur, wenn es der Satzmodus
      ueberhaupt zulaesst.                                                     */
-  function scoringTablesHtml(setMode, criteria) {
+  function scoringTablesHtml(setMode, criteria, hasBye) {
     const def = TC.modeDef(setMode);
     const drawPossible = TC.isMulti(setMode) && !def.matchWins && !TC.hasDecidingSet(setMode);
     const profile = TC.activeProfile();
@@ -2537,7 +2553,7 @@
     }
     if (drawPossible) w += '<tr><td>' + tx('ui.scoring.draw', 'Unentschieden') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: TC.DRAW_PTS }) + '</td></tr>';
     w += '<tr><td>' + tx(indoorPoints ? 'ui.scoring.clearLoss' : 'ui.scoring.loss', indoorPoints ? 'Niederlage ohne Satzgewinn' : 'Niederlage') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: lossPoints }) + '</td></tr>'
-      + '<tr><td>' + tx('ui.scoring.bye', 'Freilos / spielfrei') + '</td><td>' + tx(profile.indexOf('table-tennis.') === 0 ? 'ui.scoring.byePtsGeneric' : 'ui.scoring.byePts', profile.indexOf('table-tennis.') === 0 ? '{count} Punkte, ohne Punktedifferenz' : '{count} Punkte, ohne Ball-Differenz', { count: winPoints }) + '</td></tr>'
+      + (hasBye === false ? '' : '<tr><td>' + tx('ui.scoring.bye', 'Freilos / spielfrei') + '</td><td>' + tx(profile.indexOf('table-tennis.') === 0 ? 'ui.scoring.byePtsGeneric' : 'ui.scoring.byePts', profile.indexOf('table-tennis.') === 0 ? '{count} Punkte, ohne Punktedifferenz' : '{count} Punkte, ohne Ball-Differenz', { count: winPoints }) + '</td></tr>')
       + '</table>';
 
     const tableTennis = profile.indexOf('table-tennis.') === 0;
@@ -3625,8 +3641,9 @@
     }
     if (o.teams != null) setKpi('rv-teams', o.teams);
     setKpi('rv-fitEnd', fmtTime(o.needEndMin), o.needEndMin > o.windowEndMin);
-    fillKpiNote('rv-fitEndNote', o.needEndMin > o.windowEndMin
-      ? tx('ui.kpi.endLate', 'nach Ende {time}', { time: fmtTime(o.windowEndMin) }) : '');
+    fillKpiNote('rv-fitEndNote', tx('ui.kpi.startAt', 'Start {time}', { time: fmtTime(o.startMin) })
+      + (o.needEndMin > o.windowEndMin
+        ? ' · ' + tx('ui.kpi.endLate', 'nach Ende {time}', { time: fmtTime(o.windowEndMin) }) : ''));
     setKpi('rv-subsets', setsLo === setsHi ? setsLo : setsLo + '–' + setsHi);
     setKpi('rv-perGame', tx('ui.kpi.minutes', '{n} Min.',
       { n: minPerGame === maxPerGame ? minPerGame : minPerGame + '–' + maxPerGame }), over);
@@ -3917,6 +3934,27 @@
     });
   }
 
+  /* Teamliste nie doppelt: Solange das Namen-Panel offen ist (zeigt alle Namen),
+     wird die schreibgeschuetzte Teamuebersicht am Bildschirm ausgeblendet; im
+     Druck und bei geschlossenem Panel bleibt sie immer sichtbar. */
+  function foldTeamOverview() {
+    const panel = document.getElementById('namepanel');
+    const cap = document.querySelector('table.teams > caption[data-team-caption-key]');
+    if (!panel || !cap || panel.dataset.teamFold) return;
+    panel.dataset.teamFold = '1';
+    const table = cap.parentElement;
+    const col = table.parentElement;
+    const target = col && col.children.length === 1 && col.tagName === 'DIV'
+      && !col.classList.contains('row') ? col : table;
+    const sync = () => target.classList.toggle('team-list-folded', !panel.hidden);
+    new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', foldTeamOverview);
+    else foldTeamOverview();
+  }
+
   return {
     configureProfile,
     paintStage, paintStageMatch,
@@ -3925,13 +3963,13 @@
     surfaceWord,
     surfaceLabel,
     unitWord,
-    esc, fmtTime, fmtDiff, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
+    esc, fmtTime, fmtDiff, fmtNum, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
     bracketColumnsHtml, bracketTreeHtml, bracketTreesHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, pruneDecidingSet, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
+    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamStatusSelectHtml, teamArrivalActionsHtml, teamDelayEditorHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary, syncEntryModeSummary,
+    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };

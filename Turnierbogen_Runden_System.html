@@ -198,7 +198,7 @@
 
 <div id="noticeBox"></div>
 
-<div class="row">
+<div class="row sheet-card">
   <div style="flex:0 0 46%">
     <table class="teams" id="teamTable">
       <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" id="capTeams" data-i18n="sheet.teams.caption">Teams</span></caption>
@@ -209,10 +209,10 @@
 </div>
 
 <div class="noprint schedule-roundbar" id="roundbar"></div>
-<div class="table-scroll is-wide" id="scheduleSection" tabindex="0" role="region" aria-labelledby="capSched">
+<div class="table-scroll is-wide sheet-card" id="scheduleSection" tabindex="0" role="region" aria-labelledby="capSched">
   <p class="mobile-schedule-title noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</p>
   <table class="sched" id="sched">
-    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span><span class="cap-hint noprint ux-entry-mode-summary" data-entry-mode-summary></span></caption>
+    <caption><span class="cap-title" id="capSched" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</span><span class="cap-hint" id="hintSched"></span></caption>
     <thead id="schedHead"></thead>
     <tbody id="schedBody"></tbody>
   </table>
@@ -226,11 +226,11 @@
 <p class="sub" id="standingsSub"><span class="only-screen"></span><span class="only-print" data-i18n="rs.standings.printHint">So ausfüllen: nach jeder Runde je Team die Punkte und die Ball-Differenz zum bisherigen Stand addieren und in die Spalte dieser Runde eintragen. Danach die Plätze vergeben (Platz 1 = meiste Punkte, bei Gleichstand bessere Ball-Differenz) und immer mit Punkt schreiben: 1., 2., 3. … Die Zeilen bleiben in Team-Reihenfolge stehen – der Stand nach der letzten gespielten Runde ist der Endstand.</span></p>
 
 <p class="input-hint hint-top" id="hintRank"></p>
-<div class="table-scroll" id="standTableWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
+<div class="table-scroll sheet-card" id="standTableWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
   <table class="stand" id="standTable"></table>
 </div>
 
-<div class="table-scroll is-track" id="trackWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
+<div class="table-scroll is-track sheet-card" id="trackWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
   <table class="track" id="trackTable" data-mstd-key="final">
     <tbody id="trackBody"></tbody>
   </table>
@@ -240,7 +240,7 @@
   <button type="button" class="nbtn" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden" data-i18n-attr="title:rs.export.title"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="rs.export.btn">Platzierungsrunde aus Rangliste erstellen</span></button>
 </div>
 
-<div class="legend only-print" id="h-legend"></div>
+<div class="legend" id="h-legend" hidden></div>
 
 <div class="mobile-jumpbar noprint" id="jumpbar"></div>
 
@@ -778,6 +778,8 @@
     paintTrack();
     const ranked = correctedRanking();
     const final = rrFinished(ranked);
+    const noResultYet = isSwiss() && !B.rounds.some(rd => rd.matches.some(m => m.result));
+    $('rankingStatus').hidden = noResultYet;
     $('rankingStatus').textContent = T(final ? 'ranking.status.final' : 'ranking.status.provisional');
     $('rankingStatus').setAttribute('data-ranking-status', final ? 'final' : 'provisional');
     paintNotices();
@@ -833,6 +835,25 @@
       const rounds = (tr.getAttribute('data-rounds') || tr.getAttribute('data-round')).split(' ').map(Number);
       tr.classList.toggle('is-frozen', rounds.some(r => B.rounds.some(rd => rd.round === r && rd.frozen)));
       tr.querySelectorAll('.rlabel').forEach(l => l.setAttribute('data-frozen-label', T('rs.round.frozen')));
+    });
+    paintSwissPreview(body);
+  }
+
+  /* Schweizer System: Runden nach der aktuellen (ersten nicht fertigen) Runde
+     sind nur vorläufige Paarungen – kennzeichnen, aber Eingaben nicht sperren. */
+  function paintSwissPreview(body){
+    const cur = isSwiss() ? B.rounds.find(rd => !rd.matches.every(m => m.bye != null || m.dead || m.result)) : null;
+    body.querySelectorAll('tr.rhead[data-round]').forEach(tr => {
+      const meta = tr.querySelector('.rhead-meta');
+      const preview = !!cur && +tr.getAttribute('data-round') > cur.round;
+      tr.classList.toggle('is-preview', preview);
+      let tag = tr.querySelector('.bl-preview');
+      if(!preview){ if(tag) tag.remove(); return; }
+      if(tag || !meta) return;
+      tag = document.createElement('span');
+      tag.className = 'bl-preview noprint';
+      tag.innerHTML = '<b>' + TUI.esc(T('rs.swiss.preview')) + '</b> ' + TUI.esc(T('rs.swiss.previewHint'));
+      meta.appendChild(tag);
     });
   }
 
@@ -1174,14 +1195,14 @@
       if (ptsCell) {
         ptsCell.classList.toggle('is-manual', !!dPts);
         ptsCell.innerHTML = editableSwiss
-          ? '<b>' + (basePts + dPts) + '</b>'
+          ? '<b>' + TUI.fmtNum(basePts + dPts) + '</b>'
             + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dPts" value="' + (dPts || '') + '" placeholder="±0" title="' + E('rs.mstd.deltaTitle') + '">'
-          : '<b>' + (basePts + dPts) + '</b>' + TUI.manualDeltaBadge(T('rs.delta.points'), dPts);
+          : '<b>' + TUI.fmtNum(basePts + dPts) + '</b>' + TUI.manualDeltaBadge(T('rs.delta.points'), dPts);
       }
       if (diffCell) {
         diffCell.classList.toggle('is-manual', !!dBd);
         const eff = baseBd + dBd;
-        const fmtd = (eff > 0 ? '+' : '') + eff;
+        const fmtd = (eff > 0 ? '+' : '') + TUI.fmtNum(eff);
         diffCell.innerHTML = editableSwiss
           ? fmtd + '<input type="number" step="1" class="mstd-in mstd-delta" data-field="dBd" value="' + (dBd || '') + '" placeholder="±0" title="' + E('rs.mstd.deltaTitle') + '">'
           : fmtd + TUI.manualDeltaBadge(T('rs.delta.bd'), dBd);
@@ -1196,14 +1217,19 @@
        Eingabe bleiben die Zeilen stehen, nur der Platz-Badge zeigt schon den
        korrigierten Wert (siehe oben), damit nichts waehrend der Eingabe
        herumspringt. */
-    if (!editableSwiss) {
-      const tbody = standEl.querySelector('tbody');
-      if (tbody) {
+    const tbody = standEl.querySelector('tbody');
+    if (tbody) {
+      if (!editableSwiss) {
         effOrder.forEach(t => {
           const row = document.getElementById('ctr_' + t);
           if (row) tbody.appendChild(row);
         });
       }
+      /* Ausgefallene Teams stehen nicht in der Wertung: ans Ende, ausgegraut. */
+      allTeams().filter(t => !placeMap[t]).forEach(t => {
+        const row = document.getElementById('ctr_' + t);
+        if (row) { row.classList.add('is-withdrawn-row'); tbody.appendChild(row); }
+      });
     }
   }
 
@@ -1262,7 +1288,7 @@
       ? T('rs.hint.absentSwiss')
       : T('rs.hint.absentRr');
 
-    $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, B.table.criteria);
+    $('scoringTables').innerHTML = TUI.scoringTablesHtml(c.setMode, B.table.criteria, B.rounds.some(r => r.bye != null));
     const E = k => TUI.esc(T(k));
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + TUI.esc(modeLabel())
       + ' · ' + TUI.esc(T('rs.legend.rounds', { n: B.rounds.length })) + ' · ' + E('sheet.legend.perGame') + ' '

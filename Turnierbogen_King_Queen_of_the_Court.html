@@ -75,6 +75,9 @@
       .kqcourt { flex:1 1 100%; }
     }
     .kq-final-table .pts { font-weight:bold; }
+    .kq-final-table caption.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    .kq-final-table.rank-avg .pts { font-weight:normal; }
+    .kq-final-table .sub.rk { font-weight:bold; color:#000; font-size:inherit; }
     .kq-final-table .sub { font-size:11px; color:#666; }
     .kq-final-table-wrap { max-width:100%; overflow-x:auto; }
   </style>
@@ -106,7 +109,7 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Bei vier Teams auf einer Feldstufe entstehen die Paarungen Setzplatz 1 gegen 4 und 2 gegen 3. Die praktische Abwicklung dieser Spiele organisiert die Turnierleitung.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Pro Feld spielen die Teams gegeneinander (bei 4 Teams 1 gegen 4 und 2 gegen 3, bei 3 oder 2 Teams ein Spiel, übrige Teams haben Freilos). Die praktische Abwicklung organisiert die Turnierleitung.</span></li>
     <li><span class="hi" data-i18n="kotc.guide.timeLabel">Zeitlimit statt Zielpunktzahl:</span> <span data-i18n="kotc.guide.timePre">Jede Runde dauert</span> <span id="g-roundmin">–</span> <span data-i18n="kotc.guide.timePost">Min.
       Gespielt wird auf Zeit – es zählen die Punkte, die in dieser Zeit erzielt werden (kein fester
       Zielwert, kein 2-Punkte-Zwang). Ein Unentschieden ist möglich.</span></li>
@@ -194,24 +197,27 @@
 
 <div id="noticeBox"></div>
 
+<div class="sheet-card">
 <table class="teams">
   <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span></caption>
   <tbody id="teamsBody"></tbody>
 </table>
+</div>
 
 <div class="noprint schedule-roundbar" id="roundbarKq"></div>
 <h2 class="mobile-section-heading noprint" data-i18n="sheet.schedule.title">Spielplan &amp; Ergebnisse</h2>
-<p class="legend mode-summary noprint ux-entry-mode-summary" data-entry-mode-summary></p>
 <div id="ladderSection"></div>
 
 <!-- ======================= SEITE 2 ======================= -->
 <div class="page-break"></div>
 
 <h1 id="standingsSection" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</h1>
-<p class="sub" data-i18n="kotc.standings.sub">Nach jeder Runde: Ergebnisse im Spielplan eintragen, hier die kumulierten Punkte kontrollieren.</p>
+<p class="sub" id="standingsSub" data-i18n="kotc.standings.sub">Nach jeder Runde: Ergebnisse im Spielplan eintragen, hier die kumulierten Punkte kontrollieren.</p>
 
-<div class="kq-final-table-wrap">
-  <table class="stand kq-final-table" id="placeTable">
+<p class="sub" id="standingsRankNote" hidden data-i18n="kotc.standings.rankAvg">Wertung nach durchschnittlichen Punkten pro Runde</p>
+
+<div class="kq-final-table-wrap sheet-card">
+  <table class="stand placelist kq-final-table" id="placeTable">
     <caption><span class="cap-title" id="placeCaption" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</span></caption>
     <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
     <tbody id="placeBody"></tbody>
@@ -526,21 +532,26 @@
         rounds: B.rounds.length,
         minutes: B.perRound
       }));
-    TUI.syncEntryModeSummary(document);
     const complete = B.complete && B.rankingComplete;
     const statusKey = complete ? 'ranking.status.final' : 'ranking.status.provisional';
     $('standingsSection').setAttribute('data-i18n', statusKey);
     $('standingsSection').textContent = T(statusKey);
-    const captionKey = complete ? 'kotc.place.caption' : statusKey;
-    $('placeCaption').setAttribute('data-i18n', captionKey);
-    $('placeCaption').textContent = T(captionKey);
+    $('standingsSub').hidden = complete;
+    // Kopfzeile genügt als einzige Überschrift; Caption bleibt für Screenreader.
+    $('placeCaption').setAttribute('data-i18n', statusKey);
+    $('placeCaption').textContent = T(statusKey);
+    $('placeCaption').parentNode.classList.add('sr-only');
+    // Ranking-Kriterium (core): Ø pro Runde nur bei ungleicher Rundenzahl, sonst Gesamtpunkte
+    const byAvg = B.placements.some(p => p.roundsPlayed !== B.placements[0].roundsPlayed);
+    $('placeTable').classList.toggle('rank-avg', byAvg);
+    $('standingsRankNote').hidden = !byAvg;
     const rows = B.placements.map(p => {
       return '<tr' + (p.team!=null?' data-team="'+TUI.esc(p.team)+'"':'') + '>'
-        + '<td class="pl">' + p.place + (p.shared?'=':'') + '.</td>'
+        + '<td class="pl">' + TUI.rankBadgeHtml(p.place, { final: complete, shared: p.shared }) + '</td>'
         + '<td class="nm">' + (ctx.teamNameHtml ? ctx.teamNameHtml(p.team) : TUI.esc(ctx.teamLabel(p.team))) + '</td>'
         + '<td class="pts">' + p.points + '</td>'
         + '<td class="sub">' + p.roundsPlayed + '</td>'
-        + '<td class="sub">' + p.pointsPerRound.toFixed(1) + '</td>'
+        + '<td class="sub' + (byAvg ? ' rk' : '') + '">' + p.pointsPerRound.toFixed(1) + '</td>'
         + '<td class="sub">' + (p.bestCourt == null ? '–' : TUI.esc(T('ui.field.n', { n: p.bestCourt }))) + '</td>'
         + '</tr>';
     });
@@ -557,7 +568,7 @@
   function wire(){
     configControls.forEach(id => $(id).addEventListener('change', () => {
       if(!readConfig()) return;
-      TStore.save(S); rebuild();
+      TStore.save(S); rebuild(); applyDocTitle();
     }));
     $('session-title-input').addEventListener('input', e => {
       S.title = e.target.value; TStore.save(S);

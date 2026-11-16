@@ -232,6 +232,23 @@
           Gruppenphase …) → 16px, blauer Akzentbalken
        3) Tabellen-Label = <caption>             → 14px, uppercase, Akzent
      Ausgenommen: Kurzanleitung (.guide h2) und Runden-Divider (.tt). */
+  /* Gemeinsame Kopf-Optik aller Abschnitts-/Kartenueberschriften. */
+  .sheet-content > h1 ~ h1,
+  .page > h1 ~ h1,
+  section > h1 ~ h1,
+  .rounds-page > h1,
+  .sheet-content > h2:not(.tt):not(.guide),
+  .page > h2:not(.tt):not(.guide),
+  .panel > h2:not(.tt),
+  .section-panel-heading, .tournament-sheet .mobile-section-heading,
+  .sheet-card > h2, .sheet-card caption, .sheet-card .sheet-card-title,
+  .cfgcard-head {
+    color: var(--app-blue-dark);
+    font-weight: 800;
+    font-size: 12.5px;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
   .sheet-content > h1 ~ h1,
   .page > h1 ~ h1,
   section > h1 ~ h1,
@@ -239,13 +256,13 @@
   .sheet-content > h2:not(.tt):not(.guide),
   .page > h2:not(.tt):not(.guide),
   .panel > h2:not(.tt) {
-    color: var(--app-blue-dark);
-    font-weight: 800;
-    font-size: 16px;
-    letter-spacing: -.1px;
     line-height: 1.3;
-    padding-left: 10px;
-    border-left: 3px solid var(--app-blue);
+    padding-left: 0;
+    border-left: 0;
+  }
+  .section-panel-heading, .tournament-sheet .mobile-section-heading {
+    line-height: 1.3;
+    border-left: 0; padding-left: 0;
   }
   /* Body-Abschnitte brauchen Luft nach oben/unten; Panel-Header nutzen die
      Panel-Polsterung und bleiben ohne zusätzliche Ränder. */
@@ -320,6 +337,8 @@
   .section-toggle-open > .section-toggle-eye { flex: 0 0 16px; width: 16px; height: 16px; margin-right: 6px; }
   .section-toggle-open > span { flex: 0 0 auto; }
   .section-toggle-open:hover { background: var(--app-tonal); }
+  .section-toggle-open:focus:not(:focus-visible),
+  .section-toggle-close:focus:not(:focus-visible) { outline: none; box-shadow: none; }
   .section-toggle-open:focus-visible,
   .section-toggle-close:focus-visible { outline: 2px solid var(--app-blue); outline-offset: 2px; }
   .section-toggle-close {
@@ -410,18 +429,40 @@
      Fasst Titel, Uhrzeit und – falls vorhanden – Team-/Feldauswahl in EINER
      klar strukturierten Karte zusammen. Darunter ein gut sichtbarer Ergebnis-
      Readout (Spielzeit pro Spiel, Modus, Runden, Spiele/Team, Felder …). */
-  .cfgcard {
+  .cfgcard, .sheet-card, .round-block, .kq-round {
     border: 1px solid var(--app-line-soft);
     background: #fff;
     border-radius: var(--app-radius);
     box-shadow: var(--app-shadow);
     padding: 12px 14px 10px;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+  /* Gleiche Karte fuer alle Hauptabschnitte (Teams, Spielplan, Baum, Endstand …):
+     die vorhandene Ueberschrift (h2 / <caption>) wird zum Kartenkopf, ohne
+     eigene Rahmen der Tabellen darin (keine doppelten Linien). */
+  .sheet-card { position: relative; }
+  .sheet-card > h2, .sheet-card caption, .sheet-card .sheet-card-title {
+    margin: 0 0 9px; padding: 0 52px 0 0;
+    border: 0; line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .cfgcard, .sheet-card, .round-block, .kq-round { padding: 10px 10px 8px; }
+  }
+  /* Sekundaer-Knopf: der Baumansicht-Umschalter folgt dem Stil der anderen
+     Ein-/Ausblenden-Knoepfe (weiss, Linie) statt eines vollbreiten Primaerknopfs. */
+  .bracket-view-bar .bracket-view-btn.section-toggle-open {
+    flex: 0 1 auto; margin-left: 0; min-height: 44px; font-size: 12px;
+    color: var(--app-blue-dark); background: #fff; border: 1px solid var(--app-line);
+    border-radius: var(--app-radius-md);
+  }
+  .bracket-view-bar .bracket-view-btn.section-toggle-open:hover { background: var(--app-tonal); }
+  .sheet-card > .section-toggle-close--external {
+    position: absolute; top: 4px; right: 6px; margin: 0; z-index: 3;
   }
   .cfgcard-head {
-    font-size: 12.5px; font-weight: 800; letter-spacing: .03em;
-    color: var(--app-blue-dark);
-    text-transform: uppercase;
     display: flex; align-items: center; gap: 8px;
     margin: 0 0 9px;
   }
@@ -582,6 +623,14 @@
     .cfgcard-grid > .cfgfield--start,
     .cfgcard-grid > .cfgfield--end { flex: 1 1 120px; max-width: none; }
   }
+  @media (max-width: 480px) {
+    /* Titel eine Zeile für sich; Selects mit Platz für den Pfeil. */
+    .cfgcard-grid > .cfgfield--wide:first-child { flex: 1 1 100%; }
+    .cfgcard-grid .cfgfield:not([class*="--"]) { flex-basis: 140px; }
+    .cfgfield > select, .format-switch-controls > select {
+      padding-right: 30px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+    }
+  }
   @media (max-width: 560px) {
     .cfgcard-head { flex-wrap: wrap; }
     .cfgcard-head .section-toggle-open { flex: 1 1 100%; }
@@ -602,6 +651,7 @@
   .kpi2 .kpi-main .cfgres-val--sub { font-size: 13px; font-weight: 600; }
   .kpi2 .kpi-main .cfgres-item.is-primary:not(.is-warn) { background: #eaf5ee; border-color: #bfe0c8; }
   .kpi2 .kpi-main .cfgres-item.is-primary:not(.is-warn) .cfgres-val { color: var(--app-green); }
+  .cfgcard .kpi2 + .legend, .cfgcard .kpi-more + .legend, .cfgcard .mode-summary { margin-top: 8px; }
   .kpi2 .kpi-more {
     display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 8px; padding: 8px 10px;
     background: var(--app-tint); border: 1px solid var(--app-line-soft); border-radius: 10px;
@@ -644,13 +694,13 @@
     color: var(--app-muted);
   }
   .page-note, .mnote {
-    border: 1px solid #d5e6f6;
+    border: 1px solid #d5e6f6; border-left: 3px solid var(--app-blue);
     background: #f2f8fd;
     padding: 8px 12px;
   }
-  .bye-note, .freilos-note { border: 1px solid #e6d3a2; background: #fdf6e3; padding: 8px 12px; }
-  .tie-note { border: 1px solid #e7d68a; background: #fff8dd; padding: 8px 12px; }
-  .dropped-note { border: 1px solid #e6b8b8; background: #fdeeee; padding: 8px 12px; }
+  .bye-note, .freilos-note { border: 1px solid #e6d3a2; border-left: 3px solid #d9a521; background: #fdf6e3; padding: 8px 12px; }
+  .tie-note { border: 1px solid #e7d68a; border-left: 3px solid #d9a521; background: #fff8dd; padding: 8px 12px; }
+  .dropped-note { border: 1px solid #e6b8b8; border-left: 3px solid #c02626; background: #fdeeee; padding: 8px 12px; }
 
   /* ── Score-Eingaben modern & EINHEITLICH ──
      Alle Bögen nutzen dieselbe Ergebnisfeld-Größe (Touch-freundlich, gut lesbar).
@@ -791,9 +841,12 @@
      benennen, Team ausgefallen): sichtbarer Rahmen statt Farbwechsel,
      unabhängig von der sonstigen (statischen) Einfärbung oben. */
   .nbtn.active {
-    outline: 3px solid #ffb300 !important;
-    outline-offset: 2px !important;
+    outline: none !important;
+    background: #d8e8f8 !important;
+    border-color: var(--app-blue) !important;
+    box-shadow: inset 0 0 0 1px var(--app-blue) !important;
   }
+  .nbtn.active:focus-visible { outline: 2px solid var(--app-blue) !important; outline-offset: 2px !important; }
 
   /* Speichern – gefüllt grün (Erfolg). !important schlägt Inline-Style. */
   .nbtn[onclick*="manualSave"] {
@@ -1015,14 +1068,15 @@
        groups, then clearly separated play/results sections. No data is hidden. */
     .tournament-sheet h1 { font-size: 20px; line-height: 1.3; margin-bottom: 12px; }
     .tournament-sheet #standingsSection { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--app-line-soft); }
-    .tournament-sheet .guide { padding: 12px; margin-bottom: 16px; box-shadow: none; font-size: 13px; line-height: 1.5; }
+    .tournament-sheet .guide { padding: 12px; margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
     .tournament-sheet .guide h2 { font-size: 14px; text-transform: none; letter-spacing: 0; }
     .tournament-sheet .guide li { margin: 6px 0; }
-    .tournament-sheet .cfgcard { margin-bottom: 20px; }
+    .tournament-sheet .cfgcard { margin-bottom: 16px; }
     .tournament-sheet .cfg-action-group { padding: 10px; box-shadow: none; }
     .tournament-sheet .cfg-action-group__label { font-size: 13px; }
-    .tournament-sheet .mobile-schedule-title { margin-top: 20px; font-size: 16px; }
-    .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; font-size: 16px; color: var(--app-blue-dark); }
+    .tournament-sheet .sched tr.rhead .rlabel { white-space: normal; }
+    .tournament-sheet .mobile-schedule-title { margin: 0 0 6px; padding: 0 52px 0 0; border: 0; font-size: 12.5px; text-transform: uppercase; }
+    .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; }
     .tournament-sheet .format-info-toggle { width: 100%; }
     .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
   }
@@ -1035,4 +1089,26 @@
   @media (max-height: 480px) and (max-width: 960px) {
     .tournament-sheet .schedule-roundbar { position: static; }
   }
+}
+
+/* Kleine Phones: laufende Tabellen kompakter, damit mehr Runden ohne Scrollen sichtbar sind. */
+@media screen and (max-width: 480px) {
+  table.track th, table.track td { padding-left: 3px; padding-right: 3px; font-size: 12px; }
+  .track th.tname, .track td.tname { width: 72px; min-width: 72px; }
+}
+
+@media screen {
+  /* Gruppentabellen: kompakt, damit alle Spalten (auch Diff) in die Karte passen;
+     sonst scrollt die Karte sauber seitlich. */
+  .grpwrap { gap: 12px; }
+  .grpbox { -webkit-overflow-scrolling: touch; }
+  .grpbox table.stand th, .grpbox table.stand td { padding-left: 2px; padding-right: 2px; }
+  .grpbox table.stand th { font-size: 10.5px; letter-spacing: 0; }
+  .grpbox table.stand .nm { min-width: 90px; }
+  .grpbox table.stand .pl { width: 30px; }
+  /* Leere Feld-Spalten im Spielplan: auf dem Bildschirm nie als Platzhalter zeichnen. */
+  table.sched tr.rmatches > td.empty { background: none; border-color: transparent; }
+
+  /* Infoboxen einheitlich: farbiger linker Rand + dezenter Schatten (wie die Kurzanleitung). */
+  .guide, .page-note, .mnote, .bye-note, .freilos-note, .tie-note, .dropped-note { box-shadow: 0 1px 4px rgba(20, 60, 100, .12); }
 }

@@ -509,7 +509,8 @@
           label: 'Spiel um Platz 3',
           a: { k: 'lose', match: semis[0].id },
           b: { k: 'lose', match: semis[1].id },
-          places: [3, 4]
+          places: [3, 4],
+          mppLoserAware: true
         });
       }
     }

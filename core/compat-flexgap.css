@@ -264,3 +264,13 @@
   .no-flexgap #fc-search-panel,
   .no-flexgap #fc-results-filter-card { margin-bottom: 6px; } /* eigene 14px */
 }
+
+/* Legacy-iPad-Test (test/e2e-legacy-ipad-layout.mjs): bislang fehlende Ersatzabstaende. */
+.no-flexgap .cfgcard-grid .cfg-time-pair > .cfgfield + .cfgfield { margin-left: 12px; }  /* Start/Ende */
+.no-flexgap .kqcourt-matches > * + * { margin-top: 4px; }                                 /* King of the Court */
+.no-flexgap .format-info-toggle > svg { margin-right: 8px; }
+/* Mobile Sprungleiste: Icon steht ueber dem Text (6px gap + 2px eigener Rand), nicht daneben. */
+.no-flexgap .mobile-jumpbar .nbtn > svg { margin: 0 0 8px; }
+/* Ausfuellhinweis: Korrektur-Knopf rutscht in eine eigene Zeile, wenn der Text lang ist. */
+.no-flexgap .input-hint > .mstd-toolbar { margin-top: 8px; }
+.no-flexgap .bracket-view-btn > svg { margin-right: 10px; }

@@ -264,6 +264,7 @@ caption > .cap-sub {
   color:#1f4e79; letter-spacing:0; text-transform:none;
 }
 caption > .cap-sub:empty { display:none; }
+@media screen { caption > .cap-sub.only-print { display:none; } }
 /* Werkzeugleiste "Tabelle korrigieren" – eigene Zeile im <caption>, damit sie
    nicht mit Titel/Anleitung verschmilzt; wird beim Drucken ausgeblendet
    (siehe .mstd-toolbar.noprint in core/turnier-base.css). */
@@ -872,15 +873,15 @@ input.score { font-size:16px; }
 .schedule-roundbar {
         display: -ms-grid;
         display: grid;
-        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
         align-items: center;
-        grid-gap: 8px;
-        gap: 8px;
+        grid-gap: 6px;
+        gap: 6px;
         position: -webkit-sticky;
         position: sticky;
         top: calc(var(--app-bar-h, 54px) + 6px);
         z-index: 150;
-        padding: 8px;
+        padding: 3px 6px;
         background: rgba(255, 255, 255, .92);
         -webkit-backdrop-filter: saturate(180%) blur(14px);
         backdrop-filter: saturate(180%) blur(14px);
@@ -935,8 +936,11 @@ input.score { font-size:16px; }
         white-space: nowrap;
       }
 .schedule-roundbar .nbtn-round-all {
-        grid-column: 1 / 4;
-        grid-row: 2;
+        grid-column: 4;
+        grid-row: 1;
+        width: 44px;
+        min-width: 44px;
+        padding: 0;
       }
 
 .mobile-schedule-title {
@@ -1158,6 +1162,7 @@ input.score {
 }
 .track .tname,
 .central-table .teamcol { min-width: 96px; }
+.central-table tr.is-withdrawn-row td { color:#8a94a3; background:#f4f5f7; }
 .stand .nm { min-width: 110px; }
 
 /* "Team N" bleibt immer in einer Zeile und wird nie umgebrochen. */
@@ -1582,6 +1587,12 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
     text-align: left;
     cursor: pointer;
   }
+  /* Rundenkopf-Weiter-Knopf: erst bei vollstaendiger Runde kraeftig. */
+  .sched tr.rhead .rconfirm[data-round-confirm]:not(.is-ready) { background: #fff; color: #1f6fa8; opacity: .65; }
+  /* Schweizer System: spaetere Runden sind nur Vorschau-Paarungen. */
+  .sched tr.rhead .bl-preview { display: block; flex-basis: 100%; font-size: 11.5px; color: #7a5a00; }
+  .sched tr.rhead .bl-preview b { background: #fff3d6; border: 1px solid #e0c98a; border-radius: 999px; padding: 0 8px; margin-right: 4px; }
+  .sched .bl-round-status.is-neutral { color: #5b6573; font-weight: 400; }
   .sched .bl-round-status:focus { outline: 2px solid #1f6fa8; outline-offset: 2px; }
   .sched .bl-round-status:disabled { border-color: transparent; opacity: 1; cursor: default; }
   /* Runden-Rahmen: eine ruhige 1px-Kontur (Token --app-line-strong) statt
@@ -1721,7 +1732,7 @@ td.match[data-outcome="invalid"] .outcome-note { color:#b00020; }
 .brtree-in { position:relative; }
 .bracket.brtree .brhead { position:absolute; top:0; box-sizing:border-box; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; }
-.bracket.brtree .brm { position:absolute; z-index:1; box-sizing:border-box; width:156px; height:50px;
+.bracket.brtree .brm { position:absolute; z-index:1; box-sizing:border-box; width:190px; height:50px;
   min-height:0; overflow:hidden; background:#fff; cursor:pointer; }
 .bracket.brtree .brm:focus { outline:2px solid #1f4e79; outline-offset:1px; }
 .bracket.brtree .brm:focus:not(:focus-visible) { outline:none; }
@@ -1760,3 +1771,17 @@ td.match[data-outcome="invalid"] .outcome-note { color:#b00020; }
 /* Endstand: "Team N" und Teamname stehen direkt nebeneinander (kein Auseinanderziehen). */
 .stand.placelist .nm .t-nm { display:inline-block; width:auto; min-width:0; max-width:100%; vertical-align:baseline; }
 .stand.placelist td.nm { justify-content:flex-start; }
+
+/* Ausdruck fuer handschriftliche Eingabe: die Kurzanleitung ist eine
+   Bildschirmhilfe. Im Druck entfallen Text und Schritte (Platz fuer Turnierbaum
+   und Ergebnisfelder); Wertungs-/Tabellen-Referenz (#scoringTables) und die Finalrunden-Regel
+   (#g-final, Qualifikation fuer Handeintrag noetig) bleiben.
+   Ergebnisfelder werden fuer Handschrift groesser. */
+@media print {
+  .guide h2, .guide .mode-summary, .guide ol:not(.guide-keep), .guide ol li:not(.guide-keep),
+  .guide .guide-format-doc, .guide .format-info-toggle { display:none !important; }
+  .guide .guide-heading { display:none !important; }
+  .guide { padding-top:0; margin-bottom:2mm; }
+  input.score { width:11mm; height:8.5mm; font-size:13pt; }
+  .sched.compact input.score { width:9.5mm; height:7.2mm; font-size:11.5pt; }
+}

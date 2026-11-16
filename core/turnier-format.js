@@ -1310,7 +1310,7 @@
               const t = loserOf[m.id];
               if (t == null || placed.has(t)) return;
               placed.add(t);
-              out.push({ place: from, placeTo: to, rangeLabel: range, team: t,
+              out.push({ place: from, ...(from !== to ? { placeTo: to, rangeLabel: range } : {}), team: t,
                 shared: from !== to, source: 'ausgeschieden im ' + rd.label });
             });
           }
@@ -1359,7 +1359,7 @@
           if (!losers.length) continue;
           const from = nextPlace, to = nextPlace + losers.length - 1;
           const range = (from === to) ? String(from) + '.' : from + '.–' + to + '.';
-          losers.forEach(t => out.push({ place: from, placeTo: to, rangeLabel: range, team: t,
+          losers.forEach(t => out.push({ place: from, ...(from !== to ? { placeTo: to, rangeLabel: range } : {}), team: t,
             shared: from !== to, source: 'ausgeschieden im ' + rd.label }));
           nextPlace = to + 1;
         }
@@ -2207,6 +2207,7 @@
         pointsPerRound: cumPts[t] / Math.max(1, roundsPlayed[t])
       };
     });
+    placements.forEach(entry => { if (placements.some(o => o !== entry && o.place === entry.place)) entry.shared = true; });
     const scheduleComplete = rounds.length > 0 && rounds.every(rd => rd.complete);
     const rankingComplete = scheduleComplete && placements.length === active.length
       && active.every(team => placements.some(entry => entry.team === team));
