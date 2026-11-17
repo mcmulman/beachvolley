@@ -493,6 +493,7 @@ a.fc-group-badge { min-height: 44px; padding: 11px 8px; text-decoration: underli
 #fc-message { flex-basis: 100%; }
 #fc-message-close { position: absolute; top: 0; right: 0; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: inherit; font-size: 24px; line-height: 1; cursor: pointer; }
 #fc-message:empty + #fc-message-close { display: none; }
+#fc-status-bar[data-has-message] #fc-message { min-height: 38px; padding-right: 44px; box-sizing: border-box; }
 #fc-message:not(:empty) { padding-right: 40px; }
 @media print { #fc-message-close { display: none; } }
 #fc-status-next a { display: inline-flex; align-items: center; min-height: 44px; padding: 4px 0; color: #175981; font-weight: 700; }

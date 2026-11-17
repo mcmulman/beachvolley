@@ -191,6 +191,7 @@
   }
   function reserveStatusSpace() {
     statusBar.hidden = !message.textContent && statusNext.hidden;
+    statusBar.toggleAttribute('data-has-message', !!message.textContent);
     const reserved = statusBar.hidden ? '' : statusBar.offsetHeight + 12 + 'px';
     document.body.style.paddingBottom = reserved;
     document.documentElement.style.scrollPaddingBottom = reserved;
