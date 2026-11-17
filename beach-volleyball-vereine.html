@@ -231,6 +231,48 @@
       </div>
     </div>
     <p id="club-results-count" class="club-results" aria-live="polite" aria-atomic="true"></p>
+<style>
+  .mini-ov { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 0 0 16px; }
+  .mini-ov > div { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; }
+  .mini-ov h3 { font-size: 14px; margin: 0 0 8px; }
+  .mini-ov .r { display: grid; grid-template-columns: 110px 1fr 34px; align-items: center; gap: 8px; font-size: 12px; margin: 4px 0; }
+  .mini-ov .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-ov .b { height: 10px; border-radius: 5px; background: var(--blue); }
+  .mini-ov .r.me .b { background: #e8a317; }
+  .mini-ov .v { color: var(--muted); text-align: right; }
+</style>
+
+<div class="mini-ov" id="mini-ov" aria-label="Kurzübersicht"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var host = document.getElementById('mini-ov');
+  if (!host) { return; }
+  var cards = document.querySelectorAll('.club-card');
+  function build(attr, key, label) {
+    var rows = [];
+    for (var i = 0; i < cards.length; i++) {
+      var v = parseInt(cards[i].getAttribute(attr), 10);
+      if (v > 0) { rows.push({ n: cards[i].querySelector('h3').textContent, v: v }); }
+    }
+    rows.sort(function (a, b) { return b.v - a.v; });
+    rows = rows.slice(0, 5);
+    if (!rows.length) { return ''; }
+    var max = rows[0].v;
+    var html = '<div><h3 data-i18n="' + key + '">' + label + '</h3>';
+    for (var j = 0; j < rows.length; j++) {
+      var me = rows[j].n.indexOf('BeachL') === 0 ? ' me' : '';
+      html += '<div class="r' + me + '"><span class="n">' + rows[j].n + '</span>' +
+        '<span><div class="b" style="width:' + Math.round(rows[j].v / max * 100) + '%"></div></span>' +
+        '<span class="v">' + rows[j].v + '</span></div>';
+    }
+    return html + '</div>';
+  }
+  host.innerHTML = build('data-sort-members', 'clubs.members.label', 'Mitglieder') +
+    build('data-sort-courts', 'clubs.courts.label', 'Beachplätze');
+});
+</script>
+
     <div class="club-grid">
       <article class="club-card" data-cities="leipzig" data-sort-members="800" data-sort-courts="14" data-sort-trainings="100" data-sort-meetups="250" data-sort-tournaments="80">
         <div class="club-heading"><h3>BeachL e.V.</h3></div><p class="city">Leipzig · DE</p>
