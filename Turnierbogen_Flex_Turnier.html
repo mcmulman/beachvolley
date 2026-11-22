@@ -828,7 +828,6 @@
       html += '</tr>';
     }
     $('teamsBody').innerHTML = html;
-    paintTimeplan();
   }
 
   /* Zeitplan neben der Teamliste: zeigt auf einen Blick, wann welche Runde
@@ -837,11 +836,13 @@
     const box = $('timeplanBox');
     if(!box) return;
     box.innerHTML = TUI.timeTableHtml(B.slots,
-      { time: TC.fromMin(B.endMin), text: T('flex.timeplan.end') }, B.planningPauses);
+      { time: TC.fromMin(B.endMin), text: T('flex.timeplan.end') }, B.planningPauses,
+      { teamLabel: labeler(), fieldLabel: fieldLabel });
   }
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    paintTimeplan();
     TUI.paintStage(S, { build: s => planFor(s.config, s), repaint: () => { structureKey = ''; rebuild(); } });
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {

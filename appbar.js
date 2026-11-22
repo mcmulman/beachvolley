@@ -311,7 +311,7 @@
   }
   function addTeamCaptionEditors() {
     var original = document.getElementById('btnToggleNames');
-    addCaptionEditors('table.teams caption, table.roster caption, #menStandTable caption, #womenStandTable caption',
+    addCaptionEditors('table.teams caption, .gt-caption, table.roster caption, #menStandTable caption, #womenStandTable caption',
       'team', '[data-name-input]', 'sheet.teams.editNames', 'Team / Namen bearbeiten', original);
     addCaptionEditors('table.timeplan caption', 'timeplan', '.cfg-setup-content input[type="time"]',
       'sheet.timeplan.editSettings', 'Zeiteinstellungen bearbeiten');

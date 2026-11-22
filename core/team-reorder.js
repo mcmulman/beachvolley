@@ -85,18 +85,14 @@
         nameRow.appendChild(input);
       }
       var gender = row.querySelector('[data-gender-input]');
-      if (gender) {
-        var card = document.createElement('div');
-        card.className = 'team-editor-card';
-        row.parentNode.insertBefore(card, row);
-        card.appendChild(row);
+      if (gender && !row.querySelector('.team-editor-extra')) {
         var detail = document.createElement('label');
         detail.className = 'team-editor-extra';
         var text = document.createElement('span');
         text.textContent = tx('flex.gender.title', 'Team-Art');
         detail.appendChild(text);
         detail.appendChild(gender);
-        card.appendChild(detail);
+        row.appendChild(detail);
       }
 
       var controls = row.querySelector('.team-reorder');

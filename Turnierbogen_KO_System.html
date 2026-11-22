@@ -424,7 +424,6 @@
       html += '</tr>';
     }
     $('teamsBody').innerHTML = html;
-    paintTimeplan();
   }
 
   /* Turnierbaum als Spaltenraster – auf Papier die gewohnte Darstellung. */
@@ -448,6 +447,7 @@
 
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    paintTimeplan();
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -589,7 +589,8 @@
     const box = $('timeplanBox');
     if(!box) return;
     box.innerHTML = TUI.timeTableHtml(B.finSlots,
-      { time: TC.fromMin(B.endMin), text: T('ko.timeplan.ceremony') }, B.planningPauses);
+      { time: TC.fromMin(B.endMin), text: T('ko.timeplan.ceremony') }, B.planningPauses,
+      { teamLabel: labeler(), fieldLabel: fieldLabel });
   }
 
   function paintSummary(){

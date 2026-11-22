@@ -898,17 +898,17 @@
     flex:1 1 0%; min-width:0; margin:0;
   }
   html body #nameGrid .team-reorder-row {
-    display:grid; grid-template-columns:minmax(0,1fr) auto auto;
-    align-items:start; align-content:start; row-gap:8px; padding:8px;
+    display:grid; grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center; align-content:start; row-gap:4px; padding:8px;
   }
   html body #nameGrid .team-reorder-row > .nrow { grid-column:1 / -1; grid-row:1; }
-  html body #nameGrid .team-reorder-row > .pair-details { grid-column:1 / -1; grid-row:2; }
+  html body #nameGrid .team-reorder-row > .pair-details { grid-column:1 / -1; grid-row:4; }
   html body #nameGrid .team-reorder-row > .team-reorder {
-    grid-column:2; grid-row:2; position:relative; z-index:1;
-    height:44px; margin:0 0 0 8px;
+    grid-column:1; grid-row:2; position:relative; z-index:1;
+    height:44px; margin:0;
   }
   html body #nameGrid .team-reorder-row > .team-del {
-    grid-column:3; grid-row:2; position:relative; z-index:1; margin-top:0;
+    grid-column:3; grid-row:2; justify-self:end; position:relative; z-index:1; margin-top:0; margin-right:0;
   }
   html body #nameGrid .team-reorder .team-move { width:44px; min-width:44px; height:44px; min-height:44px; }
   html body #nameGrid .team-reorder-row .nnum,
@@ -970,7 +970,6 @@
   html body #nameGrid .pair-details > summary {
     display:flex; align-items:center; list-style:none;
     box-sizing:border-box; min-height:44px; padding:4px 0;
-    margin-right:144px;
     color:#40536b; font-size:12px; line-height:18px; cursor:pointer;
     border-radius:4px;
   }
@@ -1008,6 +1007,7 @@
     margin-right:8px; border-radius:50%; background:#eef4fa;
     color:#1f4e79; font-size:14px; font-weight:750;
   }
+  html body #nameGrid .team-reorder-row > .team-editor-extra { grid-column:1 / -1; grid-row:3; justify-content:space-between; margin-top:0; }
   html body #nameGrid .team-editor-extra {
     display:flex; flex-direction:row; align-items:center; justify-content:flex-end;
     gap:0; margin-top:8px; color:#40536b; font-size:12px;

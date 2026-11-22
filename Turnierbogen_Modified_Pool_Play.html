@@ -223,20 +223,11 @@
 <div id="noticeBox"></div>
 <div id="qualificationBox" class="notebox noprint" hidden></div>
 
-<div class="row sheet-card" id="livebox">
-  <div style="flex:0 0 46%">
-    <table class="teams">
-      <caption data-team-caption-key="sheet.teams.caption"><span class="cap-title" data-i18n="sheet.teams.caption">Teams</span></caption>
-      <tbody id="teamsBody"></tbody>
-    </table>
-  </div>
-  <div class="grow">
-    <table class="teams" id="groupOverview">
-      <caption data-i18n="mpp.groups.caption">Gruppeneinteilung</caption>
-      <tbody id="groupBody"></tbody>
-    </table>
-    <div id="timeplanBox"></div>
-  </div>
+<div class="sheet-card" id="livebox">
+  <div class="sheet-card-title gt-caption" data-team-caption-key="sheet.teamsGroups.caption"><span class="cap-title" data-i18n="sheet.teamsGroups.caption">Teams &amp; Gruppen</span></div>
+  <div class="gt-fold-bar noprint" hidden><button type="button" class="nbtn" id="btnGroupCards"></button></div>
+  <div class="gt-grid" id="groupCards"></div>
+  <div id="timeplanBox"></div>
 </div>
 
 <div class="noprint schedule-roundbar" id="roundbarGrp"></div>
@@ -501,8 +492,6 @@
       $('finalSection').hidden = true;
       $('schedFinBody').innerHTML = '';
     }
-    buildTeamsTable();
-    buildGroupOverview();
     $('trackBody').innerHTML = TUI.trackTableHtml(activeTeams(), B.groupRounds.length, cg);
     $('nameGrid').innerHTML = TUI.namePanelHtml(activeTeams(), S, { removable: true, minTeams: MIN_TEAMS });
     $('fieldGrid').innerHTML = TUI.fieldPanelHtml(S.config.fields, S.fieldNames);
@@ -511,32 +500,11 @@
     if(window.AppBar && AppBar.refresh) AppBar.refresh();
   }
 
-  function buildTeamsTable(){
-    const n = S.config.teams, half = Math.ceil(n/2);
-    let html = '';
-    for(let r=0;r<half;r++){
-      const l = r+1, rr = r+1+half;
-      html += '<tr><td class="num">'+l+'</td><td class="name" data-team-name="'+l+'"></td>';
-      if(rr<=n) html += '<td class="num">'+rr+'</td><td class="name" data-team-name="'+rr+'"></td>';
-      else html += '<td class="num" style="background:#f7f7f7"></td><td class="name"></td>';
-      html += '</tr>';
-    }
-    $('teamsBody').innerHTML = html;
-    paintTimeplan();
-  }
-
-  /* Gruppeneinteilung: eine Zeile je Gruppe, damit auf dem Ausdruck sofort
-     erkennbar ist, wer gegen wen spielt. */
-  function buildGroupOverview(){
-    let html = '';
-    B.groupNames.forEach(g => {
-      html += '<tr><td class="num">' + g + '</td><td class="name" data-group-list="' + g + '"></td></tr>';
-    });
-    $('groupBody').innerHTML = html;
-  }
-
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
+    paintTimeplan();
+    $('groupCards').innerHTML = TUI.groupCardsHtml(B.groupNames, B.groups);
+    TUI.wireGroupCards(document, S.config.teams);
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -551,12 +519,6 @@
       td.innerHTML = TUI.teamNameHtml(n, S, S.absent.includes(n));
     });
 
-    // Gruppeneinteilung
-    document.querySelectorAll('[data-group-list]').forEach(td => {
-      const g = td.getAttribute('data-group-list');
-      td.textContent = (B.groups[g] || [])
-        .map(t => lbl(t) + (S.absent.includes(t) ? ' (' + T('ui.absent') + ')' : '')).join(' · ');
-    });
 
     // Spielkarten
     paintSection($('schedGrpBody'), S.config.setMode);
@@ -886,7 +848,8 @@
     if(!box) return;
     const slots = B.grpSlots.concat(B.finSlots);
     box.innerHTML = TUI.timeTableHtml(slots,
-      { time: TC.fromMin(B.endMin), text: T('mpp.timeplan.end') }, B.planningPauses);
+      { time: TC.fromMin(B.endMin), text: T('mpp.timeplan.end') }, B.planningPauses,
+      { teamLabel: labeler(), fieldLabel: fieldLabel });
   }
 
   function paintSummary(){

@@ -485,7 +485,7 @@
     });
     $('ladderSection').innerHTML = html;
     const slotsLike = B.rounds.map(rd => ({ round: rd.round, title: T('ui.round.n', { n: rd.round }) }));
-    $('roundbarKq').innerHTML = TUI.roundBarHtml(slotsLike, roundFilter);
+    $('roundbarKq').innerHTML = TUI.roundBarHtml(slotsLike, roundFilter, { search: false });
     applyKqRoundFilter(roundFilter);
   }
 
@@ -664,7 +664,7 @@
       const f = TUI.roundBarValue(e, B.rounds.map(rd => ({ round: rd.round })), roundFilter, lastFilledRound());
       if(f == null) return;
       roundFilter = f;
-      $('roundbarKq').innerHTML = TUI.roundBarHtml(B.rounds.map(rd => ({ round: rd.round })), roundFilter);
+      $('roundbarKq').innerHTML = TUI.roundBarHtml(B.rounds.map(rd => ({ round: rd.round })), roundFilter, { search: false });
       applyKqRoundFilter(roundFilter);
     };
     $('roundbarKq').addEventListener('click', onRoundNav);

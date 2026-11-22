@@ -497,6 +497,43 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     align-self: center;
     opacity: .85;
   }
+/* Team-/Namenssuche: Lupe in der Leiste, geoeffnet ersetzt das Feld die uebrigen Bedienelemente. */
+.schedule-roundbar .rb-search-btn { margin-left: auto; min-width: 60px; padding: 0 14px; justify-content: center; }
+.schedule-roundbar .rb-search-btn svg.nico { width: 28px; height: 28px; max-width: none; max-height: none; }
+/* Filter (Alle Runden) + Lupe als ein verbundener Doppel-Button, rechts aussen */
+.schedule-roundbar .state { order: 1; margin-left: auto; }
+.schedule-roundbar .nbtn-round-all { order: 2; margin-right: -8px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.schedule-roundbar .rb-search-btn { order: 3; margin-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; box-shadow: inset 1px 0 0 rgba(31, 78, 121, .22); }
+.schedule-roundbar .rb-search-field { display: none; flex: 1 1 200px; min-width: 0; align-items: center; }
+.schedule-roundbar.rb-searching > :not(.rb-search-field):not(.rb-search-btn) { display: none; }
+.schedule-roundbar.rb-searching .rb-search-btn { display: none; }
+.schedule-roundbar.rb-searching .rb-search-field { display: flex; }
+.schedule-roundbar .rb-search-input {
+    -webkit-appearance: none; appearance: none; box-sizing: border-box; flex: 1 1 auto; min-width: 0; min-height: 44px;
+    padding: 7px 14px; font-size: 16px; border: 1px solid var(--app-line-strong, #aab8cc); border-radius: 999px; background: #fff;
+  }
+.schedule-roundbar .rb-search-count { flex: 0 0 auto; margin: 0 6px 0 10px; font-size: 12.5px; font-weight: 700; color: var(--app-blue-dark, #1f4e79); white-space: nowrap; }
+.schedule-roundbar .rb-search-close { flex: 0 0 auto; min-width: 44px; padding: 0 10px; font-size: 22px; line-height: 1; justify-content: center; }
+.schedule-roundbar .rb-search-input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+@media screen and (max-width: 640px) {
+  .schedule-roundbar { grid-template-columns: 40px minmax(0, 1fr) 40px 46px 46px; }
+  .schedule-roundbar .nbtn-round-all { margin-right: -6px !important; }
+  .schedule-roundbar select { padding-left: 8px !important; padding-right: 28px !important; background-position: right 8px center !important; }
+  .schedule-roundbar .rb-search-btn { grid-column: 5; grid-row: 1; margin: 0 !important; padding: 0; }
+  .schedule-roundbar .rb-search-field { grid-column: 1 / -1; grid-row: 1; width: 100%; }
+  .schedule-roundbar .rb-search-input { width: 0; flex: 1 1 0%; }
+  .schedule-roundbar .rb-search-count { margin: 0 4px 0 8px; }
+}
+@media screen {
+  td.match.tf-dim { opacity: .28; }
+  tr.tf-hide { display: none !important; }
+}
+@media print {
+  .schedule-roundbar .rb-search-btn, .schedule-roundbar .rb-search-field { display: none !important; }
+  td.match.tf-dim { opacity: 1; }
+  tr.tf-hide { display: table-row !important; }
+}
+
 /* "Runde 2 von 7" steht schon in der Auswahl und im Rundenkopf (2/7). Bis
    Tablet-Breite (iPad hochkant) wuerde der Text eine eigene Zeile erzwingen und
    die sticky Leiste unnoetig hoch machen - dort nur fuer Screenreader (aria-live). */
@@ -938,8 +975,8 @@ input.score { font-size:16px; }
 .schedule-roundbar .nbtn-round-all {
         grid-column: 4;
         grid-row: 1;
-        width: 44px;
-        min-width: 44px;
+        width: 46px;
+        min-width: 46px;
         padding: 0;
       }
 
@@ -1488,6 +1525,59 @@ table.timeplan td:nth-child(2) { border-right: 1px solid var(--line, #cbd5e1); }
    umbrechenden (z. B. „Platzierung – Über-Kreuz“) gequetscht. Druck unverändert. */
 @media screen {
   table.timeplan th, table.timeplan td { padding: 5px 8px; }
+}
+
+/* Zeitplan mit Paarungen: Zeit | Runde | Spiele; je Spiel eine umbrechende Pille
+   „Feld · Team – Team“, damit lange Namen nie horizontal scrollen. */
+table.timeplan.has-teams th:nth-child(1), table.timeplan.has-teams td:nth-child(1) {
+  width: 4.6em; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums;
+}
+table.timeplan.has-teams th:nth-child(2), table.timeplan.has-teams td:nth-child(2) {
+  width: 22%; text-align: left; border-right: 1px solid var(--line, #cbd5e1);
+}
+table.timeplan.has-teams td:nth-child(3), table.timeplan.has-teams th:nth-child(3) {
+  width: auto; white-space: normal; text-align: left; font-variant-numeric: normal;
+}
+.tp-game {
+  display: inline-block; margin: 1px 10px 1px 0; vertical-align: top;
+  overflow-wrap: anywhere; break-inside: avoid;
+}
+.tp-field { font-weight: 600; color: #475569; margin-right: 2px; }
+.tp-field::after { content: ":"; }
+
+/* ---- Teams & Gruppen: eine Karte je Gruppe statt Teamliste + Gruppenzeile ---- */
+.gt-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); grid-gap:10px; margin:0 0 14px; }
+.gt-grid[hidden] { display:none; }
+.gt-fold-bar { margin:0 0 10px; }
+.gt-fold-bar[hidden] { display:none; }
+.gcard { min-width:0; border:1px solid #cfd9e6; border-radius:8px; background:#fff; overflow:hidden; }
+.gcard-head { display:flex; align-items:center; padding:6px 10px; background:#e8eff8; border-bottom:1px solid #cfd9e6; }
+.gcard-head .gbadge { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  min-width:24px; height:24px; margin-right:8px; padding:0 4px; box-sizing:border-box;
+  border-radius:12px; background:#1a3a5c; color:#fff; font-size:13px; font-weight:800; }
+.gcard-head .gtitle { flex:1 1 auto; min-width:0; margin:0; padding:0; border:0; font-size:13px; font-weight:800; color:#1a3a5c; text-transform:none; letter-spacing:0; }
+.gcard-head .gcount { flex:0 0 auto; margin-left:8px; font-size:11px; font-weight:700; color:#5b6b7f; }
+.gteams { list-style:none; margin:0; padding:0; }
+.gteam { padding:5px 10px; border-top:1px solid #edf1f6; font-size:13px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gteam:first-child { border-top:0; }
+.gteam .t-line { font-weight:700; }
+.gteam .t-nm { display:inline; margin-left:6px; font-size:11px; font-weight:600; color:#053e15; }
+#livebox #timeplanBox { margin-top:4px; }
+@media screen and (max-width: 640px) {
+  .gt-grid { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); grid-gap:8px; }
+  .gteam { white-space:normal; overflow-wrap:break-word; word-wrap:break-word; }
+  .gteam .t-nm { display:block; margin-left:0; }
+}
+@media print {
+  .gt-grid { grid-template-columns:repeat(auto-fill, minmax(42mm, 1fr)); grid-gap:2mm; margin:0 0 3mm; }
+  #groupCards[hidden] { display:grid !important; }
+  .gcard { break-inside:avoid; page-break-inside:avoid; border-color:#000; border-radius:0; }
+  .gcard-head { padding:0.8mm 1.5mm; background:#eee; border-bottom-color:#000; }
+  .gcard-head .gbadge { min-width:4.5mm; height:4.5mm; margin-right:1.5mm; font-size:8pt; background:#000; }
+  .gcard-head .gtitle { font-size:8pt; color:#000; }
+  .gcard-head .gcount { font-size:7pt; color:#000; }
+  .gteam { padding:0.6mm 1.5mm; border-top-color:#999; font-size:8pt; }
+  .gteam .t-nm { font-size:7pt; color:#000; }
 }
 
 /* Offene Spiele: der reservierte Ergebnisbereich (.presult, feste Höhe gegen

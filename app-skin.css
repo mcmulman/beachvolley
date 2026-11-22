@@ -547,11 +547,11 @@
   }
   .nbtn.cfg-reset-action:hover { background: #fbe0e0; }
   .cfgcard-actions .nbtn, .cfg-action-group__buttons > .nbtn { min-height: 44px; }
-  caption > .caption-edit-label {
+  caption > .caption-edit-label, .gt-caption > .caption-edit-label {
     display: inline-flex; align-items: center; vertical-align: middle;
     flex-wrap: nowrap; white-space: nowrap;
   }
-  caption > .caption-edit-label > .cap-title { display: inline; flex: 0 0 auto; }
+  caption > .caption-edit-label > .cap-title, .gt-caption > .caption-edit-label > .cap-title { display: inline; flex: 0 0 auto; }
   .caption-edit {
     display: inline-flex; align-items: center; justify-content: center;
     flex: 0 0 44px; width: 44px; height: 44px; padding: 14px; margin: -12px 0 -12px 4px;

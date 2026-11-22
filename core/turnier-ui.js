@@ -642,6 +642,50 @@
     return label + origin + (absent ? ' ' + absentHtml : '');
   }
 
+  /* Teams und Gruppeneinteilung in einem Raster aus Gruppenkarten: je Gruppe
+     eine Karte mit den Teams untereinander (Namen werden per paint() ueber
+     data-team-name befuellt). */
+  function groupCardsHtml(groupNames, groups) {
+    return groupNames.map(function (g) {
+      const members = groups[g] || [];
+      return '<section class="gcard" data-group="' + esc(g) + '"><header class="gcard-head">'
+        + '<span class="gbadge" aria-hidden="true">' + esc(g) + '</span>'
+        + '<h3 class="gtitle">' + esc(tx('ui.groups.card', 'Gruppe {group}', { group: g })) + '</h3>'
+        + '<span class="gcount">' + members.length + '</span></header>'
+        + '<ol class="gteams">' + members.map(function (t) {
+          return '<li class="gteam name" data-team-name="' + esc(t) + '"></li>';
+        }).join('') + '</ol></section>';
+    }).join('');
+  }
+
+  /* Ab 13 Teams laesst sich die Gruppenuebersicht am Bildschirm per x
+     ausblenden (Knopf zum Einblenden); darunter bleibt der Zeitplan. Der
+     Druck zeigt sie immer. Idempotent. */
+  function wireGroupCards(doc, teamCount) {
+    const content = doc && doc.getElementById('groupCards');
+    const button = doc && doc.getElementById('btnGroupCards');
+    if (!content || !button) return;
+    if (!content.__groupToggle) {
+      content.__groupToggle = wireSectionToggle(content, button, content, {
+        closeFirst: true,
+        preferenceId: 'group-cards',
+        showKey: 'ui.section.groupCardsShow',
+        hideKey: 'ui.section.groupCardsHide',
+        showText: 'Gruppen einblenden',
+        hideText: 'Gruppen ausblenden'
+      });
+    }
+    const tg = content.__groupToggle;
+    if (teamCount > 12) {
+      button.parentNode.hidden = false;
+      tg.restore();
+    } else {
+      button.parentNode.hidden = true;
+      content.hidden = false;
+      tg.close.hidden = true;
+    }
+  }
+
   /* ================================================================ 1. NAMEN
      teamLabel() ist die einzige Stelle, die entscheidet, wie ein Team heißt.
      Ohne eingetragenen Namen bleibt die Nummer stehen – so bleibt der Bogen
@@ -2051,7 +2095,7 @@
      Das Markup entspricht exakt der in spielplan.css dokumentierten Struktur
      (div.schedule-roundbar > label>select, .nbtn-round, .state), damit alle
      Bögen dieselbe sticky Glass-Pill-Leiste zeigen.                          */
-  function roundBarHtml(slots, active) {
+  function roundBarHtml(slots, active, barOpts) {
     const rounds = roundsInSlots(slots);
     const cur = String(active == null ? 'all' : active);
     const idx = rounds.indexOf(parseInt(cur, 10));
@@ -2085,7 +2129,141 @@
         + ' title="' + esc(tx('ui.roundbar.allTitle', 'Alle Runden gleichzeitig anzeigen')) + '">'
         + ICON_LAYERS + ' <span class="nbtn-round-txt">' + esc(allActive ? tx('ui.roundbar.single', 'Einzelne Runde') : tx('ui.roundbar.allRounds', 'Alle Runden')) + '</span>'
         + '</button>'
-      + '<span class="state" aria-live="polite">' + esc(state) + '</span>';
+      + '<span class="state" aria-live="polite">' + esc(state) + '</span>'
+      + (barOpts && barOpts.search === false ? '' : teamSearchHtml());
+  }
+
+  /* ---- Team-/Namenssuche in der Rundenleiste: nur eine Ansicht, nichts wird
+     gespeichert. Lupe -> Eingabefeld (mit Team-Auswahlliste), x schliesst und
+     loescht den Filter. Zahl = exakte Teamnummer, sonst Teilstring auf Team-
+     und Spielernamen. Im Druck wird nie gefiltert. */
+  const teamSearch = { open: false, query: '', tbodies: [] };
+  const ICON_SEARCH = '<svg class="nico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  function teamSearchHtml() {
+    const label = tx('ui.roundbar.search', 'Team oder Namen suchen');
+    return '<button type="button" class="nbtn nbtn-round rb-search-btn" data-rb-search aria-expanded="' + teamSearch.open
+      + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + ICON_SEARCH + '</button>'
+      + '<span class="rb-search-field"><input type="search" class="rb-search-input" list="rbTeamList" value="' + esc(teamSearch.query)
+      + '" placeholder="' + esc(tx('ui.roundbar.searchPlaceholder', 'Team oder Name – tippen oder wählen')) + '" aria-label="' + esc(label)
+      + '" autocomplete="off" spellcheck="false"><datalist id="rbTeamList"></datalist>'
+      + '<span class="rb-search-count" aria-live="polite"></span>'
+      + '<button type="button" class="nbtn nbtn-round rb-search-close" data-rb-search-close aria-label="'
+      + esc(tx('ui.roundbar.searchClose', 'Suche schließen')) + '" title="' + esc(tx('ui.roundbar.searchClose', 'Suche schließen')) + '">×</button></span>';
+  }
+  function teamSearchNorm(value) { return String(value == null ? '' : value).toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function teamSearchLabel(el) {
+    const line = el.querySelector('.t-line');
+    const nm = el.querySelector('.t-nm');
+    return line ? (line.textContent.trim() + (nm ? ' ' + nm.textContent.trim() : '')) : el.textContent.trim();
+  }
+  function teamSearchMatches(td, q) {
+    const sides = Array.prototype.slice.call(td.querySelectorAll('.t[data-team]'));
+    if (/^\d+$/.test(q)) return sides.some(el => el.getAttribute('data-team') === q);
+    return sides.some(el => {
+      const line = el.querySelector('.t-line');
+      const members = line ? (line.getAttribute('data-player-one') || '') + ' ' + (line.getAttribute('data-player-two') || '') : '';
+      const label = teamSearchNorm(teamSearchLabel(el));
+      return label === q || label.indexOf(q) >= 0 || teamSearchNorm(members).indexOf(q) >= 0;
+    });
+  }
+  function teamSearchFillList(tbody) {
+    const list = document.getElementById('rbTeamList');
+    if (!list) return;
+    const seen = {};
+    const labels = [];
+    Array.prototype.forEach.call(tbody.querySelectorAll('td.match .t[data-team]'), el => {
+      const id = el.getAttribute('data-team');
+      if (seen[id]) return;
+      seen[id] = true;
+      labels.push({ id: +id, label: teamSearchLabel(el) });
+    });
+    labels.sort((a, b) => a.id - b.id);
+    const html = labels.map(item => '<option value="' + esc(item.label) + '"></option>').join('');
+    if (list.__html !== html) { list.innerHTML = html; list.__html = html; }
+  }
+  function applyTeamFilter(tbody) {
+    if (!tbody) return;
+    const q = teamSearchNorm(teamSearch.query);
+    if (teamSearch.tbodies.indexOf(tbody) < 0) teamSearch.tbodies.push(tbody);
+    teamSearchFillList(tbody);
+    const slotHit = {};
+    let count = 0;
+    Array.prototype.forEach.call(tbody.querySelectorAll('td.match'), td => {
+      const hit = !q || teamSearchMatches(td, q);
+      td.classList.toggle('tf-dim', !hit);
+      const tr = td.parentElement;
+      if (hit && tr && !tr.hidden) {
+        count++;
+        slotHit[td.getAttribute('data-slot')] = true;
+      }
+    });
+    Array.prototype.forEach.call(tbody.querySelectorAll('tr'), tr => {
+      const own = tr.querySelectorAll('td.match');
+      const slot = tr.getAttribute('data-slot') || (own[0] && own[0].getAttribute('data-slot'));
+      const hide = !!q && (own.length
+        ? !Array.prototype.some.call(own, td => !td.classList.contains('tf-dim'))
+        : (slot != null && !slotHit[slot]));
+      tr.classList.toggle('tf-hide', hide);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.rb-search-count'), el => {
+      el.textContent = !q ? '' : count
+        ? tx('ui.roundbar.searchCount', { one: '{count} Spiel', other: '{count} Spiele' }, { count: count })
+        : tx('ui.roundbar.searchNone', 'Keine Treffer');
+    });
+  }
+  function teamSearchSync(bar) {
+    bar.classList.toggle('rb-searching', teamSearch.open);
+    const btn = bar.querySelector('[data-rb-search]');
+    if (btn) btn.setAttribute('aria-expanded', String(teamSearch.open));
+  }
+  function teamSearchReapply() {
+    teamSearch.tbodies = teamSearch.tbodies.filter(t => document.documentElement.contains(t));
+    teamSearch.tbodies.forEach(applyTeamFilter);
+  }
+  if (typeof document !== 'undefined' && !teamSearch.wired) {
+    teamSearch.wired = true;
+    const barOf = el => el.closest && el.closest('.schedule-roundbar');
+    const closeSearch = bar => {
+      teamSearch.open = false;
+      teamSearch.query = '';
+      const input = bar.querySelector('.rb-search-input');
+      if (input) input.value = '';
+      teamSearchSync(bar);
+      teamSearchReapply();
+      const btn = bar.querySelector('[data-rb-search]');
+      if (btn) btn.focus();
+    };
+    document.addEventListener('click', ev => {
+      const open = ev.target.closest && ev.target.closest('[data-rb-search]');
+      const close = ev.target.closest && ev.target.closest('[data-rb-search-close]');
+      if (open && barOf(open)) {
+        teamSearch.open = true;
+        teamSearchSync(barOf(open));
+        const input = barOf(open).querySelector('.rb-search-input');
+        if (input) input.focus();
+      } else if (close && barOf(close)) {
+        closeSearch(barOf(close));
+      }
+    });
+    document.addEventListener('input', ev => {
+      const input = ev.target;
+      if (!input.classList || !input.classList.contains('rb-search-input')) return;
+      teamSearch.query = input.value;
+      const bar = barOf(input);
+      const all = bar && bar.querySelector('[data-round-all]');
+      /* Suche braucht alle Runden: ggf. dorthin wechseln, Fokus bleibt im Feld. */
+      if (teamSearch.query.trim() && all && all.getAttribute('aria-pressed') !== 'true') {
+        all.click();
+        const fresh = document.querySelector('.rb-search-input');
+        if (fresh) { fresh.focus(); try { fresh.setSelectionRange(fresh.value.length, fresh.value.length); } catch (e) { /* type=search */ } }
+      }
+      teamSearchReapply();
+    });
+    document.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape' && ev.target.classList && ev.target.classList.contains('rb-search-input') && barOf(ev.target)) {
+        closeSearch(barOf(ev.target));
+      }
+    });
   }
 
   /* Ermittelt die letzte Runde mit mindestens einem eingetragenen Ergebnis
@@ -2169,6 +2347,8 @@
       tr.hidden = !(filter === 'all' || included.indexOf(String(filter)) >= 0);
     });
     markRoundStatus(tbody);
+    applyTeamFilter(tbody);
+    Array.prototype.forEach.call(document.querySelectorAll('.schedule-roundbar'), teamSearchSync);
   }
 
   function markRoundStatus(tbody) {
@@ -3454,20 +3634,53 @@
     return val;
   }
 
-  /* Kompakte Zeitplan-Uebersicht (zweispaltig): auf dem Ausdruck sieht die
-     Turnierleitung auf einen Blick, wann welche Runde startet.              */
-  function timeTableHtml(slots, endLabel, pauses) {
-    const rows = (slots || []).filter(s => !s.displayOnly)
-      .map(s => ({ min: s.startMin, t: fmtTime(s.startMin), n: slotTitle(s) }));
+  /* Zeitplan-Uebersicht neben der Teamliste: wann startet welche Runde und –
+     sobald die Teams feststehen – wer zu dieser Uhrzeit auf welchem Feld
+     spielt (opts.teamLabel: Nummer -> Name, opts.fieldLabel: Feldindex ->
+     Feldname). Ohne bekannte Paarung bleibt die kompakte Zweispalten-Form.  */
+  function timeTableHtml(slots, endLabel, pauses, opts) {
+    const o = opts || {};
+    const label = o.teamLabel || makeLabeler(null);
+    const teamOf = (m, side) => {
+      const t = m['t' + side] != null ? m['t' + side] : m[side];
+      return typeof t === 'number' ? t : null;
+    };
+    const rows = (slots || []).filter(s => !s.displayOnly).map(s => {
+      const games = [];
+      (s.matches || []).forEach((m, f) => {
+        if (!m || m.bye != null || m.dead) return;
+        const a = teamOf(m, 'a'), b = teamOf(m, 'b');
+        if (a == null && b == null) return;
+        games.push({
+          f: o.fieldLabel ? o.fieldLabel(f) : surfaceLabel(f + 1),
+          a: a == null ? '?' : label(a), b: b == null ? '?' : label(b)
+        });
+      });
+      return { min: s.startMin, t: fmtTime(s.startMin), n: slotTitle(s), games };
+    });
+    const withTeams = rows.some(r => r.games.length);
     (pauses || []).forEach(p => rows.push({ min: p.startMin, pause: true,
       t: fmtTime(p.startMin) + '–' + fmtTime(p.endMin),
-      n: tx('planning.pauseRow', 'Pause') }));
+      n: tx('planning.pauseRow', 'Pause'), games: [] }));
     rows.sort((a, b) => a.min - b.min);
-    if (endLabel) rows.push({ t: endLabel.time, n: endLabel.text });
-    const half = Math.ceil(rows.length / 2);
+    if (endLabel) rows.push({ t: endLabel.time, n: endLabel.text, games: [] });
     const thTime = esc(tx('ui.timeplan.time', 'Zeit'));
     const thRound = esc(tx('ui.round.word', 'Runde'));
-    let html = '<table class="timeplan"><caption>' + esc(tx('ui.timeplan.caption', 'Zeitplan')) + '</caption><thead><tr>'
+    const caption = '<caption>' + esc(tx('ui.timeplan.caption', 'Zeitplan')) + '</caption>';
+    if (withTeams) {
+      const thGames = esc(tx('ui.timeplan.games', 'Spiele'));
+      let html = '<table class="timeplan has-teams">' + caption + '<thead><tr><th>' + thTime
+        + '</th><th>' + thRound + '</th><th>' + thGames + '</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        const cls = r.pause ? ' class="planning-pause"' : '';
+        html += '<tr><td' + cls + '>' + esc(r.t) + '</td><td' + cls + '>' + esc(r.n) + '</td><td' + cls + '>'
+          + r.games.map(g => '<span class="tp-game"><b class="tp-field">' + esc(g.f) + '</b> '
+            + esc(g.a) + ' – ' + esc(g.b) + '</span>').join('') + '</td></tr>';
+      });
+      return html + '</tbody></table>';
+    }
+    const half = Math.ceil(rows.length / 2);
+    let html = '<table class="timeplan">' + caption + '<thead><tr>'
       + '<th>' + thTime + '</th><th>' + thRound + '</th><th>' + thTime + '</th><th>' + thRound + '</th></tr></thead><tbody>';
     for (let i = 0; i < half; i++) {
       const a = rows[i], b = rows[i + half];
@@ -3967,6 +4180,7 @@
     bracketColumnsHtml, bracketTreeHtml, bracketTreesHtml, paintBracketColumns,
     setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, pruneDecidingSet, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
+    groupCardsHtml, wireGroupCards,
     namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamStatusSelectHtml, teamArrivalActionsHtml, teamDelayEditorHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
     scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary,

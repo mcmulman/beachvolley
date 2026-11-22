@@ -3032,9 +3032,59 @@
     };
   }
 
+  // src/public-https-url.mjs
+  function globalIpv4(host) {
+    const [a, b, c, d] = host.split(".").map(Number);
+    if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
+    if (a === 100 && b >= 64 && b <= 127) return false;
+    if (a === 169 && b === 254) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192) {
+      if (b === 0 && c === 0) return d === 9 || d === 10;
+      if (b === 0 && c === 2 || b === 88 && c === 99 || b === 168) return false;
+    }
+    if (a === 198 && (b === 18 || b === 19 || b === 51 && c === 100)) return false;
+    return !(a === 203 && b === 0 && c === 113);
+  }
+  function globalIpv6(host) {
+    const halves = host.slice(1, -1).split("::");
+    const left = halves[0] ? halves[0].split(":") : [];
+    const right = halves[1] ? halves[1].split(":") : [];
+    const words = left.concat(Array(8 - left.length - right.length).fill("0"), right).map((word) => parseInt(word, 16));
+    const [a, b, c] = words;
+    if (a === 100 && b === 65435 && words.slice(2, 6).every((word) => word === 0)) {
+      const ipv4 = [words[6] >> 8, words[6] & 255, words[7] >> 8, words[7] & 255].join(".");
+      return globalIpv4(ipv4);
+    }
+    if (a < 8192 || a > 16383) return false;
+    if (a === 8194 || a === 16383 && b < 4096) return false;
+    if (a === 8193) {
+      if (b === 3512) return false;
+      if (b < 512) {
+        return b === 1 && words.slice(2, 7).every((word) => word === 0) && words[7] >= 1 && words[7] <= 3 || b === 3 || b === 4 && c === 274 || b >= 32 && b <= 63;
+      }
+    }
+    return true;
+  }
+  function isPublicHttpsUrl(value) {
+    if (typeof value !== "string" || !value) return false;
+    let url;
+    try {
+      url = new URL(value);
+    } catch (e) {
+      return false;
+    }
+    if (url.protocol !== "https:" || url.username || url.password) return false;
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    if (host.startsWith("[")) return globalIpv6(host);
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return globalIpv4(host);
+    if (/(^|\.)(localhost|local|localdomain|internal|lan|home|test|invalid|example|onion)$/.test(host) || /(^|\.)home\.arpa$/.test(host) || /(^|\.)example\.(com|org|net)$/.test(host)) return false;
+    const labels = host.split(".");
+    return host.length <= 253 && labels.length > 1 && labels.every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label));
+  }
+
   // src/link-share-adapter.js
   var SHARE_CANCELED2 = "Share canceled";
-  var LOCAL_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1"];
   function shareError(code, message, cause) {
     const error = new Error(message);
     error.code = code;
@@ -3046,19 +3096,6 @@
     if (typeof error.message === "string" && error.message) return error.message;
     if (typeof error.errorMessage === "string") return error.errorMessage;
     return typeof error === "string" ? error : "";
-  }
-  function isPublicHttpsUrl(value) {
-    if (typeof value !== "string" || !value) return false;
-    let url;
-    try {
-      url = new URL(value);
-    } catch (error) {
-      return false;
-    }
-    if (url.protocol !== "https:" || url.username || url.password) return false;
-    const host = url.hostname.toLowerCase();
-    if (!host || LOCAL_HOSTS.indexOf(host) !== -1 || /\.localhost$/.test(host)) return false;
-    return host.indexOf(".") !== -1;
   }
   function text(value, max) {
     return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : void 0;
