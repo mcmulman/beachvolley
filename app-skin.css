@@ -476,9 +476,9 @@
     gap: 10px 12px;
   }
   .cfgcard-grid > .cfgfield-row { display: contents; }
-  .cfgcard-grid .cfgfield { flex: 1 1 112px; min-width: 0; max-width: 190px; }
+  .cfgcard-grid .cfgfield { flex: 1 1 128px; min-width: 0; max-width: 190px; }
   .cfgcard-grid > .cfgfield--wide,
-  .cfgcard-grid > .cfgfield--mode { flex: 2 1 190px; max-width: 320px; }
+  .cfgcard-grid > .cfgfield--mode { flex: 2 1 215px; max-width: 320px; }
   .cfgcard-grid > .cfgfield--wide { flex-basis: 240px; max-width: 360px; }
   .cfgcard-grid > .cfgfield--wide:first-child { flex: 3 1 240px; max-width: none; }
   /* Platz für 12-Stunden-Anzeige („10:00 AM“ + Uhr-Symbol) ohne Abschneiden. */
@@ -504,7 +504,7 @@
     padding: 7px 10px; border: 1px solid var(--app-line); border-radius: var(--app-radius-sm); background: #fff;
     min-height: 44px; width: 100%; box-sizing: border-box;
   }
-  .cfgfield > select, .format-switch-controls > select { cursor: pointer; }
+  .cfgfield > select, .format-switch-controls > select { cursor: pointer; padding-right: 30px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
   .cfgfield > input:focus, .cfgfield > select:focus, .format-switch-controls > select:focus {
     outline: none; border-color: var(--app-blue); box-shadow: 0 0 0 3px rgba(31,111,168,.18);
   }

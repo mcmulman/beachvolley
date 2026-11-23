@@ -12,6 +12,7 @@
          retime:  { time: 'HH:MM' } | { min: <Minuten> },
          rescheduled: { [matchId]: { time: 'HH:MM' } },
          teamDelays: { [teamId]: { time: 'HH:MM' } },
+         swaps: [{ a: matchId, b: matchId }], // zwei offene Spiele tauschen Zeit+Feld
          fillForward: true, // optional, nur feste Round-Robin-Paarungen
          blocked: [{ field, time } | { field, min } | { field, fromRound }],
          breaks:  [{ id, time | min, minutes }],
@@ -190,6 +191,7 @@
     return !p.retime && !(p.rescheduled && Object.keys(p.rescheduled).length)
       && !(p.teamDelays && Object.keys(p.teamDelays).length)
       && p.fillForward !== true
+      && !(p.swaps && p.swaps.length)
       && !(p.blocked && p.blocked.length) && !(p.breaks && p.breaks.length)
       && !(p.locked && Object.keys(p.locked).length);
   }
@@ -198,7 +200,7 @@
     const p = planning || {};
     const ref = base.startMin;
     const teamsOf = teamKeysFn(base);
-    const out = { retimeMin: null, rescheduled: {}, teamDelays: {}, fillForward: p.fillForward === true, blocks: [], pauses: [], locked: {} };
+    const out = { retimeMin: null, rescheduled: {}, swaps: [], teamDelays: {}, fillForward: p.fillForward === true, blocks: [], pauses: [], locked: {} };
     if (p.retime) out.retimeMin = pointOf(p.retime, ref, 'invalid-time', 'retime');
 
     (p.blocked || []).forEach((b, i) => {
@@ -248,6 +250,13 @@
         throw fail(RangeError, 'invalid-rescheduled-time', 'reschedule for ' + id + ' must be later than its original start');
       }
       out.rescheduled[id] = min;
+    });
+    (p.swaps || []).forEach((w, i) => {
+      if (!w || typeof w !== 'object' || w.a == null || w.b == null || String(w.a) === String(w.b)) {
+        throw fail(RangeError, 'invalid-swap', 'swap #' + i + ' needs two different matches');
+      }
+      if (!known[w.a] || !known[w.b]) return;       // Spiel existiert nicht mehr
+      out.swaps.push({ a: String(w.a), b: String(w.b) });
     });
     Object.keys(p.teamDelays || {}).forEach(id => {
       if (!/^[1-9]\d*$/.test(id)) {
@@ -609,6 +618,7 @@
       pauses: out.planningPauses.map(p => Object.assign({}, p)),
       pauseMinutes: norm.pauses.reduce((a, p) => a + p.minutes, 0),
       fillForward: norm.fillForward,
+      swapsSkipped: (norm.swapsSkipped || []).map(w => Object.assign({}, w)),
       lockedIds: Object.keys(norm.locked),
       lockedCount: Object.keys(norm.locked).length,
       movedCount: moved,
@@ -626,6 +636,49 @@
     return out;
   }
 
+  /* Tauscht Zeit und Feld zweier offener Spiele. Nur gleich lange Spiele mit
+     bekannten Teams; danach muss der Plan konfliktfrei sein (Felder, Teams,
+     Rundenreihenfolge je Team, Sperren, Pausen). Sonst bleibt der Tausch
+     wirkungslos (planning.swapsSkipped) – so bricht ein späteres Ereignis
+     (Ergebnis, Verspätung) den Plan nie. */
+  function applySwaps(base, F, norm, sched) {
+    norm.swapsSkipped = [];
+    if (!norm.swaps.length) return;
+    const teamsOf = teamKeysFn(base);
+    const all = [];
+    sched.rounds.forEach(rd => sched.placed[rd.key].forEach(x => { all.push(x); }));
+    const find = id => all.filter(x => x.it.id === id)[0];
+    function exchange(a, b) {
+      const t = { s: a.startMin, e: a.endMin, f: a.field };
+      a.startMin = b.startMin; a.endMin = b.endMin; a.field = b.field;
+      b.startMin = t.s; b.endMin = t.e; b.field = t.f;
+    }
+    function conflict() {
+      for (let i = 0; i < all.length; i++) {
+        const x = all[i], tx = teamsOf(x.it.m);
+        if (fieldBlocked(norm.blocks, x.field, x.it.rd.ordinal, x.startMin, x.endMin)
+          || norm.pauses.some(p => overlaps(x.startMin, x.endMin, p.startMin, p.endMin))) return true;
+        for (let j = i + 1; j < all.length; j++) {
+          const y = all[j], ty = teamsOf(y.it.m);
+          const share = tx.some(k => ty.indexOf(k) >= 0);
+          if (overlaps(x.startMin, x.endMin, y.startMin, y.endMin) && (x.field === y.field || share)) return true;
+          if (share && ((x.it.rd.ordinal < y.it.rd.ordinal && x.startMin > y.startMin)
+            || (y.it.rd.ordinal < x.it.rd.ordinal && y.startMin > x.startMin))) return true;
+        }
+      }
+      return false;
+    }
+    norm.swaps.forEach(w => {
+      const a = find(w.a), b = find(w.b);
+      if (!a || !b || a.locked || b.locked || a.endMin - a.startMin !== b.endMin - b.startMin
+        || teamsOf(a.it.m).length < 2 || teamsOf(b.it.m).length < 2 || a.it.rd.source !== b.it.rd.source) {
+        norm.swapsSkipped.push(w); return;
+      }
+      exchange(a, b);
+      if (conflict()) { exchange(a, b); norm.swapsSkipped.push(w); }
+    });
+  }
+
   function locksMatchBaseline(rounds, locked) {
     return rounds.every(rd => rd.items.every(it => {
       const l = locked[it.id];
@@ -639,11 +692,14 @@
     const norm = normalize(planning, base, F, rounds, results);
     const trivial = norm.retimeMin == null && !Object.keys(norm.rescheduled).length
       && !Object.keys(norm.teamDelays).length
+      && !norm.swaps.length
       && !norm.fillForward
       && !norm.blocks.length && !norm.pauses.length
       && locksMatchBaseline(rounds, norm.locked);
     if (trivial) return null;
-    return buildOutput(base, config, results, F, norm, schedule(base, F, norm), planning);
+    const sched = schedule(base, F, norm);
+    applySwaps(base, F, norm, sched);
+    return buildOutput(base, config, results, F, norm, sched, planning);
   }
 
   /* ----------------------------------------------------------- Öffentliche API */
@@ -653,6 +709,19 @@
     const F = fieldCountOf(basePlan, config);
     const out = planWith(basePlan, config, results, planning, F);
     return out || basePlan;
+  }
+
+  /* Toleranter Aufruf für die Anzeige: ungültige gespeicherte Planung
+     (z. B. Block auf nicht mehr vorhandenem Platz) darf das Blatt nicht
+     abstürzen lassen. Die Planung bleibt gespeichert, der Plan wird ohne sie
+     gebaut und mit planningError markiert. */
+  function safe(build, config) {
+    try { return build(config); } catch (e) {
+      if (!e || !e.code || !(e instanceof RangeError)) throw e;
+      const plan = build(Object.assign({}, config, { planning: null }));
+      if (plan && typeof plan === 'object') plan.planningError = e.code;
+      return plan;
+    }
   }
 
   /* Locks für alle Spiele mit Eingabe aus dem AKTUELL angezeigten Plan. */
@@ -756,9 +825,47 @@
     return null;
   }
 
+  /* Konflikt-Ampel: prueft den fertigen Plan. 'error' = Spiele ueberschneiden sich
+     (Team oder Feld doppelt belegt), 'warn' = ein Team wartet sehr lange. */
+  const LONG_WAIT_MIN = 90;
+  function conflicts(plan) {
+    const issues = [];
+    if (!plan || isKingOfCourt(plan)) return issues;
+    const teamKeys = teamKeysFn(plan);
+    const pauses = (plan.planningPauses || []).filter(p => p && Number.isFinite(p.startMin) && Number.isFinite(p.endMin));
+    const byTeam = {};
+    const byField = {};
+    slots(plan).forEach(slot => {
+      (slot.matches || []).forEach((m, field) => {
+        if (!m) return;
+        const item = { id: m.id, start: slot.startMin, end: slot.endMin };
+        (byField[field] = byField[field] || []).push(item);
+        teamKeys(m).forEach(k => { (byTeam[k] = byTeam[k] || []).push(item); });
+      });
+    });
+    function scan(map, onOverlap, onGap) {
+      Object.keys(map).forEach(key => {
+        const list = map[key].slice().sort((a, b) => a.start - b.start || a.end - b.end);
+        for (let i = 1; i < list.length; i++) {
+          const prev = list[i - 1], cur = list[i];
+          if (cur.start < prev.end) onOverlap(key, prev, cur);
+          else if (onGap) onGap(key, prev, cur);
+        }
+      });
+    }
+    scan(byTeam, (k, a, b) => issues.push({ level: 'error', code: 'team-overlap', team: k, ids: [a.id, b.id], startMin: b.start }),
+      (k, a, b) => {
+        let gap = b.start - a.end;
+        pauses.forEach(p => { gap -= Math.max(0, Math.min(b.start, p.endMin) - Math.max(a.end, p.startMin)); });
+        if (gap >= LONG_WAIT_MIN) issues.push({ level: 'warn', code: 'long-wait', team: k, ids: [a.id, b.id], startMin: b.start, minutes: gap });
+      });
+    scan(byField, (k, a, b) => issues.push({ level: 'error', code: 'field-overlap', field: +k, ids: [a.id, b.id], startMin: b.start }));
+    return issues;
+  }
+
   return {
-    apply: apply, slots: slots, hasInput: hasInput, capture: capture,
-    signature: signature, neededFields: neededFields,
+    apply: apply, safe: safe, slots: slots, hasInput: hasInput, capture: capture,
+    signature: signature, neededFields: neededFields, conflicts: conflicts,
     clockToMin: clockToMin, repartition: repartition
   };
 });

@@ -81,7 +81,7 @@
         .bracket.mppbr { display:flex; gap:6px; }
     .bracket.mppbr .brcol { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:4px; }
     .bracket.mppbr .brhead { font-size:10px; font-weight:bold; text-transform:uppercase;
-      color:#555; text-align:center; }
+      color:#555; text-align:center; word-wrap:break-word; overflow-wrap:break-word; -webkit-hyphens:auto; hyphens:auto; }
     .bracket.mppbr .brm { border:1px solid #999; border-radius:3px; font-size:11px; flex:1 0 auto;
       display:flex; flex-direction:column; justify-content:center; }
     .bracket.mppbr .brm .brname { font-size:9px; color:#666; padding:1px 4px 0; }
@@ -125,15 +125,12 @@
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol class="guide-keep">
-    <li><span class="hi" data-i18n="mpp.guide.mppLabel">Modified Pool Play:</span> <span id="g-groups">–</span> <span data-i18n="mpp.guide.mppText">In einer 4er-Gruppe spielt Setzplatz 1 gegen 4 und 2 gegen 3;
-      danach die beiden Sieger um den Gruppensieg (Platz 1/2), die beiden Verlierer um den Verbleib (Platz 3/4) – 4 statt 6 Spiele.
-      3er-Gruppen spielen komplettes Round-Robin (3 Spiele, Setzplatz 1 mit Freilos in Runde 1).</span></li>
-    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Ergebnis pro Spiel im Spielplan eintragen – alles Weitere rechnet automatisch.</span></li>
-    <li><span class="hi" data-i18n="mpp.guide.groupPlaceLabel">Platzierung in der Gruppe:</span> <span data-i18n="mpp.guide.groupPlaceText">In 4er-Gruppen steht der Platz direkt durch das Bracket fest (kein Gleichstand möglich).
-      In 3er-Gruppen: Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0; bei Gleichstand Ball-Differenz, dann direkter Vergleich, dann erzielte Ballpunkte. Verbleibende Gleichstände teilen den Platz; nötige Losentscheide werden gesondert erfasst.</span></li>
+    <li><span class="hi" data-i18n="mpp.guide.mppLabel">Modified Pool Play:</span> <span id="g-groups">–</span> <span data-i18n="mpp.guide.mppText">4er-Gruppe: 1 gegen 4 und 2 gegen 3, dann spielen die Sieger um Platz 1/2 und die Verlierer um Platz 3/4 (4 statt 6 Spiele). 3er-Gruppe: jeder gegen jeden.</span></li>
+    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ergebnisse:</span> <span data-i18n="sheet.guide.flowText">Pro Spiel eintragen – der Rest rechnet automatisch.</span></li>
+    <li><span class="hi" data-i18n="mpp.guide.groupPlaceLabel">Platzierung in der Gruppe:</span> <span data-i18n="mpp.guide.groupPlaceText">4er-Gruppe: Platz aus den Platzierungsspielen. 3er-Gruppe: Sieg 2, Unentschieden 1, Niederlage 0 · Gleichstand: Punktdifferenz, direkter Vergleich, erzielte Punkte</span></li>
     <li class="guide-keep"><span class="hi" data-i18n="sheet.guide.finalLabel">Finalrunde:</span> <span id="g-final">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li class="only-print"><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="mpp.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („A-1“, „Sieger HF1“). Nach der Vorrunde die Namen eintragen.</span></li>
+    <li class="only-print"><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="mpp.guide.printText">Unbekannte Gegner stehen als „A-1“, „Sieger HF1“ auf dem Bogen – Namen später eintragen.</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-modified-pool-play.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
@@ -159,9 +156,19 @@
         <select id="fieldCount"></select>
       </label>
     </div>
-    <label class="cfgfield cfgfield--wide"><span data-i18n="mpp.cfg.finalMode">Finalrunde</span>
+    <label class="cfgfield cfgfield--wide"><span><span data-i18n="mpp.cfg.finalMode">Finalrunde</span> <button type="button" class="adv-gear noprint" data-adv-open data-adv-gear aria-haspopup="dialog" aria-label="Finalblöcke anpassen" title="Finalblöcke anpassen" data-i18n-attr="aria-label:ui.adv.titleBlocks;title:ui.adv.titleBlocks"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span>
       <select id="finalMode"></select>
     </label>
+    <div class="adv-overlay noprint" id="advCfg" role="dialog" aria-modal="true" aria-labelledby="advTitle" hidden>
+      <div class="adv-sheet">
+        <div class="adv-head"><h2 id="advTitle" data-i18n="ui.adv.titleBlocks">Finalblöcke anpassen</h2> <span class="cfg-adv-state" id="advState"></span><button type="button" class="adv-close" data-adv-close aria-label="Schließen" title="Schließen" data-i18n-attr="aria-label:ui.adv.close;title:ui.adv.close"><span aria-hidden="true">×</span></button></div>
+        <div class="cfg-adv-body">
+        <div class="cfg-adv-part" id="finalBlocksBox">
+          <div class="splitpick" id="finalBlocksPick"></div>
+        </div>
+      </div>
+      </div>
+    </div>
     <label class="cfgfield cfgfield--mode"><span data-i18n="mpp.cfg.setMode">Vorrunde</span>
       <select id="setMode"></select>
     </label>
@@ -277,7 +284,7 @@
 <div class="sheet-card">
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
   <caption><span class="cap-title" id="capPlace" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub only-print" id="finalStandingsSub"></span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
-  <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
+  <thead><tr><th scope="col" class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th scope="col" class="nm" data-i18n="sheet.place.colTeam">Team</th><th scope="col" class="src" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 </div>
@@ -448,16 +455,16 @@
       finalMode: c.finalMode, thirdPlace: c.thirdPlace, poolMode: 'mpp', startTime: c.startTime,
       absent: s.absent, results: s.results, outcomes: s.outcomes,
       rankingProfile: c.rankingProfile, qualificationOrder: c.qualificationOrder,
-      manualStandings: s.manualStandings
+      manualStandings: s.manualStandings, finalBlocks: c.finalBlocks
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
-    B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
     return B;
   }
   function keyOf(){
     const c = S.config;
-    return [c.teams,c.groups,c.fields,c.setMode,c.finalSetMode,c.finalMode,c.thirdPlace,c.startTime].join('|');
+    return [c.teams,c.groups,c.fields,c.setMode,c.finalSetMode,c.finalMode,c.thirdPlace,c.startTime,JSON.stringify(c.finalBlocks||null)].join('|');
   }
 
   /* Vollständiger Neuaufbau nur, wenn sich die STRUKTUR geändert hat.
@@ -468,9 +475,38 @@
     const k = keyOf() + '#' + JSON.stringify(TPlanning.signature(B));
     if(k !== structureKey){
       structureKey = k;
-      buildStructure();
+      TUI.rebuildKeepingScoreFocus(buildStructure, paint);
     }
     paint();
+    renderAdvanced();
+  }
+
+  /* Finalblöcke anpassen (Aufteilungs-Wähler). */
+  let advSig = '';
+  function renderAdvanced(){
+    const c = S.config;
+    const show = c.finalMode === 'placement' && B.finalBlockTotal > 0;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-adv-open]'), b => { b.hidden = !show; });
+    if (!show) $('advCfg').hidden = true;
+    if (!show) return;
+    $('advState').textContent = B.finalBlocksCustom ? T('ui.adv.custom') : T('ui.adv.default');
+    const sizes = (B.placementBlocks || []).map(bl => bl.places[1] - bl.places[0] + 1);
+    const sig = JSON.stringify([B.finalBlockTotal, sizes, B.finalBlocksCustom, T('ui.adv.custom')]);
+    if (sig === advSig) return;
+    advSig = sig;
+    TUI.mountSplitPicker($('finalBlocksPick'), {
+      total: B.finalBlockTotal, min: 1, max: 6,
+      getSizes: () => (B.placementBlocks || []).map(bl => bl.places[1] - bl.places[0] + 1),
+      setSizes: next => {
+        if (TUI.finalsStarted(B, S)) { alert(T('qualification.started')); return; }
+        if (next == null) delete S.config.finalBlocks; else S.config.finalBlocks = next;
+        delete S.config.qualificationOrder;
+        save(); rebuild();
+      },
+      isCustom: () => !!B.finalBlocksCustom,
+      hint: T('ui.split.hintBlocks'),
+      captionOf: (i, a, b) => TUI.finalBlockCaption(a, b)
+    });
   }
 
   function buildStructure(){
@@ -482,8 +518,8 @@
     if(B.finSlots.length){
       $('finalSection').hidden = false;
       $('schedFinBody').innerHTML = TUI.scheduleBodyHtml(B.finSlots, Object.assign(cf, { roundNav: false }));
-      $('capFin').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
-      $('mobileFinTitle').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle) });
+      $('capFin').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle), mode: modeLabel(B.finalSetMode) });
+      $('mobileFinTitle').textContent = T('mpp.schedule.finalCaption', { title: term(B.finalTitle), mode: modeLabel(B.finalSetMode) });
       $('treeBox').innerHTML = TUI.bracketTreesHtml(B);
       TUI.wireBracketTree(document, !!$('treeBox').innerHTML);
     } else {
@@ -557,9 +593,7 @@
       // Seitenbeschriftung (Referenz oder aufgelöstes Team)
       /* Immer "Team N" plus Name darunter – gleiche Darstellung wie beim
          Aufbau der Karte, sonst verschwindet die Nummer beim Repaint. */
-      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
-      if(a) a.innerHTML = TUI.cardNameHtml(m.a, m.ta, ctx);
-      if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
+      TUI.paintSideNames(td, m, ctx);
       // Freilos-Zustand
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
@@ -594,10 +628,10 @@
     function emptyGroupTableHtml(teams){
       const E = k => TUI.esc(T(k));
       let th = '<thead><tr>'
-        + '<th class="pl">' + E('sheet.place.colPlace') + '</th><th class="nm">' + E('sheet.place.colTeam') + '</th>'
-        + '<th>' + E('ui.stand.gamesFull') + '</th><th>' + E('ui.stand.wonFull') + '</th>'
-        + (showDraw ? '<th>' + E('ui.stand.drawnFull') + '</th><th>' + E('ui.stand.lostFull') + '</th>' : '')
-        + '<th>' + E('ui.stand.ptsFull') + '</th><th>' + E('ui.stand.balls') + '</th><th>' + E('ui.stand.diffFull') + '</th>'
+        + '<th scope="col" class="pl">' + E('sheet.place.colPlace') + '</th><th scope="col" class="nm">' + E('sheet.place.colTeam') + '</th>'
+        + '<th scope="col">' + E('ui.stand.gamesFull') + '</th><th scope="col">' + E('ui.stand.wonFull') + '</th>'
+        + (showDraw ? '<th scope="col">' + E('ui.stand.drawnFull') + '</th><th scope="col">' + E('ui.stand.lostFull') + '</th>' : '')
+        + '<th scope="col">' + E('ui.stand.ptsFull') + '</th><th scope="col">' + E('ui.stand.balls') + '</th><th scope="col">' + E('ui.stand.diffFull') + '</th>'
         + '</tr></thead><tbody>';
       teams.forEach(t => {
         th += '<tr>'
@@ -787,20 +821,20 @@
 
   function finalPerTeam(){
     const mode = S.config.finalMode;
-    if (mode === 'none') return { lo:0, hi:0, name:T('mpp.perTeam.nameFinal'), note:T('mpp.perTeam.noteNone') };
+    if (mode === 'none') return { lo:0, hi:0, name:T('mpp.perTeam.nameFinal'), note:'' };
     if (mode === 'placement') {
       /* Über-Kreuz-Block: 4er-Block = Kreuzspiel + Platzierungsspiel (2),
          3er-Block = jeder gegen jeden (2), 2er-Block = ein Platzspiel (1),
          einzelnes Restteam = kein Spiel. */
       const per = (B.placementBlocks || []).map(bl => {
         if (bl.direct) return 0;
-        if (bl.roundRobin) return bl.matches.length - 1;
+        if (bl.roundRobin) return bl.size ? bl.size - 1 : bl.matches.length - 1;
         return bl.matches.length >= 4 ? 2 : bl.matches.length;
       });
       if (!per.length) return { lo:0, hi:0, name:T('mpp.perTeam.namePlacement'), note:'' };
       const lo = Math.min.apply(null, per), hi = Math.max.apply(null, per);
       return { lo, hi, name:T('mpp.perTeam.namePlacement'),
-        note: lo === hi ? T('mpp.perTeam.notePlacementAll') : T('mpp.perTeam.notePlacementBlock') };
+        note: lo === hi ? '' : T('mpp.perTeam.notePlacementBlock') };
     }
     if (mode === 'ko') {
       const rounds = B.bracket ? B.bracket.rounds.length : 0;
@@ -827,15 +861,16 @@
   }
 
   function perTeamGames(){
-    const grp = B.groupNames.map(g => Math.max(0, B.groups[g].length - 1));
+    const grp = B.groupNames.map(g => (B.mppMeta && B.mppMeta[g] && B.mppMeta[g].mode === 'bracket') ? 2 : Math.max(0, B.groups[g].length - 1));
     const gLo = grp.length ? Math.min.apply(null, grp) : 0;
     const gHi = grp.length ? Math.max.apply(null, grp) : 0;
     const fin = finalPerTeam();
     const tLo = gLo + fin.lo, tHi = gHi + fin.hi;
     const grpLabel = rangeLabel(gLo, gHi);
     const finLabel = rangeLabel(fin.lo, fin.hi);
-    const body = T('mpp.perTeam.body', { grp: grpLabel, name: fin.name, fin: finLabel, total: rangeLabel(tLo, tHi) })
-      + (fin.note ? T('mpp.perTeam.noteSuffix', { note: fin.note }) : '') + '.';
+    const params = { grp: grpLabel, name: fin.name, fin: finLabel, total: rangeLabel(tLo, tHi), note: fin.note };
+    const body = fin.hi === 0 ? T('mpp.perTeam.bodyNone', params)
+      : T(fin.note ? 'mpp.perTeam.bodyNote' : 'mpp.perTeam.body', params);
     return { grpLo:gLo, grpHi:gHi, fin, totalLabel: rangeLabel(tLo, tHi),
       shortBreak: T('ui.kpi.phaseGames', { group: grpLabel, final: finLabel }), body };
   }
@@ -894,9 +929,9 @@
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> '
       + TUI.esc(T('mpp.groupsN', { n: B.groupNames.length })) + ' · '
       + TUI.esc(fm ? term(fm.label) : '') + ' · ' + E('sheet.legend.perGame') + ' '
-      + '<span class="rmode">' + TUI.esc(modeLabel(c.setMode)) + '</span>'
+      + '<span class="rmode">' + TUI.esc(TUI.legendModeText(modeLabel(c.setMode))) + '</span>'
       + ' ' + E('mpp.legend.rule');
-    TUI.syncModeSummary(document);
+    TUI.syncModeSummary(document, c.setMode, B.finalSetMode || c.setMode);
 
     const noFinal = c.finalMode === 'none';
     const fsSub   = $('finalStandingsSub');
@@ -927,10 +962,6 @@
       txt = T('mpp.guide.finalMain', { mode: fmLabel });
     }
     $('g-final').textContent = txt;
-    if (B.groupNames.length > 2 && (S.config.rankingProfile || TC.activeRanking()) === 'beach-house'
-        && ['placement', 'ko', 'main'].includes(S.config.finalMode)) {
-      $('g-final').textContent += ' ' + T('qualification.rule');
-    }
     $('g-games').textContent = perTeamGames().body;
   }
 
@@ -958,23 +989,35 @@
     const nn = n - 1;
     if(S.config.groups !== 'auto' && !(S.config.groups * 3 <= nn && nn <= S.config.groups * 4)) S.config.groups = 'auto';
     S.config.teams = nn;
+    delete S.config.finalBlocks;
     TStore.remapCommon(S, map);
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     TStore.restoreResults(S, snap, () => { compute(); return listMatches(); });
     save(); fillSelects(); structureKey = ''; rebuild();
   }
+  function qualificationKey(){
+    const c = S.config;
+    return [c.teams, c.groups, c.finalMode, c.setMode, JSON.stringify(c.finalBlocks || null)].join('|');
+  }
   function onChange(){
     const previousConfig = Object.assign({}, S.config);
     const prevTeams = S.config.teams;
-    const previousQualification = [S.config.teams, S.config.groups, S.config.finalMode, S.config.setMode].join('|');
+    const previousQualification = qualificationKey();
     readConfig();
+    if ((S.config.teams !== prevTeams || S.config.groups !== previousConfig.groups || S.config.groupMode !== previousConfig.groupMode)
+        && !TUI.confirmStructureChange(TStore.anyResults(S))) {
+      S.config = previousConfig;
+      fillSelects();
+      return;
+    }
+    if (S.config.teams !== prevTeams || S.config.groups !== previousConfig.groups) delete S.config.finalBlocks;
     if (TUI.finalsStarted(B, S) && previousConfig.finalSetMode !== S.config.finalSetMode) {
       S.config = previousConfig;
       fillSelects();
       alert(T('qualification.started'));
       return;
     }
-    if (previousQualification !== [S.config.teams, S.config.groups, S.config.finalMode, S.config.setMode].join('|')) {
+    if (previousQualification !== qualificationKey()) {
       if (TUI.finalsStarted(B, S)) {
         S.config = previousConfig;
         fillSelects();
@@ -1113,9 +1156,9 @@
     TUI.wireScoreInputs($('schedFinBody'), onScoreFin);
     TUI.wireOutcomes($('schedGrpBody'), { state: () => S, buildPlan: (s, changedMatchId) => {
       if (changedMatchId) delete s.config.qualificationOrder;
-      return planFor(s.config, s);
+      return TPlanning.safe(c => planFor(c, s), s.config);
     }, changed: () => { delete S.config.qualificationOrder; save(); compute(); paint(); } });
-    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
+    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => TPlanning.safe(c => planFor(c, s), s.config), changed: () => { save(); compute(); paint(); } });
   }
 
   fillSelects();

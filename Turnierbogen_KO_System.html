@@ -97,12 +97,12 @@
   <h2 data-i18n="ko.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
-    <li><span class="hi" data-i18n="ko.guide.seedLabel">Setzliste:</span> <span id="g-seed">–</span></li>
-    <li class="only-screen"><span class="hi" data-i18n="ko.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="ko.guide.flowText">Der Sieger wandert im Turnierbaum automatisch eine Spalte nach rechts.</span></li>
+    <li><span class="hi" data-i18n="ko.guide.seedLabel">Turnierbaum:</span> <span id="g-seed">–</span></li>
+    <li class="only-screen"><span class="hi" data-i18n="ko.guide.flowLabel">Ergebnisse:</span> <span data-i18n="ko.guide.flowText">Pro Spiel eintragen – der Sieger rückt im Turnierbaum automatisch nach.</span></li>
     <li><span class="hi" data-i18n="ko.guide.loserOut">Wer verliert, scheidet aus.</span> <span id="g-draw">–</span></li>
     <li><span class="hi" data-i18n="ko.guide.placesLabel">Platzierung:</span> <span id="g-places">–</span></li>
     <li><span class="hi" data-i18n="ko.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li class="only-print"><span class="hi" data-i18n="ko.guide.printLabel">Ausdruck:</span> <span data-i18n="ko.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („Sieger VF1“). Nach jeder Runde die Namen eintragen.</span></li>
+    <li class="only-print"><span class="hi" data-i18n="ko.guide.printLabel">Ausdruck:</span> <span data-i18n="ko.guide.printText">Unbekannte Gegner stehen als „Sieger VF1“ auf dem Bogen – Namen später eintragen.</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-ko-system.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
@@ -219,7 +219,7 @@
 
 <div class="sheet-card">
 <h2 data-i18n="ko.bracket.title">Turnierbaum</h2>
-<p class="input-hint hint-top only-print"><span class="only-print" data-i18n="ko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des Baums eintragen. Die Verlierer der letzten Runde teilen sich den Platzbereich dieser Runde.</span></p>
+<p class="input-hint hint-top only-print"><span class="only-print" data-i18n="ko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jedes Spiels in die nächste Spalte des Baums eintragen. Die Verlierer der letzten Runde teilen sich den Platzbereich dieser Runde.</span></p>
 <div class="bracket-view-bar noprint"><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
 <div class="table-scroll is-wide" id="bracketListBox">
   <div class="bracket" id="bracketBox"></div>
@@ -234,7 +234,7 @@
 <div class="sheet-card">
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
   <caption><span class="cap-title" data-i18n="ko.place.caption">Endstand</span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
-  <thead><tr><th class="pl" data-i18n="ko.place.colPlace">Pl.</th><th class="nm" data-i18n="ko.place.colTeam">Team</th><th data-i18n="ko.place.colSource">entschieden durch</th></tr></thead>
+  <thead><tr><th scope="col" class="pl" data-i18n="ko.place.colPlace">Pl.</th><th scope="col" class="nm" data-i18n="ko.place.colTeam">Team</th><th scope="col" data-i18n="ko.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 </div>
@@ -338,6 +338,7 @@
              fieldLabel: fieldLabel,
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
+             advance: B ? TUI.advanceHints(B.finalRounds) : null,
              fields: S.config.fields, modeLabel: modeLabel(mode) };
   }
   function activeTeams(){
@@ -384,7 +385,7 @@
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
-    B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
     return B;
   }
   function keyOf(){
@@ -396,7 +397,7 @@
   function rebuild(){
     compute();
     const k = keyOf() + '#' + JSON.stringify(TPlanning.signature(B));
-    if(k !== structureKey){ structureKey = k; buildStructure(); }
+    if(k !== structureKey){ structureKey = k; TUI.rebuildKeepingScoreFocus(buildStructure, paint); }
     paint();
   }
 
@@ -487,9 +488,7 @@
       if(!m) return;
       /* Immer "Team N" plus Name darunter – gleiche Darstellung wie beim
          Aufbau der Karte, sonst verschwindet die Nummer beim Repaint. */
-      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
-      if(a) a.innerHTML = TUI.cardNameHtml(m.a, m.ta, ctx);
-      if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
+      TUI.paintSideNames(td, m, ctx);
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
       /* Entscheidungssatz (Satz 3) NUR sperren, wenn Satz 1+2 bereits gueltig
@@ -571,8 +570,10 @@
     const first = B.finalRounds[0] ? B.finalRounds[0].matches : [];
     let byeTeams = 0;
     first.forEach(m => { if (m.bye != null) byeTeams++; });
-    const lo = first.length ? 1 : 0;
     const hi = rounds;
+    /* 4 Teams ohne Freilos: auch die Halbfinal-Verlierer spielen noch um Platz 3. */
+    const allPlay3 = rounds === 2 && !byeTeams && S.config.thirdPlace !== false;
+    const lo = first.length ? (allPlay3 ? 2 : 1) : 0;
     const label = lo === hi ? String(lo) : lo + '–' + hi;
     $('rv-perTeam').textContent = label;
     $('rv-perTeamBreak').textContent = T('ko.kpi.winnerGames', { n: hi });
@@ -622,13 +623,13 @@
     const E = k => TUI.esc(T(k));
     $('scoringTables').innerHTML =
       '<div class="row"><div style="flex:0 0 46%"><table><caption>' + E('ko.scoring.perGame') + '</caption>'
-      + '<tr><th>' + E('ko.scoring.result') + '</th><th>' + E('ko.scoring.consequence') + '</th></tr>'
+      + '<tr><th scope="col">' + E('ko.scoring.result') + '</th><th scope="col">' + E('ko.scoring.consequence') + '</th></tr>'
       + '<tr><td>' + E('ko.scoring.win') + '</td><td>' + E('ko.scoring.winNext') + '</td></tr>'
       + '<tr><td>' + E('ko.scoring.loss') + '</td><td>' + E('ko.scoring.lossOut') + '</td></tr>'
       + '<tr><td>' + E('ko.scoring.bye') + '</td><td>' + E('ko.scoring.byeNext') + '</td></tr>'
       + '</table></div>'
       + '<div class="grow"><table><caption>' + E('ko.scoring.placesCaption') + '</caption>'
-      + '<tr><th>' + E('ko.scoring.place') + '</th><th>' + E('ko.scoring.method') + '</th></tr>'
+      + '<tr><th scope="col">' + E('ko.scoring.place') + '</th><th scope="col">' + E('ko.scoring.method') + '</th></tr>'
       + '<tr><td>1 / 2</td><td>' + E('ko.scoring.p12') + '</td></tr>'
       + '<tr><td>3 / 4</td><td>' + (S.config.thirdPlace
           ? E('ko.scoring.p34Third') : E('ko.scoring.p34Shared')) + '</td></tr>'
@@ -637,9 +638,9 @@
     $('h-legend').innerHTML = '<b>' + E('ko.legend.label') + '</b> ' + E('ko.legend.format') + ' · '
       + (B.bracket ? TUI.esc(T('ko.kpi.treeSize', { n: B.bracket.size })) + ' · ' : '')
       + TUI.esc(T('ko.legend.rounds', { count: B.finalRounds.length })) + ' · ' + E('ko.legend.perGame') + ' '
-      + '<span class="rmode">' + TUI.esc(modeLabel(B.finalSetMode)) + '</span>'
+      + '<span class="rmode">' + TUI.esc(TUI.legendModeText(modeLabel(B.finalSetMode))) + '</span>'
       + ' ' + E('ko.legend.rule');
-    TUI.syncModeSummary(document);
+    TUI.syncModeSummary(document, B.finalSetMode);
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ schedule:'scheduleSection', standings:'standingsSection' });
   }
 
@@ -682,8 +683,14 @@
     save(); fillSelects(); structureKey = ''; rebuild();
   }
   function onChange(){
+    const previousConfig = Object.assign({}, S.config);
     const prevTeams = S.config.teams;
     readConfig();
+    if(S.config.teams !== prevTeams && !TUI.confirmStructureChange(TStore.anyResults(S))){
+      S.config = previousConfig;
+      fillSelects();
+      return;
+    }
     /* Feldauswahl an die neue Teamzahl anpassen (max. Teams/2 Spiele parallel). */
     if(S.config.teams !== prevTeams){
       S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
@@ -786,7 +793,7 @@
     TUI.wireJumpBar($('jumpbar'));
 
     const onScore = (mid, set, side, val) => {
-      TStore.setScore(S, mid, set, side, val);
+      if(!TUI.guardDownstream(S, mid, s => planFor(s.config, s), () => TStore.setScore(S, mid, set, side, val))){ rebuild(); return; }
       TUI.pruneDecidingSet(S, mid, set, B.finalSetMode);
       save();
       compute();
@@ -797,7 +804,7 @@
     };
     onScore.setMode = () => B.finalSetMode;
     TUI.wireScoreInputs($('schedFinBody'), onScore);
-    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
+    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => TPlanning.safe(c => planFor(c, s), s.config), changed: () => { save(); compute(); paint(); } });
   }
 
   fillSelects();

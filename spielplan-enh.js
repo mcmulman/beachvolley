@@ -38,7 +38,7 @@
     + '#bl-toast.error{background:#a61b1b;pointer-events:auto}'
     + '#bl-toast.warning{background:#8a4b08;pointer-events:auto}'
     + '#bl-toast button{flex:0 0 auto;margin-left:10px;padding:4px 10px;border:1px solid currentColor;border-radius:5px;'
-    + 'min-height:40px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
+    + 'min-height:44px;background:#fff;color:#761010;font:inherit;cursor:pointer;pointer-events:auto}'
     + '#bl-toast button:first-of-type{margin-left:auto}'
     + '#bl-toast .bl-toast-close{margin-left:4px;min-width:44px;padding:0 10px;border-color:transparent;'
     + 'background:transparent;color:#fff;font-size:24px;line-height:1}'

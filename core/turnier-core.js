@@ -234,12 +234,17 @@
     const names = o.names || 'ABCDEFGH'.slice(0, g).split('');
     const groups = {};
     names.forEach(n => groups[n] = []);
+    /* o.sizes: feste Gruppengrößen (Summe = Teamzahl, eine je Gruppe); sonst
+       möglichst gleich große Gruppen, Rest auf die vorderen. */
+    const fixed = Array.isArray(o.sizes) && o.sizes.length === names.length
+      && o.sizes.every(n => Number.isInteger(n) && n > 0)
+      && o.sizes.reduce((a, b) => a + b, 0) === list.length ? o.sizes : null;
     if (o.distribution === 'sequential') {
       // Blockweise: Gruppengrößen möglichst gleich, Rest auf die vorderen Gruppen
       const base = Math.floor(list.length / g), rest = list.length % g;
       let idx = 0;
       names.forEach((n, i) => {
-        const size = base + (i < rest ? 1 : 0);
+        const size = fixed ? fixed[i] : base + (i < rest ? 1 : 0);
         groups[n] = list.slice(idx, idx + size);
         idx += size;
       });
@@ -247,6 +252,15 @@
       // Snake: gleichmäßige Stärkeverteilung bei gesetzter Startreihenfolge
       let dir = 1, col = 0;
       list.forEach(t => {
+        if (fixed) {
+          // Volle Gruppen werden übersprungen (feste Größen)
+          let guard = 0;
+          while (groups[names[col]].length >= fixed[col] && guard++ < 2 * g) {
+            col += dir;
+            if (col === g) { col = g - 1; dir = -1; }
+            else if (col < 0) { col = 0; dir = 1; }
+          }
+        }
         groups[names[col]].push(t);
         col += dir;
         if (col === g) { col = g - 1; dir = -1; }
@@ -810,6 +824,19 @@
     };
   }
 
+  /* Spiele pro Team im Doppel-K.-o.: jedes Team spielt mindestens 2 Spiele (zweimal verloren = raus).
+     Am meisten spielt, wer in Runde 1 der Gewinner-Runde verliert, die ganze Verlierer-Runde
+     durchläuft und im Grand Final samt Reset-Spiel steht. Gibt es in Runde 1 nur ein echtes
+     Spiel, entfällt die erste Verlierer-Runde (Freilos-Durchlauf) - dann kann ein Team, das erst
+     im Gewinner-Finale verliert, die meisten Spiele haben. */
+  function doubleBracketGameRange(bracket) {
+    const wb = bracket.wbRounds.length;
+    if (!bracket.grandFinal) return { min: 1, max: wb };
+    const real = bracket.wbRounds[0].matches.filter(m => m.a.k !== 'bye' && m.b.k !== 'bye').length;
+    const viaLoserRounds = bracket.lbRounds.length + (real >= 2 ? 3 : 2);
+    return { min: 2, max: Math.max(viaLoserRounds, wb + 3) };
+  }
+
   /* --- 3.5 Über-Kreuz-Platzierungsrunde -----------------------------------
      Standard-No-KO-Modus des Repos (AGENTS.md §5):
      Block k = A(2k-1) / A(2k) / B(2k-1) / B(2k), darin Über-Kreuz:
@@ -834,11 +861,33 @@
       }
     }
 
+    /* o.blockSizes: frei gewählte Blockgrößen (Summe = Teamzahl). Ohne gültige
+       Angabe gilt die Standardaufteilung in 4er-Blöcke mit kleinem Rest. */
+    const custom = Array.isArray(o.blockSizes) && o.blockSizes.length
+      && o.blockSizes.every(n => Number.isInteger(n) && n > 0)
+      && o.blockSizes.reduce((a, b) => a + b, 0) === slots.length ? o.blockSizes : null;
     const blocks = [];
-    let i = 0, placeNo = 1;
+    let i = 0, placeNo = 1, blockNo = 0;
     while (i < slots.length) {
-      const rest = slots.length - i;
-      if (rest >= blockSize) {
+      const rest = custom ? custom[blockNo] : slots.length - i;
+      blockNo++;
+      if (custom && rest > blockSize) {
+        const s = slots.slice(i, i + rest);
+        const bid = prefix + '_b' + (blocks.length + 1);
+        const matches = [];
+        // Kreismethode: Runde für Runde, damit dasselbe Team nicht dauernd hintereinander spielt
+        const ring = s.map((_, k) => k);
+        if (ring.length % 2) ring.push(-1);
+        for (let r = 0; r < ring.length - 1; r++) {
+          for (let k = 0; k < ring.length / 2; k++) {
+            const x = ring[k], y = ring[ring.length - 1 - k];
+            if (x >= 0 && y >= 0) matches.push({ id: bid + '_' + (matches.length + 1), a: s[x], b: s[y], stage: 'rr' });
+          }
+          ring.splice(1, 0, ring.pop());
+        }
+        blocks.push({ places: [placeNo, placeNo + rest - 1], roundRobin: true, size: rest, matches });
+        i += rest; placeNo += rest;
+      } else if (rest >= blockSize) {
         const s = slots.slice(i, i + blockSize);
         const bid = prefix + '_b' + (blocks.length + 1);
         const pairings = [
@@ -866,6 +915,7 @@
         blocks.push({
           places: [placeNo, placeNo + 2],
           roundRobin: true,
+          size: 3,
           matches: [
             { id: bid + '_1', a: s[0], b: s[1], stage: 'rr' },
             { id: bid + '_2', a: s[0], b: s[2], stage: 'rr' },
@@ -1464,24 +1514,26 @@
      gleichstehenden Teams ausgewertet. Das behebt zugleich die
      Nicht-Transitivität eines paarweisen Vergleichs (Ringschluss A>B>C>A).
      ======================================================================== */
+  /* Quotienten gerundet vergleichen: 1/3 und 2/6 sind gleich (kein Gleitkomma-Rauschen). */
+  const r9 = v => (typeof v === 'number' && isFinite(v)) ? Math.round(v * 1e9) / 1e9 : v;
   const CRITERIA = {
     pts:         { label: 'Punkte',            get: s => s.pts,         dir: -1 },
-    ptsPer:      { label: 'Punkte/Spiel',      get: s => s.ptsPer,      dir: -1 },
+    ptsPer:      { label: 'Punkte/Spiel',      get: s => r9(s.ptsPer),      dir: -1 },
     won:         { label: 'Siege',             get: s => s.won,         dir: -1 },
     buchholz:    { label: 'Buchholz',          get: s => s.buchholz,    dir: -1 },
     lost:        { label: 'Niederlagen',       get: s => s.lost,        dir: 1 },
     matchDiff:   { label: 'Punktedifferenz',   get: s => s.won - s.lost, dir: -1 },
-    wonPer:      { label: 'Siege/Spiel',       get: s => s.wonPer,      dir: -1 },
-    setRatio:    { label: 'Satzquotient',     get: s => quotient(s.setsFor, s.setsAgainst), dir: -1 },
-    pointRatio:  { label: 'Punktquotient',    get: s => quotient(s.ballsFor, s.ballsAgainst), dir: -1 },
+    wonPer:      { label: 'Siege/Spiel',       get: s => r9(s.wonPer),      dir: -1 },
+    setRatio:    { label: 'Satzquotient',     get: s => r9(quotient(s.setsFor, s.setsAgainst)), dir: -1 },
+    pointRatio:  { label: 'Punktquotient',    get: s => r9(quotient(s.ballsFor, s.ballsAgainst)), dir: -1 },
     bd:          { label: 'Ball-Differenz',    get: s => s.bd,          dir: -1 },
-    bdPer:       { label: 'Ball-Diff./Spiel',  get: s => s.bdPer,       dir: -1 },
+    bdPer:       { label: 'Ball-Diff./Spiel',  get: s => r9(s.bdPer),       dir: -1 },
     ballsFor:    { label: 'Ballpunkte',        get: s => s.ballsFor,    dir: -1 },
-    ballsForPer: { label: 'Ballpunkte/Spiel',  get: s => s.ballsForPer, dir: -1 },
+    ballsForPer: { label: 'Ballpunkte/Spiel',  get: s => r9(s.ballsForPer), dir: -1 },
     /* Nur für Sonderfälle vorgehalten - im Beachvolleyball NICHT Teil der
        offiziellen Kette (das ist die Hallen-Regel). Nicht in criteriaFor(). */
     sd:          { label: 'Satz-Differenz',    get: s => s.sd,          dir: -1 },
-    sdPer:       { label: 'Satz-Diff./Spiel',  get: s => s.sdPer,       dir: -1 }
+    sdPer:       { label: 'Satz-Diff./Spiel',  get: s => r9(s.sdPer),       dir: -1 }
   };
 
   /* Rangfolge berechnen.
@@ -1583,8 +1635,13 @@
       const sub = (matches || []).filter(m =>
         m.bye == null && set.has(m.a) && set.has(m.b) && m.result);
       if (!sub.length) return [group];
+      /* Unvollstaendige Mini-Tabelle (ein Spiel der Gruppe fehlt noch): kein direkter Vergleich. */
+      if ((matches || []).some(m => m.bye == null && set.has(m.a) && set.has(m.b) && !m.result)) return [group];
       const mst = standings(group, sub, { perGame: true, rankingProfile: rankingId });
-      const subChain = rankingDef.h2hCriteria || chain.filter(c => c !== 'h2h');
+      /* Mini-Tabelle: Punkte und Ball-Differenz der Spiele untereinander (AGENTS.md §4.2 Schritt 3);
+         die erzielten Ballpunkte (Schritt 4) zählen danach über alle Gruppenspiele. */
+      const subChain = rankingDef.h2hCriteria
+        || chain.filter(c => c !== 'h2h' && c !== 'ballsFor' && c !== 'ballsForPer');
       let parts = [group];
       subChain.forEach(crit => {
         const next = [];
@@ -1806,7 +1863,7 @@
     modesForProfile, configureProfile, activeProfile, activeRanking, modeMinutes, setCustomTarget,
     modeDef, isMulti, hasDecidingSet, targetForSet,
     setValid, computeResult, decidingSetNeeded,
-    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genClassificationBracket, genDoubleBracket, genPlacement,
+    genRoundRobin, genGroups, genGroupPhase, genSwissRound, genBracket, genClassificationBracket, genDoubleBracket, doubleBracketGameRange, genPlacement,
     genModifiedPoolPlay,
     kqValidScore, kqComputeRoundResult, kqCourtMatches, kqNextCourts, kqInitialCourts,
     bracketSeedOrder, pairKey, roundLabel,

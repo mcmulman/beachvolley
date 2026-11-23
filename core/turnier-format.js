@@ -192,6 +192,15 @@
      Ab hier läuft ALLES Weitere (Finalrunde, Referenz-Auflösung, Tie-Breaker
      ohne Gleichstand nötig, weil Bracket-Position den Platz direkt festlegt)
      identisch zu 'rr' - siehe docs/format-modified-pool-play.html.          */
+  /* Gruppengrößen / Finalblöcke: nur gültig, wenn jede Größe in [min, max] liegt
+     und die Summe der Teamzahl entspricht. Sonst gilt die Standardaufteilung. */
+  function validSizes(sizes, total, min, max) {
+    return Array.isArray(sizes) && sizes.length > 0
+      && sizes.every(n => Number.isInteger(n) && n >= min && n <= max)
+      && sizes.reduce((a, b) => a + b, 0) === total;
+  }
+  const MAX_FINAL_BLOCK = 6;
+
   function build(cfg) {
     const c = Object.assign({
       teams: 8, groups: 'auto', fields: 2, setMode: '21',
@@ -212,8 +221,15 @@
     }
     const mppMode = !koOnly && c.poolMode === 'mpp';
     let gCount;
+    const customGroups = !koOnly && c.groupSizes != null
+      ? validSizes(c.groupSizes, all.length, 1, all.length) && c.groupSizes.length <= GROUP_NAMES.length : null;
+    if (!koOnly && c.groupSizes != null && !customGroups) {
+      warnings.push('Die eigenen Gruppengrößen passen nicht zur Teamzahl – es gilt die Standardaufteilung.');
+    }
     if (koOnly) {
       gCount = 0;
+    } else if (customGroups) {
+      gCount = c.groupSizes.length;
     } else if (mppMode) {
       const autoMpp = mppGroupCount(all.length);
       if (!autoMpp) {
@@ -233,7 +249,10 @@
        einmal gedruckte Spielplan darf sich durch einen Ausfall nicht ändern.
        Ausfälle wirken erst in der Wertung (Gegner erhält ein Freilos).       */
     const names = GROUP_NAMES.slice(0, gCount);
-    const groups = koOnly ? {} : TC.genGroups(all, gCount, { distribution: 'sequential', names });
+    const groups = koOnly ? {} : TC.genGroups(all, gCount, {
+      distribution: c.groupMode === 'snake' ? 'snake' : 'sequential', names,
+      sizes: customGroups ? c.groupSizes : null
+    });
     const groupSizes = {};
     names.forEach(n => groupSizes[n] = groups[n].length);
     names.forEach(n => {
@@ -325,8 +344,12 @@
         : null;
       const dvvUnsupported = c.rankingProfile === 'indoor-dvv-bso-2026'
         && played.some(match => match.result && match.result.administrative) ? 'outcome' : null;
+      const pending = matches.filter(m => {
+        const a = m.ta != null ? m.ta : m.a, b = m.tb != null ? m.tb : m.b;
+        return a != null && b != null && !m.dead && !resultOf(m.id, m.setMode || modeId);
+      }).map(m => ({ a: m.ta != null ? m.ta : m.a, b: m.tb != null ? m.tb : m.b, result: null }));
       const rankingOptions = {
-        criteria, matches: played, rankingProfile: c.rankingProfile,
+        criteria, matches: played.concat(pending), rankingProfile: c.rankingProfile,
         unsupportedReason: dvvUnsupported || dttbUnsupported || ittfUnsupported
           || (isStrictProfile(c.rankingProfile) && complete && unequal
           ? 'unequal-games' : null)
@@ -855,12 +878,20 @@
       return { slots: list.slice(), remaining: true };
     }
 
+    let finalBlocksCustom = false;
     if (finalMode === 'placement') {
       finalTitle = 'Platzierungsrunde (über Kreuz)';
+      const customBlocks = c.finalBlocks != null
+        && validSizes(c.finalBlocks, qualificationSeedSlots.length, 1, MAX_FINAL_BLOCK);
+      if (c.finalBlocks != null && !customBlocks) {
+        warnings.push('Die eigenen Finalblöcke passen nicht zur Teamzahl – es gilt die Standardaufteilung.');
+      }
       const pl = TC.genPlacement(names, groupSizes, {
         idPrefix: 'pl', phase: 'grp',
-        slots: qualificationSeedSlots
+        slots: qualificationSeedSlots,
+        blockSizes: customBlocks ? c.finalBlocks : null
       });
+      finalBlocksCustom = !!customBlocks;
       placementBlocks = pl.blocks;
       finalRounds = pl.rounds || blocksToRounds(pl.blocks);
     } else if (finalMode === 'ko') {
@@ -1255,7 +1286,7 @@
             }, []);
             const tb = tableFor(teamList, ms, finMode);
             addRanked(tb.ranked, bl.places[0] - 1,
-              '3er-Runde um Platz ' + bl.places[0] + '–' + bl.places[1]);
+              (bl.size || 3) + 'er-Runde um Platz ' + bl.places[0] + '–' + bl.places[1]);
             return;
           }
           bl.matches.forEach(m => {
@@ -1422,9 +1453,8 @@
       warnings.push('Ein Spiel der Finalrunde endete unentschieden – hier muss ein '
         + 'Entscheidungssatz gespielt oder der Satzmodus mit Entscheidungssatz gewählt werden.');
     }
-    if (finalMode !== 'none' && finalMode !== 'blocks' && names.some(n => !groupTables[n].complete)) {
-      warnings.push('Die Finalpaarungen stehen erst fest, wenn alle Gruppenspiele eingetragen sind.');
-    }
+    /* Kein Warntext: Die Statusleiste über dem Spielplan zeigt den Hinweis neben „Offen/Als Nächstes“. */
+    const finalsPending = finalMode !== 'none' && finalMode !== 'blocks' && names.some(n => !groupTables[n].complete);
     if (finalMode === 'placement' && names.length > 4) {
       warnings.push('Platzierungsrunde: Der feste Titelblock umfasst vier Qualifikationsplätze. Bei mehr als vier Gruppen sind die übrigen Gruppensieger nicht titelberechtigt; für eine andere Titelregel die KO-Runde wählen.');
     }
@@ -1457,10 +1487,11 @@
       config: c, groups, groupNames: names, groupSizes,
       groupRounds: grpRounds, groupTables, groupMatches, mppMeta, poolMode: mppMode ? 'mpp' : 'rr',
       finalMode, finalTitle, finalRounds, finalSetMode: finMode,
-      placementBlocks, bracket, mainGroups, mainTables, deResetNeeded,
+      placementBlocks, finalBlockTotal: qualificationSeedSlots.length, finalBlocksCustom, customGroups: !!customGroups,
+      bracket, mainGroups, mainTables, deResetNeeded,
       grpSlots, finSlots, startMin, grpEndMin: grpEnd, endMin,
       placements, qualification, placementResolution, complete, rankingComplete,
-      provisional: !complete, warnings, notes, absent: Array.from(absent),
+      provisional: !complete, finalsPending, warnings, notes, absent: Array.from(absent),
       resolve, resultOf, winnerOf, loserOf, allMatches, matchLabel,
       matchById: allMatches.reduce((a, m) => (a[m.id] = m, a), {})
     };
@@ -1478,7 +1509,10 @@
     const rounds = [];
     if (cross.length) rounds.push({ round: 1, title: 'Platzierung – Über-Kreuz', matches: cross, byes: [] });
     if (finals.length) rounds.push({ round: rounds.length + 1, title: 'Platzierung – Entscheidung', matches: finals, byes: [] });
-    if (rr.length) rounds.push({ round: rounds.length + 1, title: 'Platzierung – 3er-Runde', matches: rr, byes: [] });
+    if (rr.length) {
+      const only3 = blocks.every(bl => !bl.roundRobin || (bl.size || 3) === 3);
+      rounds.push({ round: rounds.length + 1, title: only3 ? 'Platzierung – 3er-Runde' : 'Platzierung – Gruppenrunde', matches: rr, byes: [] });
+    }
     return rounds;
   }
 
@@ -1752,8 +1786,18 @@
           : rounds.some(rd => rd.bye != null) || played.some(m => m.bye != null) ? 'bye'
           : complete && unequal ? 'unequal-games' : null
         : null;
+      /* Offene Spiele (bei Alle-gegen-Alle auch spätere Runden) lassen den direkten Vergleich ruhen. */
+      const pending = [];
+      rounds.forEach(rd => {
+        if (rd.round > upto && c.mode !== 'rr') return;
+        rd.matches.forEach(m => {
+          if (!m.dead && m.bye == null && !m.result && m.a != null && m.b != null) {
+            pending.push({ a: m.ta != null ? m.ta : m.a, b: m.tb != null ? m.tb : m.b, result: null });
+          }
+        });
+      });
       const ranked = TC.rank(active, st, {
-        criteria, matches: played, rankingProfile: c.rankingProfile,
+        criteria, matches: played.concat(pending), rankingProfile: c.rankingProfile,
         interim: swissRanking && (!complete || upto < rounds.length),
         swiss: c.mode === 'swiss',
         unsupportedReason: (!stageCheck.ok ? 'stage-decision' : null) || dttbUnsupported || ittfUnsupported || (isStrictProfile(c.rankingProfile) && complete && unequal

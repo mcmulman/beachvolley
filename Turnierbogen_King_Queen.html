@@ -116,7 +116,7 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span id="g-principle" data-i18n-html="kq.guide.principle">Alle Personen treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams anhand von Tabellenstand, Niveau und bisherigen Partnerschaften. Gemischte Teams sind möglich, aber nicht vorgeschrieben; Wiederholungen bleiben möglich.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span id="g-principle" data-i18n-html="kq.guide.principle">Alle treten <b>einzeln</b> an. Die App bildet wechselnde 2er-Teams nach Tabellenstand, Niveau und bisherigen Partnern; Wiederholungen sind möglich.</span></li>
     <li><span class="hi" data-i18n="kq.guide.levelLabel">Niveau:</span> <span id="g-level">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
@@ -125,7 +125,7 @@
     <span class="format-info-toggle-icon" aria-hidden="true">i</span><span class="format-info-toggle-label" data-i18n="ui.format.details">Wertung &amp; Details anzeigen</span>
   </button>
   <div class="format-info-content format-info-text" id="scoringTables" hidden>
-    <p><strong data-i18n="kq.guide.scoringLabel">Wertung je Person:</strong> <span data-i18n-html="kq.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0 (zählt für <em>beide</em> Team-Mitglieder einzeln). Bei ungleichen Spielzahlen zählen Punkte und Ball-Differenz je Spiel. Verbleibende Gleichstände teilen den Platz. Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></p>
+    <p><strong data-i18n="kq.guide.scoringLabel">Wertung je Person:</strong> <span data-i18n-html="kq.guide.scoring">Sieg 2, Unentschieden 1, Niederlage 0 (für <em>beide</em> Teammitglieder einzeln). Bei ungleichen Spielzahlen zählen Punkte und Punktdifferenz je Spiel; Gleichstand teilt den Platz. Am Ende gibt es <b>zwei getrennte Ranglisten</b>: King (Herren) und Queen (Damen) – keine Mixed-Wertung.</span></p>
   </div>
 </div>
 
@@ -193,14 +193,14 @@
   <div style="flex:0 0 48%">
     <table class="roster" id="menRoster">
       <caption><span class="cap-title" data-i18n="kq.roster.men">Herren</span></caption>
-      <thead><tr><th data-i18n="kq.col.nr">Nr</th><th data-i18n="kq.col.name">Name</th><th data-i18n="kq.col.level">Niveau</th><th data-i18n="kq.col.absent">Status</th><th class="rmore noprint"><span class="sr-only" data-i18n="kq.col.more">Weitere Aktionen</span></th><th class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
+      <thead><tr><th scope="col" data-i18n="kq.col.nr">Nr</th><th scope="col" data-i18n="kq.col.name">Name</th><th scope="col" data-i18n="kq.col.level">Niveau</th><th scope="col" data-i18n="kq.col.absent">Status</th><th scope="col" class="rmore noprint"><span class="sr-only" data-i18n="kq.col.more">Weitere Aktionen</span></th><th scope="col" class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
       <tbody id="menRosterBody"></tbody>
     </table>
   </div>
   <div style="flex:0 0 48%">
     <table class="roster" id="womenRoster">
       <caption><span class="cap-title" data-i18n="kq.roster.women">Damen</span></caption>
-      <thead><tr><th data-i18n="kq.col.nr">Nr</th><th data-i18n="kq.col.name">Name</th><th data-i18n="kq.col.level">Niveau</th><th data-i18n="kq.col.absent">Status</th><th class="rmore noprint"><span class="sr-only" data-i18n="kq.col.more">Weitere Aktionen</span></th><th class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
+      <thead><tr><th scope="col" data-i18n="kq.col.nr">Nr</th><th scope="col" data-i18n="kq.col.name">Name</th><th scope="col" data-i18n="kq.col.level">Niveau</th><th scope="col" data-i18n="kq.col.absent">Status</th><th scope="col" class="rmore noprint"><span class="sr-only" data-i18n="kq.col.more">Weitere Aktionen</span></th><th scope="col" class="rdel"><span class="sr-only" data-i18n="kq.col.delete">Löschen</span></th></tr></thead>
       <tbody id="womenRosterBody"></tbody>
     </table>
   </div>
@@ -420,7 +420,7 @@
   }
   function compute(persist){
     if(!structureLocked()) S.frozen = {};
-    B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
     /* Runden mit Ergebnis einfrieren, damit spätere Änderungen (Ausfall,
        Niveau, Rundenzahl) gespielte Paarungen nicht neu auslosen und die
        Ergebnisse damit anderen Teams zuordnen. Ohne Eingabe wieder frei. */
@@ -526,7 +526,7 @@
         ? '<span class="kq-bye">' + esc(T('kq.round.bye', { list: rd.bye.map(p => playerName(p)).join(', ') })) + '</span>' : '';
       html += '<div class="kq-round" data-round-block="' + rd.round + '">'
         + '<div class="kq-round-title"><span class="kq-rlabel">' + esc(T('ui.round.n', { n: rd.round })) + '</span>' + byeNote + '</div>'
-        + '<table class="kq-cards"><tbody><tr>'
+        + '<table class="kq-cards" role="presentation"><tbody><tr>'
         + rd.matches.map(m => kqCellHtml(m, ctx)).join('')
         + '</tr></tbody></table></div>';
     });

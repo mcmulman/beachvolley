@@ -107,12 +107,12 @@
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol class="guide-keep">
-    <li><span class="hi" data-i18n="dko.guide.seedLabel">Setzliste:</span> <span id="g-seed">–</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.flowShortLabel">Ablauf:</span> <span data-i18n-html="dko.guide.flowText">Wer in der Gewinner-Runde verliert, fällt in die Verlierer-Runde und spielt dort weiter – <b>erst die zweite Niederlage</b> bedeutet das Ausscheiden.</span></li>
+    <li><span class="hi" data-i18n="dko.guide.seedLabel">Turnierbaum:</span> <span id="g-seed">–</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.flowShortLabel">Ablauf:</span> <span data-i18n-html="dko.guide.flowText">Wer in der Gewinner-Runde verliert, spielt in der Verlierer-Runde weiter – <b>erst die zweite Niederlage</b> scheidet aus.</span></li>
     <li class="guide-keep"><span class="hi" data-i18n="dko.guide.finalLabel">Grand Final:</span> <span id="g-final">–</span></li>
     <li><span class="hi" data-i18n="dko.guide.placesLabel">Platzierung:</span> <span id="g-places">–</span></li>
     <li><span class="hi" data-i18n="sheet.guide.gamesLabel">Spiele pro Team:</span> <span id="g-games">–</span></li>
-    <li class="only-print"><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="dko.guide.printText">Solange ein Gegner noch nicht feststeht, steht auf dem Bogen die Herkunft („Sieger VF1“, „Verlierer VF2“). Nach jeder Runde die Namen eintragen.</span></li>
+    <li class="only-print"><span class="hi" data-i18n="sheet.guide.printLabel">Ausdruck:</span> <span data-i18n="dko.guide.printText">Unbekannte Gegner stehen als „Sieger VF1“ auf dem Bogen – Namen später eintragen.</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-double-elimination.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
   <button type="button" class="format-info-toggle" data-format-info-toggle aria-expanded="false" aria-controls="scoringTables">
@@ -231,7 +231,7 @@
 
 <div class="sheet-card">
 <h2 data-i18n="dko.bracket.title">Turnierbaum</h2>
-<p class="input-hint hint-top only-print"><span class="only-print" data-i18n="dko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jeder Partie in die nächste Spalte des jeweiligen Baums eintragen.</span></p>
+<p class="input-hint hint-top only-print"><span class="only-print" data-i18n="dko.bracket.hintPrint">So ausfüllen: nach jedem Spiel den Sieger jedes Spiels in die nächste Spalte des jeweiligen Baums eintragen.</span></p>
 <div class="bracket-view-bar noprint"><button type="button" class="nbtn section-toggle-open" id="btnBracketTree" aria-controls="bracketTreeBox"></button></div>
 <div class="table-scroll is-wide" id="bracketListBox">
   <div class="bracket-title" data-i18n="dko.bracket.wb">Gewinner-Runde</div>
@@ -259,7 +259,7 @@
 <div class="sheet-card">
 <table class="stand placelist" id="placeTable" data-mstd-key="final">
   <caption><span class="cap-title" data-i18n="sheet.place.caption">Endstand</span><span class="cap-sub" id="rankingStatus"></span><span class="cap-toolbar" id="placeToolbar"></span><span class="cap-hint" id="hintRank"></span></caption>
-  <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
+  <thead><tr><th scope="col" class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th scope="col" class="nm" data-i18n="sheet.place.colTeam">Team</th><th scope="col" data-i18n="sheet.place.colSource">entschieden durch</th></tr></thead>
   <tbody id="placeBody"></tbody>
 </table>
 </div>
@@ -378,6 +378,7 @@
                && (S.config.volleyballPreset === 'a' || S.config.volleyballPreset === 'a-plus'),
              matchLabel: id => (B && B.matchLabel) ? B.matchLabel(id) : id,
              resolve: ref => B ? B.resolve(ref) : null,
+             advance: B ? TUI.advanceHints(B.finalRounds) : null,
              fields: S.config.fields, modeLabel: modeLabel(mode) };
   }
   function activeTeams(){
@@ -427,7 +428,7 @@
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
-    B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
     return B;
   }
   function keyOf(){
@@ -438,7 +439,7 @@
   function rebuild(){
     compute();
     const k = keyOf() + '#' + JSON.stringify(TPlanning.signature(B));
-    if(k !== structureKey){ structureKey = k; buildStructure(); }
+    if(k !== structureKey){ structureKey = k; TUI.rebuildKeepingScoreFocus(buildStructure, paint); }
     paint();
   }
 
@@ -530,9 +531,7 @@
       const id = td.getAttribute('data-mid');
       const m = B.matchById[id];
       if(!m) return;
-      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
-      if(a) a.innerHTML = TUI.cardNameHtml(m.a, m.ta, ctx);
-      if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
+      TUI.paintSideNames(td, m, ctx);
       const open = (m.ta == null || m.tb == null);
       const bye = m.bye != null;
       const matchMode = m.setMode || ctx.setMode;
@@ -623,13 +622,12 @@
      Wer nur einmal verliert (Finalisten) spielt am meisten – inkl. dem
      moeglichen Reset-Spiel. Ein Freilos in Runde 1 zaehlt nicht als Spiel. */
   function paintPerTeam(){
-    const wbRounds = B.bracket ? B.bracket.wbRounds.length : 0;
-    const lbRounds = B.bracket ? B.bracket.lbRounds.length : 0;
-    const maxGames = wbRounds + lbRounds + 2; // Gewinner-Finalist im Grand Final + Reset
+    const range = B.bracket ? TC.doubleBracketGameRange(B.bracket) : { min: 2, max: 0 };
+    const maxGames = range.max;
     const first = B.bracket ? B.bracket.wbRounds[0].matches : [];
     let byeTeams = 0;
     first.forEach(m => { if (m.a.k === 'bye' || m.b.k === 'bye') byeTeams++; });
-    const label = '1–' + maxGames;
+    const label = range.min + '–' + maxGames;
     $('rv-perTeam').textContent = label;
     $('rv-perTeamBreak').textContent = T('dko.kpi.finalistsMax', { n: maxGames });
     const body = byeTeams
@@ -674,13 +672,13 @@
     const E = k => TUI.esc(T(k));
     $('scoringTables').innerHTML =
       '<div class="row"><div style="flex:0 0 46%"><table><caption>' + E('dko.scoring.perGame') + '</caption>'
-      + '<tr><th>' + E('dko.scoring.result') + '</th><th>' + E('dko.scoring.consequence') + '</th></tr>'
+      + '<tr><th scope="col">' + E('dko.scoring.result') + '</th><th scope="col">' + E('dko.scoring.consequence') + '</th></tr>'
       + '<tr><td>' + E('dko.scoring.loss1') + '</td><td>' + E('dko.scoring.loss1Text') + '</td></tr>'
       + '<tr><td>' + E('dko.scoring.loss2') + '</td><td>' + E('dko.scoring.loss2Text') + '</td></tr>'
       + '<tr><td>' + E('ui.bye') + '</td><td>' + E('dko.scoring.byeText') + '</td></tr>'
       + '</table></div>'
       + '<div class="grow"><table><caption>' + E('dko.scoring.placesCaption') + '</caption>'
-      + '<tr><th>' + E('ui.rank.place') + '</th><th>' + E('dko.scoring.method') + '</th></tr>'
+      + '<tr><th scope="col">' + E('ui.rank.place') + '</th><th scope="col">' + E('dko.scoring.method') + '</th></tr>'
       + '<tr><td>1 / 2</td><td>' + E('dko.scoring.p12') + '</td></tr>'
       + '<tr><td>3</td><td>' + E(B.bracket && B.bracket.thirdPlace ? 'dko.scoring.p3Bronze' : 'dko.scoring.p3') + '</td></tr>'
       + '<tr><td>' + E('dko.scoring.from4') + '</td><td>' + E('dko.scoring.from4Text') + '</td></tr>'
@@ -688,9 +686,9 @@
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + E('dko.legend.format') + ' · '
       + (B.bracket ? TUI.esc(T('dko.kpi.treeSize', { n: B.bracket.size })) + ' · ' : '')
       + TUI.esc(T('dko.legend.rounds', { count: TUI.roundsInSlots(B.finSlots).length })) + ' · ' + E('sheet.legend.perGame') + ' '
-      + '<span class="rmode">' + TUI.esc(modeLabel(B.finalSetMode)) + '</span>'
+      + '<span class="rmode">' + TUI.esc(TUI.legendModeText(modeLabel(B.finalSetMode))) + '</span>'
       + ' ' + E('dko.legend.rule');
-    TUI.syncModeSummary(document);
+    TUI.syncModeSummary(document, B.finalSetMode);
     $('jumpbar').innerHTML = TUI.jumpBarHtml({ schedule:'scheduleSection', standings:'standingsSection' });
   }
 
@@ -729,8 +727,14 @@
     save(); fillSelects(); structureKey = ''; rebuild();
   }
   function onChange(){
+    const previousConfig = Object.assign({}, S.config);
     const prevTeams = S.config.teams;
     readConfig();
+    if(S.config.teams !== prevTeams && !TUI.confirmStructureChange(TStore.anyResults(S))){
+      S.config = previousConfig;
+      fillSelects();
+      return;
+    }
     $('setMode').disabled = S.sport.id.indexOf('volleyball.') === 0
       && S.config.volleyballPreset !== 'custom';
     if(S.config.teams !== prevTeams){
@@ -834,7 +838,7 @@
     TUI.wireJumpBar($('jumpbar'));
 
     const onScore = (mid, set, side, val) => {
-      TStore.setScore(S, mid, set, side, val);
+      if(!TUI.guardDownstream(S, mid, s => planFor(s.config, s), () => TStore.setScore(S, mid, set, side, val))){ rebuild(); return; }
       TUI.pruneDecidingSet(S, mid, set, (B.matchById[mid] && B.matchById[mid].setMode) || B.finalSetMode);
       save();
       rebuild();   // Bye-/Strukturwechsel nach Ergebnissen ohne Neuladen übernehmen
@@ -844,7 +848,7 @@
       return match && match.setMode ? match.setMode : B.finalSetMode;
     };
     TUI.wireScoreInputs($('schedFinBody'), onScore);
-    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); compute(); paint(); } });
+    TUI.wireOutcomes($('schedFinBody'), { state: () => S, buildPlan: s => TPlanning.safe(c => planFor(c, s), s.config), changed: () => { save(); compute(); paint(); } });
   }
 
   fillSelects();

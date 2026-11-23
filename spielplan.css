@@ -183,6 +183,7 @@ h1 .h1-type::before { content:"·"; color:#9bb0c8; margin:0 .45em 0 .1em; font-w
 .psets { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
 .sset { display:flex; flex-direction:column; align-items:center; gap:1px; }
 .slbl { font-size:10px; font-weight:700; color:#3d4a5c; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; white-space:nowrap; }
+.slbl .slbl-t { text-transform:none; font-weight:600; }
 .sbox { display:inline-flex; align-items:center; gap:2px; }
 /* OK-Knopf neben dem Kaestchenpaar (siehe setColumnHtml/courtLadderHtml,
    Attribut [data-score-ok]): nur am Bildschirm, damit Geraete ohne Tab-Taste
@@ -272,6 +273,9 @@ caption > .cap-toolbar {
   display:block; float:right; margin:0 0 3px 12px;
 }
 caption > .cap-toolbar:empty { display:none; }
+@media screen and (max-width: 560px) {
+  caption > .cap-toolbar { float:none; margin:6px 0 4px; }
+}
 /* Hinweis-Block über einer End-/Laufenden Tabelle: Button rechtsbündig, 
    damit bei Schweizer System und Jeder-gegen-Jeden die Korrektur-Toolbar
    wie eine rechte Spalte an der Tabelle ausgerichtet ist. */
@@ -377,7 +381,12 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .schedule-roundbar select {
     box-sizing: border-box;
     min-height: 44px;
+    text-overflow: ellipsis;
     padding: 7px 36px 7px 14px;
+    font-size: 14px;
+    border: 1px solid var(--app-line, #c9d6e6);
+    border-radius: 999px;
+    font-weight: 700;
     font-size: 14px;
     border: 1px solid var(--app-line, #c9d6e6);
     border-radius: 999px;
@@ -513,13 +522,56 @@ input.score:disabled { background:#f7f7f7; color:#999; }
     padding: 7px 14px; font-size: 16px; border: 1px solid var(--app-line-strong, #aab8cc); border-radius: 999px; background: #fff;
   }
 .schedule-roundbar .rb-search-count { flex: 0 0 auto; margin: 0 6px 0 10px; font-size: 12.5px; font-weight: 700; color: var(--app-blue-dark, #1f4e79); white-space: nowrap; }
+.schedule-roundbar .rb-search-label { display: none; margin-left: 6px; font-size: 13px; font-weight: 700; }
+/* Phone und Tablet: nur die Lupe (aria-label bleibt), damit die Leiste einzeilig und lesbar bleibt. */
+@media screen and (min-width: 481px) and (max-width: 767px), screen and (min-width: 1101px) { .schedule-roundbar .rb-search-label { display: inline; } }
+@media screen and (max-width: 480px) {
+  .schedule-roundbar select { padding: 7px 22px 7px 8px; background-position: right 6px center; }
+  .schedule-roundbar .rb-search-btn { min-width: 44px; padding: 0; }
+  .schedule-roundbar .rb-search-btn svg.nico { width: 22px; height: 22px; }
+  .schedule-roundbar .nbtn-round-all { width: 44px; min-width: 44px; }
+}
+/* Tablet: „Zur aktuellen Runde“ nur als Symbol, damit die sticky Leiste einzeilig bleibt. */
+@media screen and (min-width: 768px) and (max-width: 1100px) {
+  .schedule-roundbar .rb-search-btn { min-width: 52px; padding: 0 12px; }
+  .schedule-roundbar .nbtn-round-current { width: 44px; min-width: 44px; padding: 0; }
+  .schedule-roundbar .nbtn-round-current .nbtn-round-txt {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
+.schedule-roundbar .rb-search-field { flex-wrap: wrap; }
+.schedule-roundbar .rb-search-next { flex: 1 1 100%; order: 10; display: flex; flex-wrap: wrap; align-items: center; margin-top: 2px; font-size: 13px; line-height: 1.35; color: #1b2a3b; }
+.schedule-roundbar .rb-search-next[hidden] { display: none; }
+.schedule-roundbar .rb-search-next strong { margin: 0 4px; color: var(--app-blue-dark, #1f4e79); }
+.schedule-roundbar .rb-search-progress { margin: 0 6px; color: #4b5d73; white-space: nowrap; }
+.schedule-roundbar .rb-search-go { min-height: 44px; padding: 0 12px; font-size: 13px; }
 .schedule-roundbar .rb-search-close { flex: 0 0 auto; min-width: 44px; padding: 0 10px; font-size: 22px; line-height: 1; justify-content: center; }
 .schedule-roundbar .rb-search-input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+/* Such-Modus: zwei ruhige Zeilen in einer Karte mit moderatem Radius (Pill nur bei einzeiliger Leiste). */
+.schedule-roundbar.rb-searching { border-radius: 16px; padding: 10px 12px; }
+.schedule-roundbar.rb-searching .rb-search-field { align-items: center; }
+.schedule-roundbar.rb-searching .rb-search-input { border-radius: 12px; }
+.schedule-roundbar.rb-searching .rb-search-input:focus,
+.schedule-roundbar.rb-searching .rb-search-input:focus-visible { outline: 2px solid var(--app-blue, #1f6fa8); outline-offset: 0; border-color: var(--app-blue, #1f6fa8); }
+.schedule-roundbar.rb-searching .rb-search-count { margin: 0 8px 0 12px; }
+.schedule-roundbar.rb-searching .rb-search-close { min-width: 44px; width: 44px; padding: 0; border-radius: 12px; }
+.schedule-roundbar.rb-searching .rb-search-next {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--app-line, #dbe4ef);
+    font-size: 13px; line-height: 1.4; align-items: center;
+  }
+.schedule-roundbar.rb-searching .rb-search-next .rb-search-go {
+    margin-left: auto; min-width: 44px; min-height: 44px; padding: 0 16px; border-radius: 12px; font-size: 13px; white-space: nowrap;
+  }
+@media screen and (max-width: 480px) {
+  .schedule-roundbar.rb-searching { padding: 8px 10px; }
+  .schedule-roundbar.rb-searching .rb-search-next .rb-search-go { flex: 1 1 100%; margin: 8px 0 0; }
+  .schedule-roundbar.rb-searching .rb-search-progress { flex: 1 1 100%; margin: 0; }
+}
 @media screen and (max-width: 640px) {
-  .schedule-roundbar { grid-template-columns: 40px minmax(0, 1fr) 40px 46px 46px; }
+  .schedule-roundbar { grid-template-columns: 40px minmax(0, 1fr) 40px 46px auto; }
   .schedule-roundbar .nbtn-round-all { margin-right: -6px !important; }
   .schedule-roundbar select { padding-left: 8px !important; padding-right: 28px !important; background-position: right 8px center !important; }
-  .schedule-roundbar .rb-search-btn { grid-column: 5; grid-row: 1; margin: 0 !important; padding: 0; }
+  .schedule-roundbar .rb-search-btn { grid-column: 5; grid-row: 1; margin: 0 !important; padding: 0 8px; }
   .schedule-roundbar .rb-search-field { grid-column: 1 / -1; grid-row: 1; width: 100%; }
   .schedule-roundbar .rb-search-input { width: 0; flex: 1 1 0%; }
   .schedule-roundbar .rb-search-count { margin: 0 4px 0 8px; }
@@ -527,6 +579,11 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 @media screen {
   td.match.tf-dim { opacity: .28; }
   tr.tf-hide { display: none !important; }
+  td.match.tf-flash { animation: tfFlash 1.8s ease-out 1; }
+  @keyframes tfFlash { 0%, 40% { box-shadow: inset 0 0 0 3px #0a84ff; } 100% { box-shadow: inset 0 0 0 3px transparent; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  td.match.tf-flash { animation: none; box-shadow: inset 0 0 0 3px #0a84ff; }
 }
 @media print {
   .schedule-roundbar .rb-search-btn, .schedule-roundbar .rb-search-field { display: none !important; }
@@ -1426,9 +1483,25 @@ table.stand td.nm > .screen-place { grid-column: 2; grid-row: 1 / span 2; justif
 }
 @media screen and (max-width: 640px) {
   .track th.tname, .track td.tname,
-  .central-table th.teamcol, .central-table td.teamcol { width: 96px; min-width: 96px; }
-  .track .tname .t-line, .central-table .teamcol .t-line { font-size: 11px; }
-  .track .tname .t-nm, .central-table .teamcol .t-nm { font-size: 9.5px; }
+  .central-table th.teamcol, .central-table td.teamcol { width: 108px; min-width: 108px; }
+  .track .tname .t-line, .central-table .teamcol .t-line { font-size: 12px; }
+  .track .tname .t-nm, .central-table .teamcol .t-nm { font-size: 12px; }
+  /* Name: volle Spaltenbreite nutzen, vollstaendig (nie abgeschnitten) umbrechen. */
+  html body.tournament-sheet .track .tname .t-nm,
+  html body.tournament-sheet .central-table .teamcol .t-nm {
+    width: auto; max-width: 96px; line-height: 1.2; word-break: normal; -webkit-hyphens: manual; hyphens: manual;
+  }
+  html body table.track th.tname, html body table.track td.tname { width: 108px; min-width: 108px; }
+  .track span.ex-badge { display: block; margin: 0 0 2px; }
+  /* Beschriftung (Punkte / Ball-Differenz) bleibt beim Scrollen neben dem Team stehen. */
+  table.track th.lbl, table.track td.lbl {
+    position: -webkit-sticky; position: sticky; left: 108px; z-index: 2;
+    font-size: 12px; width: 76px; min-width: 76px; background: #fafafa;
+  }
+  table.track tr.ex td.lbl { background: #dceaf7; }
+  /* Gruppentabelle: Name bekommt Platz; die Herkunftsgruppe steht schon in der Kartenueberschrift. */
+  html body .grpbox table.stand .nm { min-width: 124px; }
+  html body .grpbox table.stand .team-origin-group { display: none; }
 }
 @media print {
   .track th.tname, .track td.tname,
@@ -1612,6 +1685,7 @@ table.timeplan.has-teams td:nth-child(3), table.timeplan.has-teams th:nth-child(
    --------------------------------------------------------------------------- */
 @media screen {
   .schedule-roundbar label { min-width: 0; max-width: 100%; }
+  @media (min-width: 768px) { .schedule-roundbar label { max-width: 190px; } }
   .schedule-roundbar select { min-width: 0; max-width: 100%; }
   .bl-round-warnings {
     min-width: 0;
@@ -1758,11 +1832,11 @@ table.timeplan.has-teams td:nth-child(3), table.timeplan.has-teams th:nth-child(
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    margin: -4px 0 -4px 8px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    margin: -6px 0 -6px 8px !important;
     padding: 0 !important;
     border-radius: 50% !important;
     border: 1px solid #1f6fa8 !important;
@@ -1874,4 +1948,18 @@ td.match[data-outcome="invalid"] .outcome-note { color:#b00020; }
   .guide { padding-top:0; margin-bottom:2mm; }
   input.score { width:11mm; height:8.5mm; font-size:13pt; }
   .sched.compact input.score { width:9.5mm; height:7.2mm; font-size:11.5pt; }
+}
+
+/* Lesbarkeit am Bildschirm: spielfreie Teams und Teamnamen nicht unter 13px. */
+@media screen {
+  html body .sched tr.rhead .rbye { font-size: 14px; font-weight: 700; padding: 4px 12px; color: #5f4600; line-height: 1.3; }
+  html body .sched tr.rhead .rbye > span { font-weight: 700; }
+  html body .sched tr.rhead .rtime, html body .sched tr.rhead .rmode { font-size: 13px; }
+  html body .sched .rnd .rbye { font-size: 13px; font-weight: 700; }
+  html body .sched .rnd .rtime { font-size: 13px; }
+  html body .sched .rnd .rmode { font-size: 12px; }
+  html body .t-nm, html body .sched.compact .pair .t-nm, html body .sched.compact .bye .t-nm,
+  html body .stand .nm .t-nm, html body .teams .name .t-nm { font-size: 13px; }
+  html body .tdiff, html body .sched.compact .tdiff { font-size: 12px; }
+  html body .slbl { font-size: 12px; }
 }

@@ -109,13 +109,9 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <p class="nhint noprint" id="structureLockHint" data-i18n="king.structureLocked" hidden>Nach der ersten Punkteingabe sind strukturelle Änderungen und das Löschen gesperrt. Abwesenheit wirkt nur auf noch nicht begonnene Runden.</p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Pro Feld spielen die Teams gegeneinander (bei 4 Teams 1 gegen 4 und 2 gegen 3, bei 3 oder 2 Teams ein Spiel, übrige Teams haben Freilos). Die praktische Abwicklung organisiert die Turnierleitung.</span></li>
-    <li><span class="hi" data-i18n="kotc.guide.timeLabel">Zeitlimit statt Zielpunktzahl:</span> <span data-i18n="kotc.guide.timePre">Jede Runde dauert</span> <span id="g-roundmin">–</span> <span data-i18n="kotc.guide.timePost">Min.
-      Gespielt wird auf Zeit – es zählen die Punkte, die in dieser Zeit erzielt werden (kein fester
-      Zielwert, kein 2-Punkte-Zwang). Ein Unentschieden ist möglich.</span></li>
-    <li><span class="hi" data-i18n="kotc.guide.moveLabel">Aufsteiger/Absteiger:</span> <span data-i18n="kotc.guide.move">Auf dem King-&amp;-Queen-Feld bleiben die Sieger, die Verlierer
-      steigen ab. Auf dem untersten Feld steigen die Sieger auf, die Verlierer bleiben. Auf den Feldern
-      dazwischen steigen Sieger eine Stufe auf, Verlierer eine Stufe ab.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="kotc.guide.principle">Feste Teams stehen auf einer Feldleiter. Feld 1 ist das <b>Königs-/Königinnenfeld</b>. Pro Feld spielen die Teams gegeneinander (bei 4 Teams 1 gegen 4 und 2 gegen 3, bei 3 oder 2 Teams ein Spiel).</span></li>
+    <li><span class="hi" data-i18n="kotc.guide.timeLabel">Zeitlimit statt Zielpunktzahl:</span> <span data-i18n="kotc.guide.timePre">Jede Runde dauert</span> <span id="g-roundmin">–</span> <span data-i18n="kotc.guide.timePost">Min. Es zählen die Punkte, die in dieser Zeit erzielt werden (kein Zielwert, kein 2-Punkte-Vorsprung). Unentschieden sind möglich.</span></li>
+    <li><span class="hi" data-i18n="kotc.guide.moveLabel">Aufsteiger/Absteiger:</span> <span data-i18n="kotc.guide.move">Auf dem King-&amp;-Queen-Feld bleiben die Sieger, die Verlierer steigen ab. Auf dem untersten Feld steigen die Sieger auf, die Verlierer bleiben. Dazwischen steigen die Sieger auf und die Verlierer ab.</span></li>
     <li><span class="hi" data-i18n="kotc.guide.byeLabel">Feld-Freilos:</span> <span data-i18n="kotc.guide.bye">Ist die Teamzahl kein glattes Vielfaches von 4 je Feld,
       hat auf dem betroffenen Feld ein Team pro Runde ein Freilos (bleibt stehen, ohne Punkte).</span></li>
   </ol>
@@ -219,7 +215,7 @@
 <div class="kq-final-table-wrap sheet-card">
   <table class="stand placelist kq-final-table" id="placeTable">
     <caption><span class="cap-title" id="placeCaption" data-i18n="ranking.status.provisional">Vorläufiger Stand – Ergebnisse oder Wertungsentscheidungen fehlen.</span></caption>
-    <thead><tr><th class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th class="nm" data-i18n="sheet.place.colTeam">Team</th><th class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
+    <thead><tr><th scope="col" class="pl" data-i18n="sheet.place.colPlace">Pl.</th><th scope="col" class="nm" data-i18n="sheet.place.colTeam">Team</th><th scope="col" class="pts" data-i18n="kotc.place.colPoints">Punkte gesamt</th><th scope="col" class="sub" data-i18n="kotc.place.colRounds">Runden gespielt</th><th scope="col" class="sub" data-i18n="kotc.place.colAvg">Ø Punkte/Runde</th><th scope="col" class="sub" data-i18n="kotc.place.colBest">Bestes Feld</th></tr></thead>
     <tbody id="placeBody"></tbody>
   </table>
 </div>

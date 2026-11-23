@@ -88,6 +88,13 @@
     }
   }
 
+  // Mobil: sobald Ergebnisse existieren, rückt der Spielplan durch eingeklapptes Setup nach oben.
+  function collapseSetupOnMobile() {
+    if (!window.matchMedia || !window.matchMedia('(max-width: 767px)').matches) return;
+    sectionToggles.forEach(function (toggle) { toggle.setExpanded(false, false, false); });
+  }
+  window.addEventListener('beachl:results-begun', collapseSetupOnMobile);
+
   window.addEventListener('beachl:tournament-started', function () {
     sectionToggles.forEach(function (toggle) { toggle.setExpanded(true, true, false); });
     try { localStorage.setItem(namesPreference, '1'); } catch (e) {}
@@ -286,6 +293,10 @@
           planning.appendChild(button);
         }
       });
+      // Genau eine primäre Aktion (gefüllt): Teams/Namen, sonst erste Aktion.
+      var lead = teams.querySelector('#btnToggleNames, [onclick*="toggleNames"]')
+        || teams.firstElementChild || planning.firstElementChild;
+      if (lead) lead.classList.add('cfg-action-primary');
       Array.prototype.slice.call(card.querySelectorAll(
         '.format-switch, #sport-profile-controls, #sport-mode-estimate-controls, #outcome-profile-controls'
       ))
@@ -481,6 +492,7 @@
     groupConfigActions();
     addConfigToggle();
     addGuideToggle();
+    if (window.__blResultsBegun) collapseSetupOnMobile();
     if (document.querySelector('.app-bar')) return;
 
     // vorhandene Navizeile finden (enthält Link zur Übersicht)

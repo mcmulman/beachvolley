@@ -646,16 +646,101 @@
      eine Karte mit den Teams untereinander (Namen werden per paint() ueber
      data-team-name befuellt). */
   function groupCardsHtml(groupNames, groups) {
+    /* Zahnrad nur, wenn der Bogen das Anpassen-Overlay hat. */
+    const hasAdv = typeof document !== 'undefined' && !!document.getElementById('advCfg');
+    const advTitle = esc(tx('ui.adv.title', 'Gruppen & Finalblöcke anpassen'));
+    const gearHtml = hasAdv
+      ? '<button type="button" class="adv-gear adv-gear--card noprint" data-adv-open aria-haspopup="dialog" aria-label="' + advTitle + '" title="' + advTitle + '">'
+        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>'
+      : '';
     return groupNames.map(function (g) {
       const members = groups[g] || [];
       return '<section class="gcard" data-group="' + esc(g) + '"><header class="gcard-head">'
         + '<span class="gbadge" aria-hidden="true">' + esc(g) + '</span>'
         + '<h3 class="gtitle">' + esc(tx('ui.groups.card', 'Gruppe {group}', { group: g })) + '</h3>'
-        + '<span class="gcount">' + members.length + '</span></header>'
+        + '<span class="gcount">' + members.length + '</span>' + gearHtml + '</header>'
         + '<ol class="gteams">' + members.map(function (t) {
           return '<li class="gteam name" data-team-name="' + esc(t) + '"></li>';
         }).join('') + '</ol></section>';
     }).join('');
+  }
+
+  /* ====================================================== Aufteilungs-Wähler
+     Chips 1..n mit klickbaren Trennstellen dazwischen. Daraus entsteht eine
+     Aufteilung in Segmente (z. B. 7 Plätze -> 3 | 2 | 2). Genutzt für die
+     Finalblöcke und die eigenen Gruppengrößen. o: total, min, max,
+     getSizes() -> Array, setSizes(Array|null), isCustom(), captionOf(i,a,b),
+     chipTitle(i). Rendert sich selbst neu und behält den Fokus.            */
+  function splitPickerSizesOk(sizes, o) {
+    return sizes.every(function (n) { return n >= o.min && n <= o.max; });
+  }
+  function splitPickerToggle(sizes, gap) {
+    const cuts = [];
+    let acc = 0;
+    sizes.forEach(function (n) { acc += n; cuts.push(acc); });
+    cuts.pop();
+    const at = cuts.indexOf(gap);
+    if (at >= 0) cuts.splice(at, 1); else { cuts.push(gap); cuts.sort(function (a, b) { return a - b; }); }
+    const out = [];
+    let prev = 0;
+    cuts.concat([sizes.reduce(function (a, b) { return a + b; }, 0)]).forEach(function (c) { out.push(c - prev); prev = c; });
+    return out;
+  }
+  function mountSplitPicker(el, o) {
+    if (!el) return;
+    const sizes = o.getSizes();
+    const total = o.total;
+    const cutSet = {};
+    let acc = 0;
+    sizes.forEach(function (n) { acc += n; cutSet[acc] = true; });
+    const gapBtn = function (i) {
+      const cut = !!cutSet[i];
+      const next = splitPickerToggle(sizes, i);
+      const ok = splitPickerSizesOk(next, o);
+      const label = cut ? tx('ui.split.join', 'Zusammenfassen') : tx('ui.split.cut', 'Trennen');
+      return '<button type="button" class="sp-gap' + (cut ? ' on' : '') + '" data-gap="' + i + '"'
+        + ' aria-pressed="' + (cut ? 'true' : 'false') + '" aria-label="' + esc(label + ' ' + i + '|' + (i + 1)) + '"'
+        + ' title="' + esc(label) + '"' + (ok ? '' : ' disabled') + '>'
+        + (cut ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span class="sp-gap-txt">' + esc(label) + '</span>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>') + '</button>';
+    };
+    let segs = '';
+    let from = 1;
+    sizes.forEach(function (n, idx) {
+      const last = from + n - 1;
+      let chips = '';
+      for (let i = from; i <= last; i++) {
+        chips += '<span class="sp-chip" title="' + esc(o.chipTitle ? o.chipTitle(i) : '') + '">' + i + '</span>';
+        if (i < last) chips += gapBtn(i);
+      }
+      segs += '<div class="sp-seg"><div class="sp-seg-cap">' + esc(o.captionOf(idx, from, last)) + '</div>'
+        + '<div class="sp-chips">' + chips + '</div></div>';
+      if (last < total) segs += '<div class="sp-join">' + gapBtn(last) + '</div>';
+      from = last + 1;
+    });
+    el.innerHTML = (o.hint ? '<p class="sp-hint">' + esc(o.hint) + '</p>' : '') + '<div class="sp-segs">' + segs + '</div>'
+      + (o.isCustom() ? '<button type="button" class="sp-reset">' + esc(tx('ui.split.reset', 'Standard')) + '</button>' : '');
+    el.onclick = function (ev) {
+      const target = ev.target && ev.target.closest ? ev.target : null;
+      const gapBtn = target && target.closest('.sp-gap');
+      const reset = target && target.closest('.sp-reset');
+      if (!gapBtn && !reset) return;
+      if (gapBtn && gapBtn.disabled) return;
+      const focusGap = gapBtn ? gapBtn.getAttribute('data-gap') : null;
+      if (reset) o.setSizes(null);
+      else o.setSizes(splitPickerToggle(o.getSizes(), +gapBtn.getAttribute('data-gap')));
+      mountSplitPicker(el, o);
+      const again = focusGap && el.querySelector('.sp-gap[data-gap="' + focusGap + '"]');
+      if (again) again.focus();
+    };
+  }
+  /* Beschriftung eines Finalblocks nach Größe: Spielart und Spielzahl. */
+  function finalBlockCaption(a, b) {
+    const n = b - a + 1;
+    const places = n === 1 ? tx('ui.split.place', 'Platz {a}', { a: a }) : tx('ui.split.places', 'Plätze {a}–{b}', { a: a, b: b });
+    if (n === 1) return places + ' · ' + tx('ui.split.direct', 'direkt platziert');
+    if (n === 2) return places + ' · ' + tx('ui.split.single', 'ein Spiel');
+    if (n === 4) return places + ' · ' + tx('ui.split.cross', 'über Kreuz, 4 Spiele');
+    return places + ' · ' + tx('ui.split.rr', 'jeder gegen jeden, {g} Spiele', { g: n * (n - 1) / 2 });
   }
 
   /* Ab 13 Teams laesst sich die Gruppenuebersicht am Bildschirm per x
@@ -685,6 +770,37 @@
       tg.close.hidden = true;
     }
   }
+
+  /* Overlay „Gruppen & Finalblöcke anpassen“: Zahnrad-Knöpfe ([data-adv-open])
+     öffnen #advCfg als Dialog über der Seite; Schließen per x, Esc, Klick daneben. */
+  function installAdvOverlay() {
+    if (typeof document === 'undefined' || document.__advOverlay) return;
+    document.__advOverlay = true;
+    let opener = null;
+    const box = function () { return document.getElementById('advCfg'); };
+    const close = function () {
+      const b = box();
+      if (!b || b.hidden) return;
+      b.hidden = true;
+      if (opener && opener.focus) opener.focus();
+    };
+    document.addEventListener('click', function (e) {
+      const t = e.target;
+      if (!t || !t.closest) return;
+      const open = t.closest('[data-adv-open]');
+      if (open) {
+        const b = box();
+        if (!b) return;
+        e.preventDefault();
+        opener = open;
+        b.hidden = false;
+        const first = b.querySelector('[data-adv-close]');
+        if (first) first.focus();
+      } else if (t.closest('[data-adv-close]') || t === box()) close();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  }
+  installAdvOverlay();
 
   /* ================================================================ 1. NAMEN
      teamLabel() ist die einzige Stelle, die entscheidet, wie ein Team heißt.
@@ -918,15 +1034,29 @@
     return '<span class="t-line">' + esc(sideLabel(ref, resolved, ctx)) + '</span>';
   }
 
+  /* Repaint der Namen in einer bestehenden Karte: haelt data-team synchron
+     (Teamsuche, Sieger-Seite), sobald ein Team nachrueckt. */
+  function paintSideNames(td, m, ctx) {
+    [['.pside-a .t', m.a, m.ta], ['.pside-b .t', m.b, m.tb]].forEach(function (s) {
+      const el = td.querySelector(s[0]);
+      if (!el) return;
+      el.innerHTML = cardNameHtml(s[1], s[2], ctx);
+      if (s[2] != null) el.setAttribute('data-team', String(s[2])); else el.removeAttribute('data-team');
+    });
+  }
+
   /* ========================================================= 2. SPIEL-KARTE */
   function setColumnHtml(matchId, setNo, label, placeholder, names, target) {
     const ph = placeholder ? ' placeholder="' + esc(placeholder) + '"' : '';
     const maxLength = activeSport && activeSport.id.indexOf('table-tennis.') === 0 ? '' : ' maxlength="3"';
+    /* Satzziel in Klammern hinter dem Label: "Satz 1 (15)". */
+    const tgtTxt = target > 0 ? tx('ui.score.target', '({n})', { n: target }) : '';
+    const fullLabel = tgtTxt ? label + ' ' + tgtTxt : label;
     /* aria-label mit Teamname und Satz („Team A, Satz 2“) – sonst liest der
        Screenreader nur "Feld" bzw. bei mehreren Saetzen identische Namen. */
     const inp = side => {
       const nm = names && names[side];
-      const al = nm ? (label ? nm + ', ' + label : nm) : '';
+      const al = nm ? (fullLabel ? nm + ', ' + fullLabel : nm) : '';
       return '<input class="score" type="text" inputmode="numeric" pattern="[0-9]*"' + maxLength +
         ' data-mid="' + esc(matchId) + '" data-set="' + setNo + '" data-side="' + side + '"' +
         ' autocomplete="off"' + (al ? ' aria-label="' + esc(al) + '"' : '') + ph + '>';
@@ -942,9 +1072,32 @@
       + ' aria-label="' + esc(tx('ui.score.okAria', 'Eingabe bestätigen und weiter')) + '"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></button>';
     /* data-target: Satzziel für den Spiel-Timer (Satzgewinn-/Seitenwechsel). */
     return '<span class="sset" data-set="' + setNo + '"' + (target > 0 ? ' data-target="' + target + '"' : '') + '>'
-      + '<span class="slbl">' + esc(label) + '</span>'
+      + '<span class="slbl">' + esc(label)
+      + (tgtTxt ? ' <span class="slbl-t" data-set-target>' + esc(tgtTxt) + '</span>' : '') + '</span>'
       + '<span class="sbox">' + inp('a') + '<span class="vs" aria-hidden="true">:</span>' + inp('b') + okBtn + '</span>'
       + '</span>';
+  }
+
+  /* Zielspiel von Sieger/Verlierer je KO-Spiel: { matchId: [{k:'win'|'lose', to:'Halbfinale 1'}] } */
+  function advanceHints(rounds) {
+    const out = {};
+    (rounds || []).forEach(rd => (rd.matches || []).forEach(m => {
+      const main = rd.matches.filter(x => !x.places);
+      const name = m.label || (m.places && m.name) || (rd.phase === 'lb' && m.name)
+        || (main.length > 1 ? rd.title + ' ' + (main.indexOf(m) + 1) : rd.title);
+      ['a', 'b'].forEach(side => {
+        const ref = m[side];
+        if (!ref || (ref.k !== 'win' && ref.k !== 'lose') || !ref.match) return;
+        (out[ref.match] = out[ref.match] || []).push({ k: ref.k, to: name });
+      });
+    }));
+    return out;
+  }
+  function advanceHintHtml(list) {
+    if (!list || !list.length) return '';
+    const txt = list.slice().sort((x, y) => (x.k === 'win' ? 0 : 1) - (y.k === 'win' ? 0 : 1)).map(h => (h.k === 'win' ? tx('ui.match.winnerTo', 'Sieger → {to}', { to: term(h.to) })
+      : tx('ui.match.loserTo', 'Verlierer → {to}', { to: term(h.to) }))).join(' · ');
+    return '<span class="mnote-slot m-advance" data-advance>' + esc(txt) + '</span>';
   }
 
   /* m: {id, a, b, round?, label?, places?}  a/b sind TeamRef oder Teamnummer */
@@ -977,6 +1130,7 @@
       + cardNameHtml(ref, team, ctx) + '</span></span>';
 
     const extra = m.label ? '<span class="mnote-slot">' + esc(term(m.label)) + '</span>' : '';
+    const advance = advanceHintHtml(ctx.advance && ctx.advance[m.id]);
     const referees = ctx.showReferees
       ? '<span class="m-referees" data-referees>' + esc(tx('ui.match.referees', 'Schiedsgericht: noch nicht festgelegt')) + '</span>'
       : '';
@@ -999,7 +1153,7 @@
       + (m.group ? ' data-group="' + esc(m.group) + '"' : '')
       + '>'
       + '<span class="pair">'
-      + extra + places + referees
+      + extra + places + advance + referees
       + '<span class="pnames">'
       + side('pside-a', m.a, ta)
       + side('pside-b', m.b, tb)
@@ -1219,9 +1373,26 @@
       const set = inp.getAttribute('data-set') || '1';
       (boxes[set] = boxes[set] || {})[inp.getAttribute('data-side')] = inp;
     });
+    /* Entscheidungssatz nur am Bildschirm zeigen, wenn Satz 1+2 1:1 enden (Druck behaelt das Feld). */
+    const dcol = td.querySelector('.sset[data-set="3"]');
+    const dBoxes = boxes[3];
+    const defM = TC.modeDef(setMode);
+    let deciderIdle = false;
+    if (dcol && dBoxes && boxes[1] && boxes[2] && defM.decidingSet && defM.sets === 3) {
+      const num = k => /^[0-9]+$/.test(String(k.value || '').trim()) ? Number(k.value) : null;
+      const tg = n => +boxes[n].a.closest('.sset').getAttribute('data-target') || TC.targetForSet(setMode, n);
+      const x1 = num(boxes[1].a), y1 = num(boxes[1].b), x2 = num(boxes[2].a), y2 = num(boxes[2].b);
+      const needed = x1 != null && y1 != null && x2 != null && y2 != null
+        && TC.setValid(x1, y1, tg(1)) && TC.setValid(x2, y2, tg(2)) && (x1 > y1) !== (x2 > y2);
+      const used = String(dBoxes.a.value || '').trim() !== '' || String(dBoxes.b.value || '').trim() !== ''
+        || dcol.contains(td.ownerDocument.activeElement);
+      deciderIdle = !needed && !used;
+      dcol.classList.toggle('sset-idle', deciderIdle);
+    }
     Object.keys(boxes).forEach(set => {
       const a = boxes[set].a, b = boxes[set].b;
       if (!a || !b || a.disabled || b.disabled) return;
+      if (deciderIdle && +set === 3) return;
       const ra = String(a.value || '').trim(), rb = String(b.value || '').trim();
       if (!requireComplete && ra === '' && rb === '') return;
       if (ra === '' && rb === '' && +set === 3 && boxes[1] && boxes[2] && a.getAttribute('placeholder') === 'TB') {
@@ -1349,16 +1520,16 @@
       : isTableTennis ? tx('ui.criteria.pointsDiff', 'Punktedifferenz')
         : tx('ui.criteria.bd', 'Ball-Differenz');
     let html = '<thead><tr>'
-      + '<th class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th class="nm">' + participantWord() + '</th>'
-      + '<th>' + (o.groupCols ? tx('ui.stand.gamesFull', 'Spiele') : tx('ui.stand.games', 'Sp.')) + '</th>'
-      + '<th>' + (o.groupCols ? tx('ui.stand.wonFull', 'Siege') : tx('ui.stand.won', 'S')) + '</th>'
-      + (o.showDraw ? '<th>' + (o.groupCols ? tx('ui.stand.drawnFull', 'Unentschieden') : tx('ui.stand.drawn', 'U')) + '</th>' : '')
-      + (o.groupCols && !o.showDraw ? '' : '<th>' + (o.groupCols ? tx('ui.stand.lostFull', 'Niederlagen') : tx('ui.stand.lost', 'N')) + '</th>')
-      + '<th>' + (o.groupCols ? tx('ui.stand.ptsFull', 'Punkte') : tx('ui.stand.pts', 'Pkt')) + perSfx + '</th>'
-      + (isNonBeach ? '<th>' + unitWord() + '</th>' : '')
-      + '<th>' + pointLabel + '</th>'
-      + '<th>' + diffLabel + perSfx + '</th>'
-      + (editable ? '<th class="mstd-actcol noprint"></th>' : '')
+      + '<th scope="col" class="pl">' + tx('ui.stand.place', 'Pl.') + '</th><th scope="col" class="nm">' + participantWord() + '</th>'
+      + '<th scope="col">' + (o.groupCols ? tx('ui.stand.gamesFull', 'Spiele') : tx('ui.stand.games', 'Sp.')) + '</th>'
+      + '<th scope="col">' + (o.groupCols ? tx('ui.stand.wonFull', 'Siege') : tx('ui.stand.won', 'S')) + '</th>'
+      + (o.showDraw ? '<th scope="col">' + (o.groupCols ? tx('ui.stand.drawnFull', 'Unentschieden') : tx('ui.stand.drawn', 'U')) + '</th>' : '')
+      + (o.groupCols && !o.showDraw ? '' : '<th scope="col">' + (o.groupCols ? tx('ui.stand.lostFull', 'Niederlagen') : tx('ui.stand.lost', 'N')) + '</th>')
+      + '<th scope="col">' + (o.groupCols ? tx('ui.stand.ptsFull', 'Punkte') : tx('ui.stand.pts', 'Pkt')) + perSfx + '</th>'
+      + (isNonBeach ? '<th scope="col">' + unitWord() + '</th>' : '')
+      + '<th scope="col">' + pointLabel + '</th>'
+      + '<th scope="col">' + diffLabel + perSfx + '</th>'
+      + (editable ? '<th scope="col" class="mstd-actcol noprint"></th>' : '')
       + '</tr></thead><tbody>';
 
     rows.forEach(row => {
@@ -1635,7 +1806,7 @@
       const started = finalsStarted(plan, state);
       const uiState = TStore.initialUiState();
       const readOnly = !!(uiState && uiState.readOnly);
-      container.ownerDocument.querySelectorAll('#teamCount, #groupCount, #finalMode, #setMode, #finalSetMode, '
+      container.ownerDocument.querySelectorAll('#teamCount, #groupCount, #groupMode, #finalMode, #setMode, #finalSetMode, '
         + '#ranking-profile-select, #outcome-profile-select, #btnToggleRankImport, #btnRankImportApply, '
         + '#btnClearAbsent, #absentGrid input, #absentGrid select, #absentGrid button, #nameGrid [data-remove-team], '
         + '#schedGrpBody [data-outcome-btn], #groupTables .mstd-toggle, #groupTables .mstd-in')
@@ -1813,10 +1984,10 @@
 
   function dttbSwissTableHtml(plan, ctx) {
     const label = key => esc(tx(key, key));
-    let html = '<thead><tr><th>' + esc(participantWord()) + '</th><th>'
-      + label('ui.rank.place') + '</th><th>' + label('ui.criteria.won')
-      + '</th><th>Buchholz</th>';
-    plan.rounds.forEach(rd => { html += '<th>R' + rd.round + '<br>'
+    let html = '<caption class="sr-only">' + esc(tx('ui.a11y.standCaption', 'Tabelle')) + '</caption>' + '<thead><tr><th scope="col">' + esc(participantWord()) + '</th><th scope="col">'
+      + label('ui.rank.place') + '</th><th scope="col">' + label('ui.criteria.won')
+      + '</th><th scope="col">Buchholz</th>';
+    plan.rounds.forEach(rd => { html += '<th scope="col">R' + rd.round + '<br>'
       + label('sport.ranking.swissRound') + '</th>'; });
     html += '</tr></thead><tbody>';
     const started = plan.table.played.length > 0;
@@ -1855,11 +2026,11 @@
     const winPts = o.winPts || 1; // Punkte je Sieg (für Musterzeile)
     const participantHeader = activeSport && activeSport.id !== 'volleyball.beach'
       ? participantWord() + ' / ' + tx('ui.track.name', 'Name') : tx('ui.track.team', 'Team / Name');
-    let html = '<thead><tr><th class="tname teamcol">' + participantHeader + '</th><th class="lbl">'
+    let html = '<thead><tr><th scope="col" class="tname teamcol">' + participantHeader + '</th><th scope="col" class="lbl">'
       + tx('ui.track.cumulative', 'kumuliert') + '</th>';
-    for (let r = 1; r <= roundCount; r++) html += '<th>R' + r + '</th>';
-    html += '<th class="mstd-actcol noprint">' + tx('ui.track.corr', 'Korr.') + '</th><th class="pos">' + tx('ui.track.place', 'Platz') + '</th>'
-      + '<th class="mstd-actcol mstd-rowact noprint"></th></tr></thead><tbody>';
+    for (let r = 1; r <= roundCount; r++) html += '<th scope="col">R' + r + '</th>';
+    html += '<th scope="col" class="mstd-actcol noprint">' + tx('ui.track.corr', 'Korr.') + '</th><th scope="col" class="pos">' + tx('ui.track.place', 'Platz') + '</th>'
+      + '<th scope="col" class="mstd-actcol mstd-rowact noprint"></th></tr></thead><tbody>';
     /* Beispielzeile – zeigt wie man die Tabelle ausfüllt */
     let pEx = 0, bdEx = 0;
     const ptsEx = [], bdExArr = [];
@@ -2090,6 +2261,44 @@
     return (typeof confirm === 'function') ? confirm(msg) : true;
   }
 
+  /* Strukturänderung (Teamzahl, Gruppen) bei vorhandenen Ergebnissen: Ergebnisse
+     hängen an Spiel-IDs und könnten sonst still anderen Paarungen zugeordnet
+     werden. Ohne Ergebnisse ist keine Rückfrage nötig. */
+  function confirmStructureChange(hasResults) {
+    if (!hasResults) return true;
+    const msg = tx('ui.structure.confirm', 'Es sind bereits Ergebnisse eingetragen.\n\nDiese Änderung erstellt den Spielplan neu: Ergebnisse bleiben nur bei Begegnungen erhalten, die es weiterhin gibt – andere Begegnungen können dadurch andere Teams zeigen oder entfallen.\n\nTrotzdem ändern?');
+    return (typeof confirm === 'function') ? confirm(msg) : true;
+  }
+
+  /* KO: Eine Ergebniskorrektur kann die Paarung bereits gespielter Folgespiele
+     ändern (anderer Sieger). `mutate` trägt den Wert ein; ändert das die Teams
+     eines Folgespiels mit Ergebnis, wird nachgefragt und bei Abbruch der alte
+     Eintrag wiederhergestellt. Rückgabe: false = verworfen. */
+  function guardDownstream(state, matchId, buildPlan, mutate) {
+    const had = Object.prototype.hasOwnProperty.call(state.results || {}, matchId);
+    const prev = had ? JSON.parse(JSON.stringify(state.results[matchId])) : null;
+    const oldPlan = buildPlan(state);
+    mutate();
+    let affected = [];
+    try {
+      const newPlan = buildPlan(state);
+      const inputs = root.TOutcome.withInputs(state);
+      affected = Object.keys(inputs).filter(id => {
+        if (id === matchId) return false;
+        const sc = inputs[id];
+        if (!Array.isArray(sc) || !sc.some(x => Array.isArray(x) && (String(x[0] == null ? '' : x[0]).trim() !== '' || String(x[1] == null ? '' : x[1]).trim() !== ''))) return false;
+        const a = oldPlan.matchById[id], b = newPlan.matchById[id];
+        if (!a || !b) return true;
+        return a.ta !== b.ta || a.tb !== b.tb;
+      });
+    } catch (e) { return true; }
+    if (!affected.length) return true;
+    const msg = tx('ui.downstream.confirm', 'Diese Änderung ändert die Paarung bereits gespielter Folgespiele. Deren Ergebnisse würden dann zu anderen Teams gehören.\n\nTrotzdem ändern?');
+    if (typeof confirm !== 'function' || confirm(msg)) return true;
+    if (had) state.results[matchId] = prev; else delete state.results[matchId];
+    return false;
+  }
+
   /* ==================================================== 8. RUNDEN-NAVIGATOR
      Bei 16+ Teams ist der Plan sonst auf dem Handy unbedienbar.
      Das Markup entspricht exakt der in spielplan.css dokumentierten Struktur
@@ -2103,7 +2312,7 @@
     const atLast = cur === 'all' || idx < 0 || idx >= rounds.length - 1;
 
     let opts = '<option value="all"' + (cur === 'all' ? ' selected' : '') + '>'
-      + esc(tx('ui.roundbar.allRounds', 'Alle Runden')) + '</option>';
+      + esc(tx('ui.roundbar.allOption', 'Alle')) + '</option>';
     rounds.forEach(r => {
       opts += '<option value="' + r + '"' + (cur === String(r) ? ' selected' : '')
         + '>' + esc(tx('ui.round.n', 'Runde {n}', { n: r })) + '</option>';
@@ -2129,6 +2338,9 @@
         + ' title="' + esc(tx('ui.roundbar.allTitle', 'Alle Runden gleichzeitig anzeigen')) + '">'
         + ICON_LAYERS + ' <span class="nbtn-round-txt">' + esc(allActive ? tx('ui.roundbar.single', 'Einzelne Runde') : tx('ui.roundbar.allRounds', 'Alle Runden')) + '</span>'
         + '</button>'
+      + '<button type="button" class="nbtn nbtn-round nbtn-round-current" data-round-current hidden aria-label="' + esc(tx('ui.round.gotoCurrent', 'Zur aktuellen Runde')) + '" title="' + esc(tx('ui.round.gotoCurrent', 'Zur aktuellen Runde')) + '">'
+        + '<svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>'
+        + ' <span class="nbtn-round-txt">' + esc(tx('ui.round.gotoCurrent', 'Zur aktuellen Runde')) + '</span></button>'
       + '<span class="state" aria-live="polite">' + esc(state) + '</span>'
       + (barOpts && barOpts.search === false ? '' : teamSearchHtml());
   }
@@ -2142,11 +2354,13 @@
   function teamSearchHtml() {
     const label = tx('ui.roundbar.search', 'Team oder Namen suchen');
     return '<button type="button" class="nbtn nbtn-round rb-search-btn" data-rb-search aria-expanded="' + teamSearch.open
-      + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + ICON_SEARCH + '</button>'
+      + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + ICON_SEARCH
+      + '<span class="rb-search-label">' + esc(tx('ui.roundbar.searchLabel', 'Suchen')) + '</span></button>'
       + '<span class="rb-search-field"><input type="search" class="rb-search-input" list="rbTeamList" value="' + esc(teamSearch.query)
       + '" placeholder="' + esc(tx('ui.roundbar.searchPlaceholder', 'Team oder Name – tippen oder wählen')) + '" aria-label="' + esc(label)
       + '" autocomplete="off" spellcheck="false"><datalist id="rbTeamList"></datalist>'
       + '<span class="rb-search-count" aria-live="polite"></span>'
+      + '<span class="rb-search-next" hidden></span>'
       + '<button type="button" class="nbtn nbtn-round rb-search-close" data-rb-search-close aria-label="'
       + esc(tx('ui.roundbar.searchClose', 'Suche schließen')) + '" title="' + esc(tx('ui.roundbar.searchClose', 'Suche schließen')) + '">×</button></span>';
   }
@@ -2165,6 +2379,100 @@
       const label = teamSearchNorm(teamSearchLabel(el));
       return label === q || label.indexOf(q) >= 0 || teamSearchNorm(members).indexOf(q) >= 0;
     });
+  }
+  /* Genau ein Team getroffen (oder ein exakter Teamname) -> dessen ID, sonst ''. */
+  function teamSearchSingle(tbody, q) {
+    if (!q) return '';
+    const ids = [];
+    let exact = '';
+    Array.prototype.forEach.call(tbody.querySelectorAll('td.match .t[data-team]'), el => {
+      const id = el.getAttribute('data-team');
+      if (ids.indexOf(id) >= 0) return;
+      const line = el.querySelector('.t-line');
+      const members = line ? (line.getAttribute('data-player-one') || '') + ' ' + (line.getAttribute('data-player-two') || '') : '';
+      const label = teamSearchNorm(teamSearchLabel(el));
+      const hit = /^\d+$/.test(q) ? id === q : (label.indexOf(q) >= 0 || teamSearchNorm(members).indexOf(q) >= 0);
+      if (!hit) return;
+      ids.push(id);
+      if (label === q || teamSearchNorm((line || el).textContent) === q) exact = id;
+    });
+    return ids.length === 1 ? ids[0] : exact;
+  }
+  /* Uhrzeit eines Spiels aus der Zeile des Zeitplans ('' bei Bögen ohne feste Zeiten). */
+  function matchClock(td) {
+    const slot = td.getAttribute('data-slot');
+    const table = td.closest('table') || document;
+    const rt = slot != null ? table.querySelector('tr.rhead[data-slot="' + slot + '"] .rtime') : null;
+    const tm = rt && /\d{1,2}:\d{2}/.exec(rt.textContent || '');
+    return tm ? tm[0] : '';
+  }
+  /* Fortschritt aller Spiele im Zeitplan; next = naechste ungewertete Spiele derselben Runde/Zeile. */
+  function isPlayableMatchCell(td) {
+    return !td.classList.contains('is-bye') && !td.classList.contains('is-display-only');
+  }
+  function matchProgress() {
+    const all = Array.prototype.filter.call(document.querySelectorAll('table.sched td.match[data-mid]'), isPlayableMatchCell);
+    const open = all.filter(td => !td.classList.contains('bl-match-valid'));
+    const first = open[0];
+    const slot = first ? first.getAttribute('data-slot') : null;
+    const group = first ? open.filter(td => slot != null ? td.getAttribute('data-slot') === slot && td.closest('table') === first.closest('table') : td === first) : [];
+    return {
+      total: all.length, done: all.length - open.length, open: open.length,
+      next: group.map(td => ({
+        td: td, time: matchClock(td), field: td.getAttribute('data-field-label') || '',
+        names: Array.prototype.map.call(td.querySelectorAll('.pnames .t .t-line'), n => n.textContent.replace(/\s+/g, ' ').trim())
+      }))
+    };
+  }
+  function teamSearchNextHtml(id) {
+    const mine = [];
+    Array.prototype.forEach.call(document.querySelectorAll('table.sched td.match[data-mid]'), td => {
+      if (!isPlayableMatchCell(td)) return;
+      const sides = Array.prototype.slice.call(td.querySelectorAll('.pnames .t[data-team]'));
+      if (sides.length !== 2) return;
+      const i = sides.findIndex(el => el.getAttribute('data-team') === id);
+      if (i >= 0) mine.push({ td: td, opp: sides[1 - i] });
+    });
+    if (!mine.length) return tx('ui.roundbar.searchNoMatch', 'Noch kein Spiel bekannt.');
+    const done = mine.filter(m => m.td.classList.contains('bl-match-valid')).length;
+    const next = mine.filter(m => !m.td.classList.contains('bl-match-valid'))[0];
+    const progress = '<span class="rb-search-progress">' + esc(tx('ui.roundbar.searchProgress', '{done} von {total} Spielen gespielt', { done: done, total: mine.length })) + '</span>';
+    if (!next) return esc(tx('ui.roundbar.searchAllDone', 'Alle bekannten Spiele sind gespielt.')) + progress;
+    const tm = matchClock(next.td);
+    const parts = [tm, next.td.getAttribute('data-field-label') || ''].filter(Boolean);
+    const oppEl = next.opp.querySelector('.t-line') || next.opp;
+    const opp = (oppEl.textContent || '').replace(/\s+/g, ' ').trim();
+    return esc(tx('ui.roundbar.searchNext', 'Nächstes Spiel')) + ': <strong>' + esc(parts.join(' · ')) + '</strong> '
+      + esc(tx('ui.roundbar.searchVs', 'gegen {opp}', { opp: opp })) + progress
+      + '<button type="button" class="nbtn nbtn-round rb-search-go" data-rb-go="' + esc(next.td.getAttribute('data-mid')) + '">'
+      + esc(tx('ui.roundbar.searchShow', 'Zum Spiel')) + '</button>';
+  }
+  function teamSearchNextSync() {
+    const html = teamSearch.single ? teamSearchNextHtml(teamSearch.single) : '';
+    Array.prototype.forEach.call(document.querySelectorAll('.rb-search-next'), el => {
+      el.hidden = !html;
+      if (el.__html !== html) { el.innerHTML = html; el.__html = html; }
+    });
+  }
+  function teamSearchReveal(mid) {
+    const td = document.querySelector('table.sched td.match[data-mid="' + mid + '"]');
+    if (!td) return;
+    const tbody = td.closest('tbody');
+    const row = td.closest('tr');
+    if (tbody && row && row.classList.contains('bl-round-collapsed')) {
+      const override = tbody.__roundOverride || (tbody.__roundOverride = {});
+      const round = row.getAttribute('data-round');
+      override[round] = false;
+      Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-rounds]'), h => {
+        if ((h.getAttribute('data-rounds') || '').split(' ').indexOf(round) >= 0) override[h.getAttribute('data-round')] = false;
+      });
+      markRoundStatus(tbody);
+    }
+    td.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    td.classList.remove('tf-flash');
+    void td.offsetWidth;
+    td.classList.add('tf-flash');
+    setTimeout(() => td.classList.remove('tf-flash'), 2000);
   }
   function teamSearchFillList(tbody) {
     const list = document.getElementById('rbTeamList');
@@ -2205,6 +2513,8 @@
         : (slot != null && !slotHit[slot]));
       tr.classList.toggle('tf-hide', hide);
     });
+    teamSearch.single = teamSearchSingle(tbody, q);
+    teamSearchNextSync();
     Array.prototype.forEach.call(document.querySelectorAll('.rb-search-count'), el => {
       el.textContent = !q ? '' : count
         ? tx('ui.roundbar.searchCount', { one: '{count} Spiel', other: '{count} Spiele' }, { count: count })
@@ -2233,7 +2543,13 @@
       const btn = bar.querySelector('[data-rb-search]');
       if (btn) btn.focus();
     };
+    let nextTimer = 0;
+    const nextLater = () => { clearTimeout(nextTimer); nextTimer = setTimeout(teamSearchNextSync, 250); };
+    document.addEventListener('change', nextLater);
+    document.addEventListener('input', nextLater);
     document.addEventListener('click', ev => {
+      const go = ev.target.closest && ev.target.closest('[data-rb-go]');
+      if (go) { teamSearchReveal(go.getAttribute('data-rb-go')); return; }
       const open = ev.target.closest && ev.target.closest('[data-rb-search]');
       const close = ev.target.closest && ev.target.closest('[data-rb-search-close]');
       if (open && barOf(open)) {
@@ -2380,9 +2696,10 @@
         || (needed && !active.length && required);
       const complete = !needed || (active.length > 0 && active.every(inp => String(inp.value || '').trim() !== '') && !invalid);
       td.classList.toggle('bl-match-invalid', invalid);
-      td.classList.toggle('bl-match-valid', active.length > 0 && complete);
-      const summary = rounds[round] || (rounds[round] = { open: 0, invalid: 0, checked: false });
+      td.classList.toggle('bl-match-valid', lockedDone || (active.length > 0 && complete));
+      const summary = rounds[round] || (rounds[round] = { open: 0, invalid: 0, checked: false, total: 0, done: 0 });
       summary.checked = summary.checked || invalid || +round < opened;
+      if (needed) { summary.total++; if (complete) summary.done++; }
       if (!complete) {
         if (!active.length || active.some(inp => String(inp.value || '').trim() === '')) summary.open++;
         else summary.invalid++;
@@ -2392,6 +2709,23 @@
     Object.keys(rounds).forEach(r => {
       if (begun[r] && !rounds[r].open && !rounds[r].invalid) rounds[r].checked = true;
     });
+    /* Aktuelle Runde = erste mit offenen Spielen; fertige Runden klappen auf dem Handy ein. */
+    const current = Object.keys(rounds).sort((a, b) => a - b)
+      .filter(r => rounds[r].total > 0 && rounds[r].done < rounds[r].total)[0];
+    if (current != null) rounds[current].current = true;
+    tbody.__currentRound = current != null ? current : null;
+    const override = tbody.__roundOverride || (tbody.__roundOverride = {});
+    if (!tbody.__roundToggleWired) {
+      tbody.__roundToggleWired = true;
+      tbody.addEventListener('click', e => {
+        const b = e.target.closest ? e.target.closest('.bl-round-progress') : null;
+        if (!b || b.disabled) return;
+        const r = b.closest('tr').getAttribute('data-round');
+        override[r] = !b.classList.contains('is-collapsed');
+        markRoundStatus(tbody);
+      });
+    }
+    const active = document.activeElement;
     tbody.querySelectorAll('tr[data-round]:not(.rgap)').forEach(tr => {
       const round = tr.getAttribute('data-round');
       const included = (tr.getAttribute('data-rounds') || round).split(' ');
@@ -2401,9 +2735,17 @@
           total.open += entry.open;
           total.invalid += entry.invalid;
           total.checked = total.checked || entry.checked;
+          total.total += entry.total;
+          total.done += entry.done;
+          total.current = total.current || !!entry.current;
         }
         return total;
-      }, { open: 0, invalid: 0, checked: false });
+      }, { open: 0, invalid: 0, checked: false, total: 0, done: 0, current: false });
+      const finished = summary.total > 0 && summary.done === summary.total && !summary.invalid;
+      const collapsed = !!(finished && (override[round] != null ? override[round]
+        : current != null && !summary.current && !(active && tr.contains(active))));
+      if (!tr.classList.contains('rhead')) tr.classList.toggle('bl-round-collapsed', collapsed);
+      tr.classList.toggle('bl-round-current', summary.current);
       const unused = !!tbody.querySelector('tr.rmatches[data-round="' + round + '"] td.match.is-reset-locked');
       const checked = !!(summary && summary.checked) && !unused;
       const incomplete = summary && (summary.open > 0 || summary.invalid > 0);
@@ -2413,6 +2755,23 @@
       if (confirmButton) confirmButton.classList.toggle('is-ready', checked && !incomplete);
       const head = tr.querySelector('.rhead-meta');
       if (!head) return;
+      let prog = head.querySelector('.bl-round-progress');
+      if (summary.total > 0 && !prog) {
+        prog = document.createElement('button');
+        prog.type = 'button';
+        prog.className = 'bl-round-progress noprint';
+        head.appendChild(prog);
+      }
+      if (prog) {
+        const ptext = tx('ui.round.progress', '{done}/{total} Spiele', { done: summary.done, total: summary.total });
+        if (prog.textContent !== ptext) prog.textContent = ptext;
+        prog.disabled = !finished;
+        prog.classList.toggle('is-collapsed', collapsed);
+        prog.classList.toggle('is-done', finished);
+        prog.setAttribute('aria-expanded', String(!collapsed));
+        const ptitle = finished ? tx('ui.round.toggle', 'Runde ein-/ausklappen') : '';
+        if (ptitle) prog.title = ptitle; else prog.removeAttribute('title');
+      }
       let status = head.querySelector('.bl-round-status');
       if ((checked || unused) && !status) {
         status = document.createElement('button');
@@ -2435,6 +2794,43 @@
       }
     });
     updateRoundWarnings(tbody, rounds);
+    syncCurrentRoundButton(tbody, current);
+    announceResultsBegun(Object.keys(rounds).some(r => rounds[r].done > 0));
+  }
+
+  /* Erster Ergebniseintrag: Setup klappt auf dem Handy einmal pro Seitenaufruf zu (appbar.js). */
+  function announceResultsBegun(begun) {
+    if (!begun || root.__blResultsBegun) return;
+    root.__blResultsBegun = true;
+    if (root.dispatchEvent && typeof root.CustomEvent === 'function') root.dispatchEvent(new root.CustomEvent('beachl:results-begun'));
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', e => {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-round-current]') : null;
+      if (!btn) return;
+      const bar = btn.closest('.schedule-roundbar');
+      const select = bar && bar.querySelector('[data-round-select]');
+      const round = btn.getAttribute('data-round-current');
+      if (!select || !round || btn.hidden) return;
+      if (select.value !== 'all' && select.value !== round) {
+        select.value = round;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const head = document.querySelector('.sched tr.rhead[data-round="' + round + '"]:not([hidden])');
+      if (head) head.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+  }
+
+  function syncCurrentRoundButton(tbody, current) {
+    const wrapper = tbody.closest('.table-scroll');
+    const bar = wrapper && wrapper.previousElementSibling;
+    const btn = bar && bar.classList.contains('schedule-roundbar') ? bar.querySelector('[data-round-current]') : null;
+    if (!btn) return;
+    btn.hidden = current == null;
+    if (current != null) btn.setAttribute('data-round-current', current);
+    const sel = bar.querySelector('[data-round-select]');
+    btn.classList.toggle('is-current', current != null && !!sel && sel.value === current);
   }
 
   function roundProblemsText(summary) {
@@ -2476,6 +2872,7 @@
       const complete = summary && !summary.open && !summary.invalid;
       const problem = summary && summary.checked && !complete;
       const label = tx('ui.round.n', 'Runde {n}', { n: option.value })
+        + (summary && summary.current ? ' ▶' : '')
         + (complete ? ' – ' + tx('ui.round.complete', 'Ergebnisse vollständig')
           : problem ? ' – ' + roundProblemsText(summary) : '');
       if (option.textContent !== label) option.textContent = label;
@@ -2693,11 +3090,120 @@
     }
   }
 
-  function syncModeSummary(doc) {
+  // Legendenzeile: „Eventvariante: 1 Satz bis 15“ -> „1 Satz bis 15“ (Präfix steht schon im Label „Satzmodus:“)
+  function legendModeText(label) {
+    return String(label == null ? '' : label).replace(/^[^:]+:\s*/, '');
+  }
+
+  function syncModeSummary(doc, setMode, finalSetMode) {
     if (!doc) return;
     const legend = doc.getElementById('h-legend');
     const summary = doc.getElementById('modeSummary');
     if (legend && summary) summary.innerHTML = legend.innerHTML;
+    if (setMode) mountPlayRules(doc, setMode, finalSetMode);
+  }
+
+  /* Kurz und vorlesbar: Spielregeln für Teilnehmende und Hinweise zum
+     Ausfüllen für Schiedsrichter. Zahlen kommen aus dem Satzmodus, damit sie
+     nie von der Berechnung abweichen. Seitenwechsel nur im Beach-Profil. */
+  function setRuleLines(setMode) {
+    const def = TC.modeDef(setMode);
+    const profile = TC.activeProfile();
+    const beach = profile === 'volleyball.beach';
+    const target = TC.targetForSet(setMode, 1);
+    let line = tx('ui.rules.p.mode', 'Spielmodus: {mode} · 2 Punkte Vorsprung (z. B. {ex})',
+      { mode: legendModeText(tx('setMode.' + def.id, def.label)), ex: (target + 2) + ':' + target });
+    if (beach && (target === 21 || target === 15)) {
+      line += ' · ' + tx('ui.rules.p.side', 'Seitenwechsel alle {n} Punkte', { n: target === 21 ? 7 : 5 });
+    }
+    const play = [line];
+    return play;
+  }
+  function playRulesHtml(setMode, finalSetMode) {
+    const beach = TC.activeProfile() === 'volleyball.beach';
+    const sep = !!finalSetMode;
+    const out = { rules: [], main: [], final: [], extra: [], org: [] };
+    if (sep) {
+      out.main = setRuleLines(setMode);
+      out.final = setRuleLines(finalSetMode);
+      if (out.final.join('|') === out.main.join('|')) out.final = [tx('ui.rules.p.sameAsPrelim', 'Spielmodus und Seitenwechsel wie in der Vorrunde.')];
+    }
+    else out.rules = setRuleLines(setMode);
+    if (beach) {
+      out.extra.push(tx('ui.rules.opt.gentleman', 'Gentleman-Regel (optional): Aufschlag auf die gleich starke Person – sonst Wiederholung, beim 2. Mal Punkt für den Gegner.'));
+      out.extra.push(tx('ui.rules.opt.serve', 'Erster Aufschlag (optional): Ball drehen – zeigt das Ventil auf ein Team, wählt es, wer aufschlägt. Anderes Team wählt Seite.'));
+      out.extra.push(tx('ui.rules.opt.bridge', 'BeachL-Regel (optional): Kein Pritschen übers Netz und keine Annahme per Pritschen – sonst Punkt für das andere Team. Unklar (Linie, Berührung)? Ballwechsel wiederholen, nicht diskutieren.'));
+    }
+    const org = out.org;
+    org.push(tx('ui.rules.o.out', 'Ausfall: Konfiguration → „Team ausgefallen/verspätet“ (Gegner gewinnt kampflos). Abbruch im Spiel (nur Beach 2×21): zuerst „Nichtantreten und Spielabbruch“ wählen, dann „Entscheidung …“ am Spiel.'));
+    org.push(tx('ui.rules.o.plan', 'Verzug: Konfiguration → „Spiele tauschen“ oder „Ab jetzt neu takten“.'));
+    return out;
+  }
+  /* Gliederung für Spieler:innen: Vorrunde (bzw. Spielmodus) → Finalrunde →
+     Weitere Infos (inkl. Satzregeln und optionale Zusatzregeln). Die
+     bestehenden Anleitungspunkte des Bogens werden einmalig nach ihrem Label
+     einsortiert; Bildschirm-Hinweise zum Eintragen gehen an Organisator:innen. */
+  function guideSection(li) {
+    const hi = li.querySelector('[data-i18n]');
+    const key = hi ? hi.getAttribute('data-i18n') : '';
+    if (/finalLabel$/.test(key)) return 'final';
+    if (/(printLabel|trackLabel)$/.test(key)) return 'extra';
+    return 'main';
+  }
+  function mountPlayRules(doc, setMode, finalSetMode) {
+    const guide = doc.getElementById('guideContainer');
+    if (!guide) return;
+    let box = doc.getElementById('playRules');
+    if (!box) {
+      box = doc.createElement('div');
+      box.id = 'playRules';
+      box.className = 'playrules-box';
+      const sec = function (k, titleKey, fallback) {
+        return '<div class="pr-sec" data-pr-sec="' + k + '">' + (titleKey ? '<h4 data-pr-title="' + k + '">' + esc(tx(titleKey, fallback)) + '</h4>' : '') + '<ul data-pr-head="' + k + '"></ul><ul data-pr-rules="' + k + '" class="pr-setrules"></ul><ul data-pr-items="' + k + '"></ul></div>';
+      };
+      box.innerHTML = '<section class="pr-block"><h3>' + esc(tx('ui.rules.players', 'Für Spieler:innen')) + '</h3>'
+        + sec('main', 'ui.rules.sec.mode', 'Turnierablauf') + sec('final', 'ui.rules.sec.final', 'Finalrunde')
+        + sec('extra', 'ui.rules.sec.extra', 'Weitere Infos') + '</section>'
+        + '<section class="pr-block pr-org noprint"><h3>' + esc(tx('ui.rules.organizers', 'Für Organisator:innen')) + '</h3>'
+        + '<ul data-pr-items="org"></ul><ul data-pr-rules="org"></ul>'
+        + '</section>';
+      const ol = guide.querySelector('ol');
+      if (ol) {
+        const lis = Array.prototype.slice.call(ol.children);
+        const hasFinal = lis.some(function (li) { return !li.classList.contains('only-screen') && guideSection(li) === 'final'; });
+        if (hasFinal) {
+          const t = box.querySelector('[data-pr-title="main"]');
+          t.textContent = tx('ui.rules.sec.prelim', 'Vorrunde');
+        }
+        /* Pro Abschnitt steht die erste Zeile (Spielmodus/Aufbau) vor den Satzregeln. */
+        lis.forEach(function (li) {
+          const k = li.classList.contains('only-screen') ? 'org' : guideSection(li);
+          const head = box.querySelector('[data-pr-head="' + k + '"]');
+          const target = head && !head.firstChild ? head : box.querySelector('[data-pr-items="' + k + '"]');
+          const lab = li.querySelector('.hi[data-i18n]');
+          if (lab && /(groupsLabel|finalLabel)$/.test(lab.getAttribute('data-i18n')) && k !== 'org') lab.classList.add('pr-nolabel');
+          target.appendChild(li);
+        });
+        ol.parentNode.insertBefore(box, ol);
+        ol.parentNode.removeChild(ol);
+      } else guide.appendChild(box);
+    }
+    box.__setMode = setMode;
+    box.__finalSetMode = finalSetMode;
+    let r;
+    try { r = playRulesHtml(setMode, finalSetMode); } catch (e) { r = { rules: [], main: [], final: [], extra: [], org: [] }; }
+    r.main = r.rules.concat(r.main);
+    r.rules = [];
+    const hasFinalItems = !!box.querySelector('[data-pr-head="final"] li');
+    if (!hasFinalItems) r.final = [];
+    ['main', 'final', 'extra', 'org'].forEach(function (k) {
+      const ul = box.querySelector('[data-pr-rules="' + k + '"]');
+      const html = r[k].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+      if (ul && ul.__html !== html) { ul.__html = html; ul.innerHTML = html; }
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('.pr-sec'), function (sec) {
+      sec.hidden = !sec.querySelector('li');
+    });
   }
 
   /* ============================================ 8b. WERTUNG UND TIE-BREAKER
@@ -2717,11 +3223,11 @@
     const lossPoints = indoorPoints ? 0 : TC.LOSS_PTS;
     const setLabel = profile.indexOf('table-tennis.') === 0 ? 'Spiel' : 'Satz';
     let w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
-      + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
+      + '<tr><th scope="col">' + tx('ui.scoring.result', 'Ergebnis') + '</th><th scope="col">' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
       + '<tr><td>' + tx(indoorPoints ? 'ui.scoring.clearWin' : 'ui.scoring.win', indoorPoints ? 'Sieg ohne Satzverlust' : 'Sieg') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: winPoints }) + '</td></tr>';
     if (officialBo5) {
       w = '<table><caption>' + tx('ui.scoring.caption', 'Wertung pro Spiel') + '</caption>'
-        + '<tr><th>' + tx('ui.scoring.result', 'Ergebnis') + '</th><th>' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
+        + '<tr><th scope="col">' + tx('ui.scoring.result', 'Ergebnis') + '</th><th scope="col">' + tx('ui.scoring.value', 'Wertung') + '</th></tr>'
         + '<tr><td>' + tx('ui.scoring.win30', 'Sieg 3:0 oder 3:1') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 3 }) + '</td></tr>'
         + '<tr><td>' + tx('ui.scoring.win32', 'Sieg 3:2') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 2 }) + '</td></tr>'
         + '<tr><td>' + tx('ui.scoring.loss23', 'Niederlage 2:3') + '</td><td>' + tx('ui.scoring.pts', { one: '{count} Punkt', other: '{count} Punkte' }, { count: 1 }) + '</td></tr>'
@@ -2747,7 +3253,7 @@
       ballsFor: tx('ui.scoring.ballsFor', 'erzielte Ballpunkte'), ballsForPer: tx('ui.scoring.ballsForPer', 'erzielte Ballpunkte je Spiel') };
     const chain = (criteria || ['pts', 'bd', 'ballsFor', 'h2h']).slice();
     let t = '<table><caption>' + tx('ui.scoring.tieCaption', 'Reihenfolge bei Gleichstand') + '</caption>'
-      + '<tr><th>' + tx('ui.scoring.rank', 'Rang') + '</th><th>' + tx('ui.scoring.criterion', 'Kriterium') + '</th></tr>';
+      + '<tr><th scope="col">' + tx('ui.scoring.rank', 'Rang') + '</th><th scope="col">' + tx('ui.scoring.criterion', 'Kriterium') + '</th></tr>';
     chain.forEach((c, i) => {
       t += '<tr><td>' + (i + 1) + '</td><td>' + esc(names[c] || c) + '</td></tr>';
     });
@@ -2773,8 +3279,8 @@
     const btn = (id, key, label) => id
       ? '<button type="button" class="nbtn" data-jump="' + esc(id) + '">' + ico(icons[key]) + '<span>' + esc(label) + '</span></button>'
       : '';
-    return btn(t.setup || 'configSection', 'setup', tx('ui.jump.setup', 'Setup'))
-      + btn(t.guide || 'guideContainer', 'guide', tx('ui.jump.guide', 'Anleitung'))
+    return btn(t.guide || 'guideContainer', 'guide', tx('ui.jump.guide', 'Anleitung'))
+      + btn(t.setup || 'configSection', 'setup', tx('ui.jump.setup', 'Setup'))
       + btn(t.schedule || 'scheduleSection', 'schedule', tx('ui.jump.schedule', 'Spielplan'))
       + btn(t.standings || 'standingsSection', 'standings', tx('ui.jump.standings', 'Tabelle'));
   }
@@ -2887,7 +3393,7 @@
       } else {
         targets.forEach(item => {
           const target = document.getElementById(item.button.getAttribute('data-jump'));
-          if (item.top <= clearBand(target).top + 32) active = item;
+          if (item.top <= clearBand(target).top + 32 + Math.round(window.innerHeight * 0.25)) active = item;
         });
       }
       buttons.forEach(button => {
@@ -3536,6 +4042,21 @@
     return true;
   }
   function focusNext(el, list, fresh) { return focusStep(el, list, 1, fresh); }
+  /* Strukturneuaufbau (build) mitten im Tippen: Das fokussierte Ergebnisfeld wird
+     nach build + paint (paint blendet z. B. die Entscheidungssatz-Spalte ein)
+     wieder fokussiert, damit mehrstellige Eingaben nicht abbrechen. */
+  function rebuildKeepingScoreFocus(build, paint) {
+    const a = document.activeElement;
+    const keep = a && a.classList && a.classList.contains('score') && a.getAttribute('data-mid')
+      ? { sig: scoreSig(a), start: a.selectionStart, end: a.selectionEnd } : null;
+    build();
+    if (paint) paint();
+    if (!keep) return;
+    const el = document.querySelector(keep.sig);
+    if (!el || el.disabled || el === document.activeElement) return;
+    el.focus();
+    try { el.setSelectionRange(keep.start, keep.end); } catch (e) { /* type=text only */ }
+  }
   function focusPrev(el, list, fresh) { return focusStep(el, list, -1, fresh); }
 
   function visibleScoreFields() {
@@ -3669,8 +4190,8 @@
     const caption = '<caption>' + esc(tx('ui.timeplan.caption', 'Zeitplan')) + '</caption>';
     if (withTeams) {
       const thGames = esc(tx('ui.timeplan.games', 'Spiele'));
-      let html = '<table class="timeplan has-teams">' + caption + '<thead><tr><th>' + thTime
-        + '</th><th>' + thRound + '</th><th>' + thGames + '</th></tr></thead><tbody>';
+      let html = '<table class="timeplan has-teams">' + caption + '<thead><tr><th scope="col">' + thTime
+        + '</th><th scope="col">' + thRound + '</th><th scope="col">' + thGames + '</th></tr></thead><tbody>';
       rows.forEach(r => {
         const cls = r.pause ? ' class="planning-pause"' : '';
         html += '<tr><td' + cls + '>' + esc(r.t) + '</td><td' + cls + '>' + esc(r.n) + '</td><td' + cls + '>'
@@ -3681,7 +4202,7 @@
     }
     const half = Math.ceil(rows.length / 2);
     let html = '<table class="timeplan">' + caption + '<thead><tr>'
-      + '<th>' + thTime + '</th><th>' + thRound + '</th><th>' + thTime + '</th><th>' + thRound + '</th></tr></thead><tbody>';
+      + '<th scope="col">' + thTime + '</th><th scope="col">' + thRound + '</th><th scope="col">' + thTime + '</th><th scope="col">' + thRound + '</th></tr></thead><tbody>';
     for (let i = 0; i < half; i++) {
       const a = rows[i], b = rows[i + half];
       const cells = r => '<td' + (r && r.pause ? ' class="planning-pause"' : '') + '>' + (r ? esc(r.t) : '') + '</td><td'
@@ -3696,6 +4217,21 @@
     if (!el) return;
     el.textContent = text;
     el.hidden = !text;
+  }
+
+  // Teile bleiben je für sich zusammen (kein Umbruch mitten in „0:55 h Reserve“); textContent bleibt „a · b“.
+  function fillKpiNoteParts(id, parts) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    parts.forEach((part, i) => {
+      if (i) el.appendChild(document.createTextNode(' · '));
+      const span = document.createElement('span');
+      span.className = 'nw';
+      span.textContent = part;
+      el.appendChild(span);
+    });
+    el.hidden = !parts.length;
   }
 
   function setKpi(id, text, warn) {
@@ -3867,10 +4403,10 @@
       : (over ? tx('ui.kpi.gameShort', 'nur {n} Min. verfügbar', { n: availPerGame })
         : tx('ui.kpi.gameAvailable', '{n} Min. verfügbar', { n: availPerGame })));
     setKpi('rv-duration', fmtDur(needMin), over);
-    fillKpiNote('rv-durationNote', tx('ui.kpi.window', 'Zeitfenster {time}', { time: fmtDur(winMin) })
-      + ' · ' + (over
+    fillKpiNoteParts('rv-durationNote', [tx('ui.kpi.window', 'Zeitfenster {time}', { time: fmtDur(winMin) }),
+      over
         ? tx('ui.kpi.overrun', '{time} zu lang', { time: fmtDur(needMin - winMin) })
-        : tx('ui.kpi.reserve', '{time} Reserve', { time: fmtDur(winMin - needMin) })));
+        : tx('ui.kpi.reserve', '{time} Reserve', { time: fmtDur(winMin - needMin) })]);
   }
 
   /* Planungsmeldung unter den KPI: die bogenspezifische Endzeit-Meldung (o.message)
@@ -4176,14 +4712,14 @@
     surfaceWord,
     surfaceLabel,
     unitWord,
-    esc, fmtTime, fmtDiff, fmtNum, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml,
+    esc, fmtTime, matchProgress, fmtDiff, fmtNum, slotTitle, teamNameHtml, makeLabeler, sideLabel, cardNameHtml, paintSideNames, rebuildKeepingScoreFocus,
     bracketColumnsHtml, bracketTreeHtml, bracketTreesHtml, paintBracketColumns,
-    setColumnHtml, matchCellHtml, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
+    setColumnHtml, matchCellHtml, advanceHints, scheduleBodyHtml, paintMatch, markScoreInputs, paintByeCard, paintOutcome, wireOutcomes,
     standingsTableHtml, placeListHtml, rankBadgeHtml, initManualEditing, finalsStarted, pruneDecidingSet, mountFinalQualification, manualDeltaBadge, criteriaHint, dttbSwissTableHtml, hintHtml, scoreHintHtml, trackTableHtml, setTrackCell, sortTrackRows,
-    groupCardsHtml, wireGroupCards,
-    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamStatusSelectHtml, teamArrivalActionsHtml, teamDelayEditorHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam,
+    groupCardsHtml, wireGroupCards, playRulesHtml, mountSplitPicker, finalBlockCaption,
+    namePanelHtml, pairPanelHtml, editParticipantName, wireParticipantNames, shuffleParticipantNames, participantOrderLocked, fieldPanelHtml, absentPanelHtml, teamStatusSelectHtml, teamArrivalActionsHtml, teamDelayEditorHtml, clearTeamAbsences, teamDelBtnHtml, confirmRemoveTeam, confirmStructureChange, guardDownstream,
     scheduleGridColumns, roundsInSlots, roundBarHtml, roundBarValue, lastFilledRound, applyRoundFilter, markRoundStatus,
-    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary,
+    scoringTablesHtml, jumpBarHtml, isPinchZoomed, wireJumpBar, wireSectionToggle, wireBracketTree, wireFormatInfo, syncModeSummary, legendModeText,
     maxParallelFields, defaultFields, fillFieldSelect, timeTableHtml, fillTimeKpis, fillFieldKpi, fillKpiNote, layoutKpis, buttonFeedback, neededFieldsForPlan, fillPlanFixes, timefit,
     wireScoreInputs, visibleScoreFields, stepScoreFocus, focusScoreTarget, wireScoreViewport, courtLadderHtml, paintCourtLadder
   };

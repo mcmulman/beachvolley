@@ -136,6 +136,7 @@
         }, error, () => { fillForwardInput.checked = !!(o.get().config.planning || {}).fillForward; });
       });
     }
+    let swapButton = null, swapPanel = null, swapList = null;
     let postponeBox = null, postponeButton = null, postponePanel = null, postponeList = null, postponeHint = null;
     if (absentHost) {
       const postpone = document.createElement('section');
@@ -144,15 +145,22 @@
       postpone.innerHTML = '<h3 class="planning-reschedule-title" id="planningRescheduleTitle">' + esc(tx('postponeSection')) + '</h3>'
         + '<p class="nhint" data-postpone-hint>' + esc(tx('postponeHint')) + '</p>'
         + '<button type="button" class="nbtn" data-postpone-open aria-controls="planningPostponePanel" aria-expanded="false">'
-        + esc(tx('postponeButton')) + '</button>'
+        + esc(tx('postponeButton')) + '</button> '
+        + '<button type="button" class="nbtn" data-swap-open aria-controls="planningSwapPanel" aria-expanded="false">'
+        + esc(tx('swapButton')) + '</button>'
         + '<div class="planning-reschedule-list" aria-live="polite"></div>'
-        + '<div class="namepanel planning-panel" id="planningPostponePanel" data-postpone-panel hidden></div>';
+        + '<div class="planning-reschedule-list" data-swap-list aria-live="polite"></div>'
+        + '<div class="namepanel planning-panel" id="planningPostponePanel" data-postpone-panel hidden></div>'
+        + '<div class="namepanel planning-panel" id="planningSwapPanel" data-swap-panel hidden></div>';
       absentHost.appendChild(postpone);
       postponeBox = postpone;
       postponeHint = postpone.querySelector('[data-postpone-hint]');
       postponeButton = postpone.querySelector('[data-postpone-open]');
       postponePanel = postpone.querySelector('[data-postpone-panel]');
       postponeList = postpone.querySelector('.planning-reschedule-list');
+      swapButton = postpone.querySelector('[data-swap-open]');
+      swapPanel = postpone.querySelector('[data-swap-panel]');
+      swapList = postpone.querySelector('[data-swap-list]');
     }
     let editing = null, busy = false;
     const exclusiveSections = [
@@ -285,6 +293,18 @@
       }
       return String(matchId);
     }
+    function matchTeams(matchId) {
+      const cell = document.querySelector('td.match[data-mid="' + String(matchId).replace(/"/g, '') + '"]');
+      if (!cell) return matchLabel(matchId);
+      const side = sel => {
+        const t = cell.querySelector(sel + ' .t-line');
+        if (!t) return '';
+        const n = cell.querySelector(sel + ' .t-nm');
+        return t.textContent.trim() + (n ? ' ' + n.textContent.trim() : '');
+      };
+      const a = side('.t-a'), b = side('.t-b');
+      return a && b ? a + ' – ' + b : matchLabel(matchId);
+    }
     function currentMatches() {
       const state = o.get(), plan = o.plan(), p = state.config.planning || {};
       const matches = [];
@@ -300,6 +320,8 @@
         }
         matches.push({
           id: match.id, slot: slot, field: field,
+          short: root.TUI.fmtTime(slot.startMin) + ' · ' + fieldName(field) + ' · ' + matchTeams(match.id),
+          round: root.TUI.slotTitle(slot),
           label: tx('postponeMatchLabel', {
             round: root.TUI.slotTitle(slot), time: root.TUI.fmtTime(slot.startMin),
             field: fieldName(field), match: matchLabel(match.id)
@@ -342,6 +364,110 @@
       postponePanel.hidden = true;
       postponeButton.setAttribute('aria-expanded', 'false');
       if (!readonly()) postponeButton.focus();
+    }
+    function swapCandidates(a) {
+      const state = o.get(), old = state.config.planning || {};
+      const out = [];
+      currentMatches().forEach(b => {
+        if (b.id === a.id) return;
+        const next = JSON.parse(JSON.stringify(old));
+        next.locked = root.TPlanning.capture(o.plan(), state.results, next.locked);
+        next.swaps = (next.swaps || []).concat([{ a: a.id, b: b.id }]);
+        try {
+          const plan = o.build(Object.assign({}, state.config, { planning: next }));
+          const skipped = plan.planning && plan.planning.swapsSkipped || [];
+          if (skipped.length) return;
+        } catch (e) { return; }
+        out.push(b);
+      });
+      return out;
+    }
+    function optGroups(list, groupOf, textOf) {
+      const order = [], by = {};
+      list.forEach(m => {
+        const g = groupOf(m);
+        if (!by[g]) { by[g] = []; order.push(g); }
+        by[g].push(m);
+      });
+      return order.map(g => '<optgroup label="' + esc(g) + '">' + by[g].map(m => '<option value="' + esc(m.id) + '">'
+        + esc(textOf(m)) + '</option>').join('') + '</optgroup>').join('');
+    }
+    function openSwap(preId) {
+      if (!swapPanel || readonly() || busy) return;
+      const matches = currentMatches();
+      if (matches.length < 2) { swapPanel.hidden = true; return; }
+      swapPanel.innerHTML = '<form class="planning-form">'
+        + '<h2 class="section-panel-heading">' + esc(tx('swapTitle')) + '</h2>'
+        + '<p class="nhint">' + esc(tx('swapHint')) + '</p>'
+        + '<div class="planning-fields">'
+        + '<label class="planning-field cfgfield"><span class="cfg-lbl">' + esc(tx('swapGame')) + '</span>'
+        + '<select data-swap-a required>' + optGroups(matches, m => m.round, m => m.short) + '</select></label>'
+        + '<label class="planning-field cfgfield"><span class="cfg-lbl">' + esc(tx('swapWith')) + '</span>'
+        + '<select data-swap-b required></select></label></div>'
+        + '<p class="nhint" data-swap-none hidden>' + esc(tx('swapNone')) + '</p>'
+        + '<div class="planning-panel-actions"><button type="submit" class="nbtn" data-swap-apply>'
+        + esc(tx('apply')) + '</button> <button type="button" class="nbtn" data-swap-close>'
+        + esc(tx('cancel')) + '</button></div><p class="planning-error" role="alert"></p></form>';
+      mountPanelClose(swapPanel, closeSwap);
+      const selA = swapPanel.querySelector('[data-swap-a]'), selB = swapPanel.querySelector('[data-swap-b]');
+      const fill = () => {
+        const a = matches.find(m => String(m.id) === selA.value);
+        const cands = a ? swapCandidates(a) : [];
+        selB.innerHTML = a ? optGroups(cands, m => tx(m.slot.startMin < a.slot.startMin ? 'swapEarlier' : 'swapLater'),
+          m => m.round + ' · ' + m.short) : '';
+        swapPanel.querySelector('[data-swap-none]').hidden = cands.length > 0;
+        swapPanel.querySelector('[data-swap-apply]').disabled = !cands.length;
+        selB.disabled = !cands.length;
+      };
+      selA.addEventListener('change', fill);
+      fill();
+      if (typeof preId === 'string' && matches.some(m => String(m.id) === preId)) { selA.value = preId; fill(); }
+      swapPanel.classList.add('swap-sheet');
+      if (swapPanel.parentNode !== document.body) document.body.appendChild(swapPanel);
+      swapPanel.hidden = false;
+      swapButton.setAttribute('aria-expanded', 'true');
+      selA.focus();
+    }
+    function closeSwap() {
+      if (!swapPanel) return;
+      swapPanel.hidden = true;
+      swapButton.setAttribute('aria-expanded', 'false');
+    }
+    const SWAP_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>';
+    let decorating = false;
+    function decorate() {
+      if (!swapButton || decorating) return;
+      decorating = true;
+      try {
+        const eligible = readonly() ? [] : currentMatches();
+        const ids = {};
+        if (eligible.length > 1) eligible.forEach(m => { ids[String(m.id)] = true; });
+        Array.prototype.forEach.call(document.querySelectorAll('td.match[data-mid]'), td => {
+          const id = td.getAttribute('data-mid'), has = td.querySelector('.swap-ico');
+          if (ids[id] && !has) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'swap-ico noprint';
+            b.setAttribute('data-swap-ico', id);
+            b.title = tx('swapIcon'); b.setAttribute('aria-label', tx('swapIcon'));
+            b.innerHTML = SWAP_SVG;
+            td.appendChild(b);
+            td.classList.add('has-swap');
+          } else if (!ids[id] && has) { has.remove(); td.classList.remove('has-swap'); }
+        });
+      } finally { decorating = false; }
+    }
+    let decoTimer = null;
+    const scheduleDecorate = () => {
+      if (decorating) return;
+      if (decoTimer) clearTimeout(decoTimer);
+      decoTimer = setTimeout(() => { decoTimer = null; decorate(); }, 60);
+    };
+    if (swapButton && typeof MutationObserver === 'function') {
+      new MutationObserver(scheduleDecorate).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+      document.addEventListener('click', event => {
+        const b = event.target.closest('[data-swap-ico]');
+        if (b) openSwap(b.getAttribute('data-swap-ico'));
+      });
     }
     const initiallyOpen = exclusiveSections.find(section => !section.panel.hidden);
     if (initiallyOpen) {
@@ -600,6 +726,26 @@
         editor.hidden = true;
       });
     }
+    if (swapButton) {
+      swapButton.addEventListener('click', () => openSwap());
+      swapPanel.addEventListener('submit', event => {
+        event.preventDefault();
+        const a = swapPanel.querySelector('[data-swap-a]').value, b = swapPanel.querySelector('[data-swap-b]').value;
+        if (!a || !b) return;
+        change(p => { p.swaps = (p.swaps || []).concat([{ a: a, b: b }]); },
+          swapPanel.querySelector('[role="alert"]'), closeSwap);
+      });
+      swapPanel.addEventListener('click', event => {
+        if (event.target.closest('[data-swap-close]')) closeSwap();
+      });
+      swapPanel.addEventListener('keydown', event => { if (event.key === 'Escape') closeSwap(); });
+      swapList.addEventListener('click', event => {
+        const button = event.target.closest('[data-swap-remove]');
+        if (!button || readonly()) return;
+        const i = +button.getAttribute('data-swap-remove');
+        change(p => { (p.swaps || []).splice(i, 1); });
+      });
+    }
     if (postponeButton) {
       postponeButton.addEventListener('click', openPostpone);
       postponePanel.addEventListener('submit', event => {
@@ -704,6 +850,61 @@
         root.alert(errorText(e));
       }
     }, true);
+    /* Konflikt-Ampel ueber dem Spielplan: gruen = konfliktfrei, gelb = Hinweise, rot = Ueberschneidung. */
+    let health = null;
+    const st = (key, params) => root.TI18n.t('ui.status.' + key, params);
+    /* Fortschritt + Ausblick aus den Spielzellen des Bogens (gewertet = bl-match-valid). */
+    function statusHtml() {
+      const pr = root.TUI.matchProgress();
+      if (!pr.total) return '';
+      const pct = Math.round(pr.done * 100 / pr.total);
+      let out = '<span class="ph-prog"><span class="ph-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>'
+        + esc(st('played', { done: pr.done, total: pr.total })) + '</span>';
+      if (!pr.open) return out + '<span class="ph-next ph-done">' + esc(st('done')) + '</span>';
+      const nx = pr.next.slice(0, 2).map(m => {
+        const pair = m.names.join(' – ');
+        return pr.next.length > 1 ? [m.field, pair].filter(Boolean).join(': ') : [m.time, m.field, pair].filter(Boolean).join(' · ');
+      });
+      if (pr.next.length > 1 && pr.next[0].time) nx.unshift(pr.next[0].time);
+      if (pr.next.length > 2) nx.push(st('more', { count: pr.next.length - 2 }));
+      const plan = o.plan();
+      return out + '<span class="ph-open">' + esc(st('open', { count: pr.open })) + '</span>'
+        + '<span class="ph-next">' + esc(st('next')) + ' <strong>' + esc(nx.join(' · ')) + '</strong></span>'
+        + (plan && plan.finalsPending ? '<span class="ph-next ph-hint">' + esc(st('finalsPending')) + '</span>' : '');
+    }
+    function renderHealth(plan, read) {
+      const slots = root.TPlanning.slots(plan);
+      const issues = read || !slots.length ? [] : root.TPlanning.conflicts(plan);
+      if (read || !slots.length) { if (health) health.hidden = true; return; }
+      if (!health || !health.isConnected) {
+        const anchor = document.querySelector('.schedule-roundbar') || document.getElementById('scheduleSection');
+        if (!anchor || !anchor.parentNode) return;
+        health = document.createElement('details');
+        health.id = 'planHealth';
+        anchor.parentNode.insertBefore(health, anchor);
+      }
+      const errors = issues.filter(i => i.level === 'error');
+      const warns = issues.filter(i => i.level === 'warn');
+      const level = errors.length ? 'error' : warns.length ? 'warn' : 'ok';
+      const time = i => root.TUI.fmtTime(i.startMin);
+      const pairLabel = id => {
+        const td = document.querySelector('td.match[data-mid="' + id + '"]');
+        const names = td ? Array.prototype.map.call(td.querySelectorAll('.pnames .t .t-line'), n => n.textContent.trim()) : [];
+        return names.length === 2 ? names.join(' – ') : matchLabel(id);
+      };
+      const line = i => i.code === 'long-wait'
+        ? tx('issueWait', { match: pairLabel(i.ids[1]), time: time(i), minutes: i.minutes })
+        : tx(i.code === 'team-overlap' ? 'issueTeam' : 'issueField', { a: pairLabel(i.ids[0]), b: pairLabel(i.ids[1]), time: time(i) });
+      const title = level === 'ok' ? tx('healthOk')
+        : level === 'error' ? tx('healthError', { count: errors.length }) + (warns.length ? ' · ' + tx('healthWarn', { count: warns.length }) : '')
+        : tx('healthWarn', { count: warns.length });
+      const html = '<summary><span class="ph-dot" aria-hidden="true"></span><span class="ph-title">' + esc(title) + '</span>'
+        + statusHtml() + '</summary>'
+        + (issues.length ? '<ul>' + errors.concat(warns).map(i => '<li class="ph-' + i.level + '">' + esc(line(i)) + '</li>').join('') + '</ul>' : '');
+      health.hidden = false;
+      health.className = 'plan-health noprint ph-level-' + level;
+      if (health.__html !== html) { health.__html = html; health.innerHTML = html; }
+    }
     function refresh() {
       const read = readonly(), plan = o.plan(), p = o.get().config.planning || {};
       if (fillForwardInput) {
@@ -733,13 +934,26 @@
             ? '<button type="button" class="nbtn" data-postpone-remove="' + esc(match.id) + '">'
               + esc(tx('postponeUndo')) + '</button>' : '') + '</div>');
         }));
+        const swaps = (p.swaps || []).map((w, i) => ({ w: w, i: i })).filter(x => {
+          const skipped = (plan.planning && plan.planning.swapsSkipped || []).some(k => k.a === String(x.w.a) && k.b === String(x.w.b));
+          return !skipped;
+        });
+        swapButton.hidden = read || matches.length < 2;
+        scheduleDecorate();
+        const invalidNote = plan.planningError
+          ? '<div class="planning-setting" role="alert"><span>\u26a0\ufe0f ' + esc(tx('staleSaved')) + '</span></div>' : '';
+        swapList.innerHTML = invalidNote + swaps.map(x => '<div class="planning-setting"><span>' + esc(tx('swapScheduled', {
+          a: matchLabel(x.w.a), b: matchLabel(x.w.b)
+        })) + '</span>' + (!read ? '<button type="button" class="nbtn" data-swap-remove="' + x.i + '">'
+          + esc(tx('swapUndo')) + '</button>' : '') + '</div>').join('');
         postponeButton.hidden = read || matches.length === 0;
         postponePanel.hidden = postponePanel.hidden || read;
         if (read) postponeButton.setAttribute('aria-expanded', 'false');
         postponeList.innerHTML = scheduled.join('');
         postponeHint.hidden = read || matches.length === 0;
-        postponeBox.hidden = read ? !scheduled.length : !matches.length && !scheduled.length;
+        postponeBox.hidden = !invalidNote && (read ? !scheduled.length && !swaps.length : !matches.length && !scheduled.length && !swaps.length);
       }
+      renderHealth(plan, read);
       const rows = [];
       if (p.retime) rows.push({ kind: 'retime', id: '', label: tx('retimed', { time: p.retime.time }) });
       (p.blocked || []).forEach(b => {
@@ -785,6 +999,15 @@
           meta.textContent = fieldName(f) + ' · ' + root.TUI.fmtTime(slot.startMin) + '–' + root.TUI.fmtTime(slot.endMin);
         }));
       }
+    }
+    /* Statusleiste nach Ergebniseingabe aktualisieren (gewertet-Klasse wechselt an td.match). */
+    let healthTimer = null;
+    if (typeof MutationObserver === 'function') {
+      new MutationObserver(list => {
+        if (!list.some(m => m.target.classList && m.target.classList.contains('match'))) return;
+        clearTimeout(healthTimer);
+        healthTimer = setTimeout(() => renderHealth(o.plan(), readonly()), 120);
+      }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
     }
     let wasReadonly = count.disabled;
     new MutationObserver(() => {

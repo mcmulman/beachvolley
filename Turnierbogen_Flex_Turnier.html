@@ -118,24 +118,13 @@
   <h2 data-i18n="sheet.guide.title">Kurzanleitung – so läuft das Turnier</h2>
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
-    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="flex.guide.principle">Feste Teams (Herren-, Damen- oder Mixed-Teams) treten gemeinsam
-      in <b>einem</b> fairen Turnier an – Team-Art (♂/♀/⚥) lässt sich direkt unter „Team / Namen“ je Team
-      hinterlegen und wird bei der Startrunden-Auslosung (Schweizer System) berücksichtigt, damit nicht
-      z.B. alle Damen-Teams gleich gegeneinander antreten.</span></li>
-    <li><span class="hi" data-i18n="flex.guide.pairingLabel">Paarungsmodus:</span> <span data-i18n-html="flex.guide.pairing">Standardmäßig <b>Schweizer System</b> – bei einem breiten
-      Spektrum an Team-Konstellationen (Spielniveau und Team-Art) sind die Begegnungen dadurch rangnah statt
-      zufällig, es gibt weniger einseitige Kantersiege und die Rangliste ist schon nach wenigen Runden
-      aussagekräftig. „Jeder gegen Jeden“ bleibt wählbar (jedes Team spielt gegen jedes, Team-Art ohne
-      Einfluss auf die Paarung).</span>
-      <br><span class="hi" data-i18n="flex.guide.decisionLabel">Entscheidungshilfe:</span> <span data-i18n="flex.guide.decision">Schweizer System bei größeren oder gemischten Feldern
-      (unterschiedliches Niveau, Herren/Damen/Mixed) – Jeder gegen Jeden bei kleinen, ähnlich starken Gruppen
-      oder wenn der komplette Plan vorab feststehen und ohne Zwischenauswertung (rein auf Papier) ablaufen soll.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.principleLabel">Prinzip:</span> <span data-i18n-html="flex.guide.principle">Feste Teams (Herren, Damen, Mixed) spielen <b>ein</b> gemeinsames Turnier.</span></li>
+    <li><span class="hi" data-i18n="flex.guide.pairingLabel">Paarungsmodus:</span> <span data-i18n-html="flex.guide.pairing"><b>Schweizer System</b> (Standard): Teams mit ähnlichem Tabellenstand spielen gegeneinander.</span>
+      <br><span class="hi" data-i18n="flex.guide.decisionLabel">Entscheidungshilfe:</span> <span data-i18n="flex.guide.decision">Schweizer System für größere oder unterschiedlich starke Felder, Jeder gegen Jeden für kleine, ähnlich starke Felder.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.flowShortLabel">Ablauf:</span> <span id="g-flow">–</span></li>
-    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Ergebnis pro Spiel im Spielplan eintragen – alles Weitere rechnet automatisch.</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.scoringLabel">Wertung:</span> <span data-i18n="flex.guide.scoring">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0.
-      Bei Gleichstand entscheidet die Ball-Differenz, dann der direkte Vergleich, dann die erzielten Ballpunkte. Verbleibende Gleichstände teilen den Platz; Teamnummern entscheiden keine Plätze.
-      Der Entscheidungssatz zählt nur für Sieg/Niederlage, nicht für die Ball-Differenz.</span></li>
-    <li class="only-print"><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="flex.guide.track">Nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren – so ist der Zwischenstand ohne Gerät ablesbar.</span></li>
+    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ergebnisse:</span> <span data-i18n="sheet.guide.flowText">Pro Spiel eintragen – der Rest rechnet automatisch.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.scoringLabel">Wertung:</span> <span data-i18n="flex.guide.scoring">Sieg 2, Unentschieden 1, Niederlage 0 · Gleichstand: Punktdifferenz, direkter Vergleich, erzielte Punkte</span></li>
+    <li class="only-print"><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="flex.guide.track">Nach jeder Runde Punkte und Punktdifferenz zum bisherigen Stand addieren.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
   <a class="guide-format-doc" href="docs/format-flex-turnier.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
@@ -261,6 +250,7 @@
 
 <div class="table-scroll is-track sheet-card" id="trackWrap">
   <table class="track" id="trackTable" data-mstd-key="final">
+    <caption class="sr-only" data-i18n="ui.a11y.trackCaption">Laufende Tabelle je Runde</caption>
     <tbody id="trackBody"></tbody>
   </table>
 </div>
@@ -617,8 +607,8 @@
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
-    B = planFor(S.config);
-    if(freezeStarted()) B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
+    if(freezeStarted()) B = TPlanning.safe(planFor, S.config);
     return B;
   }
 
@@ -668,6 +658,7 @@
         ? { mid:a.getAttribute('data-mid'), set:a.getAttribute('data-set'),
             side:a.getAttribute('data-side'), start:a.selectionStart } : null;
       buildStructure();
+      paint();   // Entscheidungssatz-Spalte erst sichtbar machen, dann Fokus zurückgeben
       if(keep){
         const el = $('schedBody').querySelector('input.score[data-mid="'+keep.mid
           + '"][data-set="'+keep.set+'"][data-side="'+keep.side+'"]');
@@ -843,7 +834,7 @@
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
     paintTimeplan();
-    TUI.paintStage(S, { build: s => planFor(s.config, s), repaint: () => { structureKey = ''; rebuild(); } });
+    TUI.paintStage(S, { build: s => TPlanning.safe(c => planFor(c, s), s.config), repaint: () => { structureKey = ''; rebuild(); } });
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -896,9 +887,7 @@
       const ctx = ctxFor(rd ? rd.setMode : S.config.setMode);
       /* Immer "Team N" plus Name darunter – gleiche Darstellung wie beim
          Aufbau der Karte, sonst verschwindet die Nummer beim Repaint. */
-      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
-      if(a) a.innerHTML = TUI.cardNameHtml(m.a, m.ta, ctx);
-      if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
+      TUI.paintSideNames(td, m, ctx);
       const dead = !!m.dead, bye = m.bye != null;
       /* Entscheidungssatz (Satz 3) NUR sperren, wenn Satz 1+2 bereits gueltig
          UND unentschieden sind - siehe TC.decidingSetNeeded(). Sonst zaehlt
@@ -1133,9 +1122,9 @@
     const rounds = B.rounds.length;
     /* Kein <caption>: Die Ueberschrift dieses Abschnitts ist die <h1>
        "Schweizer Tabelle" darueber - ein zweiter Titel waere doppelt. */
-    let html = '<thead><tr><th class="teamcol">' + TUI.esc(T('flex.swiss.colTeam')) + '</th><th class="rankcol">' + TUI.esc(T('flex.swiss.colPlace')) + '</th>'
-      + '<th class="ptscol">' + TUI.esc(T('flex.swiss.colPts')) + '</th><th class="diffcol">' + TUI.esc(T('flex.swiss.colDiff')) + '</th>';
-    for (let r = 1; r <= rounds; r++) html += '<th class="round">' + T('flex.swiss.colRound', { r: r }) + '</th><th class="rplace">' + TUI.esc(T('sheet.place.colPlace')) + '</th>';
+    let html = '<caption class="sr-only">' + TUI.esc(T('ui.a11y.standCaption')) + '</caption><thead><tr><th scope="col" class="teamcol">' + TUI.esc(T('flex.swiss.colTeam')) + '</th><th scope="col" class="rankcol">' + TUI.esc(T('flex.swiss.colPlace')) + '</th>'
+      + '<th scope="col" class="ptscol">' + TUI.esc(T('flex.swiss.colPts')) + '</th><th scope="col" class="diffcol">' + TUI.esc(T('flex.swiss.colDiff')) + '</th>';
+    for (let r = 1; r <= rounds; r++) html += '<th scope="col" class="round">' + T('flex.swiss.colRound', { r: r }) + '</th><th scope="col" class="rplace">' + TUI.esc(T('sheet.place.colPlace')) + '</th>';
     html += '</tr></thead><tbody>';
     const winAbbr = T('flex.swiss.win');
     html += '<tr class="example-row ex ex-start ex-end">'
@@ -1364,9 +1353,9 @@
     const E = k => TUI.esc(T(k));
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + TUI.esc(term(modeLabel()))
       + ' · ' + TUI.esc(T('flex.rounds.n', { n: B.rounds.length })) + ' · ' + E('flex.legend.noKo') + ' · ' + E('sheet.legend.perGame') + ' '
-      + '<span class="rmode">' + TUI.esc(setModeLabel(c.setMode)) + '</span>'
+      + '<span class="rmode">' + TUI.esc(TUI.legendModeText(setModeLabel(c.setMode))) + '</span>'
       + ' ' + E('flex.legend.winBy2');
-    TUI.syncModeSummary(document);
+    TUI.syncModeSummary(document, c.setMode);
     $('jumpbar').innerHTML = TUI.jumpBarHtml();
   }
 
@@ -1375,9 +1364,8 @@
       ? T('flex.guide.flowSwiss', { n: B.rounds.length })
       : T('flex.guide.flowRr', { n: B.rounds.length });
     const hasBye = B.rounds.some(r => r.bye != null);
-    $('g-bye').textContent = hasBye
-      ? T('flex.guide.byeOdd')
-      : T('flex.guide.byeEven');
+    $('g-bye').textContent = hasBye ? T('flex.guide.byeOdd') : '';
+    if ($('g-bye').closest('li')) $('g-bye').closest('li').hidden = !hasBye;
   }
 
   /* -------------------------------------------------------------- Aktionen */
@@ -1458,6 +1446,12 @@
     }
 
     readConfig();
+    if(S.config.teams !== prevTeams && !TUI.confirmStructureChange(TStore.anyResults(S))){
+      S.config = previousConfig;
+      S.title = previousTitle;
+      fillSelects();
+      return;
+    }
     if(S.config.mode === 'rr' && S.config.teams === prevTeams){
       try {
         planFor(S.config);
@@ -1659,7 +1653,7 @@
       return rd ? rd.setMode : S.config.setMode;
     };
     TUI.wireScoreInputs($('schedBody'), onScore);
-    TUI.wireOutcomes($('schedBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); rebuild(); } });
+    TUI.wireOutcomes($('schedBody'), { state: () => S, buildPlan: s => TPlanning.safe(c => planFor(c, s), s.config), changed: () => { save(); rebuild(); } });
   }
 
   if(!S.round1) S.round1 = null;

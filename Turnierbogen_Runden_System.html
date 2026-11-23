@@ -109,11 +109,9 @@
   <p class="legend mode-summary" id="modeSummary"></p>
   <ol>
     <li><span class="hi" data-i18n="sheet.guide.flowShortLabel">Ablauf:</span> <span id="g-flow">–</span></li>
-    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ablauf je Runde:</span> <span data-i18n="sheet.guide.flowText">Ergebnis pro Spiel im Spielplan eintragen – alles Weitere rechnet automatisch.</span></li>
-    <li><span class="hi" data-i18n="sheet.guide.scoringLabel">Wertung:</span> <span data-i18n="rs.guide.scoringText">Sieg = 2 Punkte, Unentschieden = 1, Niederlage = 0.
-      Bei Gleichstand entscheidet die Ball-Differenz, dann der direkte Vergleich, dann die erzielten Ballpunkte. Verbleibende Gleichstände teilen den Platz; Teamnummern entscheiden keine Plätze.
-      Der Entscheidungssatz zählt nur für Sieg/Niederlage, nicht für die Ball-Differenz.</span></li>
-    <li class="only-print"><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="rs.guide.trackText">Nach jeder Runde Punkte und Ball-Differenz zum bisherigen Stand addieren – so ist der Zwischenstand ohne Gerät ablesbar.</span></li>
+    <li class="only-screen"><span class="hi" data-i18n="sheet.guide.flowLabel">Ergebnisse:</span> <span data-i18n="sheet.guide.flowText">Pro Spiel eintragen – der Rest rechnet automatisch.</span></li>
+    <li><span class="hi" data-i18n="sheet.guide.scoringLabel">Wertung:</span> <span data-i18n="rs.guide.scoringText">Sieg 2, Unentschieden 1, Niederlage 0 · Gleichstand: Punktdifferenz, direkter Vergleich, erzielte Punkte</span></li>
+    <li class="only-print"><span class="hi" data-i18n="sheet.guide.trackLabel">Laufende Tabelle:</span> <span data-i18n="rs.guide.trackText">Nach jeder Runde Punkte und Punktdifferenz zum bisherigen Stand addieren.</span></li>
     <li><span class="hi" data-i18n="sheet.guide.byeLabel">Freilos:</span> <span id="g-bye">–</span></li>
   </ol>
   <a class="guide-format-doc" id="guideFormatDoc" href="docs/format-jeder-gegen-jeden.html" target="_blank" rel="noopener" data-i18n="sheet.formatInfo">Format-Info</a>
@@ -232,6 +230,7 @@
 
 <div class="table-scroll is-track sheet-card" id="trackWrap" tabindex="0" role="region" aria-labelledby="standingsSection">
   <table class="track" id="trackTable" data-mstd-key="final">
+    <caption class="sr-only" data-i18n="ui.a11y.trackCaption">Laufende Tabelle je Runde</caption>
     <tbody id="trackBody"></tbody>
   </table>
 </div>
@@ -601,8 +600,8 @@
     }), c, TOutcome.withInputs(s));
   }
   function compute(){
-    B = planFor(S.config);
-    if(freezeStarted()) B = planFor(S.config);
+    B = TPlanning.safe(planFor, S.config);
+    if(freezeStarted()) B = TPlanning.safe(planFor, S.config);
     return B;
   }
 
@@ -652,6 +651,7 @@
         ? { mid:a.getAttribute('data-mid'), set:a.getAttribute('data-set'),
             side:a.getAttribute('data-side'), start:a.selectionStart } : null;
       buildStructure();
+      paint();   // Entscheidungssatz-Spalte erst sichtbar machen, dann Fokus zurückgeben
       if(keep){
         const el = $('schedBody').querySelector('input.score[data-mid="'+keep.mid
           + '"][data-set="'+keep.set+'"][data-side="'+keep.side+'"]');
@@ -752,7 +752,7 @@
   /* ------------------------------------------------------------- Anzeige */
   function paint(){
     paintTimeplan();
-    TUI.paintStage(S, { build: s => planFor(s.config, s), repaint: () => { structureKey = ''; rebuild(); } });
+    TUI.paintStage(S, { build: s => TPlanning.safe(c => planFor(c, s), s.config), repaint: () => { structureKey = ''; rebuild(); } });
     if(planningActions) planningActions.refresh();
     ['nameGrid'].forEach(id => TTeamReorder.enhance($(id), {
       get: () => S, save: () => save(),
@@ -805,9 +805,7 @@
       const ctx = ctxFor(rd ? rd.setMode : S.config.setMode);
       /* Immer "Team N" plus Name darunter – gleiche Darstellung wie beim
          Aufbau der Karte, sonst verschwindet die Nummer beim Repaint. */
-      const a = td.querySelector('.pside-a .t'), b = td.querySelector('.pside-b .t');
-      if(a) a.innerHTML = TUI.cardNameHtml(m.a, m.ta, ctx);
-      if(b) b.innerHTML = TUI.cardNameHtml(m.b, m.tb, ctx);
+      TUI.paintSideNames(td, m, ctx);
       const dead = !!m.dead, bye = m.bye != null;
       /* Entscheidungssatz (Satz 3) NUR sperren, wenn Satz 1+2 bereits gueltig
          UND unentschieden sind - siehe TC.decidingSetNeeded(). Sonst zaehlt
@@ -1066,9 +1064,9 @@
     /* Kein <caption>: Die Ueberschrift dieses Abschnitts ist die <h1>
        "Schweizer Tabelle" darueber - ein zweiter Titel waere doppelt. */
     const E = k => TUI.esc(T(k));
-    let html = '<thead><tr><th class="teamcol">' + E('rs.swiss.colTeam') + '</th><th class="rankcol">' + E('ui.rank.place') + '</th>'
-      + '<th class="ptscol">' + E('rs.swiss.colPts') + '</th><th class="diffcol">' + E('rs.swiss.colDiff') + '</th>';
-    for (let r = 1; r <= rounds; r++) html += '<th class="round">' + T('rs.swiss.colRound', { n: r }) + '</th><th class="rplace">' + E('sheet.place.colPlace') + '</th>';
+    let html = '<caption class="sr-only">' + E('ui.a11y.standCaption') + '</caption><thead><tr><th scope="col" class="teamcol">' + E('rs.swiss.colTeam') + '</th><th scope="col" class="rankcol">' + E('ui.rank.place') + '</th>'
+      + '<th scope="col" class="ptscol">' + E('rs.swiss.colPts') + '</th><th scope="col" class="diffcol">' + E('rs.swiss.colDiff') + '</th>';
+    for (let r = 1; r <= rounds; r++) html += '<th scope="col" class="round">' + T('rs.swiss.colRound', { n: r }) + '</th><th scope="col" class="rplace">' + E('sheet.place.colPlace') + '</th>';
     html += '</tr></thead><tbody>';
     html += '<tr class="example-row ex ex-start ex-end">'
       + '<td class="teamcol"><span class="ex-badge">' + E('rs.swiss.example') + '</span>'
@@ -1293,9 +1291,9 @@
     const E = k => TUI.esc(T(k));
     $('h-legend').innerHTML = '<b>' + E('sheet.legend.label') + '</b> ' + TUI.esc(modeLabel())
       + ' · ' + TUI.esc(T('rs.legend.rounds', { n: B.rounds.length })) + ' · ' + E('sheet.legend.perGame') + ' '
-      + '<span class="rmode">' + TUI.esc(setModeLabel(c.setMode)) + '</span>'
+      + '<span class="rmode">' + TUI.esc(TUI.legendModeText(setModeLabel(c.setMode))) + '</span>'
       + ' ' + E('rs.legend.rule');
-    TUI.syncModeSummary(document);
+    TUI.syncModeSummary(document, c.setMode);
     $('jumpbar').innerHTML = TUI.jumpBarHtml();
   }
 
@@ -1304,9 +1302,8 @@
       ? T('rs.guide.flowSwiss', { n: B.rounds.length })
       : T('rs.guide.flowRr', { n: B.rounds.length });
     const hasBye = B.rounds.some(r => r.bye != null);
-    $('g-bye').textContent = hasBye
-      ? T('rs.guide.byeOdd')
-      : T('rs.guide.byeEven');
+    $('g-bye').textContent = hasBye ? T('rs.guide.byeOdd') : '';
+    if ($('g-bye').closest('li')) $('g-bye').closest('li').hidden = !hasBye;
   }
 
   /* -------------------------------------------------------------- Aktionen */
@@ -1368,6 +1365,12 @@
     const previousTitle = S.title;
     const prevTeams = S.config.teams;
     readConfig();
+    if(S.config.teams !== prevTeams && !TUI.confirmStructureChange(TStore.anyResults(S))){
+      S.config = previousConfig;
+      S.title = previousTitle;
+      fillSelects();
+      return;
+    }
     if(S.config.mode === 'rr' && S.config.teams === prevTeams){
       try {
         planFor(S.config);
@@ -1595,7 +1598,7 @@
       return rd ? rd.setMode : S.config.setMode;
     };
     TUI.wireScoreInputs($('schedBody'), onScore);
-    TUI.wireOutcomes($('schedBody'), { state: () => S, buildPlan: s => planFor(s.config, s), changed: () => { save(); rebuild(); } });
+    TUI.wireOutcomes($('schedBody'), { state: () => S, buildPlan: s => TPlanning.safe(c => planFor(c, s), s.config), changed: () => { save(); rebuild(); } });
   }
 
   if(!S.round1) S.round1 = null;

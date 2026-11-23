@@ -7,10 +7,11 @@
    ========================================================================== */
   :root { --line:#333; --soft:#aaa; --bg:#f0f0f0; }
   .format-switch { grid-column:1 / -1; width:100%; min-width:0; margin-top:8px; }
+  .nw { display:inline-block; max-width:100%; vertical-align:top; }
   .format-switch > label { display:block; font-weight:bold; margin-bottom:4px; }
-  .format-switch-controls { display:flex; align-items:center; }
-  .format-switch-controls select { flex:1; min-width:0; max-width:100%; min-height:44px; }
-  .format-switch-controls button { flex:none; min-height:44px; margin-left:6px; }
+  .format-switch-controls { display:flex; flex-wrap:wrap; align-items:center; }
+  .format-switch-controls select { flex:1 1 190px; min-width:0; max-width:100%; min-height:44px; margin:3px 6px 3px 0; }
+  .format-switch-controls button { flex:none; min-height:44px; margin:3px 0; }
   .format-switch p { margin:4px 0 0; font-size:12px; color:#555; overflow-wrap:break-word; }
   #formatSwitchNotice.is-error { color:#b00020; font-weight:600; }
   .format-switch-return {
@@ -684,7 +685,7 @@
   html { scroll-padding-top: 72px; }
   /* Textkontrast >= 4,5:1 (WCAG 1.4.3) bei kleinen Hinweisen. */
   html body .sched .rtime, html body .sched .rnd .rtime { color: #1a5f91 !important; }
-  html body .vs { color: #66768c; }
+  html body .vs { color: #4b5d73; }
   html body .rank-badge.rank-none { color: #5b6270; }
 }
 /* ✓/⏱ an Spielkarten auch auf Tablets mit Fingerbedienung so gross wie am
@@ -1261,3 +1262,252 @@
 @media screen { .team-list-folded { display:none !important; } }
 /* Nur fuer Screenreader (Ueberschriften-Navigation), optisch unsichtbar. */
 .sr-only { position:absolute !important; width:1px; height:1px; margin:-1px !important; padding:0 !important; border:0 !important; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* Aufteilungs-Wähler (Gruppen & Finalblöcke anpassen). Kein flex gap
+   (Safari 12): Abstände über Margins. */
+.cfg-adv, .cfg-adv[hidden], .splitpick[hidden], .cfg-adv-part[hidden] { min-width: 0; }
+.cfg-adv[hidden], .splitpick[hidden], .cfg-adv-part[hidden] { display: none !important; }
+.cfgcard-grid > .cfgfield--full { flex: 1 1 100%; max-width: none; }
+.cfg-adv-state { font-weight: 400; opacity: .7; margin-left: 6px; }
+.cfg-adv-body { margin-top: 6px; }
+.cfg-adv-part { margin-bottom: 12px; }
+.cfg-adv-part > select { max-width: 260px; margin-bottom: 8px; }
+.cfg-adv-label { font-size: 13px; margin-bottom: 6px; }
+.splitpick { margin-top: 4px; }
+.sp-chips { display: flex; flex-wrap: wrap; align-items: center; }
+.sp-chip { min-width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 14px;
+  background: #e8edf3; font-size: 13px; font-weight: 600; margin: 2px 0; padding: 0 4px; box-sizing: border-box; }
+.sp-gap { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0; margin: 0 2px; border: 1px dashed #9fb1c5; border-radius: 16px; background: #fff; color: #5b6b7d; cursor: pointer; font-size: 12px; font-weight: 600; -webkit-appearance: none; appearance: none; }
+.sp-gap:not(.on):hover { background: #fdecec; border-color: #c0392b; color: #c0392b; }
+.sp-gap.on { padding: 0 12px; border: 1px solid #1f6fb2; background: #e8f1fb; color: #1f6fb2; }
+.sp-gap.on:hover { background: #1f6fb2; color: #fff; }
+.sp-gap-txt { margin-left: 6px; }
+.sp-gap:disabled { cursor: not-allowed; opacity: .35; }
+.sp-gap:focus-visible { outline: 2px solid #1f6fb2; border-radius: 6px; }
+.sp-hint { margin: 0 0 8px; font-size: 13px; color: #4b5563; }
+.sp-segs { display: flex; flex-wrap: wrap; align-items: stretch; }
+.sp-seg { flex: 1 1 100%; border: 2px solid #1f6fb2; border-radius: 10px; background: #f4f8fc; padding: 6px 8px 4px; margin: 0; box-sizing: border-box; }
+.sp-seg-cap { font-size: 12px; font-weight: 700; color: #1f4f80; margin-bottom: 2px; }
+.sp-join { flex: 1 1 100%; display: flex; justify-content: center; height: 32px; }
+.sp-join .sp-gap { height: 28px; margin: 0; }
+.sp-reset { margin-top: 6px; border: 1px solid #9fb1c5; background: #fff; border-radius: 6px; padding: 6px 12px;
+  min-height: 36px; font-size: 13px; cursor: pointer; }
+
+/* Spielregeln zum Vorlesen / Schiri-Hinweise in der Kurzanleitung. */
+.playrules-box { margin-top: 10px; }
+.pr-block { margin: 8px 0 0; padding-top: 6px; border-top: 1px solid #d7dee8; }
+.pr-block h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; }
+.pr-block ul { margin: 2px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.45; }
+.pr-org { color: #4b5563; }
+@media print { .pr-block ul { font-size: 11px; line-height: 1.3; } }
+
+td.match[data-mid] { position: relative; }
+.swap-ico { position: absolute; bottom: 6px; right: 6px; width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c6d0dc; border-radius: 50%; background: #fff; color: #4b5563; cursor: pointer; opacity: .75; z-index: 2; }
+@media screen { html body td.match.has-swap { padding-bottom: 38px; } }
+.swap-ico:hover, .swap-ico:focus-visible { opacity: 1; color: #0b5cab; border-color: #0b5cab; }
+.namepanel.swap-sheet, .swap-sheet { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100vw - 16px)); max-height: 80vh; overflow: auto; z-index: 1000; background: #fff; border: 1px solid #c6d0dc; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.28); padding: 12px; }
+.namepanel.swap-sheet[hidden], .swap-sheet[hidden] { display: none; }
+@media print { .swap-ico, .swap-sheet { display: none !important; } }
+
+@media screen {
+  html body .table-scroll table.sched td.match .pnames .t-line { font-size:16px; line-height:1.25; font-weight:700; }
+  html body .table-scroll table.sched td.match .pnames .t-nm { font-size:14px; line-height:1.2; font-weight:600; color:#0b3d17; }
+  html body .table-scroll table.sched td.match .pnames .team-origin-group { font-size:11px; }
+}
+@media screen and (max-width:767px) {
+  html body .table-scroll table.sched td.match .pnames .t-line { font-size:17px; }
+  html body .table-scroll table.sched td.match .pnames .t-nm { font-size:15px; }
+}
+
+.adv-gear { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-left: 6px; padding: 0; vertical-align: middle; border: 1px solid #c6d0dc; border-radius: 50%; background: #fff; color: #4b5563; cursor: pointer; }
+.adv-gear:hover, .adv-gear:focus-visible { color: #0b5cab; border-color: #0b5cab; }
+.adv-gear[hidden] { display: none; }
+.adv-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(15, 30, 50, .45); }
+.adv-overlay[hidden] { display: none; }
+.adv-sheet { width: min(520px, 100%); max-height: calc(100vh - 24px); overflow: auto; box-sizing: border-box; padding: 14px 16px; background: #fff; border-radius: 10px; box-shadow: 0 10px 32px rgba(0,0,0,.35); }
+.adv-head { display: flex; align-items: center; margin-bottom: 8px; }
+.adv-head h2 { margin: 0; font-size: 15px; flex: 1 1 auto; }
+.adv-close { flex: 0 0 auto; width: 36px; height: 36px; margin-left: 8px; border: 0; border-radius: 50%; background: #eef2f7; font-size: 22px; line-height: 1; cursor: pointer; }
+@media print { .adv-gear, .adv-overlay { display: none !important; } }
+
+/* B2/B3: Touch-Ziele ≥44px und Eingaben ≥16px (verhindert iOS-Zoom) auf Touch-Geräten. */
+@media screen and (pointer: coarse) {
+  html body .nbtn, html body .setupbar select, html body .setupbar button,
+  html body .namepanel input, html body .namepanel select, html body .swap-ico, html body .adv-close {
+    min-height:44px;
+  }
+  html body .swap-ico, html body .adv-close { min-width:44px; }
+  html body .namepanel input, html body .setupbar select, html body .setupbar input,
+  html body .namepanel select { font-size:16px; }
+  html body .sub, html body .legend, html body .panel-checks label,
+  html body #nameGrid .pair-editor small, html body .sport-profile-note,
+  html body .sport-profile-glossary { font-size:13px; }
+}
+
+/* A11Y-1: einheitlicher Fokusring (2 Ringe: blau + weiss, auf hellem und dunklem Grund sichtbar),
+   Mindestschrift 12px fuer Beschriftungen (nur Bildschirm, Druck bleibt kompakt),
+   weitere Touch-Ziele >=44px, beschreibbare Druckfelder >=30px. */
+html body :focus-visible:focus-visible:focus-visible {
+  outline: 3px solid #0b5cab !important; outline-offset: 2px !important; box-shadow: 0 0 0 2px #fff !important;
+}
+@media screen {
+  html body .cfg-lbl, html body .cfgfield > span, html body .cfgres-lbl, html body .final-mode-label,
+  html body .format-switch label, html body .nhint, html body .input-hint, html body .reset-hint,
+  html body .sport-profile-note, html body .cap-sub, html body .slbl, html body .lvbadge, html body .nnum,
+  html body .brhead, html body .brname, html body .kqvs, html body .kqcourt-head, html body .m-referees,
+  html body .planning-match-meta, html body .rank-badge, html body .ex-badge, html body .gcount,
+  html body .rmode, html body .team-status-badge, html body .footer-legal, html body .footer-legal *,
+  html body .footer-amazon, html body .footer-amazon a, html body .tf-open, html body .app-bar__context,
+  html body .mnote-slot, html body td.lbl, html body td.sub, html body th.sub, html body th.lbl,
+  html body table.stand th, html body .grpbox table.stand th, html body table.track th,
+  html body .central-table th, html body .central-table td, html body td.mstd-cell,
+  html body .example-row td, html body .cpts, html body .n, html body .team-origin-group,
+  html body .stand .nm .t-line, html body .track .tname .t-line { font-size: 12px; }
+  html body .table-scroll table.sched td.match .pnames .team-origin-group { font-size: 12px; }
+  html body #btnShowContact, html body .brhead, html body .brname, html body .cfgres-lbl, html body .ex-badge,
+  html body .gcount, html body .rmode, html body .slbl, html body .stand .nm .t-line, html body td.lbl,
+  html body td.sub, html body th.lbl, html body th.sub, html body .team-status-badge,
+  html body .mobile-jumpbar .nbtn span, html body .cap-hint, html body .example-row .t-line, html body .example-row td span, html body .teamcol .t-line, html body .tnm.t-nm { font-size: 12px !important; }
+}
+@media screen and (pointer: coarse) {
+  html body .adv-gear, html body .sp-gap, html body .rnav, html body .team-del, html body .ngender,
+  html body #btnShowContact, html body .tf-open, html body .footer-amazon a, html body select,
+  html body .btn-ok, html body .score-ok, html body .nbtn-round, html body .bl-round-progress { min-width: 44px; min-height: 44px; }
+  html body .sp-join { height: 48px; }
+  html body #nameGrid .ngender { flex-basis: 44px; width: 44px; min-width: 44px; height: 44px; }
+  html body .sp-gap .sp-gap-txt { font-size: 13px; }
+  html body select, html body textarea { font-size: 16px !important; }
+  html body .nbtn-round { min-width: 44px !important; }
+  html body .footer-amazon a { display: inline-block; line-height: 44px; }
+}
+@media print {
+  html body input.score, html body .sbox, html body td.score-cell { min-height: 30px; }
+}
+
+/* === Entscheidungssatz nur bei 1:1 nach zwei Sätzen (Bildschirm); Druck zeigt das Feld === */
+@media screen {
+  html body .psets .sset.sset-idle { display:none !important; }
+}
+
+/* === Setup-Hierarchie + kompakter Mobil-Kopf (Bildschirm) ===
+   Primär = gefüllt (.cfg-action-primary, genau eine), sekundär = Outline,
+   destruktiv = eigene Zeile unten, rote Kontur. Mobil: nur die Rundenleiste
+   bleibt sticky, die App-Leiste scrollt mit (spart ~56px Höhe). */
+@media screen {
+  html body .cfg-action-group:not(.cfg-action-group--danger) .cfg-action-group__buttons > .nbtn,
+  html body .cfg-action-group--options .nbtn {
+    background:#fff; color:var(--app-blue-dark, #1a3a5c);
+    border:1px solid var(--app-line, #c9d6e6); box-shadow:none;
+  }
+  html body .cfg-action-group:not(.cfg-action-group--danger) .cfg-action-group__buttons > .nbtn:hover,
+  html body .cfg-action-group--options .nbtn:hover { background:#f0f5fb; border-color:var(--app-blue, #1f6fa8); }
+  html body .cfg-action-group__buttons > .nbtn.active { background:#d8e8f8 !important; }
+  html body .cfg-action-group__buttons > .nbtn.cfg-action-primary,
+  html body .cfg-action-group__buttons > .nbtn.cfg-action-primary.active {
+    background:var(--app-blue-dark, #1a3a5c) !important; color:#fff !important;
+    border-color:var(--app-blue-dark, #1a3a5c) !important;
+  }
+  /* Breit: eigene Spalte (kein Spannen über auto-fit-Spuren), rote Kontur
+     trennt sie ab; schmal (<=820px): eigene Zeile unten. */
+  html body .cfg-action-group--danger { position:relative; }
+  html body .cfg-action-group--danger .cfg-action-group__buttons { display:grid; }
+  @media (max-width:820px) {
+    html body .cfg-action-group--danger {
+      grid-column:1 / -1; order:2; margin-top:10px; padding-top:12px;
+    }
+    html body .cfg-action-group--danger::before {
+      content:""; position:absolute; top:0; left:0; right:0; border-top:1px dashed #e2a3a3;
+    }
+    html body .cfg-action-group--danger .cfg-action-group__buttons {
+      display:flex; flex-wrap:wrap; -webkit-box-orient:horizontal;
+    }
+  }
+  html body .cfg-action-group--danger .cfg-action-group__buttons > .nbtn {
+    border:1px solid #e2a3a3;
+  }
+  @media (max-width:820px) {
+    html body .cfg-action-group--danger .cfg-action-group__buttons > .nbtn {
+      width:auto; flex:0 1 220px; margin:0 8px 8px 0;
+    }
+  }
+}
+@media screen and (max-width:767px) {
+  html body .app-bar { position:static; }
+  html body.tournament-sheet .schedule-roundbar,
+  html body.has-section-jumpbar .schedule-roundbar { top:calc(env(safe-area-inset-top, 0px) + 4px); }
+  /* Rundenleiste einzeilig: „aktuelle Runde“ sonst in zweiter sticky-Zeile. */
+  html body .schedule-roundbar {
+    grid-template-columns:40px minmax(0, 1fr) 40px auto auto auto; grid-gap:4px; gap:4px;
+  }
+  html body .schedule-roundbar .nbtn-round-current {
+    grid-column:4; grid-row:1; width:40px; min-width:40px; height:44px; padding:0;
+  }
+  html body .schedule-roundbar .nbtn-round-all { grid-column:5; margin-right:-4px !important; }
+  html body .schedule-roundbar .rb-search-btn { grid-column:6; }
+}
+/* Sehr schmal (320 px): Wort „Runde“ weglassen, damit die Auswahl ≥44 px breit bleibt. */
+@media screen and (max-width:359px) {
+  html body .schedule-roundbar { padding-left:8px; }
+  html body .schedule-roundbar label { font-size:0; gap:0; min-width:0; }
+  html body .schedule-roundbar label select { font-size:14px; width:100%; min-width:44px; padding:7px 24px 7px 10px; background-position:right 6px center; }
+  html body .schedule-roundbar .rb-search-btn { min-width:44px; padding:0; }
+}
+@media screen {
+  /* Flex-Bogen färbt „Startrunde auslosen“ lokal gefüllt: hier sekundär. */
+  html body .cfg-action-group__buttons > #btnDrawStart:not(.cfg-action-primary) {
+    background:#fff !important; color:var(--app-blue-dark, #1a3a5c) !important;
+    border-color:var(--app-line, #c9d6e6) !important; box-shadow:none !important;
+  }
+}
+
+/* === Weiterkommen-Hinweis in KO-Spielkarten ("Sieger → Finale") === */
+.m-advance { font-size:10px; opacity:.8; }
+
+/* === Mobile Navigation: aktuelle Runde, Fortschritt, fertige Runden einklappbar === */
+.sched .bl-round-progress { font:inherit; font-size:12px; font-weight:700; margin-left:8px; padding:2px 8px; border:1px solid #b9c7da; border-radius:999px; background:#fff; color:#25415f; cursor:default; }
+.sched .bl-round-progress.is-done { cursor:pointer; background:#e8f5ec; border-color:#9fd0ac; }
+.sched .bl-round-progress.is-done::after { content:" \25BE"; }
+.sched .bl-round-progress.is-done.is-collapsed::after { content:" \25B8"; }
+.sched tr.rhead.bl-round-current { box-shadow:inset 4px 0 0 #1e66c9; }
+.schedule-roundbar .nbtn-round-current[hidden] { display:none; }
+.schedule-roundbar .nbtn-round-current.is-current { opacity:.55; }
+@media screen and (max-width:767px) {
+  html body table.sched tr.bl-round-collapsed,
+  html body table.sched.wrap-courts tr.rmatches.bl-round-collapsed { display:none !important; }
+}
+
+/* Konflikt-Ampel ueber dem Spielplan */
+.plan-health { margin: 0 0 12px; border: 1px solid #c9d6e6; border-radius: 10px; background: #fff; }
+.plan-health[hidden] { display: none; }
+.plan-health summary { display: flex; flex-wrap: wrap; align-items: center; min-height: 40px; padding: 6px 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.plan-health .ph-prog, .plan-health .ph-open { margin-left: 12px; font-weight: 600; font-size: 13px; }
+.plan-health .ph-prog { display: inline-flex; align-items: center; }
+.plan-health .ph-bar { display: inline-block; width: 48px; height: 6px; margin-right: 6px; border-radius: 3px; background: #dbe4ef; overflow: hidden; flex: none; }
+.plan-health .ph-bar i { display: block; height: 100%; background: #1a7f37; }
+.plan-health .ph-next { flex: 1 0 100%; margin-top: 2px; padding-left: 22px; box-sizing: border-box; font-weight: 400; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.plan-health .ph-next strong { font-weight: 700; }
+.plan-health .ph-hint { color: #5a6b80; }
+@media (max-width: 480px) {
+  .plan-health .ph-open { flex: 1 0 100%; margin: 2px 0 0; padding-left: 22px; box-sizing: border-box; }
+}
+.plan-health .ph-done { font-weight: 700; color: #1a7f37; }
+.plan-health .ph-dot { width: 12px; height: 12px; margin-right: 10px; border-radius: 50%; background: #1a7f37; flex: none; }
+.plan-health.ph-level-warn { border-color: #e0b44c; background: #fff8e6; }
+.plan-health.ph-level-warn .ph-dot { background: #d99a00; }
+.plan-health.ph-level-error { border-color: #d13b3b; background: #fdeeee; }
+.plan-health.ph-level-error .ph-dot { background: #c62828; }
+.plan-health ul { margin: 0; padding: 0 12px 10px 34px; font-size: 14px; line-height: 1.5; }
+.plan-health li.ph-error { color: #8f1d1d; }
+.plan-health li.ph-warn { color: #7a5600; }
+@media print { .plan-health { display: none !important; } }
+@media screen and (pointer: coarse) { .plan-health summary { min-height: 44px; } }
+
+.pr-sec { margin-top: 6px; }
+.pr-sec[hidden] { display: none; }
+.pr-sec h4 { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #1f3a5f; }
+@media print { .pr-sec h4 { font-size: 10px; } }
+
+.pr-block .pr-nolabel { display: none; }
+.pr-block .pr-setrules:empty { display: none; }
+
+.adv-gear--card { width: 24px; height: 24px; margin-left: 6px; flex: 0 0 auto; }
