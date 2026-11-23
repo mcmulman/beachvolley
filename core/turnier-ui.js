@@ -3126,7 +3126,6 @@
     if (sep) {
       out.main = setRuleLines(setMode);
       out.final = setRuleLines(finalSetMode);
-      if (out.final.join('|') === out.main.join('|')) out.final = [tx('ui.rules.p.sameAsPrelim', 'Spielmodus und Seitenwechsel wie in der Vorrunde.')];
     }
     else out.rules = setRuleLines(setMode);
     if (beach) {
@@ -3196,6 +3195,7 @@
     r.rules = [];
     const hasFinalItems = !!box.querySelector('[data-pr-head="final"] li');
     if (!hasFinalItems) r.final = [];
+    else if (!r.final.length) r.final = setRuleLines(setMode);
     ['main', 'final', 'extra', 'org'].forEach(function (k) {
       const ul = box.querySelector('[data-pr-rules="' + k + '"]');
       const html = r[k].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
