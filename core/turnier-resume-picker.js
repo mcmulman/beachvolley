@@ -605,7 +605,91 @@
     } catch (e) { /* z. B. file://-Aufruf ohne History-API: Standard-Slot bleibt */ }
   }
 
-  const api = { BASE_ID, maybePrompt, autoId, listFromStore, listFromIndex };
+  /* Gibt es unter base + id (id = BASE_ID für den unverzweigten Slot) noch
+     ein gespeichertes Turnier? Für Verknüpfungen zwischen Bögen: ein
+     gelöschtes Ziel darf nie zu einem leeren Bogen führen.
+     → Promise<boolean>; rejected nie. */
+  function exists(base, id) {
+    const TStore = root.TStore;
+    if (typeof id !== 'string' || !id || !TStore || typeof TStore.index !== 'function') return Promise.resolve(false);
+    const key = id === BASE_ID ? base : base + '.' + id.replace(/[^A-Za-z0-9_-]/g, '');
+    return Promise.resolve(TStore.index()).then(
+      idx => !!idx && Object.prototype.hasOwnProperty.call(idx, key), () => false);
+  }
+
+  /* ---- Verknüpfungen zwischen Bögen (Rangliste ⇄ Finalrunde) ----------
+     Link = { sheet, id[, sport][, sig] }; sheet ist ein Registry-Schlüssel
+     (Store-Basisname). Daten aus Speicher/Freigabe sind nicht vertrauenswürdig:
+     URLs werden immer aus Registry + geprüfter ID neu zusammengesetzt. */
+  const LINK_SHEETS = {
+    runden_rr: { file: 'Turnierbogen_Runden_System.html', mode: 'rr' },
+    runden_swiss: { file: 'Turnierbogen_Runden_System.html', mode: 'swiss' },
+    'gruppen-final': { file: 'Turnierbogen_Gruppen_Finalrunde.html' }
+  };
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
+  function cleanLink(o) {
+    if (!o || typeof o !== 'object' || typeof o.sheet !== 'string' || !has(LINK_SHEETS, o.sheet)
+        || typeof o.id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(o.id)) return null;
+    const out = { sheet: o.sheet, id: o.id };
+    if (typeof o.sport === 'string' && /^[a-z0-9.-]{1,40}$/.test(o.sport)) out.sport = o.sport;
+    if (typeof o.sig === 'string' && o.sig.length <= 2000) out.sig = o.sig;
+    return out;
+  }
+  function linkUrl(link, extra) {
+    const reg = LINK_SHEETS[link.sheet];
+    const q = new URLSearchParams();
+    if (reg.mode === 'swiss') q.set('mode', 'swiss');
+    if (link.sport) q.set('sport', link.sport);
+    q.set('id', link.id);
+    return reg.file + '?' + q.toString() + (extra || '');
+  }
+  /* Same-Origin-URL im selben Verzeichnis → Link | null */
+  function linkFromUrl(href) {
+    try {
+      const u = new URL(href, root.location.href);
+      const dir = root.location.pathname.replace(/[^/]*$/, '');
+      if (u.origin !== root.location.origin || u.pathname.slice(0, dir.length) !== dir) return null;
+      const file = u.pathname.slice(dir.length);
+      const sheet = Object.keys(LINK_SHEETS).filter(k => LINK_SHEETS[k].file === file
+        && (LINK_SHEETS[k].mode || 'rr') === (u.searchParams.get('mode') === 'swiss' ? 'swiss' : 'rr'))[0];
+      return sheet ? cleanLink({ sheet: sheet, id: u.searchParams.get('id'), sport: u.searchParams.get('sport') }) : null;
+    } catch (e) { return null; }
+  }
+  /* Lebt das Ziel – und zeigt es (falls `back` = {field, link} gegeben) per
+     Rückverweis auf diesen Bogen? → Promise<link|null> (cleaned); rejected nie. */
+  function liveLink(raw, back) {
+    const link = cleanLink(raw);
+    if (!link) return Promise.resolve(null);
+    return exists(link.sheet, link.id).then(ok => {
+      if (!ok || !back) return ok ? link : null;
+      const TStore = root.TStore;
+      const key = TStore.PREFIX + (link.id === BASE_ID ? link.sheet : link.sheet + '.' + link.id);
+      return TStore.transaction(view => view.getItem(key), { tracked: false, report: false }).then(raw2 => {
+        let rec = null;
+        try { rec = JSON.parse(raw2); } catch (e) { /* defekt: wie nicht vorhanden */ }
+        const back2 = rec && cleanLink(rec[back.field]);
+        return back2 && back2.sheet === back.link.sheet && back2.id === back.link.id ? link : null;
+      });
+    }).then(null, () => null);
+  }
+  /* Speichern → Schreibvorgänge abwarten → im selben Fenster navigieren
+     (window.open ist in den Apps unzuverlässig). Nur ein Aufruf gleichzeitig. */
+  let leaving = false;
+  async function leaveTo(saveFn, url) {
+    if (leaving) return false;
+    leaving = true;
+    try {
+      if (!await saveFn()) { leaving = false; return false; }
+      if (root.TStore.whenIdle) await root.TStore.whenIdle();
+    } catch (e) { leaving = false; return false; }
+    leaving = false;
+    root.location.assign(url);
+    return true;
+  }
+
+  const api = { BASE_ID, maybePrompt, autoId, freshId, exists, listFromStore, listFromIndex,
+    cleanLink, linkUrl, linkFromUrl, liveLink, leaveTo };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.TResumePicker = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

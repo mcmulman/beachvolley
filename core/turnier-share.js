@@ -516,8 +516,9 @@
       '.tshare-panel{position:relative;background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
         'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;' +
         'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}' +
-      '.tshare-head{display:flex;align-items:center;gap:12px;' +
+      '.tshare-head{display:flex;align-items:center;' +
         'padding:16px 66px 16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-head > * + *{margin-left:12px;}' +
       '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:16px;font-weight:800;color:#1a3a5c;}' +
       '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
       '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
@@ -556,8 +557,9 @@
       '.tshare-spinner{width:30px;height:30px;border-radius:50%;border:3px solid #ccd8e8;' +
         'border-top-color:#1f6fa8;animation:tshare-spin .8s linear infinite;}' +
       '@keyframes tshare-spin{to{transform:rotate(360deg);}}' +
-      '.tshare-foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;' +
-        'padding:14px 18px;border-top:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-foot{display:flex;justify-content:flex-end;flex-wrap:wrap;' +
+        'padding:14px 18px 4px;border-top:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-foot > *{margin:0 0 10px 10px;}' +
       '.tshare-btn{border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:700;' +
         'cursor:pointer;white-space:normal;min-height:44px;max-width:100%;word-wrap:break-word;}' +
       '.tshare-btn-primary{background:#1a3a5c;color:#fff;}' +
@@ -566,7 +568,9 @@
       '.tshare-btn-ghost:hover{border-color:#1f6fa8;}' +
       '@media screen and (max-width:640px){.tshare-field input,.tshare-linkrow input{font-size:16px;min-height:44px;}' +
         '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-head{padding:12px 60px 12px 12px;}' +
-        '.tshare-body,.tshare-foot{padding:12px;}}';
+        '.tshare-body{padding:12px;}.tshare-foot{padding:12px 12px 4px;}}' +
+      '@media screen and (max-width:479px){.tshare-foot{flex-direction:column-reverse;flex-wrap:nowrap;}' +
+        '.tshare-foot > *{margin:0 0 8px;width:100%;}}';
     document.head.appendChild(style);
   }
 
@@ -674,7 +678,9 @@
   /* Generisches Info-/Bestätigungs-Overlay im gleichen visuellen Stil wie der
      Teilen-Dialog - für andere Aktionen im Bogen (z. B. "Finalrunde spielen"),
      bei denen ein natives confirm() zu wenig Platz für Erklärungen bietet.
-     opts: { title, bodyHtml, confirmLabel, cancelLabel, onConfirm, onCancel } */
+     opts: { title, bodyHtml, confirmLabel, cancelLabel, onConfirm, onCancel,
+             altLabel, onAlt }  – altLabel/onAlt: optionale zweite Aktion
+     (sekundär gestaltet, zwischen Abbrechen und der Hauptaktion). */
   function openInfoDialog(opts) {
     opts = opts || {};
     const confirmLabel = opts.confirmLabel || tx('share.continue', 'Weiter');
@@ -683,11 +689,17 @@
       opts.title || '',
       opts.bodyHtml || '',
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(cancelLabel) + '</button>' +
+      (opts.altLabel ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="alt">' + escapeHtml(opts.altLabel) + '</button>' : '') +
       '<button type="button" class="tshare-btn tshare-btn-primary" data-act="confirm">' + escapeHtml(confirmLabel) + '</button>'
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', function () {
       closeShareModal();
       if (typeof opts.onCancel === 'function') opts.onCancel();
+    });
+    const alt = root.querySelector('[data-act="alt"]');
+    if (alt) alt.addEventListener('click', function () {
+      closeShareModal();
+      if (typeof opts.onAlt === 'function') opts.onAlt();
     });
     root.querySelector('[data-act="confirm"]').addEventListener('click', function () {
       closeShareModal();

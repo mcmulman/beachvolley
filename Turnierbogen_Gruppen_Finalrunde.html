@@ -100,6 +100,7 @@
 </div>
 
 <main class="sheet-content">
+<div class="noprint sheet-xrow" style="justify-content:flex-start;margin:0;"><button type="button" class="nbtn sheet-xlink sheet-xlink-2nd" id="btnBackToSource" hidden data-i18n="gf.backToSource">← Zur Rangliste (Rundensystem)</button></div>
 <h1 id="h-title" data-i18n="gf.title">Gruppen + Finalrunde</h1>
 
 <!-- ======================= SEITE 1 ======================= -->
@@ -459,11 +460,23 @@
     return best;
   }
 
+  /* Herkunft der Rangliste: S.sourceLink = { sheet, id[, sport] } (nur bekannte
+     Bögen derselben Seite, siehe TResumePicker.cleanLink). Der Rückweg gilt,
+     solange die Quelle existiert – auch wenn sie inzwischen auf eine neuere
+     Finalrunde zeigt. */
+  const liveSource = () => TResumePicker.liveLink(S.sourceLink);
+  const paintSourceLink = async () => { $('btnBackToSource').hidden = !await liveSource(); };
+  async function gotoSource(){
+    const src = await liveSource();
+    if(!src){ paintSourceLink(); return; }
+    TResumePicker.leaveTo(save, TResumePicker.linkUrl(src));
+  }
+
   /* Übernimmt eine von außen importierte Rangliste (Namen in Platzierungs-
      reihenfolge) als Grundlage für eine Finalrunde: Teams werden in
      aufeinanderfolgende Blöcke geteilt (finalMode 'blocks'), jeder Block
      spielt nur um seine eigenen Plätze - siehe TFormat computePlacements(). */
-  function applyRankImport(names){
+  function applyRankImport(names, source){
     const capped = names.slice(0, 24);
     if(names.length > 24){
       alert(T('gf.rankImport.maxAlert'));
@@ -480,6 +493,7 @@
     S.manualPlacements = {};
     S.teamNames = {}; S.pairMembers = {};
     capped.forEach((nm, i) => { S.teamNames[i+1] = nm; });
+    if(source) S.sourceLink = source;
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     const saving = save();
     fillSelects();
@@ -502,8 +516,12 @@
     if(!Array.isArray(names) || names.length < 2) return;
     const empty = !Object.keys(S.results || {}).length && !Object.keys(S.teamNames || {}).length && !Object.keys(S.pairMembers || {}).length;
     if(!empty && !confirm(T('gf.rankImport.confirmOverwrite'))) return;
-    if (await applyRankImport(names)) {
-      history.replaceState(null, '', location.pathname + location.search);
+    const q = new URLSearchParams(location.search);
+    const source = q.has('from') ? TResumePicker.linkFromUrl(q.get('from')) : null;
+    if (await applyRankImport(names, source)) {
+      q.delete('from');
+      const qs = q.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
     }
   }
 
@@ -1285,6 +1303,7 @@
         return;
       }
       S = started.tournament;
+      paintSourceLink();
       fillSelects(); structureKey=''; rebuild();
     });
     $('btnSave').addEventListener('click', async () => {
@@ -1335,6 +1354,10 @@
   wire();
   await applyPendingRankImportFromHash();
   rebuild();
+  $('btnBackToSource').addEventListener('click', gotoSource);
+  paintSourceLink();
+  /* Zurück/Vor per Browser- oder Android-Taste: nie veralteten bfcache-Stand zeigen. */
+  window.addEventListener('pageshow', e => { if(e.persisted) location.reload(); });
   TFormatSwitch.mount({ get: () => S });
 })().catch(function(err){
   console.error(err);

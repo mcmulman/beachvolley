@@ -235,8 +235,9 @@
   </table>
 </div>
 
-<div class="noprint" style="text-align:center;margin:14px 0 22px;">
-  <button type="button" class="nbtn" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden" data-i18n-attr="title:rs.export.title"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="rs.export.btn">Platzierungsrunde aus Rangliste erstellen</span></button>
+<div class="noprint sheet-xrow">
+  <button type="button" class="nbtn sheet-xlink" id="btnExportFinal" title="Aus der aktuellen Rangliste eine Finalrunde mit Platzierungsblöcken bilden" data-i18n-attr="title:rs.export.title"><svg class="nico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 3"/><path d="M17 6h3a3 3 0 0 1-3 3"/></svg> <span data-i18n="rs.export.btn">Platzierungsrunde aus Rangliste erstellen</span></button>
+  <button type="button" class="nbtn sheet-xlink sheet-xlink-2nd" id="btnGoFinal" hidden data-i18n="rs.export.goFinal">Zur Finalrunde →</button>
 </div>
 
 <div class="legend" id="h-legend" hidden></div>
@@ -1507,50 +1508,85 @@
       S.frozen = {}; S.frozenModes = {};
       save(); structureKey=''; rebuild();
     });
-    function exportRankingToFinal(){
-        if ((S.stageDecisions || []).length) return;
+    /* Verknüpfung mit der aus dieser Rangliste erzeugten Finalrunde
+       (S.finalLink = { sheet, id[, sport], sig }; sig = Rangliste beim Export).
+       Die Finalrunde gilt nur, wenn sie ihrerseits auf diesen Bogen zurückzeigt –
+       ein dort gestartetes „Neues Turnier“ trennt die Verbindung. */
+    const FINAL_SHEET = 'gruppen-final';
+    const ownLink = () => ({ sheet: 'runden_' + MODE,
+      id: S.sheet === 'runden_' + MODE ? TResumePicker.BASE_ID : S.sheet.slice(MODE.length + 8) });
+    function ownUrl(){
+      const q = new URLSearchParams();
+      if(MODE === 'swiss') q.set('mode', 'swiss');
+      if(S.sport && S.sport.id !== 'volleyball.beach') q.set('sport', S.sport.id);
+      q.set('id', ownLink().id);
+      return SHEET_FILE + '?' + q.toString();
+    }
+    const liveFinal = () => TResumePicker.liveLink(S.finalLink, { field: 'sourceLink', link: ownLink() });
+    const paintFinalLink = async () => { $('btnGoFinal').hidden = !await liveFinal(); };
+    const leaveTo = url => TResumePicker.leaveTo(save, url);
+    /* Gültige, vollständig aufgelöste Rangliste oder null (dann auch keine Veraltet-Prüfung). */
+    function rankingNow(){
       const teams = allTeams().filter(t => !S.absent.includes(t));
-      if(teams.length < 2){ alert(T('rs.alert.exportMin')); return; }
-      const table = B.table;
       const ranked = correctedRanking();
-      const complete = !!table.complete;
-      const valid = ranked.length === teams.length && ranked.every(e =>
+      const valid = teams.length >= 2 && ranked.length === teams.length && ranked.every(e =>
         e.supported && e.resolved && !e.shared && Number.isInteger(e.place) && e.place >= 1
         && e.place <= teams.length && teams.includes(e.team))
         && new Set(ranked.map(e => e.place)).size === teams.length
         && new Set(ranked.map(e => e.team)).size === teams.length;
-      if (!valid) {
+      const names = ranked.map(e => TSport.teamLabel(S, e.team, 'Team ' + e.team));
+      return { teams, ranked, names, valid, sig: valid ? names.join('\n') : null };
+    }
+    async function gotoFinal(){
+      const link = await liveFinal();
+      if(!link){ paintFinalLink(); return; }
+      const cur = rankingNow();
+      if(cur.sig && link.sig && cur.sig !== link.sig) exportRankingToFinal();
+      else leaveTo(TResumePicker.linkUrl(link));
+    }
+    async function exportRankingToFinal(){
+      const cur = rankingNow();
+      if(cur.teams.length < 2){ alert(T('rs.alert.exportMin')); return; }
+      if(!cur.valid){
         alert(T(S.config.rankingProfile === 'tt-dttb-swiss-ranking-2026'
           ? 'sport.ranking.swissExportBlocked' : 'ranking.export.unresolved'));
         return;
       }
-      const doExport = () => {
-        if (!complete) {
-          const ranking = ranked.map(e => T('rs.confirm.exportIncompleteRow', {
-            place: e.place,
-            team: TSport.teamLabel(S, e.team, 'Team ' + e.team)
-          })).join('\n');
+      const doExport = async () => {
+        if (!B.table.complete) {
+          const ranking = cur.ranked.map((e, i) => T('rs.confirm.exportIncompleteRow', {
+            place: e.place, team: cur.names[i] })).join('\n');
           if (!confirm(T('rs.confirm.exportIncomplete', { ranking }))) return;
         }
-        const rankedOrder = ranked.map(e => e.team);
-        const names = rankedOrder.map(t => TSport.teamLabel(S, t, 'Team ' + t));
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(names)))));
-        window.open('Turnierbogen_Gruppen_Finalrunde.html#rankimport=' + encoded, '_blank');
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cur.names)))));
+        /* Frische ID: eine bestehende Finalrunde wird nie überschrieben. */
+        const prev = S.finalLink;
+        const link = { sheet: FINAL_SHEET, id: TResumePicker.freshId(), sig: cur.sig };
+        if(S.sport && S.sport.id !== 'volleyball.beach') link.sport = S.sport.id;
+        S.finalLink = link;
+        if (!await leaveTo(TResumePicker.linkUrl(link, '&from=' + encodeURIComponent(ownUrl())
+          + '#rankimport=' + encoded))) S.finalLink = prev;
       };
-      if(typeof TShare !== 'undefined' && TShare.openInfoDialog){
-        TShare.openInfoDialog({
-          title: T('rs.export.btn'),
-          bodyHtml: '<p>' + T('rs.export.body1') + '</p>' +
-            '<p>' + T('rs.export.body2') + '</p>' +
-            '<p class="tshare-hint">' + T('rs.export.hint') + '</p>',
-          confirmLabel: T('rs.export.open'),
-          cancelLabel: T('rs.export.cancel'),
-          onConfirm: doExport
-        });
-      } else {
-        doExport();
-      }
+      const existing = await liveFinal();
+      const stale = !!(existing && existing.sig && existing.sig !== cur.sig);
+      TShare.openInfoDialog({
+        title: T('rs.export.btn'),
+        bodyHtml: (stale ? '<p><strong>' + T('rs.export.stale') + '</strong></p>' : '')
+          + (existing
+            ? '<p>' + T('rs.export.existing.body1') + '</p><p class="tshare-hint">' + T('rs.export.existing.body2') + '</p>'
+            : '<p>' + T('rs.export.body1') + '</p><p>' + T('rs.export.body2') + '</p><p class="tshare-hint">' + T('rs.export.hint') + '</p>'),
+        confirmLabel: T(existing ? 'rs.export.existing.open' : 'rs.export.open'),
+        altLabel: existing ? T('rs.export.existing.new') : '',
+        cancelLabel: T('rs.export.cancel'),
+        onConfirm: existing ? () => leaveTo(TResumePicker.linkUrl(existing)) : doExport,
+        onAlt: doExport
+      });
     }
+    $('btnGoFinal').addEventListener('click', gotoFinal);
+    paintFinalLink();
+    /* Zurück per Browser-/Android-Taste: Seite aus dem bfcache nie mit
+       veraltetem Stand zeigen. */
+    window.addEventListener('pageshow', e => { if(e.persisted) location.reload(); });
     $('btnExportFinal').addEventListener('click', exportRankingToFinal);
     if($('btnShare')) $('btnShare').addEventListener('click', () => {
       if(typeof TShare !== 'undefined') TShare.openShareDialog(archiveOpts());
@@ -1564,7 +1600,7 @@
         return;
       }
       S = started.tournament;
-      fillSelects(); structureKey=''; rebuild();
+      fillSelects(); structureKey=''; rebuild(); paintFinalLink();
     });
     $('btnSave').addEventListener('click', async () => {
       const ok = await save();
