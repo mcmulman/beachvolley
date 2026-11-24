@@ -511,7 +511,7 @@ input.score:disabled { background:#f7f7f7; color:#999; }
 .schedule-roundbar .rb-search-btn svg.nico { width: 28px; height: 28px; max-width: none; max-height: none; }
 /* Filter (Alle Runden) + Lupe als ein verbundener Doppel-Button, rechts aussen */
 .schedule-roundbar .state { order: 1; margin-left: auto; }
-.schedule-roundbar .nbtn-round-all { order: 2; margin-right: -8px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.schedule-roundbar .nbtn-round-all { order: 2; margin-left: auto; margin-right: -8px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .schedule-roundbar .rb-search-btn { order: 3; margin-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; box-shadow: inset 1px 0 0 rgba(31, 78, 121, .22); }
 .schedule-roundbar .rb-search-field { display: none; flex: 1 1 200px; min-width: 0; align-items: center; }
 .schedule-roundbar.rb-searching > :not(.rb-search-field):not(.rb-search-btn) { display: none; }
