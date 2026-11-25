@@ -21,7 +21,26 @@
 <header class="tv-bar noprint"><a class="tv-brand" href="index.html">CompetitionPilot</a><div class="tv-lang" data-i18n-switch="tv-lang-btn"></div></header>
 <main id="tv"></main>
 <aside id="tv-promo" class="tv-promo noprint"><a href="index.html"><strong id="tv-promo-title"></strong><span id="tv-promo-text"></span><em id="tv-promo-cta"></em></a></aside>
+<footer class="tv-footer noprint">
+  © <span id="cpYear"></span> ·
+  <button type="button" id="btnShowContact" data-i18n="chrome.contact">Copyright/Kontakt</button>
+  <span id="cpContact" hidden></span>
+</footer>
 <script src="team-view.js"></script>
 <script src="core/affiliate-teasers.js"></script>
+<script>
+(function () {
+  var y = document.getElementById('cpYear'), btn = document.getElementById('btnShowContact'), out = document.getElementById('cpContact');
+  if (y) y.textContent = new Date().getFullYear();
+  if (!btn || !out) return;
+  btn.addEventListener('click', function () {
+    var parts = atob('TS4gVWhsbWFubnxsZXRzc2VuZG1vcmVsZXR0ZXJz' + 'QGdtYWlsLmNvbQ==').split('|');
+    out.textContent = parts[0] + ' · ';
+    var a = document.createElement('a');
+    a.href = 'mailto:' + parts[1]; a.rel = 'nofollow noopener'; a.textContent = parts[1];
+    out.appendChild(a); out.hidden = false; btn.hidden = true; a.focus();
+  }, { once: true });
+})();
+</script>
 </body>
 </html>
