@@ -144,7 +144,7 @@
     return out;
   }
 
-  function heroHtml(st, allDone) {
+  function heroHtml(st) {
     var mineRow = myRow(), pl = null;
     if (st) st.rows.forEach(function (r) { if (r.team === team) pl = r; });
     var h = '<section class="tv-hero' + (pl && st.final ? ' tv-hero-final' : '') + '"><div class="tv-hero-top"><div class="tv-hero-id"><span class="tv-badge">' + team +
@@ -188,7 +188,7 @@
     var st = standings(allDone);
     var next = null;
     mine.forEach(function (x) { if (!next && !x.done) next = x; });
-    h += heroHtml(st, allDone);
+    h += heroHtml(st);
     if (st && st.final) h += '<div class="tv-finished">' + esc(t('finalDone')) + '</div>';
     else h += '<h2>' + esc(t('next')) + '</h2>' + (next ? matchHtml(next, ' tv-next') : '<div class="tv-card">' + esc(mine.length ? t('allDone') : t('noMatches')) + '</div>');
     var open = mine.filter(function (x) { return !x.done && x !== next; }), fin = mine.filter(function (x) { return x.done; });

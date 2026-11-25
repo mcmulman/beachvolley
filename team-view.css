@@ -16,10 +16,6 @@ h2{font-size:13px;margin:22px 2px 8px;color:#5a6a82;text-transform:uppercase;let
 .tv-off{background:#fff7e0;border:1px solid #ecd48a;border-radius:10px;padding:8px 12px;font-size:13px;margin:0 0 12px;}
 .tv-msg{background:#fff;border-radius:16px;padding:22px;margin:20px 0;text-align:center;font-weight:700;}
 .tv-card{background:#fff;border-radius:16px;padding:13px 15px;margin:0 0 10px;box-shadow:0 1px 2px rgba(20,30,45,.08),0 4px 14px rgba(20,30,45,.05);}
-.tv-match{border-left:5px solid #d3dbe7;}
-.tv-match.tv-win{border-left-color:#1fa653;}
-.tv-match.tv-loss{border-left-color:#d9534f;}
-.tv-match.tv-draw{border-left-color:#d99a00;}
 .tv-next{border-left-color:#1f6fa8;box-shadow:0 0 0 2px #1f6fa8,0 6px 18px rgba(31,111,168,.2);}
 .tv-mrow{display:flex;align-items:center;justify-content:space-between;}
 .tv-big{font-size:19px;font-weight:800;color:#1a3a5c;min-width:0;}
