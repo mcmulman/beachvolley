@@ -123,6 +123,23 @@
     return rows.slice(0, TEAMS_MAX);
   }
 
+  /* Endplatzierungen der Turnierform (KO, Gruppen + Finalrunde …): nur aufgelöste Teams. */
+  function placesOf(plan, teams, started) {
+    const out = [];
+    if (!started && !plan.complete) return out;
+    (Array.isArray(plan.placements) ? plan.placements : []).forEach(function (p) {
+      if (!p || !isInt(p.team) || p.team < 1 || p.team > teams || !isInt(p.place) || p.place < 1 || p.place > 999 || p.unresolved) return;
+      out.push({ team: p.team, place: p.place, to: isInt(p.placeTo) && p.placeTo > p.place && p.placeTo <= 999 ? p.placeTo : null });
+    });
+    out.forEach(function (o) {
+      if (o.to == null) {
+        const n = out.filter(function (x) { return x.place === o.place; }).length;
+        if (n > 1) o.to = o.place + n - 1;
+      }
+    });
+    return out.length <= TEAMS_MAX ? out : [];
+  }
+
   function tablesOf(plan, teams) {
     const out = [];
     function add(name, ranked) {
@@ -159,6 +176,7 @@
       if (!slot || slot.displayOnly || !Array.isArray(slot.matches)) return;
       slot.matches.forEach(function (m, idx) {
         if (!m || m.bye != null || m.dead) return;
+        if (m.reset && plan.deResetNeeded === false) return;
         if (!swissVisible(plan, m.round || slot.round)) return;
         const a = isInt(m.ta) && m.ta >= 1 && m.ta <= teams ? m.ta : null;
         const b = isInt(m.tb) && m.tb >= 1 && m.tb <= teams ? m.tb : null;
@@ -180,6 +198,8 @@
     const title = clean((o && o.title) || state.title || (o && o.type ? term(o.type) : ''), 80)
       || clean(tx('share.tournament', 'Turnier'), 80);
     const view = { v: 1, title: title, teams: teams, matches: matches, tables: tablesOf(plan, teams) };
+    const places = placesOf(plan, teams, matches.some(function (m) { return m.done; }));
+    if (places.length) { view.places = places; view.final = !!plan.complete; }
     if (byteLength(JSON.stringify(view)) > MAX_BYTES) return null;
     return view;
   }

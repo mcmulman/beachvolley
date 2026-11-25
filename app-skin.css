@@ -314,6 +314,14 @@
   .guide-heading h2 { flex: 1 1 auto; min-width: 0; margin: 0; }
   .guide .guide-heading { margin-bottom: 6px; }
   .guide-content[hidden] { display: none; }
+  .guide-share {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin: 8px 0 0 auto; padding: 7px 14px;
+    color: #fff; background: var(--app-blue); border: 0; border-radius: 6px;
+    font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,.18);
+  }
+  .guide-share svg { flex: 0 0 16px; margin-right: 8px; }
+  .guide-share:hover { filter: brightness(1.08); }
+  @media print { .guide-share { display: none; } }
   .section-toggle-open {
     display: inline-flex;
     align-items: center;

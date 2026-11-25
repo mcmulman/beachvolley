@@ -217,6 +217,26 @@
       while (header.nextSibling) content.appendChild(header.nextSibling);
       guide.appendChild(content);
 
+      var shareBtn = document.getElementById('btnShare');
+      if (shareBtn && !guide.querySelector('.guide-share')) {
+        var cta = document.createElement('button');
+        cta.type = 'button';
+        cta.className = 'guide-share noprint';
+        cta.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
+          + '<span data-i18n="ui.guide.share">Spiel f\u00fcr Spieler:innen teilen</span>';
+        cta.addEventListener('click', function () { shareBtn.click(); });
+        guide.insertBefore(cta, header.nextSibling);
+        var place = function () {
+          var bar = guide.querySelector('.format-info-toggle');
+          if (bar && bar.nextSibling !== cta) bar.parentNode.insertBefore(cta, bar.nextSibling);
+          return !!bar;
+        };
+        if (!place() && window.MutationObserver) {
+          var mo = new MutationObserver(function () { if (place()) mo.disconnect(); });
+          mo.observe(guide, { childList: true, subtree: true });
+        }
+      }
+
       var reveal = document.createElement('button');
       reveal.type = 'button';
       reveal.className = 'section-toggle-open guide-toggle-open noprint';

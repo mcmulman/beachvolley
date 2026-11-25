@@ -168,10 +168,10 @@
   .app-bar #btnShare[data-live]::before {
     content: "";
     position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 16px;
-    height: 16px;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
     box-sizing: border-box;
     border-radius: 50%;
     border: 3px solid var(--app-blue-dark, #1a3a5c);

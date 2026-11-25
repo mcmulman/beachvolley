@@ -223,6 +223,17 @@
       try {
         data = await apiPost('/share.php?action=' + pending.action, pending.body);
       } catch (err) {
+        /* Altes Backend kennt places/final nicht (422): einmal ohne diese Felder erneut senden. */
+        const tv = pending.body.teamView;
+        if (err && err.status === 422 && tv && ('places' in tv || 'final' in tv)) {
+          delete tv.places; delete tv.final;
+          pending.body.requestKey = secret();
+          await TStore.transaction(function (view) {
+            const cur = TStore.serverBindingInView(view, o.sheet);
+            if (cur && cur.instance === binding.instance && cur.pending) { cur.pending = pending; bindInView(view, o.sheet, cur); }
+          });
+          return transmit(pending);
+        }
         /* Dauerhaft abgelehnte Anfrage nicht ewig wiederholen: neu aus dem lokalen Stand aufbauen. */
         if (err && [400, 403, 409, 413, 422].indexOf(err.status) >= 0) {
           await TStore.transaction(function (view) {
@@ -376,7 +387,7 @@
     if (on) await liveRun();
     else await renderServerStatus(o);
   }
-  function confirmLive(o) {
+  function confirmLive(o, thenTeam) {
     openInfoDialog({
       title: tx('server.live.title', 'Live-Sicherung einschalten?'),
       bodyHtml: '<p>' + escapeHtml(tx('server.live.consent', 'Turnierdaten inklusive Namen werden online gespeichert. Nach 30 Tagen ohne Änderung werden sie gelöscht. Link nur an Mitorganisator:innen geben.')) + '</p>',
@@ -384,7 +395,10 @@
       onCancel: function () { renderShareForm(o); },
       onConfirm: function () {
         renderShareLoading(tx('server.live.starting', 'Live-Sicherung wird eingeschaltet …'));
-        setLive(o, true).then(function () { backToForm(o); }, function () { backToForm(o); });
+        setLive(o, true).then(function () {
+          if (!thenTeam) return backToForm(o);
+          return setTeamView(o, true).then(function () { backToForm(o); });
+        }, function () { backToForm(o); });
       }
     });
   }
@@ -963,8 +977,8 @@
       } else {
         primary += shareSection('tshare-sec-primary tshare-sec-team', teamTitle,
           tx('share.sec.team.desc', 'Spieler:innen scannen den QR-Code und sehen ihre Spiele live.'),
-          btn('team-show', 'tshare-btn-primary tshare-btn-block', tx('server.team.open', 'QR-Code & Aushang anzeigen'), liveOn ? '' : ' disabled') +
-          (liveOn ? '' : '<p class="tshare-hint tshare-need">' + escapeHtml(tx('share.sec.team.needLive', 'Erst Live-Sicherung einschalten.')) + '</p>') +
+          btn('team-show', 'tshare-btn-primary tshare-btn-block', tx('server.team.open', 'QR-Code & Aushang anzeigen')) +
+          (liveOn ? '' : '<p class="tshare-hint tshare-need">' + escapeHtml(tx('share.sec.team.needLive', 'Schaltet die Live-Sicherung ein. Der QR-Code kann schon vor dem Turnier ausgehängt werden.')) + '</p>') +
           (liveOn && b.teamView ? btn('team-end', 'tshare-btn-ghost tshare-btn-block', tx('server.team.end', 'Team-Live-View beenden')) +
             '<p class="tshare-hint tshare-need">' + escapeHtml(tx('server.team.endHint', 'Bestehende QR-Codes werden ungültig.')) + '</p>' : ''));
       }
@@ -1036,6 +1050,7 @@
     if (resolve) resolve.addEventListener('click', function () { renderConflict(o, '', false); });
     const show = root.querySelector('[data-act="team-show"]');
     if (show) show.addEventListener('click', function () {
+      if (!liveOn) return confirmLive(o, true);
       show.disabled = true;
       setTeamView(o, true).then(function () { show.disabled = false; });
     });
