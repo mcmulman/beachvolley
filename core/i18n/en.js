@@ -539,7 +539,7 @@
     'ui.format.details': 'Scoring & details',
     'ui.section.guideShow': 'Show quick guide',
     'ui.section.guideHide': 'Hide quick guide',
-    'ui.guide.share': 'Share the game with players',
+    'ui.guide.share': 'Share Team-Live-View',
     'ui.guide.shareHint': 'Scan the QR code and follow matches live',
     'ui.section.configShow': 'Show tournament setup',
     'ui.section.configHide': 'Hide tournament setup',

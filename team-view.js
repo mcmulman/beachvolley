@@ -17,7 +17,7 @@
       next: 'Nächstes Spiel', vs: 'gegen {opp}', oppOpen: 'Gegner noch offen',
       at: '{t} Uhr', myMatches: 'Deine Spiele', noMatches: 'Noch keine Spiele.',
       done: 'beendet', open: 'offen', toPlay: 'Noch zu spielen', playedH: 'Gespielt', tables: 'Tabellen',
-      team: 'Team', rank: 'Pl.', played: 'Sp.', pts: 'Pkt.', diff: 'Diff.', allDone: 'Alle Spiele sind gespielt.',
+      team: 'Team', rank: 'Pl.', played: 'Sp.', pts: 'Pkt.', diff: 'Diff.', noNext: 'Aktuell kein offenes Spiel – ggf. folgen weitere Runden.', stOf: 'Zahlen aus {name}', later: 'Folgerunden', laterHint: 'Teilnehmer stehen noch nicht fest.',
       teamN: 'Team {n}',
       win: 'Sieg', loss: 'Niederlage', draw: 'Unentschieden', live: 'Live', you: 'Du',
       placeFinal: 'Endplatzierung', placeNow: 'Aktuelle Platzierung', placeIn: 'Platz {r} in {name}',
@@ -33,7 +33,7 @@
       next: 'Next match', vs: 'vs. {opp}', oppOpen: 'Opponent to be decided',
       at: '{t}', myMatches: 'Your matches', noMatches: 'No matches yet.',
       done: 'finished', open: 'open', toPlay: 'Still to play', playedH: 'Played', tables: 'Standings', 
-      team: 'Team', rank: 'Pos.', played: 'P', pts: 'Pts', diff: 'Diff', allDone: 'All your matches are played.',
+      team: 'Team', rank: 'Pos.', played: 'P', pts: 'Pts', diff: 'Diff', noNext: 'No open match right now – more rounds may follow.', stOf: 'Figures from {name}', later: 'Later rounds', laterHint: 'Participants are not decided yet.',
       teamN: 'Team {n}',
       win: 'Win', loss: 'Loss', draw: 'Draw', live: 'Live', you: 'You',
       placeFinal: 'Final place', placeNow: 'Current place', placeIn: 'Place {r} in {name}',
@@ -109,7 +109,7 @@
     tb.rows.forEach(function (r) {
       h += '<tr' + (r.team === team ? ' class="tv-me"' : '') + '><td>' + r.rank + '</td><td>' + esc(teamName(r.team)) +
         (r.team === team ? ' <span class="tv-you">' + esc(t('you')) + '</span>' : '') +
-        '</td><td>' + r.played + '</td><td>' + (r.pts == null ? '–' : r.pts) + '</td><td>' + (r.diff == null ? '–' : (r.diff > 0 ? '+' + r.diff : r.diff)) + '</td></tr>';
+        '</td><td>' + (r.pts == null ? '–' : r.played) + '</td><td>' + (r.pts == null ? '–' : r.pts) + '</td><td>' + (r.diff == null ? '–' : (r.diff > 0 ? '+' + r.diff : r.diff)) + '</td></tr>';
     });
     return h + '</tbody></table>';
   }
@@ -160,7 +160,8 @@
       var d = mineRow.r.diff;
       h += '<div class="tv-stats"><div><b>' + mineRow.r.played + '</b><span>' + esc(t('stPlayed')) + '</span></div>' +
         '<div><b>' + (mineRow.r.pts == null ? '–' : mineRow.r.pts) + '</b><span>' + esc(t('stPts')) + '</span></div>' +
-        '<div><b>' + (d == null ? '–' : (d > 0 ? '+' + d : d)) + '</b><span>' + esc(t('stDiff')) + '</span></div></div>';
+        '<div><b>' + (d == null ? '–' : (d > 0 ? '+' + d : d)) + '</b><span>' + esc(t('stDiff')) + '</span></div></div>' +
+        ((data.tables || []).length > 1 ? '<div class="tv-stats-note">' + esc(t('stOf', { name: mineRow.tb.name })) + '</div>' : '');
     }
     return h + '</section>';
   }
@@ -190,11 +191,14 @@
     mine.forEach(function (x) { if (!next && !x.done) next = x; });
     h += heroHtml(st);
     if (st && st.final) h += '<div class="tv-finished">' + esc(t('finalDone')) + '</div>';
-    else h += '<h2>' + esc(t('next')) + '</h2>' + (next ? matchHtml(next, ' tv-next') : '<div class="tv-card">' + esc(mine.length ? t('allDone') : t('noMatches')) + '</div>');
+    else h += '<h2>' + esc(t('next')) + '</h2>' + (next ? matchHtml(next, ' tv-next') : '<div class="tv-card">' + esc(mine.length ? t('noNext') : t('noMatches')) + '</div>');
     var open = mine.filter(function (x) { return !x.done && x !== next; }), fin = mine.filter(function (x) { return x.done; });
     if (!mine.length) h += '<h2>' + esc(t('myMatches')) + '</h2><div class="tv-card">' + esc(t('noMatches')) + '</div>';
     if (open.length) h += '<h2><span class="tv-sq tv-sq-open"></span>' + esc(t('toPlay')) + ' (' + open.length + ')</h2>' + open.map(function (x) { return matchHtml(x, ''); }).join('');
     if (fin.length) h += '<h2><span class="tv-sq tv-sq-done"></span>' + esc(t('playedH')) + ' (' + fin.length + ')</h2>' + fin.map(function (x) { return matchHtml(x, ''); }).join('');
+    var later = allMatches.filter(function (x) { return (x.a == null || x.b == null) && x.a !== team && x.b !== team && !x.done; });
+    if (later.length) h += '<h2>' + esc(t('later')) + '</h2><div class="tv-card tv-later"><small>' + esc(t('laterHint')) + '</small><ul>' + later.map(function (x) {
+      return '<li><b>' + esc(x.round) + '</b>' + (x.time ? ' · ' + esc(x.field ? x.field + ' · ' : '') + esc(t('at', { t: x.time })) : '') + '</li>'; }).join('') + '</ul></div>';
     if (st && data.places && data.places.length) h += standingsHtml(st);
     if ((data.tables || []).length) h += '<h2>' + esc(t('tables')) + '</h2>' + data.tables.map(tableHtml).join('');
     root.innerHTML = h;

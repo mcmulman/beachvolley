@@ -540,7 +540,7 @@
     'ui.format.details': 'Wertung & Details anzeigen',
     'ui.section.guideShow': 'Kurzanleitung einblenden',
     'ui.section.guideHide': 'Kurzanleitung ausblenden',
-    'ui.guide.share': 'Spiel für Spieler:innen teilen',
+    'ui.guide.share': 'Team-Live-View teilen',
     'ui.guide.shareHint': 'QR-Code scannen und Spiele live verfolgen',
     'ui.section.configShow': 'Turnier-Konfiguration einblenden',
     'ui.section.configHide': 'Turnier-Konfiguration ausblenden',

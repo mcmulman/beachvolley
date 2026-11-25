@@ -314,13 +314,19 @@
   .guide-heading h2 { flex: 1 1 auto; min-width: 0; margin: 0; }
   .guide .guide-heading { margin-bottom: 6px; }
   .guide-content[hidden] { display: none; }
-  .guide-share {
-    display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin: 8px 0 0 auto; padding: 7px 14px;
-    color: #fff; background: var(--app-blue); border: 0; border-radius: 6px;
-    font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,.18);
+  /* Aktionsleiste der Kurzanleitung: gleiche Höhe, Form und Schrift; „Teilen“ rechts. */
+  .guide .guide-format-doc, .guide .format-info-toggle, .guide .guide-share {
+    display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    min-height: 44px; margin: 8px 8px 0 0; padding: 7px 14px; vertical-align: top;
+    border-radius: var(--app-radius-md); font: inherit; font-size: 13px; font-weight: 700; line-height: 1.2;
+    text-decoration: none; cursor: pointer; box-shadow: none;
   }
-  .guide-share svg { flex: 0 0 16px; margin-right: 8px; }
-  .guide-share:hover { filter: brightness(1.08); }
+  .guide .guide-format-doc { border: 1px solid var(--app-line); background: #fff; color: var(--app-blue-dark); }
+  .guide .guide-format-doc:hover { background: var(--app-tonal); }
+  .guide .guide-share { float: right; margin-right: 0; color: #fff; background: var(--app-blue); border: 1px solid var(--app-blue); }
+  .guide .guide-share svg { flex: 0 0 16px; margin-right: 8px; }
+  .guide .guide-share:hover { filter: brightness(1.08); }
+  .guide-content::after { content: ""; display: table; clear: both; }
   @media print { .guide-share { display: none; } }
   .section-toggle-open {
     display: inline-flex;
@@ -1087,7 +1093,7 @@
     .tournament-sheet .sched tr.rhead .rlabel { white-space: normal; }
     .tournament-sheet .mobile-schedule-title { margin: 0 0 6px; padding: 0 52px 0 0; border: 0; font-size: 12.5px; text-transform: uppercase; }
     .tournament-sheet .mobile-section-heading { margin: 20px 0 12px; }
-    .tournament-sheet .format-info-toggle { width: 100%; }
+    .tournament-sheet .format-info-toggle, .tournament-sheet .guide .guide-share, .tournament-sheet .guide .guide-format-doc { width: 100%; margin-right: 0; float: none; }
     .tournament-sheet .kpi2 .kpi-main .cfgres-item { box-shadow: none; }
   }
   @media (min-width: 641px) and (max-width: 960px) {
