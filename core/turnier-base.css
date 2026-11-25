@@ -1490,19 +1490,19 @@ html body :focus-visible:focus-visible:focus-visible {
 /* Konflikt-Ampel ueber dem Spielplan */
 .plan-health { margin: 0 0 12px; border: 1px solid #c9d6e6; border-radius: 10px; background: #fff; }
 .plan-health[hidden] { display: none; }
-.plan-health summary { display: flex; flex-wrap: wrap; align-items: center; min-height: 40px; padding: 6px 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
-.plan-health .ph-prog, .plan-health .ph-open { margin-left: 12px; font-weight: 600; font-size: 13px; }
-.plan-health .ph-prog { display: inline-flex; align-items: center; }
-.plan-health .ph-bar { display: inline-block; width: 48px; height: 6px; margin-right: 6px; border-radius: 3px; background: #dbe4ef; overflow: hidden; flex: none; }
-.plan-health .ph-bar i { display: block; height: 100%; background: #1a7f37; }
-.plan-health .ph-next { flex: 1 0 100%; margin-top: 2px; padding-left: 22px; box-sizing: border-box; font-weight: 400; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.plan-health summary { display: flex; flex-wrap: wrap; align-items: center; min-height: 44px; padding: 12px 14px; font-size: 15px; font-weight: 800; cursor: pointer; }
+.plan-health .ph-title { flex: 1 1 auto; min-width: 0; }
+.plan-health .ph-prog { flex: 1 0 100%; order: 2; display: block; margin: 10px 0 0; font-weight: 700; font-size: 13px; }
+.plan-health .ph-bar { display: block; width: 100%; height: 12px; margin: 0 0 6px; border-radius: 6px; background: #dbe4ef; overflow: hidden; }
+.plan-health .ph-bar i { display: block; height: 100%; border-radius: 6px; background: #1a7f37; min-width: 0; }
+.plan-health .ph-count { color: #36506b; }
+.plan-health .ph-open { flex: 1 0 100%; order: 3; margin: 0; font-weight: 600; font-size: 13px; color: #36506b; }
+.plan-health .ph-next { flex: 1 0 100%; order: 4; margin-top: 8px; padding: 8px 10px; box-sizing: border-box; border-radius: 8px; background: rgba(26,58,92,.06); font-weight: 400; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
 .plan-health .ph-next strong { font-weight: 700; }
 .plan-health .ph-hint { color: #5a6b80; }
-@media (max-width: 480px) {
-  .plan-health .ph-open { flex: 1 0 100%; margin: 2px 0 0; padding-left: 22px; box-sizing: border-box; }
-}
-.plan-health .ph-done { font-weight: 700; color: #1a7f37; }
-.plan-health .ph-dot { width: 12px; height: 12px; margin-right: 10px; border-radius: 50%; background: #1a7f37; flex: none; }
+.plan-health .ph-tie { background: #fff4e0; color: #7a4a00; font-weight: 700; border-left: 4px solid #e0a030; }
+.plan-health .ph-done { padding: 0; background: none; margin-top: 2px; font-weight: 700; color: #1a7f37; }
+.plan-health .ph-dot { width: 14px; height: 14px; margin-right: 10px; border-radius: 50%; background: #1a7f37; flex: none; }
 .plan-health.ph-level-warn { border-color: #e0b44c; background: #fff8e6; }
 .plan-health.ph-level-warn .ph-dot { background: #d99a00; }
 .plan-health.ph-level-error { border-color: #d13b3b; background: #fdeeee; }
@@ -1522,3 +1522,33 @@ html body :focus-visible:focus-visible:focus-visible {
 .pr-block .pr-setrules:empty { display: none; }
 
 .adv-gear--card { width: 24px; height: 24px; margin-left: 6px; flex: 0 0 auto; }
+
+.info-tip { display: inline-block; margin-left: 4px; color: #1f6fa8; cursor: help; font-weight: 700; }
+
+/* Team cards: one calm toolbar row (order left, delete right) and a divided optional-players row. */
+@media screen {
+  html body #nameGrid .team-editor-card, html body #nameGrid .team-reorder-row:not(.team-editor-card .team-reorder-row) {
+    padding:10px 9px 4px; border-radius:12px; border-color:var(--app-line-soft, #dbe4ee);
+    box-shadow:0 1px 2px rgba(26,58,92,.05);
+  }
+  html body #nameGrid .team-reorder-row { row-gap:8px; }
+  html body #nameGrid .team-reorder-row .nnum { width:32px; height:32px; min-width:32px; flex-basis:32px; font-size:14px; background:#e3edf6; }
+  html body #nameGrid .team-reorder-row input[data-name-input] { font-weight:600; border-color:var(--app-line, #c9d6e6); }
+  html body #nameGrid .team-reorder-row input[data-name-input]::placeholder { font-weight:400; }
+  html body .team-reorder { margin-left:0; border:1px solid var(--app-line, #c9d6e6); border-radius:9px; background:#f7fafd; overflow:hidden; }
+  html body .team-reorder .team-move { border:0; border-radius:0 !important; background:transparent; color:#40536b; }
+  html body .team-reorder .team-move:last-child { border-left:1px solid var(--app-line, #c9d6e6); }
+  html body #nameGrid .team-reorder .team-move { width:44px; min-width:44px; height:44px; min-height:44px; }
+  html body #nameGrid .team-reorder-row > .team-reorder { height:46px; }
+  html body #nameGrid .team-reorder-row .team-del, html body #rosterSection .rname .team-del { border-radius:9px; color:#b42318; border:1px solid #e3b4b4; background:#fff; }
+  html body #nameGrid .pair-details { border-top:1px solid var(--app-line-soft, #e3eaf2); margin-top:2px; }
+  html body #nameGrid .pair-details > summary { min-height:44px; padding:4px 2px; color:#1f4e79; font-weight:600; background:transparent; }
+  html body #nameGrid .pair-details > summary:hover { background:transparent; text-decoration:underline; }
+}
+@media screen {
+  html body #nameGrid .pair-details > summary { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:44px; padding:0 2px; }
+  html body #nameGrid .pair-details > summary::before { display:inline-block; vertical-align:middle; margin-top:-2px; }
+}
+.m-advance .adv-line { display:block; line-height:1.35; }
+.m-advance .adv-line + .adv-line { margin-top:1px; }
+@media print { .m-advance .adv-line { display:inline; } .m-advance .adv-line + .adv-line::before { content:" · "; } }

@@ -1850,7 +1850,7 @@
 
   function toMin(hhmm) {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || '').trim());
-    if (!m) return null;
+    if (!m || +m[1] > 23 || +m[2] > 59) return null;
     return (+m[1]) * 60 + (+m[2]);
   }
   function fromMin(min) {

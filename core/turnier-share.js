@@ -219,7 +219,21 @@
       return b;
     });
     async function transmit(pending) {
-      const data = await apiPost('/share.php?action=' + pending.action, pending.body);
+      let data;
+      try {
+        data = await apiPost('/share.php?action=' + pending.action, pending.body);
+      } catch (err) {
+        /* Dauerhaft abgelehnte Anfrage nicht ewig wiederholen: neu aus dem lokalen Stand aufbauen. */
+        if (err && [400, 403, 409, 413, 422].indexOf(err.status) >= 0) {
+          await TStore.transaction(function (view) {
+            const cur = TStore.serverBindingInView(view, o.sheet);
+            if (cur && cur.instance === binding.instance && cur.pending && cur.pending.body.requestKey === pending.body.requestKey) {
+              delete cur.pending; bindInView(view, o.sheet, cur);
+            }
+          }).catch(function () {});
+        }
+        throw err;
+      }
       if (!data || !/^[A-Za-z0-9]{1,12}$/.test(data.id) || !Number.isSafeInteger(data.revision)
           || data.revision < 1 || data.formatVersion !== 2 || (binding.id && data.id !== binding.id)) {
         throw new Error(tx('server.protocol', 'Der Server unterstützt das aktuelle Turnierformat nicht. Bitte Backend aktualisieren.'));
@@ -229,6 +243,9 @@
         if (!current || current.instance !== binding.instance) throw new Error(tx('server.replaced', 'Das lokale Turnier wurde inzwischen ersetzt. Der Upload gehört zum vorherigen Turnier.'));
         current.id = data.id;
         current.revision = Math.max(current.revision, data.revision);
+        if (pending.body.teamView === null) {
+          current.teamView = false; delete current.teamViewOff; delete current.viewCode;
+        } else if (data.viewCode !== undefined) current.viewCode = data.viewCode;
         if (current.pending && current.pending.body.requestKey === pending.body.requestKey) {
           delete current.pending;
           current.published = snapshotSignature(pending.body.snapshot);
@@ -265,6 +282,10 @@
       body.id = binding.id; body.expectedRevision = binding.revision;
       if (!pw && !removePassword) delete body.password;
     }
+    if (binding.teamView === true && typeof TTeamView !== 'undefined') {
+      const view = await TTeamView.build(o);
+      if (view) body.teamView = view;
+    } else if (binding.teamViewOff) body.teamView = null;
     const pending = { action: binding.id ? 'update' : 'create', body: body };
     await TStore.transaction(function (view) {
       const b = TStore.serverBindingInView(view, o.sheet);
@@ -275,14 +296,127 @@
     });
     const data = await transmit(pending);
     data.dirty = snapshotSignature(await readSnapshot(o)) !== signature;
+    live.conflict = false;
     await renderServerStatus(o);
     return data;
+  }
+
+  /* ============================================================ Live-Sicherung
+     Optional pro Turnier (binding.live). Nach jedem lokalen Speichern wird der
+     Stand entprellt per publish() gespiegelt; IndexedDB bleibt die Wahrheit.
+     Ein Lauf zur Zeit, danach erneute Prüfung. Nachsenden bei online,
+     Sichtbarwerden und Seitenstart; kein Verlass auf pagehide/Background Sync. */
+  const LIVE_DEBOUNCE_MS = 3000;
+  const LIVE_BACKOFF_MS = [5000, 15000, 60000];
+  const live = { timer: null, retry: null, running: null, again: false, force: false, fails: 0, state: 'busy', conflict: false, on: false };
+
+  function liveSchedule(delay) {
+    clearTimeout(live.timer);
+    live.timer = setTimeout(function () { liveRun(); }, delay);
+  }
+  function liveRun(force) {
+    if (force) live.force = true;
+    if (live.running) { live.again = true; return live.running; }
+    clearTimeout(live.timer); clearTimeout(live.retry);
+    live.running = liveLoop().then(function () { live.running = null; }, function () { live.running = null; });
+    return live.running;
+  }
+  async function liveLoop() {
+    const o = statusOpts;
+    if (!o) return;
+    try {
+      do {
+        live.again = false;
+        const force = live.force; live.force = false;
+        const b = await TStore.serverBinding(o.sheet);
+        live.on = !!(b && b.live);
+        if (!live.on || live.conflict || live.state === 'gone') return;
+        await TStore.whenIdle();
+        if (!force && !b.pending && b.id && b.published === snapshotSignature(await readSnapshot(o))) {
+          live.state = 'synced'; live.fails = 0;
+          continue;
+        }
+        live.state = 'busy';
+        try {
+          const data = await publish(o);
+          live.fails = 0; live.state = 'synced';
+          if (data.dirty) live.again = true;
+        } catch (err) {
+          if (err && err.status === 412) { live.conflict = true; live.state = 'conflict'; return; }
+          live.again = false;
+          if (err && (err.status === 410 || err.status === 404)) { live.state = 'gone'; return; }
+          if (err && (err.network || err.status >= 500)) {
+            live.state = err.network ? 'offline' : 'error';
+            live.retry = setTimeout(liveRun, LIVE_BACKOFF_MS[Math.min(live.fails, LIVE_BACKOFF_MS.length - 1)]);
+            live.fails++;
+          } else live.state = 'error';
+          return;
+        }
+      } while (live.again);
+    } finally {
+      await renderServerStatus(o).catch(function () {});
+    }
+  }
+  async function setLive(o, on) {
+    live.conflict = false; live.fails = 0; live.state = 'busy';
+    clearTimeout(live.timer); clearTimeout(live.retry);
+    await TStore.whenIdle();
+    await TStore.transaction(function (view) {
+      let b = TStore.serverBindingInView(view, o.sheet);
+      if (b && b.readOnly) { TStore.detachServerInView(view, o.sheet); b = null; }
+      if (!b) {
+        if (!on) return;
+        b = { instance: secret(), token: secret(), revision: 0, id: null };
+      }
+      b.live = !!on;
+      bindInView(view, o.sheet, b);
+    });
+    statusOpts = o;
+    live.on = !!on;
+    if (on) await liveRun();
+    else await renderServerStatus(o);
+  }
+  function confirmLive(o) {
+    openInfoDialog({
+      title: tx('server.live.title', 'Live-Sicherung einschalten?'),
+      bodyHtml: '<p>' + escapeHtml(tx('server.live.consent', 'Turnierdaten inklusive Namen werden online gespeichert. Nach 30 Tagen ohne Änderung werden sie gelöscht. Link nur an Mitorganisator:innen geben.')) + '</p>',
+      confirmLabel: tx('server.live.on', 'Einschalten'),
+      onCancel: function () { renderShareForm(o); },
+      onConfirm: function () {
+        renderShareLoading(tx('server.live.starting', 'Live-Sicherung wird eingeschaltet …'));
+        setLive(o, true).then(function () { backToForm(o); }, function () { backToForm(o); });
+      }
+    });
+  }
+  async function setTeamView(o, on) {
+    await TStore.transaction(function (view) {
+      const b = TStore.serverBindingInView(view, o.sheet);
+      if (!b) return;
+      if (on) { b.teamView = true; delete b.teamViewOff; } else { b.teamView = false; b.teamViewOff = true; }
+      bindInView(view, o.sheet, b);
+    });
+    await liveRun(true);
+    const b = await TStore.serverBinding(o.sheet);
+    if (!on) return;
+    if (b && b.viewCode && live.state === 'synced') TTeamView.openDialog(o, b.viewCode);
+    else alert(tx('server.team.failed', 'Team-Live-View nicht übertragen. Bitte Live-Sicherung prüfen.'));
   }
 
   async function independentCopy(o) {
     await TStore.whenIdle();
     await TStore.transaction(function (view) { TStore.detachServerInView(view, o.sheet); });
     location.reload();
+  }
+
+  async function deleteFromServer(o) {
+    const b = await TStore.serverBinding(o.sheet);
+    if (!b || !b.id || !b.token || b.readOnly) return;
+    try {
+      await apiPost('/share.php?action=delete', { id: b.id, editToken: b.token });
+    } catch (err) {
+      if (!err || (err.status !== 404 && err.status !== 410)) { alert(err && err.message); return; }
+    }
+    await independentCopy(o);
   }
 
   function transferUrl(o) {
@@ -295,57 +429,106 @@
     return transferUrl(o).then(function (url) {
       openInfoDialog({
         title: tx('server.transfer', 'Bearbeitungslink anzeigen'),
-        bodyHtml: '<p>' + escapeHtml(tx('server.secretWarning', 'Geheimer Link: erlaubt Änderungen in einem anderen Browser. Nur ausdrücklich an Mitorganisatoren geben, niemals öffentlich teilen. Rechte vor Browserdatenlöschung oder dem Schließen einer privaten Sitzung separat sichern; gewöhnliche Sicherungsdateien enthalten sie nicht.'))
-          + '</p><input id="tserver-secret" type="text" readonly style="width:100%">'
+        bodyHtml: '<p>' + escapeHtml(tx('server.secretWarning', 'Geheimer Link: erlaubt Änderungen. Nur an Mitorganisator:innen geben, nie öffentlich. Sicherungsdateien enthalten ihn nicht.'))
+          + '</p><input id="tserver-secret" type="text" readonly class="tshare-input">'
       }).querySelector('#tserver-secret').value = url;
     });
   }
 
+  /* Zustand der Live-Sicherung für Statusleiste und Teilen-Dialog. */
+  async function liveStatus(b, o) {
+    const dirty = !!b && b.published !== snapshotSignature(await readSnapshot(o));
+    const key = !b || !b.live ? 'off' : live.conflict ? 'conflict'
+      : live.state === 'synced' && !dirty ? 'synced' : live.state === 'busy' || live.state === 'synced' ? 'busy' : live.state;
+    const label = { off: ['Aus', 'Aus'], synced: ['Live, synchron', 'Live-Sicherung an, synchron.'],
+      busy: ['Live, überträgt …', 'Live-Sicherung an, Änderungen werden übertragen …'],
+      offline: ['Wartet auf Verbindung', 'Keine Verbindung. Änderungen bleiben lokal und werden später gesendet.'],
+      conflict: ['Konflikt', 'Pausiert: Jemand anderes hat gespeichert. Dein Stand bleibt lokal erhalten.'],
+      gone: ['Online-Turnier abgelaufen', 'Online-Turnier abgelaufen oder gelöscht. Dein Stand bleibt lokal erhalten.'],
+      error: ['Live, Fehler', 'Senden fehlgeschlagen. Änderungen bleiben lokal, wir versuchen es erneut.'] }[key];
+    return { key: key, dirty: dirty, short: tx('server.live.short.' + key, label[0]), msg: tx('server.live.msg.' + key, label[1]) };
+  }
+
+  /* Weitere Serveraktionen im Teilen-Dialog („Weitere Optionen“). */
+  function serverActions(o, b) {
+    const list = [{ act: 'copy-local', key: 'server.copy', label: 'Als lokale Kopie weiterarbeiten',
+      hint: 'Trennt dieses Gerät vom Online-Turnier. Dessen Stand bleibt unverändert.', fn: function () {
+        if (confirm(tx('server.copyConfirm', 'Serverbindung lösen? Dieser Stand wird eine unabhängige lokale Kopie; der Server bleibt unverändert.'))) independentCopy(o);
+      } }];
+    if (b.id) {
+      list.push({ act: 'load', key: 'server.load', label: 'Online-Stand laden',
+        hint: 'Sichert deinen Entwurf und lädt dann die Online-Version.', fn: function () {
+          location.hash = SERVER_PREFIX + b.id + (b.token ? '&edit=' + b.token : '');
+          location.reload();
+        } });
+      if (!b.readOnly) list.push({ act: 'open-transfer', key: 'server.transfer', label: 'Bearbeitungslink anzeigen',
+        hint: 'Öffnet das Turnier in einem anderen Browser. Nur an Mitorganisator:innen geben.',
+        fn: function () { openTransfer(o); } });
+    }
+    if (cloudSharingEnabled() && b.id && b.token && !b.readOnly) {
+      list.push({ act: 'delete', key: 'server.delete', label: 'Online-Turnier löschen', danger: true,
+        hint: 'Löscht Links und Team-Live-View endgültig. Dein lokaler Stand bleibt.', fn: function () {
+          if (confirm(tx('server.deleteConfirm', 'Turnier endgültig vom Server löschen? Alle Links und QR-Codes werden ungültig. Dein lokaler Stand bleibt erhalten.'))) deleteFromServer(o);
+        } });
+    }
+    return list;
+  }
+
   let statusOpts = null;
+  /* Live-Status als Punkt am Teilen-Button (grau aus, grün synchron, gelb busy/offline, rot Fehler). */
+  async function renderHeaderLive(o, b) {
+    const share = document.getElementById('btnShare');
+    if (!share || !share.parentNode) return;
+    const st = await liveStatus(b, o);
+    const stTitle = tx('share.sec.live.title', 'Live-Sicherung') + ': ' + st.short;
+    /* Status als Punkt am Teilen-Button. */
+    if (!share.hasAttribute('data-base-label')) {
+      share.setAttribute('data-base-label', share.getAttribute('aria-label') || share.textContent.replace(/\s+/g, ' ').trim());
+    }
+    share.setAttribute('data-live', st.key);
+    const baseLabel = share.getAttribute('data-base-label');
+    const full = st.key === 'off' ? baseLabel : baseLabel + ' – ' + stTitle;
+    share.setAttribute('aria-label', full);
+    share.setAttribute('title', full);
+  }
+  /* Kompakte Zusammenfassung; bedient wird alles im Teilen-Dialog. */
   async function renderServerStatus(o) {
     if (typeof document === 'undefined' || !o || !o.sheet) return;
     statusOpts = o;
     const b = await TStore.serverBinding(o.sheet);
+    live.on = !!(b && b.live);
+    if (live.on && !live.started) { live.started = true; liveRun(); }
+    await renderHeaderLive(o, b).catch(function () {});
     const old = document.getElementById('tserver-status');
+    const wasOpen = !!(old && old.open);
     if (old) old.remove();
-    if (!b || !b.id) return;
+    if (!b || (!b.id && !b.live)) return;
     const bar = document.createElement('details');
     bar.id = 'tserver-status'; bar.className = 'noprint tserver-status';
+    bar.open = wasOpen;
     const summary = document.createElement('summary');
-    summary.textContent = tx('server.heading', 'Serververbindung');
+    const st = await liveStatus(b, o);
+    summary.textContent = tx('server.heading', 'Serververbindung') + ' · ' + st.short;
     bar.appendChild(summary);
-    const dirty = b.published !== snapshotSignature(await readSnapshot(o));
     const status = document.createElement('p');
     status.className = 'tserver-status-message';
-    status.textContent = (dirty
+    status.textContent = b.live ? st.msg
+      : b.teamView ? tx('server.live.msg.staleTeam', 'Live-Sicherung aus – Team-Live-View nicht aktuell.')
+      : (st.dirty
         ? tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')
         : tx('server.bound', 'Verbunden. Änderungen werden lokal gespeichert; über „Teilen“ veröffentlichst du sie auf dem Server.'));
     bar.appendChild(status);
-    function action(key, hintKey, label, hint, fn) {
-      const item = document.createElement('div');
-      item.className = 'tserver-action';
-      const el = document.createElement('button');
-      el.type = 'button'; el.className = 'nbtn tserver-action-button';
-      el.textContent = tx(key, label);
-      el.addEventListener('click', fn);
-      const description = document.createElement('small');
-      description.textContent = tx(hintKey, hint);
-      item.appendChild(el);
-      item.appendChild(description);
-      bar.appendChild(item);
-    }
-    action('server.copy', 'server.copyHint', 'Als lokale Kopie weiterarbeiten',
-      'Trennt diesen Browser vom Serverturnier. Der gespeicherte Serverstand bleibt unverändert.', function () {
-      if (confirm(tx('server.copyConfirm', 'Serverbindung lösen? Dieser Stand wird eine unabhängige lokale Kopie; der Server bleibt unverändert.'))) independentCopy(o);
-    });
-    action('server.load', 'server.loadHint', 'Serverstand laden',
-      'Sichert deinen lokalen Entwurf und lädt danach die aktuelle Serverversion.', function () {
-      location.hash = SERVER_PREFIX + b.id + (b.token ? '&edit=' + b.token : '');
-      location.reload();
-    });
-    action('server.transfer', 'server.transferHint', 'Bearbeitungslink anzeigen',
-      'Zeigt den geheimen Link zur Bearbeitung in einem anderen Browser. Nur mit Mitorganisatoren teilen.',
-      function () { openTransfer(o); });
+    const item = document.createElement('div');
+    item.className = 'tserver-action';
+    const open = document.createElement('button');
+    open.type = 'button'; open.className = 'nbtn tserver-action-button';
+    open.textContent = tx('server.openShare', 'Teilen öffnen');
+    open.addEventListener('click', function () { renderShareForm(o); });
+    const description = document.createElement('small');
+    description.textContent = tx('server.openShareHint', 'Live-Sicherung, Team-Live-View und mehr.');
+    item.appendChild(open);
+    item.appendChild(description);
+    bar.appendChild(item);
     const config = document.getElementById('configSection');
     (config || document.body).appendChild(bar);
   }
@@ -513,61 +696,94 @@
         'padding-left:calc(16px + env(safe-area-inset-left,0px));padding-right:calc(16px + env(safe-area-inset-right,0px));' +
         '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
       '@media print{.tshare-backdrop{display:none !important;}}' +
-      '.tshare-panel{position:relative;background:#fff;color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;' +
+      '.tshare-panel{position:relative;background:#fff;background:var(--app-surface,#fff);color:#1a1a2e;width:100%;max-width:440px;border-radius:14px;border-radius:var(--app-radius-lg,14px);' +
         'box-shadow:0 12px 40px rgba(0,0,0,.28);max-height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;' +
         'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}' +
+      '.tshare-panel:focus{outline:none;}.tshare-panel:focus-visible{outline:none;}' +
+      '.tshare-panel button,.tshare-panel input,.tshare-panel summary{font-family:inherit;}' +
       '.tshare-head{display:flex;align-items:center;' +
-        'padding:16px 66px 16px 18px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
+        'padding:16px 64px 16px 16px;border-bottom:1px solid #e2e8f0;flex:0 0 auto;}' +
       '.tshare-head > * + *{margin-left:12px;}' +
-      '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:16px;font-weight:800;color:#1a3a5c;}' +
-      '#tshare-overlay-root .tshare-panel:focus{outline:none;}' +
-      '.tshare-body{padding:16px 18px;font-size:14px;line-height:1.5;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
-      '.tshare-body p{margin:0 0 10px;color:#3a4356;}' +
-      '.tshare-hint{font-size:12.5px;color:#5a6375;}' +
+      '.tshare-head h3{margin:0;min-width:0;word-wrap:break-word;overflow-wrap:break-word;font-size:18px;line-height:1.3;font-weight:800;color:#1a3a5c;color:var(--app-blue-dark,#1a3a5c);}' +
+      '.tshare-body{padding:16px;font-size:14px;line-height:1.45;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word;overflow-wrap:break-word;}' +
+      '.tshare-body p{margin:0 0 8px;color:#3a4356;}' +
+      '.tshare-hint{font-size:13px;color:#5a6375;color:var(--app-muted,#5a6375);}' +
       '.tshare-error{color:#b3261e;font-weight:600;}' +
-      '.tshare-options{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}' +
-      '.tshare-opt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid #ccd8e8;' +
-        'border-radius:10px;padding:10px 12px;cursor:pointer;}' +
-      '.tshare-opt.is-checked{border-color:#1f6fa8;background:#e8f3fb;}' +
-      '.tshare-opt-primary{padding:14px 12px;border-width:2px;}' +
-      '.tshare-opt input{margin-top:3px;flex:0 0 auto;}' +
+      '.tshare-options{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}' +
+      '.tshare-opt{display:flex;gap:12px;align-items:flex-start;border:1.5px solid #cfd8e3;' +
+        'border-radius:10px;padding:12px;cursor:pointer;min-height:44px;box-sizing:border-box;}' +
+      '.tshare-opt.is-checked{border-color:#1f6fa8;background:#e8f3fb;box-shadow:inset 0 0 0 1px #1f6fa8;}' +
+      '.tshare-opt input{margin:1px 0 0;width:20px;height:20px;flex:0 0 auto;}' +
       '.tshare-opt>span{min-width:0;}' +
-      '.tshare-opt strong{display:block;font-size:13.5px;color:#1a1a2e;}' +
-      '.tshare-opt em{font-style:normal;color:#0a7d2c;font-size:11.5px;font-weight:700;margin-left:4px;}' +
-      '.tshare-opt small{display:block;color:#5a6375;font-size:12px;margin-top:2px;}' +
-      '.tshare-advanced{margin-top:4px;border-top:1px solid #e2e8f0;padding-top:10px;}' +
-      '.tshare-advanced summary{color:#1a3a5c;font-size:13px;font-weight:700;cursor:pointer;padding:4px 0 8px;}' +
-      '.tshare-advanced .tshare-opt{margin-bottom:12px;}' +
-      '.tshare-password{margin:0 0 14px;padding:10px 12px;background:#f3f6fa;border:1px solid #dce5ef;border-radius:10px;}' +
-      '.tshare-password .tshare-field{margin:0;font-size:13px;}' +
-      '.tshare-password>small{display:block;margin-top:6px;color:#5a6375;font-size:11.5px;}' +
-      '.tshare-field{display:block;font-size:12.5px;font-weight:700;color:#3a4356;margin-bottom:14px;}' +
-      '.tshare-field input{display:block;width:100%;margin-top:6px;padding:10px 12px;font-size:14px;' +
-        'border:1.5px solid #ccd8e8;border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
-      '.tshare-field input:focus{outline:none;border-color:#1f6fa8;background:#fff;}' +
-      '.tshare-linkrow{display:flex;gap:8px;margin-bottom:8px;}' +
-      '.tshare-linkrow input{flex:1;min-width:0;padding:9px 10px;font-size:12.5px;border:1.5px solid #ccd8e8;' +
-        'border-radius:9px;background:#f3f6fa;box-sizing:border-box;}' +
-      '.tshare-qr-wrap{text-align:center;margin:0 auto 14px;padding:12px;background:#f3f6fa;border-radius:12px;}' +
-      '.tshare-qr-label{font-weight:700;color:#1a3a5c !important;}' +
+      '.tshare-opt strong{display:block;font-size:14px;color:#1a1a2e;}' +
+      '.tshare-opt small{display:block;color:#5a6375;font-size:13px;margin-top:2px;}' +
+      '.tshare-sec{border:1px solid #dce5ef;border-radius:12px;padding:12px;margin:0 0 12px;background:#fff;}' +
+      '.tshare-sec > summary{font-size:15px;font-weight:700;color:#1a3a5c;cursor:pointer;min-height:44px;line-height:44px;margin:-12px;padding:0 12px;list-style:none;position:relative;}' +
+      '.tshare-sec > summary::-webkit-details-marker{display:none;}' +
+      '.tshare-sec > summary::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;margin-top:-6px;border-right:2px solid #5a6375;border-bottom:2px solid #5a6375;-webkit-transform:rotate(45deg);transform:rotate(45deg);}' +
+      '.tshare-sec[open] > summary{margin-bottom:0;}' +
+      '.tshare-sec[open] > summary::after{margin-top:-2px;-webkit-transform:rotate(-135deg);transform:rotate(-135deg);}' +
+      '.tshare-sec > summary:focus{outline:2px solid #1f6fa8;outline-offset:-2px;border-radius:10px;}' +
+      '.tshare-sec > summary:focus:not(:focus-visible){outline:none;}' +
+      '.tshare-sec > summary:focus-visible{outline:2px solid #1f6fa8;outline-offset:-2px;border-radius:10px;}' +
+      '.tshare-sec > .tshare-hint{margin:12px 0 12px;}' +
+      '.tshare-sec-primary h4{margin:0 0 4px;font-size:15px;font-weight:800;color:#1a3a5c;}' +
+      '.tshare-sec-primary > .tshare-hint{margin:0 0 8px;}' +
+      '.tshare-sec-live.is-on{border-color:#0a7d2c;background:#f2faf4;box-shadow:inset 0 0 0 1px #0a7d2c;}' +
+      '.tshare-switch{display:flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;color:#1a1a2e;cursor:pointer;}' +
+      '.tshare-switch input{-webkit-appearance:none;appearance:none;flex:0 0 auto;width:44px;height:26px;margin:0 12px 0 0;border-radius:13px;border:0;cursor:pointer;' +
+        'background:#76849a;background-image:radial-gradient(circle at 13px 13px,#fff 9px,rgba(255,255,255,0) 10px);background-repeat:no-repeat;background-size:44px 26px;background-position:0 0;}' +
+      '.tshare-switch input:checked{background-color:#0a7d2c;background-image:radial-gradient(circle at 31px 13px,#fff 9px,rgba(255,255,255,0) 10px);}' +
+      '.tshare-switch input:focus{outline:2px solid #1f6fa8;outline-offset:2px;}' +
+      '.tshare-switch input:focus:not(:focus-visible){outline:none;}' +
+      '.tshare-switch input:focus-visible{outline:2px solid #1f6fa8;outline-offset:2px;}' +
+      '.tshare-live-status{margin:0 0 4px !important;font-size:13px;font-weight:700;color:#5a6375 !important;}' +
+      '.tshare-live-status.is-synced{color:#0a7d2c !important;}' +
+      '.tshare-live-status.is-conflict,.tshare-live-status.is-gone,.tshare-live-status.is-error{color:#b3261e !important;}' +
+      '.tshare-btn-block{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;}' +
+      '.tshare-need{margin:8px 0 0 !important;}' +
+      '.tshare-org .tshare-options{margin-bottom:12px;}' +
+      '.tshare-action{margin:12px 0 0;}.tshare-action .tshare-btn-block{margin-top:0;}.tshare-action small{display:block;margin-top:4px;color:#5a6375;font-size:13px;}' +
+      '.tshare-advanced .tshare-hint{margin:12px 0 0;}' +
+      '.tshare-password{padding:0;}' +
+      '.tshare-password>small,.tshare-pw-update small{display:block;margin-top:4px;color:#5a6375;font-size:13px;}' +
+      '.tshare-pw-update[hidden]{display:none;}' +
+      '.tshare-check{display:flex;align-items:center;min-height:44px;font-size:14px;color:#1a1a2e;cursor:pointer;}' +
+      '.tshare-check input{width:20px;height:20px;margin:0 12px 0 0;flex:0 0 auto;}' +
+      '.tshare-field{display:block;font-size:13px;font-weight:700;color:#3a4356;margin:0 0 4px;}' +
+      '.tshare-field small{font-weight:400;color:#5a6375;}' +
+      '.tshare-input{display:block;width:100%;padding:10px 12px;font-size:14px;color:#1a1a2e;min-height:44px;' +
+        'border:1.5px solid #8a96a8;border-radius:9px;background:#fff;box-sizing:border-box;}' +
+      '.tshare-input::placeholder{color:#5a6375;opacity:1;}' +
+      '.tshare-input:focus{outline:none;border-color:#1f6fa8;box-shadow:0 0 0 2px #1f6fa8;}' +
+      '.tshare-linkrow{display:flex;gap:8px;margin-bottom:12px;}' +
+      '.tshare-linkrow input{flex:1;min-width:0;}' +
+      '.tshare-qr-wrap{text-align:center;margin:0 auto 12px;padding:12px;background:#f3f6fa;border-radius:12px;}' +
+      '.tshare-qr-label{margin:0 0 8px !important;font-weight:700;color:#1a3a5c !important;}' +
       '.tshare-qr{display:block;width:220px;max-width:100%;height:auto;margin:0 auto;background:#fff;border:8px solid #fff;}' +
       '.tshare-qr[hidden]{display:none;}' +
-      '.tshare-copied{color:#0a7d2c;font-size:12.5px;font-weight:600;margin:0;}' +
-      '.tshare-loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0 6px;color:#3a4356;}' +
+      '.tshare-copied{color:#0a7d2c !important;font-size:13px;font-weight:600;margin:0 0 8px;}' +
+      '.tshare-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0 8px;color:#3a4356;}' +
       '.tshare-spinner{width:30px;height:30px;border-radius:50%;border:3px solid #ccd8e8;' +
         'border-top-color:#1f6fa8;animation:tshare-spin .8s linear infinite;}' +
       '@keyframes tshare-spin{to{transform:rotate(360deg);}}' +
       '.tshare-foot{display:flex;justify-content:flex-end;flex-wrap:wrap;' +
-        'padding:14px 18px 4px;border-top:1px solid #e2e8f0;flex:0 0 auto;}' +
-      '.tshare-foot > *{margin:0 0 10px 10px;}' +
-      '.tshare-btn{border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:700;' +
+        'padding:12px 16px 4px;border-top:1px solid #e2e8f0;flex:0 0 auto;}' +
+      '.tshare-foot > *{margin:0 0 8px 8px;}' +
+      '.tshare-btn{border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:700;font-family:inherit;' +
         'cursor:pointer;white-space:normal;min-height:44px;max-width:100%;word-wrap:break-word;}' +
-      '.tshare-btn-primary{background:#1a3a5c;color:#fff;}' +
+      '.tshare-btn:disabled{background:#e6eaf0 !important;color:#5a6375 !important;border:none !important;cursor:not-allowed;}' +
+      '.tshare-btn-primary{background:#1a3a5c;background:var(--app-blue-dark,#1a3a5c);color:#fff;}' +
       '.tshare-btn-primary:hover{background:#1f6fa8;}' +
-      '.tshare-btn-ghost{background:none;color:#1a3a5c;border:1.5px solid #ccd8e8;}' +
+      '.tshare-btn-ghost{background:#fff;color:#1a3a5c;border:1.5px solid #76849a;}' +
       '.tshare-btn-ghost:hover{border-color:#1f6fa8;}' +
-      '@media screen and (max-width:640px){.tshare-field input,.tshare-linkrow input{font-size:16px;min-height:44px;}' +
-        '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-head{padding:12px 60px 12px 12px;}' +
+      '.tshare-btn-danger{color:#b3261e;border-color:#b3261e;}' +
+      '.tshare-btn-danger:hover{border-color:#b3261e;background:#fdf0ef;}' +
+      '.tshare-btn:focus{outline:2px solid #1f6fa8;outline-offset:2px;}' +
+      '.tshare-btn:focus:not(:focus-visible){outline:none;}' +
+      '.tshare-btn:focus-visible{outline:2px solid #1f6fa8;outline-offset:2px;}' +
+      '@media screen and (max-width:640px){.tshare-input{font-size:16px;}' +
+        '.tshare-linkrow{flex-wrap:wrap;}.tshare-linkrow input{flex-basis:100%;}.tshare-linkrow .tshare-btn{width:100%;margin-top:8px;}.tshare-head{padding:12px 60px 12px 12px;}' +
         '.tshare-body{padding:12px;}.tshare-foot{padding:12px 12px 4px;}}' +
       '@media screen and (max-width:479px){.tshare-foot{flex-direction:column-reverse;flex-wrap:nowrap;}' +
         '.tshare-foot > *{margin:0 0 8px;width:100%;}}';
@@ -708,31 +924,84 @@
     return root;
   }
 
+  function shareSection(cls, title, desc, innerHtml) {
+    return '<section class="tshare-sec ' + cls + '"><h4>' + escapeHtml(title) + '</h4>' +
+      '<p class="tshare-hint">' + escapeHtml(desc) + '</p>' + (innerHtml || '') + '</section>';
+  }
+
+  /* Nach Live-/Team-Änderungen den Dialog mit frischem Zustand neu aufbauen
+     (nur, wenn der Nutzer ihn nicht inzwischen geschlossen hat). */
+  function backToForm(o) { if (document.getElementById(MODAL_ID)) renderShareForm(o); }
+
   function renderShareForm(o) {
+    return TStore.serverBinding(o.sheet).then(null, function () { return null; }).then(function (b) {
+      return liveStatus(b, o).then(function (st) { buildShareForm(o, b, st); });
+    });
+  }
+
+  function buildShareForm(o, b, st) {
+    const cloud = cloudSharingEnabled();
+    const liveOn = !!(b && b.live);
+    const actions = b && (b.id || b.live) ? serverActions(o, b) : [];
+    const btn = function (act, cls, text, extra) {
+      return '<button type="button" class="tshare-btn ' + cls + '" data-act="' + act + '"' + (extra || '') + '>' + escapeHtml(text) + '</button>';
+    };
+    let primary = '';
+    if (cloud) {
+      primary += shareSection('tshare-sec-primary tshare-sec-live' + (liveOn ? ' is-on' : ''), tx('share.sec.live.title', 'Live-Sicherung'),
+        tx('share.sec.live.desc', 'Speichert jede Änderung automatisch online.'),
+        '<label class="tshare-switch"><input type="checkbox" id="tshare-live"' + (liveOn ? ' checked' : '') + '> <span>'
+          + escapeHtml(tx('server.live.option', 'Automatisch speichern')) + '</span></label>' +
+        '<p class="tshare-live-status is-' + st.key + '" id="tshare-live-status">' + escapeHtml(tx('share.live.status', 'Status: {state}', { state: st.short })) + '</p>' +
+        (st.key === 'off' || st.key === 'synced' || st.key === 'busy' ? '' : '<p class="tshare-hint">' + escapeHtml(st.msg) + '</p>') +
+        (st.key === 'conflict' ? btn('live-resolve', 'tshare-btn-ghost tshare-btn-block', tx('server.live.resolve', 'Konflikt lösen')) : '') +
+        (st.key === 'gone' ? btn('live-copy', 'tshare-btn-ghost tshare-btn-block', tx('server.copy', 'Als lokale Kopie weiterarbeiten')) : ''));
+      const teamTitle = tx('share.sec.team.title', 'Team-Live-View für Spieler:innen');
+      if (typeof TTeamView === 'undefined' || !TTeamView.supported(o)) {
+        primary += shareSection('tshare-sec-primary tshare-sec-team', teamTitle,
+          tx('share.sec.team.unsupported', 'Für dieses Format nicht verfügbar.'), '');
+      } else {
+        primary += shareSection('tshare-sec-primary tshare-sec-team', teamTitle,
+          tx('share.sec.team.desc', 'Spieler:innen scannen den QR-Code und sehen ihre Spiele live.'),
+          btn('team-show', 'tshare-btn-primary tshare-btn-block', tx('server.team.open', 'QR-Code & Aushang anzeigen'), liveOn ? '' : ' disabled') +
+          (liveOn ? '' : '<p class="tshare-hint tshare-need">' + escapeHtml(tx('share.sec.team.needLive', 'Erst Live-Sicherung einschalten.')) + '</p>') +
+          (liveOn && b.teamView ? btn('team-end', 'tshare-btn-ghost tshare-btn-block', tx('server.team.end', 'Team-Live-View beenden')) +
+            '<p class="tshare-hint tshare-need">' + escapeHtml(tx('server.team.endHint', 'Bestehende QR-Codes werden ungültig.')) + '</p>' : ''));
+      }
+    }
+    const canUpdatePw = cloud && !!(b && b.id);
     const root = openShareModalShell(
       tx('share.title', 'Turnier teilen'),
-      '<div class="tshare-options">' +
-        '<label class="tshare-opt tshare-opt-primary"><input type="radio" name="tshare-mode" value="qr" checked>' +
-        '<span><strong>' + escapeHtml(tx('share.qr.title', 'QR-Code / Turniercode')) + '</strong>' +
-        '<small>' + escapeHtml(tx('share.qr.desc', 'Zum Scannen oder Eingeben auf der Startseite – inklusive Kurzlink. Internet erforderlich.')) + '</small></span>' +
+      primary +
+      '<details class="tshare-sec tshare-org"' + (liveOn ? '' : ' open') + '><summary>' + escapeHtml(tx('share.sec.org.title', 'Mit Organisator:innen teilen')) + '</summary>' +
+      '<p class="tshare-hint">' + escapeHtml(tx('share.sec.org.desc', 'Andere öffnen eine bearbeitbare Kopie des Turniers.')) + '</p>' +
+      '<div class="tshare-options" role="radiogroup" aria-label="' + escapeHtml(tx('share.sec.org.title', 'Mit Organisator:innen teilen')) + '">' +
+        (cloud ? '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="qr" checked>' +
+          '<span><strong>' + escapeHtml(tx('share.qr.title', 'QR-Code / Turniercode')) + '</strong>' +
+          '<small>' + escapeHtml(tx('share.qr.desc', 'Kurz und praktisch. Zum Öffnen ist Internet nötig.')) + '</small></span>' +
+          '</label>' : '') +
+        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline"' + (cloud ? '' : ' checked') + '>' +
+        '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
+        '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält das ganze Turnier im Link. Geht ohne Internet, ist aber sehr lang.')) + '</small></span>' +
         '</label>' +
         '<div class="tshare-password">' +
-        '<label class="tshare-field" for="tshare-pw">' + escapeHtml(tx('share.password', 'Passwortschutz (optional)')) +
-          '<input type="password" id="tshare-pw" placeholder="' + escapeHtml(tx('share.passwordPlaceholder', 'Leer lassen für keinen Passwortschutz'))
-          + '" autocomplete="new-password"></label>' +
-        '<small>' + escapeHtml(tx('share.password.desc', 'Das Passwort separat an Empfänger weitergeben.')) + '</small>' +
+        '<label class="tshare-field" for="tshare-pw">' + escapeHtml(tx('share.password', 'Passwort (optional)')) + '</label>' +
+          '<input type="password" id="tshare-pw" class="tshare-input" placeholder="' + escapeHtml(tx('share.passwordPlaceholder', 'Optional'))
+          + '" autocomplete="new-password">' +
+        '<small>' + escapeHtml(tx('share.password.desc', 'Passwort separat vom Link weitergeben.')) + '</small>' +
+        (canUpdatePw ? '<div class="tshare-pw-update"><small>' + escapeHtml(tx('server.passwordKeep', 'Leeres Feld behält das bisherige Passwort.')) + '</small>' +
+          '<label class="tshare-check"><input type="checkbox" id="tshare-remove-pw"> <span>' + escapeHtml(tx('server.passwordRemove', 'Passwort beim Update entfernen')) + '</span></label></div>' : '') +
         '</div>' +
-        '<details class="tshare-advanced"><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) + '</summary>' +
-        '<small>' + escapeHtml(tx('server.passwordKeep', 'Bei Updates: leer lassen behält das bisherige Lesepasswort.')) + '</small>' +
-        '<label><input type="checkbox" id="tshare-remove-pw"> ' + escapeHtml(tx('server.passwordRemove', 'Lesepasswort beim Update ausdrücklich entfernen')) + '</label>' +
-        '<label class="tshare-opt"><input type="radio" name="tshare-mode" value="offline">' +
-        '<span><strong>' + escapeHtml(tx('share.offline.title', 'Offline-Link')) + '</strong>' +
-        '<small>' + escapeHtml(tx('share.offline.desc', 'Enthält den kompletten Turnierstand direkt im Link. Funktioniert ohne Server/Internet, ist aber sehr lang.')) + '</small></span>' +
-        '</label>' +
-        '</details>' +
-        '</div>',
-      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
-      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="create">' + escapeHtml(tx('share.createQr', 'QR-Code erstellen')) + '</button>'
+      '</div>' +
+      btn('create', 'tshare-btn-primary tshare-btn-block', cloud ? tx('share.createQr', 'Link & QR-Code erstellen') : tx('share.createOffline', 'Offline-Link erstellen')) +
+      '</details>' +
+      '<details class="tshare-sec tshare-advanced"><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) + '</summary>' +
+        (actions.length ? actions.map(function (a) {
+          return '<div class="tshare-action">' + btn(a.act, 'tshare-btn-ghost tshare-btn-block' + (a.danger ? ' tshare-btn-danger' : ''), tx(a.key, a.label))
+            + '<small>' + escapeHtml(tx(a.key + 'Hint', a.hint)) + '</small></div>';
+        }).join('') : '<p class="tshare-hint">' + escapeHtml(tx('share.moreOptions.none', 'Weitere Optionen erscheinen, sobald das Turnier online ist.')) + '</p>') +
+      '</details>',
+      btn('cancel', 'tshare-btn-ghost', tx('share.close', 'Schließen'))
     );
     root.querySelector('[data-act="cancel"]').addEventListener('click', closeShareModal);
     /* Ersatz fuer ".tshare-opt:has(input:checked)" (Safari erst ab 15.4, siehe
@@ -743,32 +1012,56 @@
         const input = opt.querySelector('input');
         opt.classList.toggle('is-checked', !!(input && input.checked));
       });
+      const pwUpdate = root.querySelector('.tshare-pw-update');
+      if (pwUpdate) pwUpdate.hidden = root.querySelector('input[name="tshare-mode"]:checked').value !== 'qr';
     }
     root.querySelectorAll('input[name="tshare-mode"]').forEach(function (input) {
       input.addEventListener('change', function () {
         syncCheckedOpt();
         root.querySelector('[data-act="create"]').textContent = input.value === 'offline'
           ? tx('share.createOffline', 'Offline-Link erstellen')
-          : tx('share.createQr', 'QR-Code erstellen');
+          : tx('share.createQr', 'Link & QR-Code erstellen');
       });
     });
     syncCheckedOpt();
+    actions.forEach(function (a) { root.querySelector('[data-act="' + a.act + '"]').addEventListener('click', a.fn); });
+    const liveCopy = root.querySelector('[data-act="live-copy"]');
+    if (liveCopy) liveCopy.addEventListener('click', actions[0].fn);
+    const liveBox = root.querySelector('#tshare-live');
+    if (liveBox) liveBox.addEventListener('change', function () {
+      if (liveBox.checked) confirmLive(o);
+      else setLive(o, false).then(function () { backToForm(o); }, function () { backToForm(o); });
+    });
+    const resolve = root.querySelector('[data-act="live-resolve"]');
+    if (resolve) resolve.addEventListener('click', function () { renderConflict(o, '', false); });
+    const show = root.querySelector('[data-act="team-show"]');
+    if (show) show.addEventListener('click', function () {
+      show.disabled = true;
+      setTeamView(o, true).then(function () { show.disabled = false; });
+    });
+    const end = root.querySelector('[data-act="team-end"]');
+    if (end) end.addEventListener('click', function () {
+      end.disabled = true;
+      setTeamView(o, false).then(function () { backToForm(o); });
+    });
     root.querySelector('[data-act="create"]').addEventListener('click', function () {
       const mode = root.querySelector('input[name="tshare-mode"]:checked').value;
       const pw = root.querySelector('#tshare-pw').value || '';
-      if (mode === 'qr' && cloudSharingEnabled()) {
+      if (mode === 'qr' && cloud) {
+        const rm = root.querySelector('#tshare-remove-pw');
+        const removePw = !!(rm && rm.checked);
         renderShareLoading();
-        createServerShare(o, pw, root.querySelector('#tshare-remove-pw').checked);
+        createServerShare(o, pw, removePw);
       } else {
         createOfflineShare(o, pw);
       }
     });
   }
 
-  function renderShareLoading() {
+  function renderShareLoading(text) {
     openShareModalShell(tx('share.title', 'Turnier teilen'),
       '<div class="tshare-loading"><div class="tshare-spinner"></div><p style="margin:0">'
-        + escapeHtml(tx('share.loading', 'Link wird erstellt…')) + '</p></div>', '');
+        + escapeHtml(text || tx('share.loading', 'Link wird erstellt…')) + '</p></div>', '');
   }
 
   /* o (optional): archiveOpts() des Bogens – Titel für das System-Teilen-Menü. */
@@ -777,33 +1070,31 @@
     const root = openShareModalShell(
       tx('share.result.title', 'Link zum Teilen'),
       '<p class="tshare-hint">' + escapeHtml(code
-        ? (o && o.serverUpdated ? tx('server.updated', 'Aktualisiert – Link, Code und QR bleiben gleich. ') : '')
-          + tx('server.result', 'Serverlink erstellt. Link, Code und QR öffnen eine bearbeitbare lokale Kopie. Änderungen dieser Kopie verändern den ursprünglichen Serverstand nicht.')
-        : tx('share.result.hint', 'Der Link enthält einen Snapshot des aktuellen Turnierstands. Spätere Änderungen sind erst in einem neuen Link sichtbar.')) +
+        ? (o && o.serverUpdated ? tx('server.updated', 'Aktualisiert – Link, Code und QR-Code bleiben gleich.') + ' ' : '')
+          + tx('server.result', 'Link erstellt. Andere öffnen eine bearbeitbare Kopie; dein Turnier bleibt unverändert.')
+        : tx('share.result.hint', 'Der Link zeigt den heutigen Stand. Spätere Änderungen brauchen einen neuen Link.')) +
         (o && o.serverDirty ? ' ' + escapeHtml(tx('server.dirty', 'Lokale Änderungen sind noch nicht veröffentlicht. Öffne „Teilen“, um sie auf dem Server zu speichern.')) : '') +
         (pw ? escapeHtml(tx('share.result.pwHint', ' Mit Passwort geschützt – bitte separat mitteilen.')) : '') + '</p>' +
-        (longWarnLen ? '<p class="tshare-error">' + escapeHtml(cloudSharingEnabled() ? tx('share.result.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen) und wird evtl. '
-          + 'nicht von jedem Messenger/Browser vollständig übernommen. Bei Problemen: über den PC teilen '
-          + 'oder den kürzeren Server-Link verwenden.', { len: longWarnLen }) :
+        (longWarnLen ? '<p class="tshare-error">' + escapeHtml(cloudSharingEnabled() ? tx('share.result.long', 'Der Link ist sehr lang ({len} Zeichen). Manche Messenger kürzen ihn. Besser: den kurzen Link nutzen.', { len: longWarnLen }) :
           tx('release.share.long', 'Hinweis: Der Link ist sehr lang ({len} Zeichen). Falls er abgeschnitten wird, bitte eine Sicherungsdatei exportieren und teilen.',
             { len: longWarnLen })) + '</p>' : '') +
         '<div class="tshare-qr-wrap"><p class="tshare-qr-label">' +
           escapeHtml(tx('share.result.qr', 'QR-Code zum Scannen')) + '</p>' +
           '<img id="tshare-qr" class="tshare-qr" alt="' +
           escapeHtml(tx('share.result.qrAlt', 'QR-Code für den Turnierlink')) + '"></div>' +
-        '<label class="tshare-field" style="margin-bottom:8px">' + escapeHtml(tx('share.result.link', 'Link')) +
-      '<div class="tshare-linkrow"><input type="text" id="tshare-url" readonly>' +
-      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>' +
+        '<label class="tshare-field" for="tshare-url">' + escapeHtml(tx('share.result.link', 'Link')) + '</label>' +
+      '<div class="tshare-linkrow"><input type="text" id="tshare-url" class="tshare-input" readonly>' +
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div>' +
       (code
-        ? '<label class="tshare-field">' + escapeHtml(tx('share.result.code', 'Turniercode')) + ' <small style="font-weight:400;color:#5a6375">'
-          + escapeHtml(tx('share.result.codeHint', '(zum Eingeben auf der Startseite, statt den Link zu öffnen)')) + '</small>' +
-          '<div class="tshare-linkrow"><input type="text" id="tshare-code" readonly>' +
-          '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div></label>'
+        ? '<label class="tshare-field" for="tshare-code">' + escapeHtml(tx('share.result.code', 'Turniercode')) + ' <small>'
+          + escapeHtml(tx('share.result.codeHint', '(alternativ auf der Startseite eingeben)')) + '</small></label>' +
+          '<div class="tshare-linkrow"><input type="text" id="tshare-code" class="tshare-input" readonly>' +
+          '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="copy-code">' + escapeHtml(tx('share.copy', 'Kopieren')) + '</button></div>'
         : '') +
-      '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'In die Zwischenablage kopiert ✓')) + '</p>' +
-      (code ? '<details><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) +
-        '</summary><button type="button" class="tshare-btn tshare-btn-ghost" data-act="transfer">' +
-        escapeHtml(tx('server.transfer', 'Bearbeitungslink anzeigen')) + '</button></details>' : '') +
+      '<p class="tshare-copied" id="tshare-copied-msg" hidden>' + escapeHtml(tx('share.copied', 'Kopiert ✓')) + '</p>' +
+      (code ? '<details class="tshare-sec tshare-advanced"><summary>' + escapeHtml(tx('share.moreOptions', 'Weitere Optionen')) +
+        '</summary><div class="tshare-action"><button type="button" class="tshare-btn tshare-btn-ghost tshare-btn-block" data-act="transfer">' +
+        escapeHtml(tx('server.transfer', 'Bearbeitungslink anzeigen')) + '</button></div></details>' : '') +
       (nativeShare ? '<p class="tshare-error" id="tshare-native-msg" hidden></p>' : ''),
       (nativeShare ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="native-share">'
         + escapeHtml(tx('native.share.button', 'Teilen…')) + '</button>' : '') +
@@ -823,7 +1114,7 @@
       const qrError = document.createElement('p');
       qrError.className = 'tshare-error';
       qrError.textContent = tx('share.result.qrUnavailable',
-        'Für diesen Link konnte kein QR-Code erstellt werden. Verwende den Link oder den kürzeren Server-Link.');
+        'Für diesen Link konnte kein QR-Code erstellt werden. Nutze den Link.');
       qrImage.parentNode.appendChild(qrError);
     }
     const copiedMsg = root.querySelector('#tshare-copied-msg');
@@ -873,9 +1164,9 @@
   function renderShareError(message, cfg) {
     const c = cfg || {};
     const root = openShareModalShell(
-      tx('share.error.title', 'Link konnte nicht erstellt werden'),
+      tx('share.error.title', 'Link nicht erstellt'),
       '<p class="tshare-error">' + escapeHtml(message) + '</p>' +
-      '<p class="tshare-hint">' + escapeHtml(tx('share.error.safe', 'Dein Turnier auf diesem Gerät ist davon nicht betroffen und weiterhin sicher gespeichert.')) + '</p>',
+      '<p class="tshare-hint">' + escapeHtml(tx('share.error.safe', 'Dein Turnier auf diesem Gerät ist sicher gespeichert.')) + '</p>',
       '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
       (c.showOfflineFallback ? '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="offline">'
         + escapeHtml(tx('share.error.offlineFallback', 'Offline-Link stattdessen')) + '</button>' : '') +
@@ -893,7 +1184,7 @@
   function openShareDialog(opts) {
     const o = opts || {};
     if (o.empty) { alert(tx('share.empty', 'Dieses Turnier ist noch leer – es gibt noch nichts zu teilen.')); return; }
-    renderShareForm(o);
+    return renderShareForm(o);
   }
 
   /* Aktueller Schnappschuss der Turnierdaten aus IndexedDB (wartet auf
@@ -945,12 +1236,12 @@
   }
 
   function renderConflict(o, pw, removePassword) {
-    const root = openShareModalShell(tx('server.conflict', 'Serverkonflikt – nichts überschrieben'),
-      '<p>' + escapeHtml(tx('server.conflictHint', 'Ein anderer Bearbeiter hat gespeichert. Dein Entwurf bleibt lokal erhalten. Keine automatische Zusammenführung.'))
+    const root = openShareModalShell(tx('server.conflict', 'Konflikt – nichts überschrieben'),
+      '<p>' + escapeHtml(tx('server.conflictHint', 'Jemand anderes hat gespeichert. Dein Entwurf bleibt erhalten.'))
         + '</p>',
-      '<button type="button" class="tshare-btn" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
-      '<button type="button" class="tshare-btn" data-act="load">' + escapeHtml(tx('server.load', 'Serverstand laden')) + '</button>' +
-      '<button type="button" class="tshare-btn" data-act="fork">' + escapeHtml(tx('server.fork', 'Als neues unabhängiges Turnier veröffentlichen')) + '</button>');
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="cancel">' + escapeHtml(tx('share.cancel', 'Abbrechen')) + '</button>' +
+      '<button type="button" class="tshare-btn tshare-btn-ghost" data-act="fork">' + escapeHtml(tx('server.fork', 'Als neues Turnier veröffentlichen')) + '</button>' +
+      '<button type="button" class="tshare-btn tshare-btn-primary" data-act="load">' + escapeHtml(tx('server.load', 'Online-Stand laden')) + '</button>');
     root.querySelector('[data-act="cancel"]').onclick = closeShareModal;
     root.querySelector('[data-act="load"]').onclick = function () {
       TStore.serverBinding(o.sheet).then(function (b) {
@@ -1319,11 +1610,21 @@
   if (typeof window !== 'undefined') {
     let statusTimer = null;
     window.addEventListener('beachl:storage-saved', function (e) {
+      if (live.on && statusOpts && e.detail && e.detail.sheetId === statusOpts.sheet && !live.conflict) {
+        liveSchedule(LIVE_DEBOUNCE_MS);
+      }
       if (!e.detail || !e.detail.sheetId || !e.detail.revision || !document.getElementById('tserver-status')) return;
       clearTimeout(statusTimer);
       statusTimer = setTimeout(function () {
         if (statusOpts && statusOpts.sheet === e.detail.sheetId) renderServerStatus(statusOpts).catch(function () {});
       }, 50);
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', function () { if (live.on) { live.fails = 0; liveRun(); } });
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () {
+      if (live.on && document.visibilityState === 'visible') liveRun();
     });
   }
 

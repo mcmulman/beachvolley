@@ -367,6 +367,7 @@
 <script src="core/format-switch.js"></script>
 <script src="core/planning-engine.js"></script>
 <script src="core/planning-actions.js"></script>
+<script src="core/turnier-team-qr.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -502,6 +503,7 @@
   if(needSave) TStore.save(S);
 
   let B = null;
+  window.BEACHL_TEAMVIEW = function(){ return { state: S, plan: B }; };   // Team-QR (core/turnier-team-qr.js)
   let structureKey = '';
   let roundFilter = 'all';
 
@@ -1387,8 +1389,14 @@
     /* Teamzahl oder Spielmodus ändern die Paarungen von Grund auf – dann sind
        eingefrorene Runden gegenstandslos. Ergebnisse bleiben erhalten. */
     if(S.config.teams !== prevTeams){
-      S.frozen = {}; S.round1 = null;
+      /* Ergebnisse bleiben bei ihrer Begegnung (gleiche Teams), auch wenn sich die Teamzahl ändert. */
+      const swissNow = isSwiss();
+      const phaseOf = swissNow ? (id => (/^(sw_\d+)_/.exec(id) || [, id])[1]) : TStore.matchPhase;
+      const listMatches = () => B.rounds.reduce((a, rd) => a.concat(rd.matches.map(m => ({ id: m.id, a: m.a, b: m.b }))), []);
+      const snap = (S.config.teams > prevTeams && TStore.anyResults(S)) ? TStore.snapshotResults(S, listMatches(), x => x, phaseOf) : null;
+      S.frozen = {}; S.round1 = null; if(snap) S.frozenModes = {};
       fillRoundCount();
+      if(snap) TStore.restoreResults(S, snap, () => { compute(); return listMatches(); }, phaseOf);
       /* Feldauswahl an die neue Teamzahl anpassen (max. Teams/2 Spiele parallel). */
       S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     }

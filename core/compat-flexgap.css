@@ -224,10 +224,10 @@
 .no-flexgap .trp-item > * + * { margin-top: 2px; }
 
 /* ══ Teilen-/Info-Dialog (core/turnier-share.js) ═══════════════════════ */
-.no-flexgap .tshare-options > * + * { margin-top: 10px; }
-.no-flexgap .tshare-opt > * + * { margin-left: 10px; }
+.no-flexgap .tshare-options > * + * { margin-top: 8px; }
+.no-flexgap .tshare-opt > * + * { margin-left: 12px; }
 .no-flexgap .tshare-linkrow > * + * { margin-left: 8px; }
-.no-flexgap .tshare-loading > * + * { margin-top: 14px; }
+.no-flexgap .tshare-loading > * + * { margin-top: 12px; }
 
 /* Rundentitel-Pille (King & Queen / King of the Court) vor Freilos-/Zeit-Hinweis. */
 .no-flexgap .kq-round-title > .kq-rlabel,

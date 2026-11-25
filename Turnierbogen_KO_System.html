@@ -257,6 +257,7 @@
 <script src="core/format-switch.js"></script>
 <script src="core/planning-engine.js"></script>
 <script src="core/planning-actions.js"></script>
+<script src="core/turnier-team-qr.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -326,6 +327,7 @@
       thirdPlace: TStore.urlBool
   })) TStore.save(S);
   let B = null;
+  window.BEACHL_TEAMVIEW = function(){ return { state: S, plan: B }; };   // Team-QR (core/turnier-team-qr.js)
   let structureKey = '';
   let roundFilter = 'all';
 

@@ -1614,6 +1614,18 @@
       roundModes: {}, startTime: '10:00', absent: [], results: {},
       fixedPairs: {}, round1: null
     }, cfg || {});
+    /* Kaputte oder fremde Daten (Import, Share, alter Stand) dürfen die Planung nicht abstürzen lassen. */
+    if (!c.results || typeof c.results !== 'object' || Array.isArray(c.results)) c.results = {};
+    if (!c.fixedPairs || typeof c.fixedPairs !== 'object' || Array.isArray(c.fixedPairs)) c.fixedPairs = {};
+    else {
+      const fp = {};
+      Object.keys(c.fixedPairs).forEach(r => { if (Array.isArray(c.fixedPairs[r])) fp[r] = c.fixedPairs[r]; });
+      c.fixedPairs = fp;
+    }
+    if (!Array.isArray(c.absent)) c.absent = [];
+    if (!c.roundModes || typeof c.roundModes !== 'object') c.roundModes = {};
+    if (!Array.isArray(c.teams)) c.teams = Math.max(2, parseInt(c.teams, 10) || 2);
+    c.fields = Math.max(1, parseInt(c.fields, 10) || 1);
 
     const warnings = [], notes = [];
     const stageCheck = TStage.validate({ sport: c.sport, config: c, results: c.results,

@@ -307,6 +307,7 @@
 <script src="core/format-switch.js"></script>
 <script src="core/planning-engine.js"></script>
 <script src="core/planning-actions.js"></script>
+<script src="core/turnier-team-qr.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -383,6 +384,7 @@
       finalMode: TStore.urlOneOf(FINAL_MODES.map(m => m.id))
   })) TStore.save(S);
   let B = null;                 // aktueller Aufbau (TFormat.build)
+  window.BEACHL_TEAMVIEW = function(){ return { state: S, plan: B }; };   // Team-QR (core/turnier-team-qr.js)
   let structureKey = '';
   const qualification = TUI.mountFinalQualification($('qualificationBox'), {
     get: () => S, plan: () => B, label: t => { const n = labeler()(t); return n === TUI.makeLabeler({})(t) ? n : 'Team ' + t + ' · ' + n; },

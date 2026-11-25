@@ -474,6 +474,80 @@
   window.TSheetEditors.scrollToPanel = scrollToPanel;
 
 
+  /* Schmale Viewports (<=767px): sekundäre Aktionen wandern in ein Überlauf-Menü
+     (Panel unter der Leiste); auf breiten Viewports wieder zurück in die Leiste.
+     Idempotent; Beobachter fängt später eingefügte Buttons (Counter, Sprache) ab. */
+  function setupOverflow(bar) {
+    var actions = bar.querySelector('.app-bar__actions');
+    if (!actions) return;
+    var mq = window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
+    var ORDER = ['.app-bar__info', '.bl-timer-link', '.app-bar__print', '.i18n-switch'];
+    var tr = function (key, fallback) {
+      return window.TI18n && window.TI18n.t && window.TI18n.active && window.TI18n.active() ? window.TI18n.t(key) : fallback;
+    };
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'app-bar__btn app-bar__more';
+    more.setAttribute('aria-haspopup', 'true');
+    more.setAttribute('aria-expanded', 'false');
+    more.setAttribute('aria-controls', 'appBarMenu');
+    more.setAttribute('aria-label', tr('chrome.moreActions', 'Weitere Aktionen'));
+    more.setAttribute('title', tr('chrome.moreActions', 'Weitere Aktionen'));
+    more.innerHTML = '<span class="ic" aria-hidden="true"><svg class="bl-ic" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span>';
+    var menu = document.createElement('div');
+    menu.className = 'app-bar__menu';
+    menu.id = 'appBarMenu';
+    menu.hidden = true;
+
+    function setOpen(open, restoreFocus) {
+      menu.hidden = !open;
+      more.setAttribute('aria-expanded', open ? 'true' : 'false');
+      bar.classList.toggle('is-menu-open', open);
+      if (!open && restoreFocus) more.focus();
+    }
+    more.addEventListener('click', function () { setOpen(menu.hidden, false); });
+    menu.addEventListener('click', function () { setOpen(false, false); });
+    document.addEventListener('click', function (e) {
+      if (!menu.hidden && !menu.contains(e.target) && !more.contains(e.target)) setOpen(false, false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Escape' || e.key === 'Esc') && !menu.hidden) { setOpen(false, true); }
+    });
+
+    function sync() {
+      var narrow = !!(mq && mq.matches);
+      var primary = actions.querySelector('.cfg-actions-primary');
+      var ordered = [];
+      for (var i = 0; i < ORDER.length; i++) {
+        var el = actions.querySelector(ORDER[i]);
+        if (!el) continue;
+        if (narrow) {
+          ordered.push(el);
+        } else if (el.parentNode === menu) {
+          if (ORDER[i] === '.i18n-switch' || !primary) actions.appendChild(el);
+          else actions.insertBefore(el, primary);
+        }
+      }
+      for (var k = 0; k < ordered.length; k++) {
+        if (menu.children[k] !== ordered[k]) menu.insertBefore(ordered[k], menu.children[k] || null);
+      }
+      if (narrow && menu.children.length) {
+        if (more.parentNode !== actions) { actions.appendChild(more); actions.appendChild(menu); }
+        else if (actions.lastElementChild !== menu) actions.appendChild(menu);
+      } else {
+        if (menu.hidden === false) setOpen(false, false);
+        if (more.parentNode) more.parentNode.removeChild(more);
+        if (menu.parentNode) menu.parentNode.removeChild(menu);
+      }
+    }
+    sync();
+    if (mq) {
+      if (mq.addEventListener) mq.addEventListener('change', sync);
+      else if (mq.addListener) mq.addListener(sync);
+    }
+    if (window.MutationObserver) new MutationObserver(sync).observe(actions, { childList: true });
+  }
+
   function build() {
     document.body.classList.add('tournament-sheet');
     wirePanelAutoScroll();
@@ -527,6 +601,7 @@
     }
     document.body.insertBefore(bar, document.body.firstChild);
     if (window.TI18n && window.TI18n.active()) window.TI18n.apply(bar);
+    setupOverflow(bar);
 
     // Titel live nachziehen, falls die Seite document.title dynamisch aktualisiert
     // (z. B. bei Änderung der Teamanzahl) – sonst zeigt die App-Leiste einen veralteten Stand.

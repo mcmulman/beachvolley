@@ -859,7 +859,7 @@
       if (!pr.total) return '';
       const pct = Math.round(pr.done * 100 / pr.total);
       let out = '<span class="ph-prog"><span class="ph-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>'
-        + esc(st('played', { done: pr.done, total: pr.total })) + '</span>';
+        + '<span class="ph-count">' + esc(st('played', { done: pr.done, total: pr.total })) + '</span></span>';
       if (!pr.open) return out + '<span class="ph-next ph-done">' + esc(st('done')) + '</span>';
       const nx = pr.next.slice(0, 2).map(m => {
         const pair = m.names.join(' – ');
@@ -870,7 +870,9 @@
       const plan = o.plan();
       return out + '<span class="ph-open">' + esc(st('open', { count: pr.open })) + '</span>'
         + '<span class="ph-next">' + esc(st('next')) + ' <strong>' + esc(nx.join(' · ')) + '</strong></span>'
-        + (plan && plan.finalsPending ? '<span class="ph-next ph-hint">' + esc(st('finalsPending')) + '</span>' : '');
+        + (plan && plan.finalsPending ? '<span class="ph-next ph-hint">' + esc(st('finalsPending')) + '</span>'
+          : plan && plan.placementResolution && plan.placementResolution.pending
+            ? '<span class="ph-next ph-tie">' + esc(st('tiePending')) + '</span>' : '');
     }
     function renderHealth(plan, read) {
       const slots = root.TPlanning.slots(plan);

@@ -139,13 +139,12 @@
       <select id="setMode"></select>
     </label>
     <label class="cfgfield cfgfield--mode" id="volleyballPresetField" hidden>
-      <span data-i18n="dko.preset.label">Lokales Volleyball-Veranstalterprofil</span>
+      <span><span data-i18n="dko.preset.label">Lokales Volleyball-Veranstalterprofil</span> <span class="info-tip" id="volleyballPresetInfo" role="img" tabindex="0">ⓘ</span></span>
       <select id="volleyballPreset">
         <option value="custom" data-i18n="dko.preset.custom">Individuell – Satzmodus frei wählen</option>
         <option value="a" data-i18n="dko.preset.a">Lokal A · Best of 3, alle Sätze bis 15</option>
         <option value="a-plus" data-i18n="dko.preset.aPlus">Lokal A+ · späte Baumrunden bis 21</option>
       </select>
-      <small class="input-hint" data-i18n="dko.preset.scope">A/A+ sind lokale Veranstalterbezeichnungen, keine FIVB-/DVV-Regelprofile.</small>
     </label>
     <label class="cfgfield cfgfield--start"><span data-i18n="sheet.cfg.start">Start</span>
       <input type="time" id="startTime" value="10:00">
@@ -282,6 +281,7 @@
 <script src="core/format-switch.js"></script>
 <script src="core/planning-engine.js"></script>
 <script src="core/planning-actions.js"></script>
+<script src="core/turnier-team-qr.js"></script>
 <script>
 (async function(){
   'use strict';
@@ -364,6 +364,7 @@
       volleyballPreset: TStore.urlOneOf(['custom', 'a', 'a-plus'])
   })) TStore.save(S);
   let B = null;
+  window.BEACHL_TEAMVIEW = function(){ return { state: S, plan: B }; };   // Team-QR (core/turnier-team-qr.js)
   let structureKey = '';
   let roundFilter = 'all';
 
@@ -397,6 +398,7 @@
     t.value = S.config.teams;
     S.config.fields = TUI.fillFieldSelect($('fieldCount'), S.config.teams, S.config.fields);
     $('setMode').value = S.config.setMode;
+    $('volleyballPresetInfo').title = T('dko.preset.scope'); $('volleyballPresetInfo').setAttribute('aria-label', T('dko.preset.scope'));
     $('volleyballPresetField').hidden = S.sport.id.indexOf('volleyball.') !== 0;
     $('volleyballPreset').value = S.config.volleyballPreset || 'custom';
     $('setMode').disabled = $('volleyballPreset').value !== 'custom'

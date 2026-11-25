@@ -481,6 +481,8 @@
   .cfgcard-grid > .cfgfield--mode { flex: 2 1 215px; max-width: 320px; }
   .cfgcard-grid > .cfgfield--wide { flex-basis: 240px; max-width: 360px; }
   .cfgcard-grid > .cfgfield--wide:first-child { flex: 3 1 240px; max-width: none; }
+  /* Veranstalterprofil: eigene Zeile, damit Auswahl und Hinweis nicht abgeschnitten werden. */
+  .cfgcard-grid > #volleyballPresetField { flex: 1 1 100%; max-width: 480px; }
   /* Platz für 12-Stunden-Anzeige („10:00 AM“ + Uhr-Symbol) ohne Abschneiden. */
   .cfgcard-grid > .cfgfield--start,
   .cfgcard-grid > .cfgfield--end { flex: 1 1 132px; max-width: 160px; }
@@ -1112,3 +1114,4 @@
   /* Infoboxen einheitlich: farbiger linker Rand + dezenter Schatten (wie die Kurzanleitung). */
   .guide, .page-note, .mnote, .bye-note, .freilos-note, .tie-note, .dropped-note { box-shadow: 0 1px 4px rgba(20, 60, 100, .12); }
 }
+

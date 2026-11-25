@@ -1095,9 +1095,10 @@
   }
   function advanceHintHtml(list) {
     if (!list || !list.length) return '';
-    const txt = list.slice().sort((x, y) => (x.k === 'win' ? 0 : 1) - (y.k === 'win' ? 0 : 1)).map(h => (h.k === 'win' ? tx('ui.match.winnerTo', 'Sieger → {to}', { to: term(h.to) })
-      : tx('ui.match.loserTo', 'Verlierer → {to}', { to: term(h.to) }))).join(' · ');
-    return '<span class="mnote-slot m-advance" data-advance>' + esc(txt) + '</span>';
+    const lines = list.slice().sort((x, y) => (x.k === 'win' ? 0 : 1) - (y.k === 'win' ? 0 : 1)).map(h => '<span class="adv-line">' + esc(h.k === 'win'
+      ? tx('ui.match.winnerTo', 'Sieger → {to}', { to: term(h.to) })
+      : tx('ui.match.loserTo', 'Verlierer → {to}', { to: term(h.to) })) + '</span> ').join('');
+    return '<span class="mnote-slot m-advance" data-advance>' + lines + '</span>';
   }
 
   /* m: {id, a, b, round?, label?, places?}  a/b sind TeamRef oder Teamnummer */
