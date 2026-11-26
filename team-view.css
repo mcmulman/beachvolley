@@ -86,7 +86,8 @@ h2{font-size:13px;margin:22px 2px 8px;color:#5a6a82;text-transform:uppercase;let
 .tv-sq{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:0;}
 .tv-sq-open{background:#1f6fa8;}.tv-sq-done{background:#2e8b2e;}
 .tv-grid button:focus,.tv-btn:focus,.tv-brand:focus{outline:3px solid #1f6fa8;outline-offset:2px;}
-.tv-hero-kicker{white-space:nowrap;}
+.tv-hero-kicker{white-space:normal;}
+.tv-hero-id>div:last-child{min-width:0;}
 .tv-tbl .tv-you{white-space:nowrap;}
 .tv-when{font-size:22px;font-weight:900;color:#1a3a5c;margin-top:6px;}
 .tv-stats-note{margin-top:6px;text-align:center;font-size:11.5px;color:#dbe6f2;}
