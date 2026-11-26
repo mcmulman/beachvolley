@@ -70,6 +70,7 @@
       margin-right: auto !important;
       background: #fff;
       box-shadow: 0 10px 44px rgba(26, 58, 92, .13);
+      display: flow-root; /* Titel-Abstand bleibt in der weissen Karte (kein Margin-Collapse) */
       padding-left: 28px !important;
       padding-right: 28px !important;
       padding-left: calc(28px + env(safe-area-inset-left, 0px)) !important;

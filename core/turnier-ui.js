@@ -2673,13 +2673,15 @@
     const opened = +tbody.getAttribute('data-opened-round') || 0;
     const rounds = {};
     const begun = {};
+    /* Je Zelle zaehlt die Zeile (tr), in der sie steht; data-round der Zelle kann bei Doppel-KO abweichen. */
+    const rowRound = td => { const tr = td.closest('tr[data-round]'); return (tr || td).getAttribute('data-round'); };
     tbody.querySelectorAll('td.match[data-round]').forEach(td => {
       if (Array.prototype.some.call(td.querySelectorAll('input.score'), inp =>
-        !inp.disabled && String(inp.value || '').trim() !== '')) begun[td.getAttribute('data-round')] = true;
+        !inp.disabled && String(inp.value || '').trim() !== '')) begun[rowRound(td)] = true;
     });
     tbody.querySelectorAll('td.match[data-round]').forEach(td => {
       if (td.classList.contains('is-reset-locked')) return; /* ungenutztes Reset-Spiel: weder offen noch erledigt */
-      const round = td.getAttribute('data-round');
+      const round = rowRound(td);
       const active = Array.prototype.slice.call(td.querySelectorAll('input.score')).filter(inp => !inp.disabled);
       /* Gesperrte Spiele mit Ergebnis (Vorrunde nach Finalstart) sind erledigt, nicht offen. */
       const shown = td.querySelector('[data-score="a"]');
@@ -2700,7 +2702,7 @@
       td.classList.toggle('bl-match-valid', lockedDone || (active.length > 0 && complete));
       const summary = rounds[round] || (rounds[round] = { open: 0, invalid: 0, checked: false, total: 0, done: 0 });
       summary.checked = summary.checked || invalid || +round < opened;
-      if (needed) { summary.total++; if (complete) summary.done++; }
+      if (needed || lockedDone) { summary.total++; if (complete || lockedDone) summary.done++; }
       if (!complete) {
         if (!active.length || active.some(inp => String(inp.value || '').trim() === '')) summary.open++;
         else summary.invalid++;
