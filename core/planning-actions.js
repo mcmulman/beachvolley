@@ -1011,6 +1011,8 @@
         healthTimer = setTimeout(() => renderHealth(o.plan(), readonly()), 120);
       }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
     }
+    /* Nach dem Laden gespeicherter Ergebnisse stehen die gewertet-Klassen erst spaeter fest. */
+    root.addEventListener('load', () => setTimeout(() => renderHealth(o.plan(), readonly()), 300));
     let wasReadonly = count.disabled;
     new MutationObserver(() => {
       if (wasReadonly === count.disabled) return;

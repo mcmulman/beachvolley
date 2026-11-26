@@ -1799,6 +1799,12 @@ table.timeplan.has-teams td:nth-child(3), table.timeplan.has-teams th:nth-child(
   .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches > td:last-child {
     border-bottom: 0;
   }
+  /* Zellenhintergruende sollen die runden Kartenecken nicht ueberdecken
+     (overflow:hidden greift hier nicht, siehe turnier-base.css). */
+  .table-scroll.is-wide table.sched > tbody > tr.rgap + tr.rhead + tr.fhead + tr.rmatches {
+    -webkit-clip-path: inset(0 round 0 0 12px 12px);
+    clip-path: inset(0 round 0 0 12px 12px);
+  }
 }
 @media print {
   .sched > tbody > tr.rgap { display: none !important; }
