@@ -20,7 +20,7 @@
       team: 'Team', rank: 'Pl.', played: 'Sp.', pts: 'Pkt.', diff: 'Diff.', noNext: 'Aktuell kein offenes Spiel – ggf. folgen weitere Runden.', stOf: 'Zahlen aus {name}', later: 'Folgerunden', laterHint: 'Teilnehmer stehen noch nicht fest.',
       teamN: 'Team {n}',
       win: 'Sieg', loss: 'Niederlage', draw: 'Unentschieden', live: 'Live', you: 'Du',
-      placeFinal: 'Endplatzierung', placeNow: 'Aktuelle Platzierung', placeIn: 'Platz {r} in {name}',
+      placeFinal: 'Endplatzierung', placeNow: 'Aktuelle Platzierung', placeIn: 'Platz {r} in {name}', tiedWith: 'Geteilt mit {teams}',
       finalDone: 'Turnier beendet', finalList: 'Endstand', finalListNow: 'Zwischenstand',
       stPlayed: 'Spiele', stPts: 'Punkte', stDiff: 'Differenz', 
       promoTitle: 'Dein Turnier selbst planen?', promoText: 'CompetitionPilot: Spielpläne, Tabellen und Ergebnisse für Beachvolleyball-Turniere – kostenlos im Browser.', promoCta: 'Web-App öffnen ↗'
@@ -36,7 +36,7 @@
       team: 'Team', rank: 'Pos.', played: 'P', pts: 'Pts', diff: 'Diff', noNext: 'No open match right now – more rounds may follow.', stOf: 'Figures from {name}', later: 'Later rounds', laterHint: 'Participants are not decided yet.',
       teamN: 'Team {n}',
       win: 'Win', loss: 'Loss', draw: 'Draw', live: 'Live', you: 'You',
-      placeFinal: 'Final place', placeNow: 'Current place', placeIn: 'Place {r} in {name}',
+      placeFinal: 'Final place', placeNow: 'Current place', placeIn: 'Place {r} in {name}', tiedWith: 'Shared with {teams}',
       finalDone: 'Tournament finished', finalList: 'Final standings', finalListNow: 'Current standings',
       stPlayed: 'Played', stPts: 'Points', stDiff: 'Difference', 
       promoTitle: 'Plan your own tournament?', promoText: 'CompetitionPilot: schedules, standings and results for beach volleyball tournaments – free in your browser.', promoCta: 'Open web app ↗'
@@ -107,7 +107,7 @@
     var h = '<div class="tv-tname">' + esc(tb.name) + '</div><table class="tv-tbl"><thead><tr><th>' + esc(t('rank')) +
       '</th><th>' + esc(t('team')) + '</th><th>' + esc(t('played')) + '</th><th>' + esc(t('pts')) + '</th><th>' + esc(t('diff')) + '</th></tr></thead><tbody>';
     tb.rows.forEach(function (r) {
-      h += '<tr' + (r.team === team ? ' class="tv-me"' : '') + '><td>' + r.rank + '</td><td>' + esc(teamName(r.team)) +
+      h += '<tr' + (r.team === team ? ' class="tv-me"' : '') + '><td>' + (anyDone() ? r.rank : '–') + '</td><td>' + esc(teamName(r.team)) +
         (r.team === team ? ' <span class="tv-you">' + esc(t('you')) + '</span>' : '') +
         '</td><td>' + (r.pts == null ? '–' : r.played) + '</td><td>' + (r.pts == null ? '–' : r.pts) + '</td><td>' + (r.diff == null ? '–' : (r.diff > 0 ? '+' + r.diff : r.diff)) + '</td></tr>';
     });
@@ -138,6 +138,12 @@
     return h + '</ol>';
   }
 
+  function anyDone() { return (data.matches || []).some(function (x) { return x.done; }); }
+
+  function tiedHtml(names) {
+    return names.length ? '<span class="tv-hero-tie">' + esc(t('tiedWith', { teams: names.map(teamName).join(', ') })) + '</span>' : '';
+  }
+
   function myRow() {
     var out = null;
     (data.tables || []).forEach(function (tb) { tb.rows.forEach(function (r) { if (r.team === team) out = { tb: tb, r: r }; }); });
@@ -145,16 +151,20 @@
   }
 
   function heroHtml(st) {
-    var mineRow = myRow(), pl = null;
-    if (st) st.rows.forEach(function (r) { if (r.team === team) pl = r; });
+    var mineRow = myRow(), pl = null, started = anyDone();
+    if (!started) mineRow = mineRow ? { tb: mineRow.tb, r: { played: 0, pts: null, diff: null, rank: null } } : null;
+    if (st && started) st.rows.forEach(function (r) { if (r.team === team) pl = r; });
     var h = '<section class="tv-hero' + (pl && st.final ? ' tv-hero-final' : '') + '"><div class="tv-hero-top"><div class="tv-hero-id"><span class="tv-badge">' + team +
       '</span><div><div class="tv-hero-kicker">' + esc(t('title')) + '</div><div class="tv-hero-team">' + esc(teamName(team)) + '</div></div></div>' +
       '<button type="button" class="tv-btn tv-btn-light" data-change="1">' + esc(t('change')) + '</button></div>';
     if (pl) {
+      var tied = st.rows.filter(function (r) { return r.team !== team && r.place === pl.place && r.to === pl.to; }).map(function (r) { return r.team; });
       h += '<div class="tv-hero-place"><span class="tv-hero-rank' + (st.final ? medal(pl.place) : '') + '">' + esc(placeLabel(pl.place, pl.to)) + '</span><span class="tv-hero-lbl">' +
-        esc(t(st.final ? 'placeFinal' : 'placeNow')) + '</span></div>';
-    } else if (mineRow) {
-      h += '<div class="tv-hero-place"><span class="tv-hero-rank">' + mineRow.r.rank + '.</span><span class="tv-hero-lbl">' + esc(t('placeIn', { r: mineRow.r.rank, name: mineRow.tb.name })) + '</span></div>';
+        esc(t(st.final ? 'placeFinal' : 'placeNow')) + '</span>' + tiedHtml(tied) + '</div>';
+    } else if (mineRow && mineRow.r.rank != null) {
+      var rk = mineRow.r.rank;
+      var tiedT = mineRow.tb.rows.filter(function (r) { return r.team !== team && r.rank === rk; }).map(function (r) { return r.team; });
+      h += '<div class="tv-hero-place"><span class="tv-hero-rank">' + mineRow.r.rank + '.</span><span class="tv-hero-lbl">' + esc(t('placeIn', { r: mineRow.r.rank, name: mineRow.tb.name })) + '</span>' + tiedHtml(tiedT) + '</div>';
     }
     if (mineRow) {
       var d = mineRow.r.diff;
@@ -199,7 +209,7 @@
     var later = allMatches.filter(function (x) { return (x.a == null || x.b == null) && x.a !== team && x.b !== team && !x.done; });
     if (later.length) h += '<h2>' + esc(t('later')) + '</h2><div class="tv-card tv-later"><small>' + esc(t('laterHint')) + '</small><ul>' + later.map(function (x) {
       return '<li><b>' + esc(x.round) + '</b>' + (x.time ? ' · ' + esc(x.field ? x.field + ' · ' : '') + esc(t('at', { t: x.time })) : '') + '</li>'; }).join('') + '</ul></div>';
-    if (st && data.places && data.places.length) h += standingsHtml(st);
+    if (st && data.places && data.places.length && anyDone()) h += standingsHtml(st);
     if ((data.tables || []).length) h += '<h2>' + esc(t('tables')) + '</h2>' + data.tables.map(tableHtml).join('');
     root.innerHTML = h;
   }
